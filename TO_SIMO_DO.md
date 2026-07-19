@@ -1,6 +1,6 @@
 # TO_SIMO_DO.md
 - [ ] Widget for iPhone & MacOS
-- [ ] 
+- [ ] what happens if I modify manually an automatic habits?
 - [ ] Different habits & goals types, not only checkboxes like status,progress bar
 - [ ] For the desktop implementation what has been done with ollama is outstanding and I want to replicate the same thing also with LMStudio so the major local LLM providers are supported
 

@@ -24,11 +24,13 @@ class EvolveDialog extends StatelessWidget {
     super.key,
     this.maxWidth = 520,
     this.alignment,
+    this.autofocus = true,
   });
 
   final Widget child;
   final double maxWidth;
   final AlignmentGeometry? alignment;
+  final bool autofocus;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +41,7 @@ class EvolveDialog extends StatelessWidget {
         const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.maybePop(context),
       },
       child: Focus(
-        autofocus: true,
+        autofocus: autofocus,
         child: Dialog(
           alignment: alignment,
       elevation: 0,

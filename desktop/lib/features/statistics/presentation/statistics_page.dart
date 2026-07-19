@@ -965,6 +965,9 @@ class _TrendLineChart extends StatelessWidget {
         ),
         borderData: FlBorderData(show: false),
         lineTouchData: LineTouchData(
+          distanceCalculator: (touchPoint, spotPixelCoordinates) =>
+              (touchPoint.dx - spotPixelCoordinates.dx).abs(),
+          touchSpotThreshold: 99999,
           touchTooltipData: LineTouchTooltipData(
             getTooltipColor: (spot) => colors.panelSoft,
             tooltipBorderRadius: BorderRadius.circular(8),
@@ -3153,16 +3156,23 @@ class _CorrelationPanel extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const EvolveIconChip(
-            icon: LucideIcons.brain,
-            color: EvolveColors.violet,
-            size: 36,
-            iconSize: 18,
-          ),
-          const SizedBox(height: 13),
-          SectionHeading(
-            title: t.stats.keyCorrelations,
-            subtitle: t.stats.keyCorrelationsSubtitle,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const EvolveIconChip(
+                icon: LucideIcons.brain,
+                color: EvolveColors.violet,
+                size: 34,
+                iconSize: 16,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: SectionHeading(
+                  title: t.stats.keyCorrelations,
+                  subtitle: t.stats.keyCorrelationsSubtitle,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           if (correlations.isEmpty)
@@ -3176,6 +3186,7 @@ class _CorrelationPanel extends ConsumerWidget {
                 title: correlation.label,
                 value: '${correlation.percentage}%',
                 color: context.evolveAccent,
+                maxLines: 2,
               ),
               const SizedBox(height: 10),
             ],
@@ -3190,11 +3201,13 @@ class _InlineInsight extends StatelessWidget {
     required this.title,
     required this.value,
     required this.color,
+    this.maxLines = 1,
   });
 
   final String title;
   final String value;
   final Color color;
+  final int maxLines;
 
   @override
   Widget build(BuildContext context) {
@@ -3212,7 +3225,7 @@ class _InlineInsight extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              maxLines: 1,
+              maxLines: maxLines,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 12,

@@ -2,6 +2,12 @@
 
 ## Recent Changes
 
+- [2026-07-19]: **Key Correlation Layout Optimization**
+  - *Details*: Redesigned the Key Correlation panel on the Desktop statistics page to fix text truncation and height protrusion issues.
+  - *Tech Notes*:
+    - Re-aligned the brain icon to sit inline with the `SectionHeading` to save vertical space and prevent the panel from protruding past the adjacent metric grid.
+    - Updated `_InlineInsight` to accept an optional `maxLines` parameter (default 1) and passed `maxLines: 2` from the `_CorrelationPanel` to allow long habit names to wrap nicely to a second line while keeping the percentage right-aligned.
+
 - [2026-07-19]: **Desktop Escape Key Dialog Dismissal**
   - *Details*: Added global support for closing all dialogs by pressing the Escape key on the keyboard, even when `barrierDismissible` is set to false.
   - *Tech Notes*:
@@ -1872,3 +1878,20 @@ All owner actions are itemized in **TO_SIMO_DO.md**.
 - [2026-07-19 20:34]: Enhance Overview Dashboard Chart
   - *Details*: Updated the 'Andamento settimanale' (Weekly Trend) chart on the overview page to match the new elegant/tech aesthetic.
   - *Tech Notes*: Modified the `_TrendChartPainter` in `dashboard_page.dart`. Removed the manual `canvas.drawLine` grid lines, boosted the fill gradient alpha from 0.14 to 0.3, and added a glowing effect using a blurred `MaskFilter` on an underlying stroke path.
+
+- [2026-07-19 22:45]: Command Palette Auto-focus
+  - *Details*: Explicitly requested focus for the search field when the Command Palette is opened so the user can start typing immediately after pressing Command + K.
+  - *Tech Notes*: Added `initState` to `_CommandPaletteState` with a `WidgetsBinding.instance.addPostFrameCallback` to call `_searchFocus.requestFocus()`, overcoming dialog animation interference.
+  - *Follow-up*: Addressed root cause where EvolveDialog swallowed focus by exposing an `autofocus` property and disabling it for CommandPalette.
+
+- [2026-07-19 22:54]: EvolveDialog autofocus
+  - *Details*: Added autofocus property to EvolveDialog and disabled it for CommandPalette to allow TextField to gain focus.
+- [2026-07-19 22:54]: Standardize Chart Hover UI
+  - *Details*: Standardized hover tooltip styling across all LineCharts and BarCharts in the desktop application to match the mood tab aesthetic.
+  - *Tech Notes*: Added and updated lineTouchData and barTouchData across goals_stats_view.dart charts. Implemented panelSoft background, circular(8) radius, modern getTouchedSpotIndicator with dots and vertical tracking lines, and w800 14px numeric font styling.
+- [2026-07-19 22:58]: Standardize Dashboard Chart Hover UI
+  - *Details*: Migrated the overview page weekly trend chart from a CustomPainter to fl_chart's LineChart to support the standard interactive hover tooltip.
+  - *Tech Notes*: Replaced _TrendChartPainter with LineChart in dashboard_page.dart. Added identical lineTouchData configuration with panelSoft tooltip background, circular(8) borders, glowing dot indicators, and vertical tracking line to match max coherence requirement.
+- [2026-07-19 23:02]: Enhance LineChart Snapping
+  - *Details*: Improved the interactive experience of all LineCharts by adding timeline-scrub style hover snapping, allowing users to hover over points without needing to perfectly align the mouse vertically.
+  - *Tech Notes*: Configured LineTouchData with a custom distanceCalculator mapping purely the X-axis distance and bumped touchSpotThreshold to 99999. Updated across statistics_extras.dart, statistics_page.dart, goals_stats_view.dart, and dashboard_page.dart.

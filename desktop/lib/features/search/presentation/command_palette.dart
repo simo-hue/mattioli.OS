@@ -597,6 +597,7 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
         child: EvolveDialog(
           alignment: const Alignment(0, -0.62),
           maxWidth: 580,
+          autofocus: false,
           child: Padding(
             padding: const EdgeInsets.all(10),
             child: Column(

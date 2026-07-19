@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:fl_chart/fl_chart.dart';
 
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
@@ -738,11 +739,152 @@ class _TrendPanel extends StatelessWidget {
           SizedBox(
             height: 220,
             width: double.infinity,
-            child: CustomPaint(
-              painter: _TrendChartPainter(
-                points,
-                accent: context.evolveAccent,
-                palette: context.evolveColors,
+            child: LineChart(
+              LineChartData(
+                minX: 0,
+                maxX: points.length < 2 ? 1.0 : (points.length - 1).toDouble(),
+                minY: 0,
+                maxY: 100,
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: 25,
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: context.evolveColors.border.withValues(alpha: 0.5),
+                    strokeWidth: 1,
+                    dashArray: [4, 4],
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 38,
+                      interval: 25,
+                      getTitlesWidget: (value, meta) => Text(
+                        '${value.toInt()}%',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: context.evolveColors.muted,
+                        ),
+                      ),
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 28,
+                      interval: ((points.length + 6) ~/ 7).clamp(1, 1000).toDouble(),
+                      getTitlesWidget: (value, meta) {
+                        if (value % 1 != 0) return const SizedBox.shrink();
+                        final index = value.toInt();
+                        if (index < 0 || index >= points.length) {
+                          return const SizedBox.shrink();
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            points[index].label,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                              color: context.evolveColors.muted,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                lineTouchData: LineTouchData(
+                  distanceCalculator: (touchPoint, spotPixelCoordinates) =>
+                      (touchPoint.dx - spotPixelCoordinates.dx).abs(),
+                  touchSpotThreshold: 99999,
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipColor: (_) => context.evolveColors.panelSoft,
+                    tooltipBorderRadius: BorderRadius.circular(8),
+                    tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    getTooltipItems: (touchedSpots) {
+                      return touchedSpots.map((s) {
+                        final index = s.x.toInt();
+                        final label = (index >= 0 && index < points.length) ? points[index].label : '';
+                        return LineTooltipItem(
+                          '$label\n',
+                          TextStyle(
+                            color: context.evolveColors.muted,
+                            fontSize: 10,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: '${s.y.toStringAsFixed(1)}%',
+                              style: TextStyle(
+                                color: context.evolveColors.foreground,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList();
+                    },
+                  ),
+                  getTouchedSpotIndicator: (barData, spotIndexes) {
+                    return spotIndexes.map((index) {
+                      return TouchedSpotIndicatorData(
+                        FlLine(
+                          color: barData.color?.withValues(alpha: 0.5) ?? context.evolveColors.muted,
+                          strokeWidth: 2,
+                        ),
+                        FlDotData(
+                          show: true,
+                          getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                            radius: 5,
+                            color: barData.color ?? context.evolveColors.foreground,
+                            strokeWidth: 2,
+                            strokeColor: context.evolveColors.panel,
+                          ),
+                        ),
+                      );
+                    }).toList();
+                  },
+                  handleBuiltInTouches: true,
+                ),
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: [
+                      for (var i = 0; i < points.length; i++)
+                        FlSpot(i.toDouble(), points[i].value.clamp(0.0, 1.0) * 100),
+                    ],
+                    isCurved: true,
+                    color: context.evolveAccent,
+                    barWidth: 3,
+                    isStrokeCapRound: true,
+                    dotData: const FlDotData(show: false),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          context.evolveAccent.withValues(alpha: 0.3),
+                          context.evolveAccent.withValues(alpha: 0.0),
+                        ],
+                      ),
+                    ),
+                    shadow: Shadow(
+                      color: context.evolveAccent.withValues(alpha: 0.4),
+                      blurRadius: 8,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -750,131 +892,6 @@ class _TrendPanel extends StatelessWidget {
       ),
     );
   }
-}
-
-class _TrendChartPainter extends CustomPainter {
-  const _TrendChartPainter(
-    this.points, {
-    required this.accent,
-    required this.palette,
-  });
-
-  final List<TrendPoint> points;
-  final Color accent;
-  final EvolvePalette palette;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const left = 38.0;
-    const right = 10.0;
-    const top = 10.0;
-    const bottom = 28.0;
-    final chart = Rect.fromLTRB(
-      left,
-      top,
-      size.width - right,
-      size.height - bottom,
-    );
-    final gridPaint = Paint()
-      ..color = palette.border.withValues(alpha: 0.5)
-      ..strokeWidth = 1;
-    final labelPainter = TextPainter(textDirection: TextDirection.ltr);
-
-    for (var i = 0; i <= 4; i++) {
-      final y = chart.bottom - (chart.height * i / 4);
-      labelPainter
-        ..text = TextSpan(
-          text: '${i * 25}%',
-          style: TextStyle(color: palette.subtle, fontSize: 10),
-        )
-        ..layout()
-        ..paint(canvas, Offset(0, y - 6));
-    }
-
-    if (points.length < 2) return;
-    final step = chart.width / (points.length - 1);
-    final offsets = <Offset>[
-      for (var i = 0; i < points.length; i++)
-        Offset(
-          chart.left + step * i,
-          chart.bottom - chart.height * points[i].value,
-        ),
-    ];
-    final linePath = Path()..moveTo(offsets.first.dx, offsets.first.dy);
-    for (var i = 1; i < offsets.length; i++) {
-      final previous = offsets[i - 1];
-      final current = offsets[i];
-      final controlX = (previous.dx + current.dx) / 2;
-      linePath.cubicTo(
-        controlX,
-        previous.dy,
-        controlX,
-        current.dy,
-        current.dx,
-        current.dy,
-      );
-    }
-
-    final fillPath = Path.from(linePath)
-      ..lineTo(offsets.last.dx, chart.bottom)
-      ..lineTo(offsets.first.dx, chart.bottom)
-      ..close();
-    canvas.drawPath(
-      fillPath,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [accent.withValues(alpha: 0.3), accent.withValues(alpha: 0)],
-        ).createShader(chart),
-    );
-
-    // Draw the neon glow/shadow effect
-    canvas.drawPath(
-      linePath,
-      Paint()
-        ..color = accent.withValues(alpha: 0.4)
-        ..strokeWidth = 3
-        ..style = PaintingStyle.stroke
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
-    );
-
-    // Mobile draws a clean white stroke with no data-point dots.
-    canvas.drawPath(
-      linePath,
-      Paint()
-        ..color = accent
-        ..strokeWidth = 3
-        ..style = PaintingStyle.stroke
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round,
-    );
-
-    for (var i = 0; i < offsets.length; i++) {
-      labelPainter
-        ..text = TextSpan(
-          text: points[i].label,
-          style: TextStyle(
-            color: palette.muted,
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-          ),
-        )
-        ..layout()
-        ..paint(
-          canvas,
-          Offset(offsets[i].dx - labelPainter.width / 2, chart.bottom + 10),
-        );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _TrendChartPainter oldDelegate) =>
-      oldDelegate.points != points ||
-      oldDelegate.accent != accent ||
-      oldDelegate.palette != palette;
 }
 
 class _HabitPanel extends ConsumerWidget {

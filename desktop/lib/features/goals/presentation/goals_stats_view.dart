@@ -831,6 +831,58 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
         height: height,
         child: LineChart(
           LineChartData(
+            lineTouchData: LineTouchData(
+              distanceCalculator: (touchPoint, spotPixelCoordinates) =>
+                  (touchPoint.dx - spotPixelCoordinates.dx).abs(),
+              touchSpotThreshold: 99999,
+              touchTooltipData: LineTouchTooltipData(
+                getTooltipColor: (_) => context.evolveColors.panelSoft,
+                tooltipBorderRadius: BorderRadius.circular(8),
+                tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                getTooltipItems: (touchedSpots) {
+                  return touchedSpots.map((s) {
+                    final color = s.barIndex == 0 ? context.evolveColors.foreground : EvolveColors.success;
+                    return LineTooltipItem(
+                      '${_monthLabel(s.x.toInt())}\n',
+                      TextStyle(
+                        color: context.evolveColors.muted,
+                        fontSize: 10,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: '${s.y.round()}',
+                          style: TextStyle(
+                            color: color,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList();
+                },
+              ),
+              getTouchedSpotIndicator: (barData, spotIndexes) {
+                return spotIndexes.map((index) {
+                  return TouchedSpotIndicatorData(
+                    FlLine(
+                      color: barData.color?.withValues(alpha: 0.5) ?? context.evolveColors.muted,
+                      strokeWidth: 2,
+                    ),
+                    FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                        radius: 5,
+                        color: barData.color ?? context.evolveColors.foreground,
+                        strokeWidth: 2,
+                        strokeColor: context.evolveColors.panel,
+                      ),
+                    ),
+                  );
+                }).toList();
+              },
+              handleBuiltInTouches: true,
+            ),
             gridData: FlGridData(
               show: true,
               drawVerticalLine: false,
@@ -1110,6 +1162,45 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
         height: height,
         child: BarChart(
           BarChartData(
+            barTouchData: BarTouchData(
+              touchTooltipData: BarTouchTooltipData(
+                getTooltipColor: (_) => context.evolveColors.panelSoft,
+                tooltipBorderRadius: BorderRadius.circular(8),
+                tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                  final q = group.x.toInt();
+                  final item = dataMap[q];
+                  final tot = (item?['total'] as num?)?.toInt() ?? 0;
+                  final comp = (item?['completed'] as num?)?.toInt() ?? 0;
+                  return BarTooltipItem(
+                    'Q$q\n',
+                    TextStyle(
+                      color: context.evolveColors.foreground,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: '$tot\n',
+                        style: const TextStyle(
+                          color: Color(0xFFD97706),
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                        ),
+                      ),
+                      TextSpan(
+                        text: '$comp',
+                        style: const TextStyle(
+                          color: EvolveColors.success,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
             gridData: const FlGridData(show: false),
             titlesData: FlTitlesData(
               rightTitles: const AxisTitles(
@@ -1222,8 +1313,9 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
           BarChartData(
             barTouchData: BarTouchData(
               touchTooltipData: BarTouchTooltipData(
-                getTooltipColor: (_) => context.evolveColors.panel,
-
+                getTooltipColor: (_) => context.evolveColors.panelSoft,
+                tooltipBorderRadius: BorderRadius.circular(8),
+                tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 getTooltipItem: (group, groupIndex, rod, rodIndex) {
                   final m = group.x.toInt();
                   final item = dataMap[m];
@@ -1241,14 +1333,16 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                         text: '$tot\n',
                         style: const TextStyle(
                           color: Color(0xFF6366F1),
-                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
                         ),
                       ),
                       TextSpan(
                         text: '$comp',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.primary,
-                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
                         ),
                       ),
                     ],
@@ -1581,8 +1675,8 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
               BarChartData(
                 barTouchData: BarTouchData(
                   touchTooltipData: BarTouchTooltipData(
-                    getTooltipColor: (_) => context.evolveColors.panel,
-
+                    getTooltipColor: (_) => context.evolveColors.panelSoft,
+                    tooltipBorderRadius: BorderRadius.circular(8),
                     tooltipPadding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 8,
@@ -1608,21 +1702,24 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                             text: '$act\n',
                             style: const TextStyle(
                               color: EvolveColors.cyan,
-                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
                             ),
                           ),
                           TextSpan(
                             text: '$fail\n',
                             style: const TextStyle(
                               color: EvolveColors.destructive,
-                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
                             ),
                           ),
                           TextSpan(
                             text: '$comp',
                             style: const TextStyle(
                               color: EvolveColors.success,
-                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
                             ),
                           ),
                         ],
@@ -1895,8 +1992,9 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
               BarChartData(
                 barTouchData: BarTouchData(
                   touchTooltipData: BarTouchTooltipData(
-                    getTooltipColor: (_) => context.evolveColors.panel,
-
+                    getTooltipColor: (_) => context.evolveColors.panelSoft,
+                    tooltipBorderRadius: BorderRadius.circular(8),
+                    tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       final q = group.x.toInt();
                       final item = dataMap[q];
@@ -1915,21 +2013,24 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                             text: '$act\n',
                             style: const TextStyle(
                               color: EvolveColors.cyan,
-                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
                             ),
                           ),
                           TextSpan(
                             text: '$fail\n',
                             style: const TextStyle(
                               color: EvolveColors.destructive,
-                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
                             ),
                           ),
                           TextSpan(
                             text: '$comp',
                             style: const TextStyle(
                               color: EvolveColors.success,
-                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
                             ),
                           ),
                         ],
@@ -2022,9 +2123,13 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
         child: LineChart(
           LineChartData(
             lineTouchData: LineTouchData(
+              distanceCalculator: (touchPoint, spotPixelCoordinates) =>
+                  (touchPoint.dx - spotPixelCoordinates.dx).abs(),
+              touchSpotThreshold: 99999,
               touchTooltipData: LineTouchTooltipData(
-                getTooltipColor: (_) => context.evolveColors.panel,
-
+                getTooltipColor: (_) => context.evolveColors.panelSoft,
+                tooltipBorderRadius: BorderRadius.circular(8),
+                tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 getTooltipItems: (touchedSpots) {
                   return touchedSpots.map((s) {
                     return LineTooltipItem(
@@ -2038,8 +2143,8 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                           text: '${s.y.round()}%',
                           style: const TextStyle(
                             color: EvolveColors.success,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14,
                           ),
                         ),
                       ],
@@ -2047,6 +2152,26 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                   }).toList();
                 },
               ),
+              getTouchedSpotIndicator: (barData, spotIndexes) {
+                return spotIndexes.map((index) {
+                  return TouchedSpotIndicatorData(
+                    FlLine(
+                      color: barData.color?.withValues(alpha: 0.5) ?? context.evolveColors.muted,
+                      strokeWidth: 2,
+                    ),
+                    FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                        radius: 5,
+                        color: barData.color ?? context.evolveColors.foreground,
+                        strokeWidth: 2,
+                        strokeColor: context.evolveColors.panel,
+                      ),
+                    ),
+                  );
+                }).toList();
+              },
+              handleBuiltInTouches: true,
             ),
             gridData: FlGridData(
               show: true,
@@ -2220,9 +2345,9 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
               BarChartData(
                 barTouchData: BarTouchData(
                   touchTooltipData: BarTouchTooltipData(
-                    getTooltipColor: (_) => context.evolveColors.panel,
-
-                    tooltipPadding: const EdgeInsets.all(12),
+                    getTooltipColor: (_) => context.evolveColors.panelSoft,
+                    tooltipBorderRadius: BorderRadius.circular(8),
+                    tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       final index = group.x.toInt();
                       if (index >= stats.length) return null;
@@ -2240,8 +2365,8 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                               text: '${c.label}: $count\n',
                               style: TextStyle(
                                 color: c.color,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                           );

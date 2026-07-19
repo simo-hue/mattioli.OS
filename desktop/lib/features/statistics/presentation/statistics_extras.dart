@@ -1916,6 +1916,9 @@ class _MoodEnergyLineChart extends StatelessWidget {
                   maxY: 10,
                   gridData: const FlGridData(show: false),
                   lineTouchData: LineTouchData(
+                    distanceCalculator: (touchPoint, spotPixelCoordinates) =>
+                        (touchPoint.dx - spotPixelCoordinates.dx).abs(),
+                    touchSpotThreshold: 99999,
                     touchTooltipData: LineTouchTooltipData(
                       getTooltipColor: (spot) => colors.panelSoft,
                       tooltipBorderRadius: BorderRadius.circular(8),

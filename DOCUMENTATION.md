@@ -1841,3 +1841,11 @@ All owner actions are itemized in **TO_SIMO_DO.md**.
 
 - [2026-07-19]: True Red for Failed State UI
   - *Details*: Swapped the "Failed" habit visual state (both in the ring segment and the dialog checkbox) from pink (`EvolveColors.rose`) to pure red (`EvolveColors.destructive`) to improve visual distinction and better match the design intent for missed goals.
+
+- [2026-07-19]: Statistics Page Layout Adjustments
+  - *Details*: Moved 'Key Correlation' panel precisely under the 'Momentum' box to fill the visual hole, expanding the column slightly from 300px to 350px for proper fit. Extended the '365 activity' heatmap panel to use the full display width by removing its width constraint.
+  - *Tech Notes*: Modified  in . Extracted  out of the Row that shared width with correlations, and created a unified column for  and .
+
+- [2026-07-19]: Statistics Page Layout Adjustments
+  - *Details*: Moved 'Key Correlation' panel precisely under the 'Momentum' box to fill the visual hole, expanding the column slightly from 300px to 350px for proper fit. Extended the '365 activity' heatmap panel to use the full display width by removing its width constraint.
+  - *Tech Notes*: Modified `_GlobalInfo.build` in `statistics_page.dart`. Extracted `_YearContributionHeatmap` out of the Row that shared width with correlations, and created a unified column for `_MomentumRing` and `_CorrelationPanel`.

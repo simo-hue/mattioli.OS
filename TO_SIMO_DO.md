@@ -46,3 +46,6 @@ flutter build macos --release --dart-define-from-file=.env
 
 ## Screen Time Auto-Verification Sync
 - Since background network requests are forbidden in the iOS `DeviceActivityMonitorExtension`, the iOS app *must* be opened by the user periodically to sync the Screen Time habits to Supabase, which then reflects on the macOS app.
+
+
+/grill-me we are working inside the flutter implementations on desktop. I see that there is still that  pinky color instead of the pure red whenever something is rappresenting a negative thing ( or a failure ). Step by step I want you to go and fixing everything to have the maximum coherence everywhere 

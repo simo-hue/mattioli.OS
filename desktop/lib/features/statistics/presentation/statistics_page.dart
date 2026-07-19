@@ -540,16 +540,35 @@ class _GlobalInfo extends ConsumerWidget {
       ],
     );
 
+    final correlations = _CorrelationPanel(snapshot: snapshot);
+
     final ringAndTiles = LayoutBuilder(
       builder: (context, constraints) {
         final ring = _MomentumRing(momentum: momentum);
         if (constraints.maxWidth < 920) {
-          return Column(children: [ring, const SizedBox(height: 18), tiles]);
+          return Column(
+            children: [
+              ring,
+              const SizedBox(height: 18),
+              correlations,
+              const SizedBox(height: 18),
+              tiles,
+            ],
+          );
         }
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(width: 300, child: ring),
+            SizedBox(
+              width: 350,
+              child: Column(
+                children: [
+                  ring,
+                  const SizedBox(height: 18),
+                  correlations,
+                ],
+              ),
+            ),
             const SizedBox(width: 18),
             Expanded(child: tiles),
           ],
@@ -565,28 +584,7 @@ class _GlobalInfo extends ConsumerWidget {
           _KeystoneCard(snapshot: snapshot),
           const SizedBox(height: 18),
         ],
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final heatmap = _YearContributionHeatmap(snapshot: snapshot);
-            final correlations = _CorrelationPanel(snapshot: snapshot);
-            if (constraints.maxWidth < 1120) {
-              return Column(
-                children: [heatmap, const SizedBox(height: 18), correlations],
-              );
-            }
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(flex: 7, child: heatmap),
-                const SizedBox(width: 18),
-                SizedBox(
-                  width: _railWidth(constraints.maxWidth),
-                  child: correlations,
-                ),
-              ],
-            );
-          },
-        ),
+        _YearContributionHeatmap(snapshot: snapshot),
       ],
     );
   }

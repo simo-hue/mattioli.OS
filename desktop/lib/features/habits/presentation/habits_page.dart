@@ -22,6 +22,8 @@ import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_period_switcher.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_weekday_selector.dart';
 import 'package:evolve_desktop/shared/widgets/verified_habit_badge.dart';
+import 'dart:math' as math;
+import 'dart:ui';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -1454,7 +1456,7 @@ class _WeekCalendar extends StatelessWidget {
   }
 }
 
-class _DayCell extends StatelessWidget {
+class _DayCell extends StatefulWidget {
   const _DayCell({
     required this.snapshot,
     required this.date,
@@ -1470,163 +1472,223 @@ class _DayCell extends StatelessWidget {
   final bool expanded;
 
   @override
-  Widget build(BuildContext context) {
-    final isToday = DateUtils.isSameDay(date, DateTime.now());
-    final indicators = snapshot.habitsFor(date);
-    final indicatorLimit = expanded ? 28 : 14;
-    final hiddenIndicators = indicators.length - indicatorLimit;
-    final isFuture = date.isAfter(DateTime.now());
-    final isEditable = _canEditDate(date);
-    final hasActivity = indicators.any(
-      (habit) => _habitStatus(snapshot, habit.id, date, habit) != null,
+  State<_DayCell> createState() => _DayCellState();
+}
+
+class _DayCellState extends State<_DayCell> with SingleTickerProviderStateMixin {
+  bool _isHovered = false;
+  late AnimationController _glowController;
+  late Animation<double> _glowAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    );
+    _glowAnimation = Tween<double>(begin: 4.0, end: 12.0).animate(
+      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
     );
 
-    // Mobile day-cell recipe: red→green performance tint for recorded days,
-    // accent hairline for today / still-editable days, faded future days.
-    Color? background;
-    var borderColor = Colors.transparent;
-    if (hasActivity) {
-      background = performanceColor(
-        completion,
-        saturation: 0.7,
-        lightness: 0.1,
-        alpha: 0.3,
-      );
-      borderColor = performanceColor(
-        completion,
-        saturation: 0.8,
-        lightness: 0.4,
-        alpha: 0.5,
-      );
-    } else if (isEditable) {
-      background = context.evolveAccent.withValues(alpha: 0.04);
-      borderColor = context.evolveAccent.withValues(alpha: 0.25);
-    }
-    if (isToday && !hasActivity) {
-      background = context.evolveColors.foreground.withValues(alpha: 0.04);
-      borderColor = context.evolveAccent.withValues(alpha: 0.4);
-    }
-    if (isFuture) {
-      background = null;
-      borderColor = Colors.transparent;
-    }
+    _updateAnimationState();
+  }
 
-    return Opacity(
-      opacity: isFuture ? 0.28 : 1,
-      child: InkWell(
-        onTap: onTap,
-        mouseCursor: onTap == null
-            ? SystemMouseCursors.basic
-            : SystemMouseCursors.click,
-        borderRadius: BorderRadius.circular(8),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            // Cells flex with the pinned viewport: short cells tighten their
-            // padding, clip surplus dots and drop the completion caption; the
-            // caption returns as soon as there is comfortable room (~90px).
-            final compact = constraints.maxHeight < 64;
-            final showCaption = constraints.maxHeight >= 72;
-            return Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: compact ? 6 : 8,
-                vertical: compact ? 3 : 8,
-              ),
-              decoration: BoxDecoration(
-                color: background,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: borderColor),
-                boxShadow: hasActivity && completion == 1.0
-                    ? [
-                        BoxShadow(
-                          color: performanceColor(
-                            1,
-                            saturation: 0.8,
-                            lightness: 0.4,
-                            alpha: 0.15,
+  void _updateAnimationState() {
+    final isToday = DateUtils.isSameDay(widget.date, DateTime.now());
+    final hasActivity = widget.snapshot.habitsFor(widget.date).any(
+      (h) => _habitStatus(widget.snapshot, h.id, widget.date, h) != null,
+    );
+    if (isToday || hasActivity) {
+      if (!_glowController.isAnimating) _glowController.repeat(reverse: true);
+    } else {
+      _glowController.stop();
+    }
+  }
+
+  @override
+  void didUpdateWidget(_DayCell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _updateAnimationState();
+  }
+
+  @override
+  void dispose() {
+    _glowController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isToday = DateUtils.isSameDay(widget.date, DateTime.now());
+    final indicators = widget.snapshot.habitsFor(widget.date);
+    final isFuture = widget.date.isAfter(DateTime.now());
+    final hasActivity = indicators.any(
+      (habit) => _habitStatus(widget.snapshot, habit.id, widget.date, habit) != null,
+    );
+    final isEditable = _canEditDate(widget.date);
+    
+    // Calculate statuses for the ring
+    final ringData = indicators.map((h) {
+      final status = widget.snapshot.habitStatusFor(h.id, widget.date);
+      Color color;
+      if (status == 'done') {
+        color = h.color;
+      } else if (status == 'missed') {
+        color = EvolveColors.rose;
+      } else {
+        color = h.color.withValues(alpha: 0.22);
+      }
+      return color;
+    }).toList();
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: widget.onTap == null ? SystemMouseCursors.basic : SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedBuilder(
+          animation: _glowAnimation,
+          builder: (context, child) {
+            Color glowColor = Colors.transparent;
+            if (hasActivity && widget.completion == 1.0) {
+              glowColor = performanceColor(1, saturation: 0.8, lightness: 0.4, alpha: 0.3);
+            } else if (isToday) {
+              glowColor = context.evolveAccent.withValues(alpha: 0.3);
+            } else if (hasActivity) {
+              glowColor = performanceColor(widget.completion, saturation: 0.7, lightness: 0.2, alpha: 0.15);
+            }
+
+            Color baseColor;
+            if (hasActivity) {
+              baseColor = performanceColor(widget.completion, saturation: 0.6, lightness: 0.15, alpha: 0.2);
+            } else if (isEditable || isToday) {
+              baseColor = context.evolveAccent.withValues(alpha: 0.05);
+            } else {
+              baseColor = context.evolveColors.panelSoft.withValues(alpha: 0.1);
+            }
+
+            return Opacity(
+              opacity: isFuture ? 0.28 : 1.0,
+              child: Container(
+                margin: const EdgeInsets.all(2.0),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: glowColor != Colors.transparent
+                      ? [
+                          BoxShadow(
+                            color: glowColor,
+                            blurRadius: _glowAnimation.value,
+                            spreadRadius: _glowAnimation.value / 4,
+                          )
+                        ]
+                      : null,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                    child: Container(
+                      padding: const EdgeInsets.all(4.0),
+                      decoration: BoxDecoration(
+                        color: baseColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isToday 
+                              ? context.evolveAccent.withValues(alpha: 0.5)
+                              : Colors.white.withValues(alpha: 0.05),
+                          width: isToday ? 1.5 : 1.0,
+                        ),
+                      ),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          if (ringData.isNotEmpty)
+                            Padding(
+                              padding: EdgeInsets.all(widget.expanded ? 8.0 : 4.0),
+                              child: CustomPaint(
+                                painter: _DayProgressRingPainter(
+                                  segments: ringData,
+                                  strokeWidth: widget.expanded ? 3.5 : 2.5,
+                                ),
+                                child: Container(),
+                              ),
+                            ),
+                          AnimatedCrossFade(
+                            duration: const Duration(milliseconds: 200),
+                            crossFadeState: _isHovered && !isFuture && hasActivity
+                                ? CrossFadeState.showSecond
+                                : CrossFadeState.showFirst,
+                            firstChild: Text(
+                              '${widget.date.day}',
+                              style: TextStyle(
+                                color: isToday
+                                    ? context.evolveAccent
+                                    : hasActivity
+                                        ? context.evolveColors.foreground
+                                        : context.evolveColors.muted,
+                                fontSize: widget.expanded ? 16 : 14,
+                                fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
+                              ),
+                            ),
+                            secondChild: Text(
+                              '${(widget.completion * 100).round()}%',
+                              style: TextStyle(
+                                color: context.evolveAccent,
+                                fontSize: widget.expanded ? 14 : 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
                           ),
-                          blurRadius: 8,
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    '${date.day}',
-                    style: TextStyle(
-                      color: isToday
-                          ? context.evolveAccent
-                          : hasActivity
-                          ? context.evolveColors.foreground
-                          : context.evolveColors.muted,
-                      fontSize: 12,
-                      fontWeight: isToday ? FontWeight.w700 : FontWeight.w600,
-                    ),
-                  ),
-                  SizedBox(height: compact ? 2 : 6),
-                  Expanded(
-                    child: ClipRect(
-                      child: Align(
-                        alignment: Alignment.topCenter,
-                        child: Wrap(
-                          alignment: WrapAlignment.center,
-                          spacing: 3,
-                          runSpacing: 3,
-                          children: [
-                            for (final habit in indicators.take(indicatorLimit))
-                              Container(
-                                width: 5,
-                                height: 5,
-                                decoration: BoxDecoration(
-                                  color: switch (snapshot.habitStatusFor(
-                                    habit.id,
-                                    date,
-                                  )) {
-                                    'done' => habit.color,
-                                    'missed' => EvolveColors.rose,
-                                    _ => habit.color.withValues(alpha: 0.22),
-                                  },
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            if (hiddenIndicators > 0)
-                              Text(
-                                '+$hiddenIndicators',
-                                style: TextStyle(
-                                  color: context.evolveColors.muted,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                          ],
-                        ),
+                        ],
                       ),
                     ),
                   ),
-                  if (showCaption) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      indicators.isEmpty
-                          ? t.stats.noHabit
-                          : '${(completion * 100).round()}%',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: context.evolveColors.muted.withValues(
-                          alpha: 0.8,
-                        ),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ],
+                ),
               ),
             );
           },
         ),
       ),
     );
+  }
+}
+
+class _DayProgressRingPainter extends CustomPainter {
+  _DayProgressRingPainter({required this.segments, required this.strokeWidth});
+
+  final List<Color> segments;
+  final double strokeWidth;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (segments.isEmpty) return;
+
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) / 2 - strokeWidth / 2;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    final sweepAngle = (2 * math.pi) / segments.length;
+    final gapAngle = segments.length > 1 ? 0.08 : 0.0;
+
+    for (int i = 0; i < segments.length; i++) {
+      final paint = Paint()
+        ..color = segments[i]
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..strokeCap = StrokeCap.round;
+
+      final startAngle = -math.pi / 2 + (i * sweepAngle) + (gapAngle / 2);
+      final actualSweep = sweepAngle - gapAngle;
+
+      canvas.drawArc(rect, startAngle, actualSweep, false, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DayProgressRingPainter oldDelegate) {
+    return oldDelegate.segments != segments || oldDelegate.strokeWidth != strokeWidth;
   }
 }
 
@@ -1941,6 +2003,7 @@ class _DayDetailsDialog extends ConsumerWidget {
               color: habit.color,
               streak: habit.streak,
               done: _habitStatus(snapshot, habit.id, date, habit) == 'done',
+              missed: _habitStatus(snapshot, habit.id, date, habit) == 'missed',
               statusLabel: _habitStatusLabel(snapshot, habit.id, date, habit),
               onToggle: _canEditDate(date)
                   ? () => ref
@@ -1971,6 +2034,7 @@ class _DayHabitRow extends StatelessWidget {
     required this.color,
     required this.streak,
     required this.done,
+    required this.missed,
     required this.statusLabel,
     required this.onToggle,
   });
@@ -1979,6 +2043,7 @@ class _DayHabitRow extends StatelessWidget {
   final Color color;
   final int streak;
   final bool done;
+  final bool missed;
   final String statusLabel;
   final VoidCallback? onToggle;
 
@@ -1990,13 +2055,13 @@ class _DayHabitRow extends StatelessWidget {
       width: 22,
       height: 22,
       decoration: BoxDecoration(
-        color: done ? color : Colors.transparent,
-        border: Border.all(color: done ? color : colors.borderStrong),
+        color: done ? color : (missed ? EvolveColors.rose.withValues(alpha: 0.1) : Colors.transparent),
+        border: Border.all(color: done ? color : (missed ? EvolveColors.rose : colors.borderStrong)),
         borderRadius: BorderRadius.circular(7),
       ),
       child: done
           ? const Icon(LucideIcons.check, color: Color(0xFF092113), size: 14)
-          : null,
+          : (missed ? const Icon(LucideIcons.x, color: EvolveColors.rose, size: 14) : null),
     );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),

@@ -1818,3 +1818,15 @@ All owner actions are itemized in **TO_SIMO_DO.md**.
 - [2026-07-19]: Update auto-verifiable habit boundaries
   - *Details*: Expanded the integer value boundaries for auto-verifiable habits to make them more flexible for the user, lowering minimums to 1 (or 0.1 for fractions) and increasing maximums while respecting 24-hour daily logical limits.
   - *Tech Notes*: Modified `VerificationTemplate` instances in `packages/evolve_verification/lib/src/verification_template.dart`. Changed minimum and maximum thresholds for metrics including steps, exercise minutes, active energy, stand hours, distance, mindful minutes, sleep hours, workout count, and screen time limits. Step values were also refined (e.g. 5 minutes for duration-based metrics).
+
+- [2026-07-19]: Redesign DayBox Calendar UI
+  - *Details*: Redesigned `_DayCell` inside `habits_page.dart` to match a minimalist glassmorphism aesthetic. Added `_DayProgressRingPainter` to render a segmented circular progress ring representing habits. Replaced the static date with a hover-based animated reveal showing completion percentage. Added a breathing glow animation for active and current days using a looping `AnimationController`.
+  - *Tech Notes*: Converted `_DayCell` to a `StatefulWidget` with `SingleTickerProviderStateMixin`. Included `dart:math` and `dart:ui`. Utilized `ClipRRect` + `BackdropFilter` with `ImageFilter.blur` for glassmorphism.
+
+- [2026-07-19]: Failed State UI for Calendar Checkbox
+  - *Details*: Added a visual failed state (subtle red border with a red X) to the checkbox in the daily details dialog to clearly indicate missed habits.
+  - *Tech Notes*: Updated  in  to receive a  boolean and render the  styling when true.
+
+- [2026-07-19]: Failed State UI for Calendar Checkbox
+  - *Details*: Added a visual failed state (subtle red border with a red X) to the checkbox in the daily details dialog to clearly indicate missed habits.
+  - *Tech Notes*: Updated _DayHabitRow in habits_page.dart to receive a missed boolean and render the EvolveColors.rose styling when true.

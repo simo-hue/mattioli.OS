@@ -83,6 +83,7 @@ dependencies:
   slang_flutter: ^4.0.0
   markdown: ^7.3.1
   crop_image: ^1.0.17
+  file_selector: ^1.1.0
 
 dev_dependencies:
   flutter_test:

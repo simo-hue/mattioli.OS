@@ -10,8 +10,9 @@ import 'package:evolve_desktop/shared/widgets/evolve_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
+
 
 // Severity accents mapped onto the shared StatusPill palette
 // (destructive / amber / muted). Info resolves from the active palette so it
@@ -120,19 +121,18 @@ class _AppLogsDialogState extends State<_AppLogsDialog> {
 
   Future<void> _shareLogs() async {
     final text = _formatLogs(AppLogger.logs);
-    if (Platform.isLinux) {
-      await Clipboard.setData(ClipboardData(text: text));
-      if (mounted) _toast(t.appLogs.copiedToClipboard);
+    
+    final location = await getSaveLocation(
+      suggestedName: 'evolve_logs_${DateTime.now().millisecondsSinceEpoch}.txt',
+    );
+    
+    if (location == null) {
       return;
     }
-    final dir = await getTemporaryDirectory();
-    final file = File(
-      '${dir.path}/evolve_logs_${DateTime.now().millisecondsSinceEpoch}.txt',
-    );
+    
+    final file = File(location.path);
     await file.writeAsString(text);
-    await SharePlus.instance.share(
-      ShareParams(files: [XFile(file.path)], text: t.appLogs.title),
-    );
+    
     if (mounted) _toast(t.appLogs.exportDone);
   }
 

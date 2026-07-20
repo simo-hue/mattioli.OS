@@ -304,8 +304,18 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
           //    is empty now, so the guard passes on its own; passing it would
           //    only mask a failed wipe in step 1.
           final res = await _enable();
+          // Report what the reset actually achieved, from the store rather than
+          // from `res`: PrivateSyncStatus carries `appliedChanges` (a PULL
+          // count, 0 by definition here — the zone was just emptied) and no
+          // push count at all. Logging that under a "pushed" key made a
+          // successful 6000-record upload read as `pushed: 0`, which is the
+          // opposite of the truth and exactly the kind of false signal this
+          // whole hardening pass exists to remove.
+          final diag = await store.diagnostics();
           logger.info('[CloudKit] Sync reset complete', extras: {
-            'pushed': res.appliedChanges,
+            'localRows': diag.totalLocalRows,
+            'stillPending': diag.totalPending,
+            'errors': diag.totalErrors,
           });
           return res;
         } catch (e, stack) {

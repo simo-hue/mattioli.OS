@@ -2,6 +2,10 @@
 
 ## Recent Changes
 
+- [2026-07-20]: **Desktop Protocol View Active Goals Filter**
+  - *Details*: Fixed an issue in the Desktop web app where the habits page ("Protocollo" view) was displaying both active and achieved (deleted) goals across all tabs (Month, Week, Year, Life). It now exclusively displays active goals.
+  - *Tech Notes*:
+    - Updated `Index.tsx` to pass the filtered `goals` array (which only contains active habits) instead of `allGoals` to `HabitCalendar`, `WeeklyView`, `AnnualView`, and `LifeView` components.
 - [2026-07-20]: **App Store Metadata Full Description**
   - *Details*: Created full App Store descriptions in all 38 supported languages using a Python translation script (via `deep-translator`). All files correctly include the required Apple EULA and Privacy Policy links to comply with Guideline 3.1.2(c).
   - *Tech Notes*:
@@ -1983,3 +1987,17 @@ All owner actions are itemized in **TO_SIMO_DO.md**.
     - **i18n**: 10 new `icloudSync.*` keys × 5 locales × 2 apps; `dart run slang` re-run for both.
     - **Tests**: 4 new in `cloudkit_private_sync_service_test.dart` (fresh key minted, rival records gone, re-uploads despite everything being marked synced, local data untouched, split visible long after the sync that found it); 5 new mobile widget tests (never says "Up to date", reset needs confirmation, confirmation runs it, deferred enable offers the override, override needs its own confirmation). Five test fakes updated for the widened interface. Verified: evolve_sync **118/118**, mobile **409/409**, desktop **451/451**.
   - *Current Status*: Commits 1–3 complete; the recovery path is implemented and unit-tested but has NEVER run against real CloudKit. **Immediate next step**: user builds to iPhone + Mac and performs the documented recovery (TO_SIMO_DO.md). Remaining: honest success reporting (old commit 2), FK-safe `applyDelete` (old commit 3, data-loss path still live), mobile launch/periodic sync, retry/backoff + QoS, `quarantineRecord` ON CONFLICT stamp fix.
+
+- [2026-07-20 23:40]: iCloud Sync — On-Device Recovery VERIFIED + reset log fix
+  - *Details*: The commit-1..3 chain was executed on real hardware (iPhone + Mac Mini). The reset ran from the iPhone, both devices now report "Everything uploaded", and a goal created on the iPhone appeared on macOS immediately — bidirectional sync confirmed working end to end.
+    Log analysis of the post-recovery iOS export confirms the remaining errors are HISTORICAL, not live: the two `InvalidCipherTextException` quarantines are stamped 22:26:09, ~25s BEFORE the reset at 22:26:34, and name the same two record UUIDs (`goal_category_settings:1184a172…`, `profiles:e4353ba9…`) seen in the original broken logs — i.e. the Mac's old key-split records. Every sync after 22:27:22 shows zero decrypt errors: `skipped: 6235` (one-time full re-fetch, expected — `resetSyncState()` nulls the change token), then `{pushed: 0, applied: 0, skipped: 0}`, then `{pushed: 1, …}` for the newly created goal. The macOS errors clearing after an app restart are the same stale-state artefact.
+    This also validates commit 2 on real hardware: the undecryptable records were quarantined rather than held, the token advanced, and the count surfaced with an accurate message — the exact behaviour that replaced the permanent livelock.
+  - *Tech Notes*:
+    - **Bug found and fixed in `resetSyncFromThisDevice()` logging**: it logged `res.appliedChanges` under the key `pushed`. `PrivateSyncStatus` carries only a PULL count (0 by definition after a zone wipe) and no push count, so a successful ~6000-record upload logged as `pushed: 0` — a false signal of exactly the kind this hardening pass exists to eliminate. Now logs `localRows` / `stillPending` / `errors` read from `store.diagnostics()`, which describe what the reset actually achieved. evolve_sync **118/118** after the change.
+    - Known accepted cost: the first sync after a reset re-downloads the whole zone the device just uploaded (`skipped: 6235`), because the reset nulls the change token and CloudKit returns no token from a push. One-time, correct, not worth optimising.
+  - *Current Status*: Recovery verified on device. **Immediate next step**: confirm the per-table backfill actually landed on the Mac (compare Sync details counts on both devices — "Everything uploaded" only proves `pending == 0`, not that the Mac received 3485 goals). Then the FK-safe `applyDelete` data-loss fix, which remains live.
+
+
+- [2026-07-20 22:54]: Fix App Logs Export Bug
+  - *Details*: Replaced `share_plus` with `file_selector` to provide a standard "Save As" dialog on desktop platforms. This fixes a `PathNotFoundException` on macOS caused by attempting to write logs to a non-existent temporary directory before sharing.
+  - *Tech Notes*: Added `file_selector` dependency to `desktop/pubspec.yaml`. Updated `_AppLogsDialogState._shareLogs` to use `getSaveLocation` and removed `share_plus` import.

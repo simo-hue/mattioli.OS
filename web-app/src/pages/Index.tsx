@@ -330,7 +330,7 @@ const Index = () => {
             <div className="flex-1 flex flex-col min-h-0 glass-panel rounded-xl sm:rounded-2xl p-0 sm:p-2 overflow-hidden mb-2">
               <TabsContent value="month" className="mt-0 animate-scale-in h-full">
                 <HabitCalendar
-                  habits={allGoals}
+                  habits={goals}
                   records={records}
                   onToggleHabit={toggleGoal}
                   isPrivacyMode={isPrivacyMode}
@@ -338,7 +338,7 @@ const Index = () => {
               </TabsContent>
               <TabsContent value="week" className="mt-0 animate-scale-in h-full">
                 <WeeklyView
-                  habits={allGoals}
+                  habits={goals}
                   records={records}
                   onToggleHabit={toggleGoal}
                   isPrivacyMode={isPrivacyMode}
@@ -346,7 +346,7 @@ const Index = () => {
               </TabsContent>
               <TabsContent value="year" className="mt-0 animate-scale-in h-full">
                 <AnnualView
-                  habits={allGoals}
+                  habits={goals}
                   records={records}
                   onToggleHabit={toggleGoal}
                   isPrivacyMode={isPrivacyMode}
@@ -354,7 +354,7 @@ const Index = () => {
               </TabsContent>
               <TabsContent value="vita" className="mt-0 animate-scale-in h-full">
                 <LifeView
-                  habits={allGoals}
+                  habits={goals}
                   records={records}
                   isPrivacyMode={isPrivacyMode}
                 />

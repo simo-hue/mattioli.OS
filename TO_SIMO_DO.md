@@ -41,6 +41,10 @@ flutter run -d macos --dart-define-from-file=.env
 flutter build macos --release --dart-define-from-file=.env
 ```
 
+```bash
+flutter build ipa --release
+```
+
 ---
 
 ## iCloud Sync Hardening — Manual Actions (2026-07-20)

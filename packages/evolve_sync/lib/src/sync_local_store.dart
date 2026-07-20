@@ -377,6 +377,27 @@ class SyncLocalStore {
 
   /// Apply a pulled tombstone: delete the row, then stamp the tombstone with the
   /// server's time and clear dirty (overriding the delete trigger's "now").
+  ///
+  /// Runs with FK enforcement OFF, exactly like [applyUpsert] — and for a far
+  /// more serious reason. `profiles` is the `ON DELETE CASCADE` parent of EVERY
+  /// synced table, so with foreign keys live a single pulled `profiles`
+  /// tombstone deletes the user's entire database: goals, logs, moods,
+  /// categories, everything. Worse, each cascaded row fires its own delete
+  /// trigger, so the wipe is marked dirty and PROPAGATES to every other device.
+  /// One stale tombstone would take out every copy the user has.
+  ///
+  /// `long_term_goals.category_id` is `ON DELETE SET NULL`, so a pulled
+  /// `macro_goal_categories` tombstone would silently strip the category from
+  /// the user's macro goals for the same reason.
+  ///
+  /// A pulled tombstone means "this ONE record is gone", never "and everything
+  /// that referenced it". Cascades are a local-write concept; sync replicates
+  /// each row's deletion explicitly, and the sender emits a tombstone per
+  /// affected row. Letting SQLite infer extra deletions here duplicates that
+  /// work and gets it wrong.
+  ///
+  /// FK must be toggled OUTSIDE the transaction — `PRAGMA foreign_keys` is a
+  /// no-op once BEGIN has run (see [applyUpsert] and [reKeyOwner]).
   Future<void> applyDelete(
     String table,
     String id,
@@ -384,21 +405,26 @@ class SyncLocalStore {
     String updatedAtIso,
     String at,
   ) async {
-    await _db.transaction((txn) async {
-      await txn.delete(table, where: 'id = ?', whereArgs: [id]);
-      await txn.update(
-        PrivateDbSchema.syncStateTable,
-        {
-          'dirty': 0,
-          'deleted': 1,
-          'updated_at': updatedAtIso,
-          'last_synced_at': at,
-          'last_error': null,
-        },
-        where: 'record_name = ?',
-        whereArgs: [recordName],
-      );
-    });
+    await _db.execute('PRAGMA foreign_keys = OFF');
+    try {
+      await _db.transaction((txn) async {
+        await txn.delete(table, where: 'id = ?', whereArgs: [id]);
+        await txn.update(
+          PrivateDbSchema.syncStateTable,
+          {
+            'dirty': 0,
+            'deleted': 1,
+            'updated_at': updatedAtIso,
+            'last_synced_at': at,
+            'last_error': null,
+          },
+          where: 'record_name = ?',
+          whereArgs: [recordName],
+        );
+      });
+    } finally {
+      await _db.execute('PRAGMA foreign_keys = ON');
+    }
   }
 
   Future<String?> changeToken() async {
@@ -695,7 +721,7 @@ class SyncLocalStore {
   /// count read while a push is committing may be a moment stale, which is
   /// immaterial for a diagnostic and far preferable to serialising against the
   /// engine.
-  Future<SyncDiagnostics> diagnostics() async {
+  Future<SyncDiagnostics> diagnostics({String? owner}) async {
     Future<Map<String, int>> countBy(String where) async {
       final rows = await _db.rawQuery(
         'SELECT table_name, COUNT(*) AS n FROM '
@@ -708,9 +734,27 @@ class SyncLocalStore {
     }
 
     final localRows = <String, int>{};
+    final ownedRows = <String, int>{};
+    // The identity column differs: `profiles` IS the identity (its `id`),
+    // everything else points at it via `user_id`.
+    String ownerColumnOf(String table) => table == 'profiles' ? 'id' : 'user_id';
+    final owners = <String>{};
     for (final t in PrivateDbSchema.syncedTables) {
       final r = await _db.rawQuery('SELECT COUNT(*) AS n FROM $t');
       localRows[t] = (r.first['n'] as int?) ?? 0;
+
+      final col = ownerColumnOf(t);
+      for (final row in await _db
+          .rawQuery('SELECT DISTINCT $col AS o FROM $t WHERE $col IS NOT NULL')) {
+        owners.add(row['o'] as String);
+      }
+      if (owner != null) {
+        final o = await _db.rawQuery(
+          'SELECT COUNT(*) AS n FROM $t WHERE $col = ?',
+          [owner],
+        );
+        ownedRows[t] = (o.first['n'] as int?) ?? 0;
+      }
     }
 
     // Split errored records on `dirty`, NOT on [quarantineStamp]: a record is
@@ -740,6 +784,8 @@ class SyncLocalStore {
 
     return SyncDiagnostics(
       localRowsByTable: localRows,
+      ownedRowsByTable: ownedRows,
+      distinctOwnerCount: owners.length,
       pendingByTable: await countBy('dirty = 1 AND deleted = 0'),
       pendingDeletesByTable: await countBy('dirty = 1 AND deleted = 1'),
       errorsByReason: await errorsWhere(1),

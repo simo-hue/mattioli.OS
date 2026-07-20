@@ -2,10 +2,24 @@
 
 ## Recent Changes
 
+- [2026-07-20]: **Desktop 7-Day Rolling Trend Graph**
+  - *Details*: Updated the Weekly trend graph on the desktop dashboard to display a 7-day rolling window ending on the current day, instead of the static Monday-to-Sunday current week window. The X-axis labels are now also dynamically localized using the app's internationalization strings.
+  - *Tech Notes*:
+    - Modified `_fromRemote` in `SupabaseDashboardRepository` and `_buildSnapshot` in `PrivateDashboardRepository` to iterate from `now - 6 days` up to `now`.
+    - Used `t.habitsPage.weekdayAbbrevUpper` for day labels and added a `_formatAbbrev` helper to sentence-case the abbreviations (e.g. `Lun`, `Mar`), fixing the hardcoded Italian strings.
+    - Imported `translations.g.dart` in both repository files.
+
+- [2026-07-20]: **Active/All Goals Selector in Protocol View**
+  - *Details*: Added a selector dropdown to the Desktop Protocol page (`Index.tsx`) to switch between visualizing "Active" (Attive) and "All" (Tutte) habits across Month, Week, Year, and Life views.
+  - *Tech Notes*:
+    - The dropdown UI mirrors the iOS app functionality using `lucide-react` icons (`Activity` and `Layers`).
+    - The `DayDetailsModal` was intentionally isolated from this toggle. `HabitCalendar`, `WeeklyView`, and `AnnualView` were updated to accept an `activeGoals` prop, ensuring the completion modal exclusively shows active goals as requested by the user.
+
 - [2026-07-20]: **Desktop Protocol View Active Goals Filter**
   - *Details*: Fixed an issue in the Desktop web app where the habits page ("Protocollo" view) was displaying both active and achieved (deleted) goals across all tabs (Month, Week, Year, Life). It now exclusively displays active goals.
   - *Tech Notes*:
     - Updated `Index.tsx` to pass the filtered `goals` array (which only contains active habits) instead of `allGoals` to `HabitCalendar`, `WeeklyView`, `AnnualView`, and `LifeView` components.
+
 - [2026-07-20]: **App Store Metadata Full Description**
   - *Details*: Created full App Store descriptions in all 38 supported languages using a Python translation script (via `deep-translator`). All files correctly include the required Apple EULA and Privacy Policy links to comply with Guideline 3.1.2(c).
   - *Tech Notes*:
@@ -2001,3 +2015,15 @@ All owner actions are itemized in **TO_SIMO_DO.md**.
 - [2026-07-20 22:54]: Fix App Logs Export Bug
   - *Details*: Replaced `share_plus` with `file_selector` to provide a standard "Save As" dialog on desktop platforms. This fixes a `PathNotFoundException` on macOS caused by attempting to write logs to a non-existent temporary directory before sharing.
   - *Tech Notes*: Added `file_selector` dependency to `desktop/pubspec.yaml`. Updated `_AppLogsDialogState._shareLogs` to use `getSaveLocation` and removed `share_plus` import.
+
+- [2026-07-21 00:40]: iCloud Sync — FK-safe applyDelete + tombstone ordering + owner-scoped diagnostics (hardening commit 4/7)
+  - *Details*: A 33-agent adversarial investigation into the observed `profiles` 3/2 and `goal_category_settings` 3/2 divergence returned 21 confirmed findings (8 refuted). Root cause of the duplicate identities: **inverted bootstrap ordering**. `_open()` calls `_ensureProfile` (mobile private_local_database.dart:199-205) / `seedProfile` (desktop desktop_private_db.dart:1421-1422), which materializes a `profiles` + `goal_category_settings` PAIR keyed on the CURRENT owner id, and only afterwards runs `_reconcileOrphanedOwner`, which discovers that id owns zero data rows and adopts the id that does. The row just created is never removed, and its INSERT trigger marks it dirty so it replicates. `goal_category_settings.user_id` is UNIQUE, so its count equals the number of distinct owner ids ever seeded — which is why profiles and goal_category_settings move in lockstep on both devices (3/3, 2/2). That 1:1 lockstep is the fingerprint of this one function.
+    The verifier corrected the proposed trigger: no Keychain failure is required (a blanket device-local Keychain miss fails closed before the DB even opens). The real trigger is a **non-atomic second-device re-key**: `sync_engine.dart:196` `reKeyOwner` commits the DB onto `canonical`, but `ownerWriter(canonical)` only persists that id to the Keychain afterwards, back in `cloudkit_private_sync_service.dart:185-189`. Any interruption between the two leaves the DB re-keyed while `ownerId()` still returns the old id — next open seeds an orphan pair.
+    **Correction to an earlier claim in this log**: the "content tables match exactly" evidence was an UNSCOPED `COUNT(*)`. It proves the two devices converged on the same row SET; it does NOT prove those rows belong to the active identity. An identity split produces identical matching counts on every device.
+  - *Tech Notes*:
+    - **STAGE 1 — `SyncLocalStore.applyDelete` is now FK-safe** (sync_local_store.dart:380). It was the ONLY mutating apply path running under the connection-wide `PRAGMA foreign_keys = ON` set in `PrivateDbSchema.onConfigure`. `profiles` is the `ON DELETE CASCADE` parent of every synced table, so one pulled `profiles` tombstone deleted the entire database — and each cascaded row fired its own delete trigger, marking the wipe dirty so it PROPAGATED to every other device. Now bracketed with `PRAGMA foreign_keys = OFF/ON` outside the transaction, mirroring `applyUpsert`.
+    - **STAGE 2 — tombstones apply last** (sync_engine.dart, new `_deletePriorityBase = 100`). `_applyPriority` sorted by table only, putting a `profiles` tombstone at priority 0 — ahead of the child upserts that re-point rows off the dying identity. Deletions now sort after every upsert, so the apply is correct on its own terms instead of leaving the FK guard as the single line of defence.
+    - **Owner-scoped diagnostics**: `SyncDiagnostics` gains `ownedRowsByTable`, `distinctOwnerCount` and `orphanedRows`; `SyncLocalStore.diagnostics({owner})` counts per identity (`profiles.id`, `user_id` elsewhere) and the service passes the active owner. `toReport()` now prints a `mine` column, an `owners:` line and a `<-- N HIDDEN` marker. This makes "is any data stranded under a dead identity?" answerable in-app instead of requiring hand-decryption of the database.
+    - **STAGES 3-4 DELIBERATELY NOT SHIPPED**: the identity reconcile (delete orphan profiles after re-pointing children) must not ship until stage 1 is running on BOTH devices, or a correct local reconcile still cascades on the peer. Per the workflow's explicit staging recommendation.
+    - **Tests**: new `test/apply_delete_cascade_test.dart` (5 tests) — a `profiles` tombstone against 3,487 macro goals leaves all 3,487 intact, no cascaded tombstones are queued for upload, a category tombstone does not strip `category_id`, FK enforcement is restored afterwards, and a mixed parent-tombstone/child-upsert batch keeps its children. Verified: evolve_sync **123/123**, mobile **409/409**, desktop **451/451**.
+  - *Current Status*: Commits 1-4 complete. **Immediate next step**: user rebuilds BOTH devices (stage 1 must be present on both before any dedupe), then sends the new Sync details — the `mine`/`HIDDEN` columns settle whether any of the 3,487 goals are stranded. Then stages 3-4 (identity reconcile), then desktop settings hydration (`_loadProfilePreferences` is Supabase-only, confirmed on-device as the cause of the orange/yellow accent + language mismatch).

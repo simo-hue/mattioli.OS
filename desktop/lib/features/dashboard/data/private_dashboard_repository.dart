@@ -6,6 +6,7 @@ import 'package:evolve_desktop/core/streak_utils.dart';
 import 'package:evolve_desktop/features/dashboard/data/dashboard_repository.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_verification/evolve_verification.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:sqflite_sqlcipher/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
@@ -417,15 +418,24 @@ class PrivateDashboardRepository extends DashboardRepository {
       moods: moods,
     );
 
+    final trendDays = [
+      for (var i = 6; i >= 0; i--) now.subtract(Duration(days: i)),
+    ];
+
     return temporary.copyWith(
       trend: [
-        for (var day = 0; day < 7; day++)
+        for (final date in trendDays)
           TrendPoint(
-            label: const ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'][day],
-            value: temporary.completionFor(monday.add(Duration(days: day))),
+            label: _formatAbbrev(t.habitsPage.weekdayAbbrevUpper[date.weekday - 1]),
+            value: temporary.completionFor(date),
           ),
       ],
     );
+  }
+
+  String _formatAbbrev(String text) {
+    if (text.isEmpty) return text;
+    return text[0].toUpperCase() + text.substring(1).toLowerCase();
   }
 
   DashboardHabit _habitFromRow(

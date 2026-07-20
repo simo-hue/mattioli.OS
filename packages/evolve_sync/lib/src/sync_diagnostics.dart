@@ -16,7 +16,27 @@
 class SyncDiagnostics {
   /// Rows physically present locally, per synced table. The ground truth both
   /// devices are compared on.
+  ///
+  /// Careful: this is an UNSCOPED count. Two devices agreeing here proves they
+  /// converged on the same row SET — not that those rows belong to the user's
+  /// active identity. Compare with [ownedRowsByTable].
   final Map<String, int> localRowsByTable;
+
+  /// Rows belonging to the ACTIVE owner, per synced table. The app reads data
+  /// with `WHERE user_id = <owner>`, so anything counted in [localRowsByTable]
+  /// but missing here is present in the database and invisible in the UI.
+  ///
+  /// Exists because a per-table `COUNT(*)` cannot distinguish a healthy database
+  /// from one whose rows are stranded under an abandoned identity — both produce
+  /// identical, matching totals on every device. Without this the only way to
+  /// tell them apart is decrypting the database by hand.
+  ///
+  /// Empty when no owner was supplied.
+  final Map<String, int> ownedRowsByTable;
+
+  /// Distinct owner identities appearing across the synced tables. More than one
+  /// means profile rows have accumulated and some data may be unreachable.
+  final int distinctOwnerCount;
 
   /// Records awaiting upload (`dirty = 1, deleted = 0`), per table. A table
   /// stuck at a large non-decreasing number across several syncs is the signal
@@ -59,6 +79,8 @@ class SyncDiagnostics {
 
   const SyncDiagnostics({
     required this.localRowsByTable,
+    this.ownedRowsByTable = const {},
+    this.distinctOwnerCount = 1,
     required this.pendingByTable,
     required this.pendingDeletesByTable,
     required this.errorsByReason,
@@ -69,6 +91,17 @@ class SyncDiagnostics {
 
   int get totalLocalRows =>
       localRowsByTable.values.fold(0, (a, b) => a + b);
+
+  /// Rows present locally but NOT owned by the active identity — invisible in
+  /// the app. Non-zero is always a defect.
+  int get orphanedRows {
+    if (ownedRowsByTable.isEmpty) return 0;
+    var n = 0;
+    for (final e in localRowsByTable.entries) {
+      n += e.value - (ownedRowsByTable[e.key] ?? 0);
+    }
+    return n;
+  }
 
   int get totalPending =>
       pendingByTable.values.fold(0, (a, b) => a + b) +
@@ -92,7 +125,10 @@ class SyncDiagnostics {
       ..writeln('last full sync: ${lastFullSyncAt?.toIso8601String() ?? 'never'}')
       ..writeln('change token: ${hasChangeToken ? 'present' : 'none'}')
       ..writeln('')
-      ..writeln('table                  local   pending   deletes');
+      ..writeln('owners: $distinctOwnerCount'
+          '${orphanedRows > 0 ? '  ($orphanedRows HIDDEN rows)' : ''}')
+      ..writeln('')
+      ..writeln('table                  local    mine   pending   deletes');
     final tables = <String>{
       ...localRowsByTable.keys,
       ...pendingByTable.keys,
@@ -100,11 +136,15 @@ class SyncDiagnostics {
     }.toList()
       ..sort();
     for (final t in tables) {
+      final local = localRowsByTable[t] ?? 0;
+      final mine = ownedRowsByTable[t];
       b.writeln(
         '${t.padRight(22)} '
-        '${(localRowsByTable[t] ?? 0).toString().padLeft(5)}   '
+        '${local.toString().padLeft(5)}   '
+        '${(mine?.toString() ?? '-').padLeft(5)}   '
         '${(pendingByTable[t] ?? 0).toString().padLeft(7)}   '
-        '${(pendingDeletesByTable[t] ?? 0).toString().padLeft(7)}',
+        '${(pendingDeletesByTable[t] ?? 0).toString().padLeft(7)}'
+        '${mine != null && mine != local ? '   <-- ${local - mine} HIDDEN' : ''}',
       );
     }
     if (errorsByReason.isNotEmpty) {

@@ -119,6 +119,12 @@ class SyncEngine {
     PrivateDbSchema.avatarRecordTable: 3,
   };
 
+  /// Added to a DELETED record's apply priority so every tombstone sorts after
+  /// every upsert, whatever table it belongs to. Larger than any value in
+  /// [_applyPriority] (including the `?? 9` fallback) so the two ranges cannot
+  /// overlap as tables are added.
+  static const int _deletePriorityBase = 100;
+
   /// Reject timestamps more than this far in the future (clock-skew guard, Q10).
   static const int _maxFutureSkewMs = 5 * 60 * 1000;
 
@@ -398,8 +404,19 @@ class SyncEngine {
       }
       token = next;
     }
-    all.sort((a, b) => (_applyPriority[a.tableName] ?? 9)
-        .compareTo(_applyPriority[b.tableName] ?? 9));
+    // Parents before children for UPSERTS — but ALL deletions last.
+    //
+    // Sorting on table alone puts a `profiles` tombstone at priority 0, ahead of
+    // the very child upserts that re-point rows away from the identity being
+    // deleted. The peer then deletes the parent while its children still
+    // reference it. That is survivable only because [SyncLocalStore.applyDelete]
+    // now disables FK enforcement; before that it was a full-database cascade.
+    // Ordering deletions last means the re-points land FIRST, so by the time the
+    // tombstone applies nothing depends on the row — correct on its own terms
+    // rather than relying on the FK guard as the only line of defence.
+    int rank(CloudRecord r) =>
+        (_applyPriority[r.tableName] ?? 9) + (r.deleted ? _deletePriorityBase : 0);
+    all.sort((a, b) => rank(a).compareTo(rank(b)));
 
     var applied = 0;
     var skipped = 0;

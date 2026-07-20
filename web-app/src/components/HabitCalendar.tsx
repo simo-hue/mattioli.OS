@@ -11,6 +11,7 @@ interface HabitCalendarProps {
     records: GoalLogsMap;
     onToggleHabit: (date: Date, habitId: string) => void;
     isPrivacyMode?: boolean;
+    activeGoals?: Goal[];
 }
 
 const DAYS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
@@ -19,7 +20,7 @@ const MONTHS = [
     'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
 ];
 
-export function HabitCalendar({ habits, records, onToggleHabit, isPrivacyMode = false }: HabitCalendarProps) {
+export function HabitCalendar({ habits, records, onToggleHabit, isPrivacyMode = false, activeGoals }: HabitCalendarProps) {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
@@ -195,7 +196,7 @@ export function HabitCalendar({ habits, records, onToggleHabit, isPrivacyMode = 
                 isOpen={!!selectedDate}
                 onClose={() => setSelectedDate(null)}
                 date={selectedDate}
-                habits={habits}
+                habits={activeGoals || habits}
                 records={records}
                 onToggleHabit={(habitId) => selectedDate && onToggleHabit(selectedDate, habitId)}
                 isPrivacyMode={isPrivacyMode}

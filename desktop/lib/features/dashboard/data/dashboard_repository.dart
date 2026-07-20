@@ -12,6 +12,7 @@ import 'package:evolve_desktop/features/dashboard/data/private_dashboard_reposit
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
 
 abstract class DashboardRepository {
   bool get isCloudBacked => false;
@@ -630,15 +631,24 @@ class SupabaseDashboardRepository extends DashboardRepository {
       habitLogs: logs,
       moods: moods,
     );
+    final trendDays = [
+      for (var i = 6; i >= 0; i--) now.subtract(Duration(days: i)),
+    ];
+
     return temporary.copyWith(
       trend: [
-        for (var day = 0; day < 7; day++)
+        for (final date in trendDays)
           TrendPoint(
-            label: const ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'][day],
-            value: temporary.completionFor(monday.add(Duration(days: day))),
+            label: _formatAbbrev(t.habitsPage.weekdayAbbrevUpper[date.weekday - 1]),
+            value: temporary.completionFor(date),
           ),
       ],
     );
+  }
+
+  String _formatAbbrev(String text) {
+    if (text.isEmpty) return text;
+    return text[0].toUpperCase() + text.substring(1).toLowerCase();
   }
 
   int _latestStreak(String habitId, List<Map<String, dynamic>> rows) {

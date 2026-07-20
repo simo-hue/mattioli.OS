@@ -26,7 +26,13 @@ import {
   AlertDialogTrigger,
 
 } from "@/components/ui/alert-dialog";
-import { LayoutGrid, Calendar, ListTodo, Download, Trash2, Eye, EyeOff, Wifi, WifiOff, AlertTriangle, HeartPulse, Circle, Database, Bot, Hourglass } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { LayoutGrid, Calendar, ListTodo, Download, Trash2, Eye, EyeOff, Wifi, WifiOff, AlertTriangle, HeartPulse, Circle, Database, Bot, Hourglass, Activity, Layers, ChevronDown } from 'lucide-react';
 import { MoodInput } from '@/components/mood/MoodInput';
 import { useSystemStatus } from '@/hooks/useSystemStatus';
 import { useTodaysMood } from '@/hooks/useMoods';
@@ -105,6 +111,9 @@ const Index = () => {
   };
 
   const [view, setView] = useState("month");
+  const [filterMode, setFilterMode] = useState<'active' | 'all'>('active');
+
+  const displayHabits = filterMode === 'active' ? goals : allGoals;
 
   return (
     <div className="flex-1 h-full overflow-hidden flex flex-col pt-4 lg:pt-8 pb-0 sm:pb-8 px-4 sm:px-8 animate-fade-in relative z-10 w-full max-w-[2400px] mx-auto">
@@ -307,7 +316,7 @@ const Index = () => {
 
           <Tabs defaultValue="month" value={view} onValueChange={setView} className="w-full h-full flex flex-col">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4 lg:mb-4 shrink-0">
-              <TabsList className="grid w-full grid-cols-4 bg-card/40 border border-white/10 backdrop-blur-md rounded-xl p-1 shadow-sm h-10 sm:h-auto">
+              <TabsList className="grid w-full grid-cols-4 bg-card/40 border border-white/10 backdrop-blur-md rounded-xl p-1 shadow-sm h-10 sm:h-auto sm:max-w-fit">
                 <TabsTrigger value="month" className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-primary font-medium text-xs sm:text-sm h-full sm:py-2 flex items-center justify-center gap-1.5 sm:gap-2">
                   <Calendar className="w-4 h-4" />
                   <span className="xs:inline">Mese</span>
@@ -325,12 +334,39 @@ const Index = () => {
                   <span className="xs:inline">Vita</span>
                 </TabsTrigger>
               </TabsList>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="h-10 sm:h-auto py-2 rounded-lg gap-2 text-xs sm:text-sm border-white/10 bg-card/40 backdrop-blur-md transition-all hover:bg-white/5">
+                    {filterMode === 'active' ? (
+                      <Activity className="w-4 h-4 text-primary" />
+                    ) : (
+                      <Layers className="w-4 h-4 text-primary" />
+                    )}
+                    <span className="font-medium">
+                      {filterMode === 'active' ? 'Attive' : 'Tutte'}
+                    </span>
+                    <ChevronDown className="w-3 h-3 text-muted-foreground opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40 rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
+                  <DropdownMenuItem onClick={() => setFilterMode('active')} className="gap-2 rounded-lg cursor-pointer focus:bg-primary/20">
+                    <Activity className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-medium">Attive</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterMode('all')} className="gap-2 rounded-lg cursor-pointer focus:bg-primary/20">
+                    <Layers className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-medium">Tutte</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             <div className="flex-1 flex flex-col min-h-0 glass-panel rounded-xl sm:rounded-2xl p-0 sm:p-2 overflow-hidden mb-2">
               <TabsContent value="month" className="mt-0 animate-scale-in h-full">
                 <HabitCalendar
-                  habits={goals}
+                  habits={displayHabits}
+                  activeGoals={goals}
                   records={records}
                   onToggleHabit={toggleGoal}
                   isPrivacyMode={isPrivacyMode}
@@ -338,7 +374,8 @@ const Index = () => {
               </TabsContent>
               <TabsContent value="week" className="mt-0 animate-scale-in h-full">
                 <WeeklyView
-                  habits={goals}
+                  habits={displayHabits}
+                  activeGoals={goals}
                   records={records}
                   onToggleHabit={toggleGoal}
                   isPrivacyMode={isPrivacyMode}
@@ -346,7 +383,8 @@ const Index = () => {
               </TabsContent>
               <TabsContent value="year" className="mt-0 animate-scale-in h-full">
                 <AnnualView
-                  habits={goals}
+                  habits={displayHabits}
+                  activeGoals={goals}
                   records={records}
                   onToggleHabit={toggleGoal}
                   isPrivacyMode={isPrivacyMode}
@@ -354,7 +392,7 @@ const Index = () => {
               </TabsContent>
               <TabsContent value="vita" className="mt-0 animate-scale-in h-full">
                 <LifeView
-                  habits={goals}
+                  habits={displayHabits}
                   records={records}
                   isPrivacyMode={isPrivacyMode}
                 />

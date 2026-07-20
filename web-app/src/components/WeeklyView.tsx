@@ -11,9 +11,10 @@ interface WeeklyViewProps {
     records: GoalLogsMap;
     onToggleHabit: (date: Date, habitId: string) => void;
     isPrivacyMode?: boolean;
+    activeGoals?: Goal[];
 }
 
-export function WeeklyView({ habits, records, onToggleHabit, isPrivacyMode = false }: WeeklyViewProps) {
+export function WeeklyView({ habits, records, onToggleHabit, isPrivacyMode = false, activeGoals }: WeeklyViewProps) {
     // Stable today reference for "future" checks
     const today = useMemo(() => new Date(), []);
 
@@ -138,7 +139,7 @@ export function WeeklyView({ habits, records, onToggleHabit, isPrivacyMode = fal
                 isOpen={!!selectedDate}
                 onClose={() => setSelectedDate(null)}
                 date={selectedDate}
-                habits={habits}
+                habits={activeGoals || habits}
                 records={records}
                 onToggleHabit={(habitId) => selectedDate && onToggleHabit(selectedDate, habitId)}
                 isPrivacyMode={isPrivacyMode}

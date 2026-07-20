@@ -14,11 +14,12 @@ interface AnnualViewProps {
     records: GoalLogsMap;
     onToggleHabit: (date: Date, habitId: string) => void;
     isPrivacyMode?: boolean;
+    activeGoals?: Goal[];
 }
 
 const MONTH_NAMES = ['GEN', 'FEB', 'MAR', 'APR', 'MAG', 'GIU', 'LUG', 'AGO', 'SET', 'OTT', 'NOV', 'DIC'];
 
-export function AnnualView({ habits, records, onToggleHabit, isPrivacyMode = false }: AnnualViewProps) {
+export function AnnualView({ habits, records, onToggleHabit, isPrivacyMode = false, activeGoals }: AnnualViewProps) {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
@@ -155,7 +156,7 @@ export function AnnualView({ habits, records, onToggleHabit, isPrivacyMode = fal
                 isOpen={!!selectedDate}
                 onClose={() => setSelectedDate(null)}
                 date={selectedDate}
-                habits={habits}
+                habits={activeGoals || habits}
                 records={records}
                 onToggleHabit={(habitId) => selectedDate && onToggleHabit(selectedDate, habitId)}
                 isPrivacyMode={isPrivacyMode}

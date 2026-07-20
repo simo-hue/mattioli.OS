@@ -106,7 +106,9 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
   Future<SyncDiagnostics?> diagnostics() async {
     try {
       final store = await storeProvider();
-      return await store.diagnostics();
+      // Pass the active owner so the report can distinguish "the data is here"
+      // from "the data is here and the app can actually see it".
+      return await store.diagnostics(owner: await ownerProvider());
     } catch (e, st) {
       // A locked or corrupt private DB is precisely when a user opens this
       // screen. Degrade to "no data" rather than taking the screen down.

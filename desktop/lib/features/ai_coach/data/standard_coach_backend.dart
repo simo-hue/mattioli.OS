@@ -83,7 +83,7 @@ String? standardCoachErrorCode(String body) {
 String mapStandardCoachError(int status, String body, StandardCoachErrors e) {
   return switch (standardCoachErrorCode(body)) {
     'unauthorized' => e.sessionExpired,
-    'not_subscribed' => e.needsPro,
+    'not_subscribed' => throw const CoachNotSubscribedException(),
     'rate_limited' => e.rateLimited,
     'context_too_long' => e.contextTooLong,
     'upstream_unavailable' || 'not_configured' || 'server_error' =>
@@ -92,7 +92,7 @@ String mapStandardCoachError(int status, String body, StandardCoachErrors e) {
     // "us" for the two cases a user can act on.
     _ => switch (status) {
       401 => e.sessionExpired,
-      403 => e.needsPro,
+      403 => throw const CoachNotSubscribedException(),
       429 => e.rateLimited,
       413 => e.contextTooLong,
       >= 500 => e.unavailable,

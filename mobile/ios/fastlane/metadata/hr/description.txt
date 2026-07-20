@@ -1,1 +1,37 @@
-Evolve je vaša ultimativna aplikacija za osobni rast. Pratite svoje dnevne navike i ostvarite svoje ciljeve.
+Evolve je ultimativni alat za osobni rast dizajniran za one koji žele izgraditi čvrste navike, postaviti jasne ciljeve i duboko razumjeti svoje obrasce ponašanja kroz znanstvenu analizu podataka bez ometanja.
+
+Za razliku od tradicionalnih aplikacija za produktivnost, koje su često kaotične i pretrpane obavijestima ili oglasima, Evolve se temelji na minimalnom sučelju, iznimno profinjenom dizajnu i naprednom analitičkom mehanizmu. Aplikacija vam pomaže razumjeti ne samo ispunjavate li svoje zadatke, već i kako vaše navike utječu jedna na drugu i kako najbolje uravnotežiti svoje blagostanje s dnevnom produktivnošću.
+
+Funkcionalna makropodručja Evolvea:
+
+1. NAPREDNO PRAĆENJE NAVIKA
+- Interaktivne i djelotvorne obavijesti: Zabilježite završetak navike izravno iz obavijesti sustava, bez potrebe za otvaranjem aplikacije.
+- Pojedinačni i fleksibilni podsjetnici: postavite neovisno vrijeme obavijesti za svaku naviku.
+- Prilagodba u stilu Applea: vizualno konfigurirajte svoje prekretnice.
+- Izračun dinamičkog niza: pratite svoju dosljednost.
+- Povijesni kalendar: pogledajte mjesečni i godišnji napredak svake pojedine navike kako biste točno identificirali svoju dosljednost tijekom vremena.
+
+2. DEFINICIJA I RAZVOJ CILJA
+- Raščlamba podcilja: Raščlanite svoje makro ciljeve na male, ostvarive korake.
+- Radarski grafikoni za životna područja: Vizualizirajte ukupnu ravnotežu svog rasta putem grafikona.
+- Sezonska i povijesna analiza: promatrajte kako vaša produktivnost varira u različitim mjesecima u godini i prilagodite svoje ritmove u skladu s tim.
+- Godišnji trend: pratite svoj dugoročni napredak kako biste zadržali fokus na svojim makro-prekretnicama.
+
+3. STATISTIČKA ANALIZA I KORELACIJE
+Evolve pretvara vaše dnevne radnje u korisne podatke za vaš svjestan rast.
+- Indeks dobrog stanja u odnosu na rezultat: vlastiti algoritam povezuje vaše emocionalno blagostanje s vašom stvarnom produktivnošću, pomažući vam da pronađete savršenu ravnotežu kako biste spriječili izgaranje.
+- Analiza korelacije: otkrijte kako jedna navika utječe na drugu. Na primjer, analizirajte kako kvaliteta sna ili fizička aktivnost izravno utječu na vaš dnevni fokus.
+- Identifikacija najboljih i kritičnih navika: Aplikacija automatski prepoznaje koja ponašanja podržavaju vaš rast, a koja zahtijevaju trenutnu podršku.
+
+4. PAŽLJIVOST
+Osobni rast ne čine samo brojke, već i mentalna svjesnost.
+- Provjera raspoloženja: Zabilježite svoje emocionalno stanje kako biste razumjeli čimbenike koji utječu na vašu produktivnost.
+- Life View: Vizualni widget temeljen na vašem datumu rođenja koji predstavlja protekle tjedne vašeg života i one koji dolaze. Snažan alat koji će vas podsjetiti na vrijednost vremena i potaknuti vas da živite svaki dan s namjerom.
+- Sigurna sinkronizacija u oblaku: svi vaši podaci spremaju se u stvarnom vremenu na siguran način zahvaljujući Supabase integraciji i Apple Sign-In autentifikaciji.
+- Dosljedan vrhunski dizajn: neprimjetno se prebacite iz tamnog načina u svijetli način s dizajnom prilagođenim za maksimalnu čitljivost i vizualnu udobnost u svim uvjetima osvjetljenja.
+
+INFORMACIJE O PRETPLATI NA EVOLVE PRO:
+Pretplata se automatski obnavlja osim ako je automatsko obnavljanje isključeno u postavkama vašeg Apple/iTunes računa najmanje 24 sata prije kraja tekućeg razdoblja. Vaš će račun biti terećen unutar 24 sata prije kraja tekućeg razdoblja. Možete upravljati svojom pretplatom i isključiti automatsku obnovu odlaskom u postavke Apple računa nakon kupnje.
+
+Standardni uvjeti korištenja (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Politika privatnosti: https://simo-hue.github.io/evolve/privacy.html

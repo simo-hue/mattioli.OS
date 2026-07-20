@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
+import '../../core/data_mode.dart';
+import '../../core/openrouter_service.dart';
 import '../../providers/mood_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../screens/ai_chat_screen.dart';
 import 'daily_check_in_modal.dart';
 import 'habit_management_modal.dart';
+import 'pro_features_modal.dart';
 import '../../i18n/translations.g.dart';
 import '../../core/haptics.dart';
 
@@ -82,24 +86,32 @@ class ProtocolloPanel extends ConsumerWidget {
             // AI Chat Tile
             Expanded(
               flex: 2,
-              child: _ActionTile(
-                key: aiChatKey,
-                icon: LucideIcons.sparkles,
-                label: context.t.habits.aiChat,
-                subtitle: context.t.common.goals,
-                color: const Color(0xFF8B5CF6),
-                // Ungated (Guideline 3.1.1). This was the coach's only entry
-                // point and it was Pro-only, so a free user paid US for access
-                // and then paid OpenRouter to actually use it — the API key
-                // stacked on top of the purchase as a second unlock, which is
-                // the exact reading that got the app rejected.
-                //
-                // Now Pro buys the funded Standard mode (our key, no setup) and
-                // connecting your own OpenRouter account is free. Nothing is
-                // unlocked by a key, because nothing is locked. The screen
-                // decides which mode applies.
-                onTap: () => Navigator.push(context, AIChatScreen.route()),
-              ),
+              child: Builder(builder: (context) {
+                // Gate: free cloud users without a BYOK key see the paywall.
+                // Private mode always passes (no paywall there — it has no
+                // account and BYOK is the only path). Pro users pass (Standard
+                // mode). Free users with a BYOK key pass (BYOK mode). Everyone
+                // else is a free cloud user whose every send would 403.
+                final isPrivate = ref.watch(activeDataModeProvider).isPrivate;
+                final isPro = ref.watch(settingsProvider).isPro;
+                final hasKey = ref.watch(openRouterApiKeyProvider).asData?.value != null;
+                final needsPaywall = !isPrivate && !isPro && !hasKey;
+
+                return _ActionTile(
+                  key: aiChatKey,
+                  icon: LucideIcons.sparkles,
+                  label: context.t.habits.aiChat,
+                  subtitle: context.t.common.goals,
+                  color: const Color(0xFF8B5CF6),
+                  onTap: () {
+                    if (needsPaywall) {
+                      ProFeaturesModal.show(context);
+                    } else {
+                      Navigator.push(context, AIChatScreen.route());
+                    }
+                  },
+                );
+              }),
             ),
             const SizedBox(width: 12),
             // Settings Tile

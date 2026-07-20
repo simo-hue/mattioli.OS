@@ -1,0 +1,21 @@
+Wealth Compass je privatna, lokalno usmjerena nadzorna ploča za osobne financije koja vam pomaže razumjeti vašu neto vrijednost, novčani tok, ulaganja, kripto imovinu i obveze na jednom mjestu.
+
+Izgradite jasnu sliku o svojim financijama:
+
+- Pogledajte neto vrijednost, novčani saldo, ulaganja i kripto na prvi pogled
+- Praćenje prihoda i rashoda pomoću kategorija i vizualnih trendova
+- Zakazivanje ponavljajućih transakcija i primanje opcionalnih lokalnih podsjetnika
+- Praćenje udjela dionica, ETF-ova i kriptovaluta
+- Pregled osnovice troškova, dobiti i gubitka te raspodjele portfelja
+- Pratiti obveze uz vašu imovinu
+- Pratite povijest neto vrijednosti s automatskim lokalnim snimkama
+- Pretvaranje vrijednosti koristeći keširane referentne tečajeve ECB-a
+- Trenutno skrivanje osjetljivih iznosa pomoću načina privatnosti
+- Zaštitite aplikaciju pomoću Face ID-a ili Touch ID-a
+- Izvozite, uvozite i brišite svoje lokalne podatke kad god želite
+
+Vaši financijski zapisi ostaju na vašem uređaju. Wealth Compass ne zahtijeva račun i ne pohranjuje vaš portfelj ili povijest transakcija na serverima kojima upravljaju programeri.
+
+Opcionalna ažuriranja tržišnih cijena koriste API vjerodajnice koje vi navedete. Vjerodajnice su sigurno pohranjene u iOS Keychainu.
+
+Wealth Compass je alat za praćenje informacija. Ne povezuje se s financijskim institucijama, ne obavlja trgovine, ne pruža financijske savjete niti jamči točnost tržišnih podataka trećih strana.

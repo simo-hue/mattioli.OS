@@ -30,10 +30,12 @@ void main() {
       expect(msg, isNot(t.ai.coachModes.standardNeedsPro));
     });
 
-    test('not_subscribed is "buy Pro"', () {
+    test('not_subscribed throws CoachNotSubscribedException', () {
+      // The UI catches this typed exception and shows the paywall modal
+      // instead of a cryptic text bubble.
       expect(
-        errorMessageFor(CoachMode.standard, 403, _body('not_subscribed')),
-        t.ai.coachModes.standardNeedsPro,
+        () => errorMessageFor(CoachMode.standard, 403, _body('not_subscribed')),
+        throwsA(isA<CoachNotSubscribedException>()),
       );
     });
 
@@ -69,8 +71,11 @@ void main() {
       // actionable cases must still be separated by status.
       expect(errorMessageFor(CoachMode.standard, 401, 'gateway noise'),
           t.ai.coachModes.standardSessionExpired);
-      expect(errorMessageFor(CoachMode.standard, 403, 'gateway noise'),
-          t.ai.coachModes.standardNeedsPro);
+      // A bare 403 with no parseable code also means not_subscribed.
+      expect(
+        () => errorMessageFor(CoachMode.standard, 403, 'gateway noise'),
+        throwsA(isA<CoachNotSubscribedException>()),
+      );
       expect(errorMessageFor(CoachMode.standard, 503, 'gateway noise'),
           t.ai.coachModes.standardUnavailable);
     });

@@ -1,0 +1,37 @@
+Evolve adalah alat pertumbuhan pribadi terbaik yang dirancang bagi mereka yang ingin membangun kebiasaan yang kuat, menetapkan tujuan yang jelas, dan memahami secara mendalam pola perilaku mereka melalui analisis data ilmiah dan bebas gangguan.
+
+Tidak seperti aplikasi produktivitas tradisional, yang sering kali kacau dan dipenuhi notifikasi atau iklan, Evolve didasarkan pada antarmuka minimalis, desain yang sangat terkurasi, dan mesin analisis canggih. Aplikasi ini membantu Anda memahami tidak hanya apakah Anda sedang menyelesaikan tugas, namun juga bagaimana kebiasaan Anda memengaruhi satu sama lain dan cara terbaik untuk menyeimbangkan kesejahteraan dengan produktivitas harian Anda.
+
+Area makro-fungsional Evolve:
+
+1. PELACAKAN KEBIASAAN LANJUTAN
+- Notifikasi Interaktif dan Dapat Ditindaklanjuti: Rekam penyelesaian kebiasaan langsung dari notifikasi sistem, tanpa membuka aplikasi.
+- Pengingat Individu dan Fleksibel: Tetapkan waktu pemberitahuan independen untuk setiap kebiasaan.
+- Kustomisasi Gaya Apple: Konfigurasikan pencapaian Anda secara visual.
+- Perhitungan Garis Dinamis: Lacak konsistensi Anda.
+- Kalender Sejarah: Lihat kemajuan bulanan dan tahunan dari setiap kebiasaan untuk mengidentifikasi secara tepat konsistensi Anda dari waktu ke waktu.
+
+2. PENETAPAN TUJUAN DAN PENGEMBANGAN
+- Perincian menjadi Sub-Tujuan: Bagilah tujuan makro Anda menjadi langkah-langkah kecil yang dapat dicapai.
+- Grafik Radar untuk Area Kehidupan: Visualisasikan keseluruhan keseimbangan pertumbuhan Anda melalui grafik.
+- Analisis dan Riwayat Musiman: Amati bagaimana produktivitas Anda bervariasi di bulan-bulan berbeda dalam setahun dan sesuaikan kecepatan Anda.
+- Tren Tahunan: Lacak kemajuan jangka panjang untuk tetap fokus pada tujuan makro Anda.
+
+3. ANALISIS STATISTIK DAN KORELASI
+Evolve mengubah tindakan harian Anda menjadi data yang berguna untuk pertumbuhan sadar Anda.
+- Indeks Kesehatan vs Output: Algoritme eksklusif menghubungkan kesejahteraan emosional Anda dengan produktivitas aktual, membantu Anda menemukan keseimbangan sempurna untuk mencegah kelelahan.
+- Analisis Korelasi: Temukan bagaimana satu kebiasaan mempengaruhi kebiasaan lainnya. Misalnya, analisis bagaimana kualitas tidur atau aktivitas fisik memengaruhi fokus siang hari Anda secara langsung.
+- Identifikasi Kebiasaan Terbaik dan Penting: Aplikasi secara otomatis mengenali perilaku mana yang mendukung pertumbuhan Anda dan mana yang memerlukan dukungan segera.
+
+4. KEHATI-HATIAN
+Pertumbuhan pribadi bukan hanya soal angka, tetapi juga kesadaran mental.
+- Mood Check-In: Catat keadaan emosi Anda untuk memahami faktor-faktor yang mempengaruhi produktivitas Anda.
+- Tampilan Kehidupan: Widget visual berdasarkan tanggal lahir Anda yang mewakili minggu-minggu kehidupan yang lalu dan yang akan datang. Alat yang ampuh untuk mengingatkan Anda akan nilai waktu dan mendorong Anda menjalani setiap hari dengan niat.
+- Sinkronisasi Cloud Aman: Semua data Anda disimpan secara real-time dengan aman berkat integrasi dengan Supabase dan otentikasi Masuk Apple.
+- Desain Premium yang Koheren: Beralih dengan mulus dari Mode Gelap ke Mode Terang berkat desain yang dipelajari untuk keterbacaan maksimum dan kenyamanan visual dalam kondisi pencahayaan apa pun.
+
+INFORMASI BERLANGGANAN EVOLVE PRO:
+Langganan diperpanjang secara otomatis kecuali perpanjangan otomatis dimatikan di pengaturan akun Apple/iTunes Anda setidaknya 24 jam sebelum akhir periode berjalan. Akun Anda akan ditagih dalam waktu 24 jam sebelum akhir periode berjalan. Anda dapat mengelola langganan Anda dan mematikan perpanjangan otomatis dengan membuka Pengaturan Akun Apple Anda setelah pembelian.
+
+Ketentuan Penggunaan Standar (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Kebijakan Privasi: https://simo-hue.github.io/evolve/privacy.html

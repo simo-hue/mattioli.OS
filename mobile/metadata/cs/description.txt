@@ -1,0 +1,21 @@
+Wealth Compass je soukromý, místní osobní finanční panel, který vám pomůže porozumět vašemu čistému jmění, peněžnímu toku, investicím, kryptografickým aktivům a závazkům na jednom místě.
+
+Udělejte si jasný obrázek o svých financích:
+
+- Podívejte se na čisté jmění, peněžní zůstatek, investice a krypto na první pohled
+- Sledujte příjmy a výdaje pomocí kategorií a vizuálních trendů
+- Naplánujte si opakované transakce a získejte volitelná místní připomenutí
+- Sledujte držení akcií, ETF a kryptoměn
+- Zkontrolujte nákladovou základnu, zisk a ztrátu a rozdělení portfolia
+- Sledujte závazky vedle svých aktiv
+- Sledujte historii čistého jmění pomocí automatických místních snímků
+- Převeďte hodnoty pomocí referenčních směnných kurzů ECB uložených v mezipaměti
+- Okamžitě skryjte citlivé částky pomocí režimu soukromí
+- Chraňte aplikaci pomocí Face ID nebo Touch ID
+- Exportujte, importujte a mažte svá místní data, kdykoli budete chtít
+
+Vaše finanční záznamy zůstanou na vašem zařízení. Wealth Compass nevyžaduje účet a neukládá vaše portfolio ani historii transakcí na serverech provozovaných vývojáři.
+
+Volitelné aktualizace tržní ceny využívají pověření API, které poskytnete. Přihlašovací údaje jsou bezpečně uloženy v iOS Keychain.
+
+Wealth Compass je informační nástroj pro sledování. Nepřipojuje se k finančním institucím, neprovádí obchody, neposkytuje finanční poradenství ani nezaručuje přesnost údajů o trhu třetích stran.

@@ -1,0 +1,1 @@
+Mejoras de seguridad y corrección de errores.

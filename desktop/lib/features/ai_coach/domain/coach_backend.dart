@@ -1,5 +1,16 @@
 import 'chat_message.dart';
 
+/// Thrown when the Standard proxy reports `not_subscribed` (403).
+///
+/// A typed exception rather than a plain string yield so the chat page can
+/// distinguish "the user needs to subscribe" from every other error and show
+/// the paywall modal instead of a cryptic text bubble.
+class CoachNotSubscribedException implements Exception {
+  const CoachNotSubscribedException();
+  @override
+  String toString() => 'CoachNotSubscribedException: Pro subscription required.';
+}
+
 /// Which engine answers the coach. Persisted as its [code] in SharedPreferences.
 ///
 /// There are three rather than two because of App Store Guideline 3.1.1, which

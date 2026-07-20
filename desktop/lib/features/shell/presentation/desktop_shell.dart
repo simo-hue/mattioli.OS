@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/core/tutorial_provider.dart';
+import 'package:evolve_desktop/features/ai_coach/application/coach_controllers.dart';
+import 'package:evolve_desktop/features/ai_coach/domain/coach_backend.dart';
 import 'package:evolve_desktop/features/ai_coach/presentation/ai_coach_page.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/auth/application/desktop_profile_controller.dart';
@@ -12,6 +14,7 @@ import 'package:evolve_desktop/features/goals/presentation/goals_page.dart';
 import 'package:evolve_desktop/features/habits/presentation/habits_page.dart';
 import 'package:evolve_desktop/features/search/presentation/command_palette.dart';
 import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
+import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
 import 'package:evolve_desktop/features/settings/presentation/settings_page.dart';
 import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
 import 'package:evolve_desktop/features/statistics/presentation/statistics_page.dart';
@@ -98,6 +101,12 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
     // collapse the page-switch animation so spotlight geometry settles at once.
     final tourActive = ref.watch(tourControllerProvider).active;
 
+    final isPrivate = ref.read(activeDesktopDataModeProvider).isPrivate;
+    final isPro = ref.read(desktopIsProProvider);
+    final hasKey = ref.read(coachApiKeyProvider).asData?.value?.isNotEmpty == true;
+    final kind = ref.read(effectiveCoachBackendProvider);
+    final needsPaywall = !isPrivate && !isPro && !hasKey && kind != CoachBackendKind.local;
+
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.digit1, meta: true): () =>
@@ -108,8 +117,13 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
             select(DesktopSection.insights),
         const SingleActivator(LogicalKeyboardKey.digit4, meta: true): () =>
             select(DesktopSection.goals),
-        const SingleActivator(LogicalKeyboardKey.digit5, meta: true): () =>
-            select(DesktopSection.coach),
+        const SingleActivator(LogicalKeyboardKey.digit5, meta: true): () {
+          if (needsPaywall) {
+            showProFeaturesDialog(context, ref);
+          } else {
+            select(DesktopSection.coach);
+          }
+        },
         const SingleActivator(LogicalKeyboardKey.comma, meta: true): () =>
             select(DesktopSection.settings),
         // ⌘[ / ⌘] — move back / forward through the visited-section history,
@@ -253,6 +267,12 @@ class _DesktopSidebar extends ConsumerWidget {
     final navigation = ref.read(navigationControllerProvider.notifier);
     final width = collapsed ? 76.0 : 232.0;
 
+    final isPrivate = ref.read(activeDesktopDataModeProvider).isPrivate;
+    final isPro = ref.read(desktopIsProProvider);
+    final hasKey = ref.read(coachApiKeyProvider).asData?.value?.isNotEmpty == true;
+    final kind = ref.read(effectiveCoachBackendProvider);
+    final needsPaywall = !isPrivate && !isPro && !hasKey && kind != CoachBackendKind.local;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       width: width,
@@ -267,7 +287,13 @@ class _DesktopSidebar extends ConsumerWidget {
               collapsed: collapsed,
               section: section,
               selected: selected == section,
-              onTap: () => navigation.select(section),
+              onTap: () {
+                if (section == DesktopSection.coach && needsPaywall) {
+                  showProFeaturesDialog(context, ref);
+                } else {
+                  navigation.select(section);
+                }
+              },
             ),
           const Spacer(),
           Padding(

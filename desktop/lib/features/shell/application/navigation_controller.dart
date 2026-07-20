@@ -154,3 +154,17 @@ class NavigationController extends Notifier<DesktopSection> {
     state = _forward.removeLast();
   }
 }
+
+/// One-shot request to open the Settings page directly on its Subscription
+/// section. Handled similarly to PrivacySettingsRequest.
+class SubscriptionSettingsRequest extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void request() => state = true;
+
+  void consume() => state = false;
+}
+
+final subscriptionSettingsRequestProvider =
+    NotifierProvider<SubscriptionSettingsRequest, bool>(SubscriptionSettingsRequest.new);

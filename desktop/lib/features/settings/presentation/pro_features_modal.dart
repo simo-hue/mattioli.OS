@@ -118,6 +118,7 @@ class _ProFeaturesDialog extends StatelessWidget {
                 ),
                 onPressed: () {
                   Navigator.of(context).pop();
+                  ref.read(subscriptionSettingsRequestProvider.notifier).request();
                   ref
                       .read(navigationControllerProvider.notifier)
                       .select(DesktopSection.settings);

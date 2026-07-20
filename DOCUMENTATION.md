@@ -2,6 +2,33 @@
 
 ## Recent Changes
 
+- [2026-07-20]: **App Store Metadata Full Description**
+  - *Details*: Created full App Store descriptions in all 38 supported languages using a Python translation script (via `deep-translator`). All files correctly include the required Apple EULA and Privacy Policy links to comply with Guideline 3.1.2(c).
+  - *Tech Notes*:
+    - Created `mobile/ios/fastlane/metadata/it/description.txt` with the Italian text.
+    - Created `mobile/ios/fastlane/metadata/en-US/description.txt` with the translated English text.
+    - Used a custom `translate_descriptions.py` script to translate the English text to the remaining 36 locales.
+    - All short descriptions were previously renamed to `promotional_text.txt`.
+- [2026-07-20]: **Test suite stabilization (verification rules and AI chat)**
+  - *Details*: Fixed 4 failing UI tests related to recent widget changes.
+  - *Tech Notes*:
+    - Fixed `VerificationRuleField` tests by adjusting the step increment expectation (from 500 to 100) and clamping limit (from 100k to 1 million) due to updated `VerificationCatalog` values.
+    - Resolved `Duplicate GlobalKey` and `ProviderScope` missing exceptions in the `_Harness` widget inside `verification_rule_field_test.dart` by removing `_app` wrapper from `_HarnessState.build` and injecting `ProviderScope` properly.
+    - Updated `ai_chat_stream_cancel_test.dart` to use `pump()` instead of `pumpAndSettle()` to avoid timeout errors caused by the continuous animation in the new `_BouncingDot` widget.
+
+- [2026-07-20]: **HealthKit Permission Button Text (Apple Rejection Fix)**
+  - *Details*: Fixed an Apple App Store rejection (Guideline 5.1.1) caused by the HealthKit pre-permission button directing the user with "Consenti accesso" (Allow access). Changed the button text to "Continue" ("Continua" in Italian) across all localized files.
+  - *Tech Notes*:
+    - Updated the `allowAccess` key in `ar.i18n.json`, `de.i18n.json`, `en.i18n.json`, `es.i18n.json`, and `it.i18n.json` to the corresponding translations of "Continue".
+
+- [2026-07-20]: **AI Coach Paywall Gate (Apple Rejection Fix)**
+  - *Details*: Fixed a bug where a non-Pro user could enter the AI Coach chat and receive "L'AI Coach è incluso in Evolve Pro" as a reply to every message, which caused an Apple App Store rejection. Added two layers of defense: a paywall gate at the tile entry point and a typed exception handler for `not_subscribed` errors in the chat screen.
+  - *Tech Notes*:
+    - `openrouter_service.dart`: Added `CoachNotSubscribedException` class. The `_errorMessage` function now throws this exception for `not_subscribed` errors (proxy code and bare 403) instead of yielding the text as a chat bubble.
+    - `protocollo_panel.dart`: The AI Coach tile now checks `isPro`, `isPrivate`, and BYOK key availability. Free cloud users without a BYOK key see `ProFeaturesModal` (paywall) instead of navigating to the chat screen. Private mode and BYOK users are unaffected.
+    - `ai_chat_screen.dart`: Stream `onError` handler now catches `CoachNotSubscribedException`, removes the empty assistant bubble, and shows the paywall modal. Other errors keep existing behavior.
+    - `coach_error_message_test.dart`: Updated test expectations for `not_subscribed` cases to expect `throwsA(isA<CoachNotSubscribedException>())`.
+
 - [2026-07-19]: **Key Correlation Layout Optimization**
   - *Details*: Redesigned the Key Correlation panel on the Desktop statistics page to fix text truncation and height protrusion issues.
   - *Tech Notes*:
@@ -1895,3 +1922,24 @@ All owner actions are itemized in **TO_SIMO_DO.md**.
 - [2026-07-19 23:02]: Enhance LineChart Snapping
   - *Details*: Improved the interactive experience of all LineCharts by adding timeline-scrub style hover snapping, allowing users to hover over points without needing to perfectly align the mouse vertically.
   - *Tech Notes*: Configured LineTouchData with a custom distanceCalculator mapping purely the X-axis distance and bumped touchSpotThreshold to 99999. Updated across statistics_extras.dart, statistics_page.dart, goals_stats_view.dart, and dashboard_page.dart.
+
+- [2026-07-20 09:44]: Fix Apple App Store Rejection Issues
+  - *Details*: Addressed Guideline 3.1.2(c) by adding standard Apple EULA links to all Fastlane descriptions and creating Review Notes. Addressed Guideline 5.1.1(iv) by replacing the HealthKit grant permission button label to say "Continue" (e.g. "Continua") across all translations.
+  - *Tech Notes*: Modified 76 `description.txt` files to include the EULA link. Created `mobile/ios/fastlane/metadata/review_information/notes.txt`. Updated `grantHealthAccess` across 5 locale `.i18n.json` files and ran `dart run slang`. Removed strict translation check in `apple_health_settings_test.dart` and verified tests pass.
+# Evolve Project Documentation
+
+## 2026-07-20: AI Coach Desktop Paywall Parity
+*   **Details**: Implemented the same paywall logic on the desktop version of the app as was implemented for the mobile app to fix the App Store rejection (Guideline 3.1.1).
+*   **Tech Notes**:
+    *   **Navigation Gate**: Added `needsPaywall` logic (`!isPrivate && !isPro && !hasKey && kind != CoachBackendKind.local`) to `desktop_shell.dart`. If a free user attempts to access the `AiCoachPage` via the sidebar or `Cmd+5`, they are blocked and `showProFeaturesDialog` is triggered instead.
+    *   **Defense-in-Depth**:
+        *   Added `CoachNotSubscribedException` to `coach_backend.dart`.
+        *   Updated `mapStandardCoachError` in `standard_coach_backend.dart` to throw the exception on 403 / `not_subscribed`.
+        *   Updated `OpenAiCompatibleClient` to rethrow `CoachNotSubscribedException` so it bubbles up the stream.
+        *   Updated `ai_coach_page.dart` to catch the exception, clean up the empty bubble, and show the modal via `showProFeaturesDialog(context, ref)`.
+    *   **Tests**: Updated `standard_coach_backend_test.dart` to expect `throwsA(isA<CoachNotSubscribedException>())` and verified all desktop coach tests pass (`flutter test`).
+    *   **Pro Modal Navigation**: Updated the `ProFeaturesModal` on desktop to deep-link correctly to the Subscription tab in Settings when "See Plans" is clicked. Added `SubscriptionSettingsRequest` to `navigation_controller.dart` and handled it in `settings_page.dart` (both in `initState` and `ref.listen`).
+
+- [2026-07-20 09:11]: Version Bump
+  - *Details*: Updated app version to `1.1.2+23` for App Store submission.
+  - *Tech Notes*: Modified `pubspec.yaml` to `1.1.2+23`. Updated `MARKETING_VERSION` across `project.pbxproj` from `1.1.0` and `1.0` to `1.1.2`.

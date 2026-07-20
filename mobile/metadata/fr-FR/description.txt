@@ -1,0 +1,34 @@
+Evolve est l'outil de croissance personnelle ultime conçu pour ceux qui souhaitent développer de solides habitudes, fixer des objectifs clairs et comprendre en profondeur leurs comportements grâce à une analyse de données scientifique et sans distraction.
+
+Contrairement aux applications de productivité traditionnelles, souvent chaotiques et surchargées de notifications ou de publicités, Evolve est basé sur une interface minimaliste, une conception hautement soignée et un moteur d'analyse avancé. L'application vous aide à comprendre non seulement si vous accomplissez vos tâches, mais aussi comment vos habitudes s'influencent mutuellement et comment équilibrer au mieux votre bien-être avec votre productivité quotidienne.
+
+Les domaines macro-fonctionnels d'Evolve :
+
+1. SUIVI AVANCÉ DES HABITUDES
+- Notifications interactives et exploitables : enregistrez la réalisation de vos habitudes directement à partir de la notification du système, sans ouvrir l'application.
+- Rappels individuels et flexibles : définissez des heures de notification indépendantes pour chaque habitude.
+- Personnalisation à la Apple : configurez visuellement vos jalons.
+- Calcul de séquence dynamique : suivez votre cohérence.
+- Calendrier historique : affichez la progression mensuelle et annuelle de chaque habitude individuelle pour identifier précisément votre cohérence au fil du temps.
+
+2. FIXATION D'OBJECTIFS ET DÉVELOPPEMENT
+- Répartition en sous-objectifs : divisez vos macro-objectifs en petites étapes réalisables.
+- Graphiques radar pour les domaines de vie : visualisez l'équilibre global de votre croissance à l'aide de graphiques.
+- Analyse de saisonnalité et historique : observez comment votre productivité varie selon les différents mois de l'année et ajustez votre rythme en conséquence.
+- Tendance annuelle : suivez les progrès à long terme pour rester concentré sur vos objectifs macro.
+
+3. ANALYSE STATISTIQUE ET CORRELATIONS
+Evolve transforme vos actions quotidiennes en données utiles pour votre croissance consciente.
+- Indice de bien-être et de rendement : un algorithme exclusif relie votre bien-être émotionnel à votre productivité réelle, vous aidant à trouver l'équilibre parfait pour prévenir l'épuisement professionnel.
+- Analyse de corrélation : découvrez comment une habitude en influence une autre. Par exemple, analysez comment la qualité du sommeil ou l’activité physique affectent directement votre concentration pendant la journée.
+- Identification des meilleures habitudes et des habitudes critiques : l'application reconnaît automatiquement quels comportements soutiennent votre croissance et lesquels nécessitent un soutien immédiat.
+
+4. PLEINE CONSCIENCE
+La croissance personnelle n'est pas seulement une question de chiffres, mais aussi de conscience mentale.
+- Mood Check-In : Enregistrez votre état émotionnel pour comprendre les facteurs qui influencent votre productivité.
+- Life View : un widget visuel basé sur votre date de naissance qui représente les semaines de vie passées et futures. Un outil puissant pour vous rappeler la valeur du temps et vous pousser à vivre chaque jour avec intention.
+- Secure Cloud Sync : Toutes vos données sont enregistrées en temps réel en toute sécurité grâce à l'intégration avec Supabase et l'authentification Apple Sign-In.
+- Coherent Premium Design : Passez en toute transparence du mode sombre au mode clair grâce à un design étudié pour une lisibilité et un confort visuel maximum dans toutes les conditions d'éclairage.
+
+INFORMATIONS SUR L'ABONNEMENT EVOLVE PRO :
+L'abonnement se renouvelle automatiquement sauf si le renouvellement automatique est désactivé dans les paramètres de votre compte Apple/iTunes au moins 24 heures avant la fin de la période en cours. Votre compte sera débité dans les 24 heures avant la fin de la période en cours. Vous pouvez gérer votre abonnement et désactiver le renouvellement automatique en accédant aux paramètres de votre compte Apple après l'achat....

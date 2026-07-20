@@ -387,6 +387,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         }
       });
     }
+    if (ref.read(subscriptionSettingsRequestProvider)) {
+      _section = _SettingsSection.subscription;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref.read(subscriptionSettingsRequestProvider.notifier).consume();
+        }
+      });
+    }
     unawaited(_refreshSyncStatus());
     final preferences = ref.read(sharedPreferencesProvider);
     final appearance = ref.read(desktopAppearanceControllerProvider);
@@ -427,6 +435,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(subscriptionSettingsRequestProvider, (_, request) {
+      if (request) {
+        setState(() => _section = _SettingsSection.subscription);
+        ref.read(subscriptionSettingsRequestProvider.notifier).consume();
+      }
+    });
+
     final dataMode = ref.watch(activeDesktopDataModeProvider);
     final isPrivateMode = dataMode.isPrivate;
 

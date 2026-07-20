@@ -1,0 +1,21 @@
+Wealth Compass és un tauler de finançament personal privat i local que us ajuda a entendre el vostre valor net, flux d'efectiu, inversions, actius criptogràfics i passius en un sol lloc.
+
+Feu una imatge clara de les vostres finances:
+
+- Vegeu el valor net, el saldo d'efectiu, les inversions i la criptografia d'un cop d'ull
+- Feu un seguiment dels ingressos i les despeses amb categories i tendències visuals
+- Programeu transaccions recurrents i rebeu recordatoris locals opcionals
+- Superviseu les participacions d'accions, ETF i criptomonedes
+- Revisar la base de costos, pèrdues i guanys i l'assignació de la cartera
+- Feu un seguiment dels passius juntament amb els vostres actius
+- Seguiu l'historial del patrimoni net amb instantànies locals automàtiques
+- Converteix valors utilitzant els tipus de canvi de referència del BCE en memòria cau
+- Amaga quantitats sensibles a l'instant amb el mode de privadesa
+- Protegiu l'aplicació amb Face ID o Touch ID
+- Exporteu, importeu i suprimiu les vostres dades locals sempre que ho trieu
+
+Els vostres registres financers romanen al vostre dispositiu. Wealth Compass no requereix un compte i no emmagatzema la vostra cartera ni l'historial de transaccions en servidors operats per desenvolupadors.
+
+Les actualitzacions opcionals de preus de mercat utilitzen les credencials de l'API que proporcioneu. Les credencials s'emmagatzemen de manera segura al clauer d'iOS.
+
+Wealth Compass és una eina de seguiment informatiu. No es connecta a institucions financeres, no realitza transaccions, no ofereix assessorament financer ni garanteix l'exactitud de les dades del mercat de tercers.

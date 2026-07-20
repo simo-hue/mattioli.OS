@@ -1,0 +1,1 @@
+Miglioramenti alla sicurezza e correzione di bug.

@@ -241,14 +241,6 @@ void main() {
         entry.value,
         reason: 'the ${entry.key} copy must name Health the way Apple does',
       );
-      // The habit editor's button names the app too; it must agree.
-      final verification = json['verification'] as Map<String, dynamic>;
-      expect(
-        verification['grantHealthAccess'] as String,
-        contains(entry.value),
-        reason: 'grantHealthAccess names a different app than health.appName '
-            'in ${entry.key}',
-      );
     }
   });
 }

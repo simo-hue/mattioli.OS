@@ -23,6 +23,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:markdown/markdown.dart' as md;
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+
+import '../../settings/presentation/pro_features_modal.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../application/coach_consent_controller.dart';
@@ -437,9 +439,23 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
       },
       onError: (Object error) {
         if (!mounted) return;
+        final follow = _isPinnedToBottom();
+
+        if (error is CoachNotSubscribedException) {
+          setState(() {
+            _isTyping = false;
+            _responseSub = null;
+            if (responseIndex < _messages.length) {
+              _messages.removeAt(responseIndex);
+            }
+          });
+          if (follow) _followBottom();
+          showProFeaturesDialog(context, ref);
+          return;
+        }
+
         // Surface the failure in the current bubble and via a toast so the user
         // is never left staring at an empty/partial reply.
-        final follow = _isPinnedToBottom();
         final errorText = t.ai.openRouter.connectionErrorShort;
         setState(() {
           _messages[responseIndex] = ChatMessage(

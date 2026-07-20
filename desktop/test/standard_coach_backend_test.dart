@@ -120,8 +120,8 @@ void main() {
         'SESSION_EXPIRED',
       );
       expect(
-        mapStandardCoachError(403, _body('not_subscribed'), _errors),
-        'NEEDS_PRO',
+        () => mapStandardCoachError(403, _body('not_subscribed'), _errors),
+        throwsA(isA<CoachNotSubscribedException>()),
       );
     });
 
@@ -153,7 +153,8 @@ void main() {
       // two cases the user can act on must still be separated.
       expect(mapStandardCoachError(401, 'gateway noise', _errors),
           'SESSION_EXPIRED');
-      expect(mapStandardCoachError(403, 'gateway noise', _errors), 'NEEDS_PRO');
+      expect(() => mapStandardCoachError(403, 'gateway noise', _errors),
+          throwsA(isA<CoachNotSubscribedException>()));
       expect(mapStandardCoachError(429, 'gateway noise', _errors),
           'RATE_LIMITED');
       expect(mapStandardCoachError(503, 'gateway noise', _errors), 'UNAVAILABLE');
@@ -288,7 +289,10 @@ void main() {
           403,
         ),
       );
-      expect(await _send(_backend(mock: mock)), 'NEEDS_PRO');
+      expect(
+        () => _send(_backend(mock: mock)),
+        throwsA(isA<CoachNotSubscribedException>()),
+      );
     });
 
     test('reachable reports entitlement, and listModels needs no network', () async {

@@ -1,0 +1,21 @@
+Wealth Compass este un tablou de bord privat, orientat local, pentru finanțe personale, care te ajută să înțelegi averea ta netă, fluxul de numerar, investițiile, activele cripto și pasivele într-un singur loc.
+
+Construiește o imagine clară a finanțelor tale:
+
+- Vizualizează valoarea netă, soldul de numerar, investițiile și criptomonedele dintr-o privire rapidă
+- Urmărirea veniturilor și cheltuielilor prin categorii și tendințe vizuale
+- Programarea tranzacțiilor recurente și primirea opțională a memento-urilor locale
+- Monitorizarea deținerilor de acțiuni, ETF-uri și criptomonede
+- Revizuirea costurilor, profitului și pierderii, și alocarea portofoliului
+- Urmăriți pasivele alături de activele dumneavoastră
+- Urmăriți istoricul averii nete cu instantanee locale automate
+- Convertește valorile folosind cursurile de schimb de referință ale BCE stocate în cache
+- Ascundeți instantaneu cantități sensibile cu modul Confidențialitate
+- Protejează aplicația cu Face ID sau Touch ID
+- Exportă, importă și șterge datele locale ori de câte ori dorești
+
+Evidențele tale financiare rămân pe dispozitivul tău. Wealth Compass nu necesită un cont și nu stochează portofoliul sau istoricul tranzacțiilor pe servere operate de dezvoltatori.
+
+Actualizările opționale de preț de piață folosesc credențialele API pe care le furnizezi tu. Acreditările sunt stocate în siguranță în Keychain-ul iOS.
+
+Wealth Compass este un instrument informațional de urmărire. Nu se conectează la instituțiile financiare, nu execută tranzacții, nu oferă consultanță financiară și nu garantează acuratețea datelor de piață ale terților.

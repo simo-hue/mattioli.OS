@@ -1,0 +1,21 @@
+Wealth Compass is een privé, lokaal-georiënteerd dashboard voor persoonlijke financiën dat je helpt je nettovermogen, cashflow, investeringen, crypto-activa en schulden op één plek te begrijpen.
+
+Krijg een duidelijk overzicht van je financiën:
+
+- Bekijk nettovermogen, contantsaldo, investeringen en crypto in één oogopslag
+- Volg inkomsten en uitgaven met categorieën en visuele trends
+- Plan terugkerende transacties en ontvang optionele lokale herinneringen
+- Houd aandelen, ETF's en cryptocurrency-bezittingen in de gaten
+- Bekijk kostprijs, winst en verlies, en portefeuille-allocatie
+- Volg schulden naast je activa
+- Bekijk je nettovermogensgeschiedenis met automatische lokale snapshots
+- Converteer waarden met opgeslagen ECB-referentiewisselkoersen
+- Verberg gevoelige bedragen direct met Privacy Mode
+- Beveilig de app met Face ID of Touch ID
+- Exporteer, importeer en verwijder je lokale gegevens wanneer je wilt
+
+Je financiële gegevens blijven op je apparaat. Wealth Compass vereist geen account en slaat je portefeuille- of transactiegeschiedenis niet op op servers die door de ontwikkelaar worden beheerd.
+
+Optionele marktprijsupdates gebruiken API-referenties die je zelf verstrekt. Referenties worden veilig opgeslagen in de iOS Keychain.
+
+Wealth Compass is een informatief trackingtool. Het maakt geen verbinding met financiële instellingen, voert geen transacties uit, geeft geen financieel advies en garandeert de nauwkeurigheid van gegevens van derden niet.

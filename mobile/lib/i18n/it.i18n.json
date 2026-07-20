@@ -1179,7 +1179,7 @@
     "comparatorAtMost": "Limite (Al massimo)",
     "couldNotVerifyTapToResolve": "Impossibile verificare — tocca per risolvere",
     "needsAppleWatch": "Richiede un Apple Watch per la verifica automatica",
-    "grantHealthAccess": "Consenti accesso a Salute",
+    "grantHealthAccess": "Continua",
     "templates": {
       "steps": "Passi",
       "exerciseMinutes": "Minuti di attività",
@@ -1240,7 +1240,7 @@
     "readOnly": "Sola lettura. Evolve non scrive mai nulla su {app}.",
     "noData": "Su questo dispositivo non ci sono dati di {app}. Passi, attività e sonno vengono registrati da iPhone o Apple Watch e si sincronizzano da lì.",
     "unavailableOnDevice": "{app} non è disponibile su questo dispositivo.",
-    "allowAccess": "Consenti accesso",
+    "allowAccess": "Continua",
     "manageHint": "L'accesso viene concesso per singolo tipo di dato. Per rivederlo o modificarlo, apri l'app {app}, poi Condivisione, App e servizi, Evolve.",
     "grantNote": "iOS non comunica alle app se l'accesso in lettura è stato concesso, quindi Evolve non può mostrartelo qui. Se un'abitudine non si verifica, controlla nell'app {app}."
   },

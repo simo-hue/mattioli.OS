@@ -251,6 +251,8 @@ class OpenAiCompatibleClient {
       // Connection refused surfaces here on some platforms.
       AppLogger.error('[Coach] client error', error, stack);
       yield errors.preflightFailed;
+    } on CoachNotSubscribedException {
+      rethrow;
     } catch (error, stack) {
       AppLogger.error('[Coach] stream exception', error, stack);
       yield errors.connectionError;

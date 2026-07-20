@@ -11,6 +11,17 @@ import 'app_logger.dart';
 import 'coach_endpoint.dart';
 import 'secure_storage_utils.dart';
 
+/// Thrown when the Standard proxy reports `not_subscribed` (403).
+///
+/// A typed exception rather than a plain string yield so the chat screen can
+/// distinguish "the user needs to subscribe" from every other error and show
+/// the paywall modal instead of a cryptic text bubble.
+class CoachNotSubscribedException implements Exception {
+  const CoachNotSubscribedException();
+  @override
+  String toString() => 'CoachNotSubscribedException: Pro subscription required.';
+}
+
 /// Non-secret OpenRouter endpoint constants.
 ///
 /// There is deliberately no API-key constant here: the coach is BYOK, and a
@@ -203,6 +214,8 @@ class OpenRouterService {
           '[${endpoint.mode.name}] Errore API streaming',
           'Status: ${response.statusCode}, Body: $errorBody',
         );
+        // _errorMessage throws CoachNotSubscribedException for `not_subscribed`
+        // so the UI can show the paywall instead of a text bubble.
         yield _errorMessage(endpoint.mode, response.statusCode, errorBody);
         client.close();
         return;
@@ -298,7 +311,7 @@ String _errorMessage(CoachMode mode, int statusCode, String body) {
     case 'unauthorized':
       return t.ai.coachModes.standardSessionExpired;
     case 'not_subscribed':
-      return t.ai.coachModes.standardNeedsPro;
+      throw const CoachNotSubscribedException();
     case 'rate_limited':
       return t.ai.coachModes.standardRateLimited;
     case 'context_too_long':
@@ -316,7 +329,7 @@ String _errorMessage(CoachMode mode, int statusCode, String body) {
   // back to the status, which still separates the cases the user can act on.
   if (statusCode == 413) return t.ai.openRouter.contextTooLong;
   if (statusCode == 429) return t.ai.coachModes.standardRateLimited;
-  if (statusCode == 403) return t.ai.coachModes.standardNeedsPro;
+  if (statusCode == 403) throw const CoachNotSubscribedException();
   if (statusCode == 401) return t.ai.coachModes.standardSessionExpired;
   if (statusCode >= 500) return t.ai.coachModes.standardUnavailable;
   return t.ai.openRouter.apiError(code: statusCode);

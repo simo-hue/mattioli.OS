@@ -1179,7 +1179,7 @@
     "comparatorAtMost": "Limit (Höchstens)",
     "couldNotVerifyTapToResolve": "Konnte nicht geprüft werden — zum Auflösen tippen",
     "needsAppleWatch": "Erfordert eine Apple Watch zur automatischen Prüfung",
-    "grantHealthAccess": "Zugriff auf Apple Health erlauben",
+    "grantHealthAccess": "Weiter",
     "templates": {
       "steps": "Schritte",
       "exerciseMinutes": "Trainingsminuten",
@@ -1240,7 +1240,7 @@
     "readOnly": "Nur Lesezugriff. Evolve schreibt nie etwas in {app}.",
     "noData": "Auf diesem Gerät gibt es keine {app}-Daten. Schritte, Aktivität und Schlaf werden von deinem iPhone oder deiner Apple Watch aufgezeichnet und von dort synchronisiert.",
     "unavailableOnDevice": "{app} ist auf diesem Gerät nicht verfügbar.",
-    "allowAccess": "Zugriff erlauben",
+    "allowAccess": "Weiter",
     "manageHint": "Der Zugriff wird pro Datentyp erteilt. Zum Prüfen oder Ändern öffne die {app}-App, dann Teilen, Apps und Dienste, Evolve.",
     "grantNote": "iOS teilt Apps nicht mit, ob der Lesezugriff erteilt wurde — Evolve kann es dir hier also nicht anzeigen. Wenn eine Gewohnheit nicht geprüft wird, sieh in der {app}-App nach."
   },

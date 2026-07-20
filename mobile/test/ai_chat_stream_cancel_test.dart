@@ -149,9 +149,9 @@ void main() {
 
     // Trash the conversation while the rest of the reply is still streaming.
     await tester.tap(find.byIcon(LucideIcons.trash2));
-    await tester.pumpAndSettle();
+    await tester.pump();
     await tester.tap(find.text('Delete'));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // The fix: the subscription is dropped, which also runs the generator's
     // `finally { client.close(); }` in production.

@@ -1179,7 +1179,7 @@
     "comparatorAtMost": "Limit (At most)",
     "couldNotVerifyTapToResolve": "Couldn't verify — tap to resolve",
     "needsAppleWatch": "Needs an Apple Watch to auto-verify",
-    "grantHealthAccess": "Allow Apple Health access",
+    "grantHealthAccess": "Continue",
     "templates": {
       "steps": "Steps",
       "exerciseMinutes": "Exercise minutes",
@@ -1240,7 +1240,7 @@
     "readOnly": "Read-only. Evolve never writes anything to {app}.",
     "noData": "This device has no {app} data. Steps, activity and sleep are recorded by your iPhone or Apple Watch and sync from there.",
     "unavailableOnDevice": "{app} is not available on this device.",
-    "allowAccess": "Allow access",
+    "allowAccess": "Continue",
     "manageHint": "Access is granted per data type. To review or change it, open the {app} app, then Sharing, Apps and services, Evolve.",
     "grantNote": "iOS does not tell apps whether read access was granted, so Evolve cannot show you here. If a habit will not verify, check the {app} app."
   },

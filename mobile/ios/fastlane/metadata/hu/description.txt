@@ -1,1 +1,37 @@
-A Evolve a végső személyes fejlődési alkalmazásod. Kövesd nyomon napi szokásaidat és érd el céljaidat.
+Az Evolve a tökéletes személyes növekedési eszköz azok számára, akik szilárd szokásokat szeretnének kialakítani, világos célokat tűznek ki, és mélyen megértik viselkedési mintáikat tudományos és zavaró adatelemzés segítségével.
+
+A hagyományos hatékonyságnövelő alkalmazásokkal ellentétben, amelyek gyakran kaotikusak és túlterheltek értesítésekkel vagy hirdetésekkel, az Evolve minimális felületen, rendkívül kifinomult kialakításon és fejlett elemzőmotoron alapul. Az alkalmazás nemcsak abban segít megérteni, hogy teljesíti-e a feladatait, hanem azt is, hogy szokásai hogyan hatnak egymásra, és hogyan lehet a legjobban egyensúlyba hozni jólétét napi termelékenységével.
+
+Az Evolve funkcionális makroterületei:
+
+1. HALADÓ SZOKÁSKÖVETÉS
+- Interaktív és végrehajtható értesítések: naplózza a szokás befejezését közvetlenül a rendszerértesítésből, anélkül, hogy meg kellene nyitnia az alkalmazást.
+- Egyszeri és rugalmas emlékeztetők: Állítson be független értesítési időt minden szokáshoz.
+- Apple-stílusú testreszabás: Konfigurálja a mérföldköveket vizuálisan.
+- Dinamikus csíkkalkuláció: Figyelje konzisztenciáját.
+- Történelmi naptár: Tekintse meg minden egyes szokás havi és éves előrehaladását, hogy pontosan azonosítsa a konzisztenciát az idő múlásával.
+
+2. A CÉL MEGHATÁROZÁSA ÉS FEJLESZTÉSE
+- Részcélok lebontása: Bontsa le makrocéljait kis, elérhető lépésekre.
+- Radar diagramok életterületekhez: diagramokon keresztül jelenítse meg növekedésének általános egyensúlyát.
+- Szezonalitás és történeti elemzés: Figyelje meg, hogyan változik termelékenysége az év különböző hónapjaiban, és ennek megfelelően alakítsa át ritmusait.
+- Éves trend: Kövesse nyomon hosszú távú fejlődését, hogy továbbra is a makro-mérföldkövekre összpontosítson.
+
+3. STATISZTIKAI ELEMZÉS ÉS ÖSSZEFÜGGÉSEK
+Az Evolve napi tevékenységeit hasznos adatokká alakítja át tudatos növekedéséhez.
+- Wellness vs Output Index: Egy szabadalmaztatott algoritmus összekapcsolja érzelmi jólétét tényleges termelékenységével, így segít megtalálni a tökéletes egyensúlyt a kiégés megelőzésére.
+- Korrelációelemzés: Fedezze fel, hogyan hat az egyik szokás a másikra. Például elemezze, hogy az alvás minősége vagy a fizikai aktivitás hogyan befolyásolja közvetlenül a nappali fókuszt.
+- A legjobb és kritikus szokások azonosítása: Az alkalmazás automatikusan felismeri, hogy mely viselkedési formák támogatják növekedését, és melyek igényelnek azonnali támogatást.
+
+4. INDULÁS
+A személyes növekedés nem csak a számokból áll, hanem a mentális tudatosságból is.
+- Hangulatfelvétel: naplózza érzelmi állapotát, hogy megértse a termelékenységét befolyásoló tényezőket.
+- Életnézet: Születési dátumán alapuló vizuális widget, amely élete eltelt heteit és az elkövetkezőket ábrázolja. Hatékony eszköz, amely emlékezteti Önt az idő értékére, és arra készteti, hogy minden napját szándékosan élje meg.
+- Biztonságos felhőszinkronizálás: A Supabase integrációnak és az Apple Sign-In hitelesítésnek köszönhetően minden adata valós időben, biztonságosan kerül mentésre.
+- Következetes prémium dizájn: Sötét módból világos módba zökkenőmentesen válthat a maximális olvashatóság és vizuális kényelem érdekében bármilyen megvilágítási körülmények között kialakított kialakítással.
+
+EVOLVE PRO ELŐFIZETÉSI INFORMÁCIÓK:
+Az előfizetés automatikusan megújul, hacsak az automatikus megújítást nem kapcsolja ki az Apple/iTunes-fiók beállításaiban legalább 24 órával az aktuális időszak vége előtt. Fiókját az aktuális időszak vége előtt 24 órán belül megterheljük. Kezelheti előfizetését és kikapcsolhatja az automatikus megújítást az Apple-fiók beállításaiban a vásárlás után.
+
+Általános használati feltételek (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Adatvédelmi irányelvek: https://simo-hue.github.io/evolve/privacy.html

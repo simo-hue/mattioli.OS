@@ -1,0 +1,21 @@
+A Wealth Compass egy magán, helyi személyi pénzügyi irányítópult, amely segít megérteni nettó vagyonodat, készpénzforgalmadat, befektetéseidet, kriptovagyonaid és kötelezettségeidet egy helyen.
+
+Építs tiszta képet pénzügyeiről:
+
+- Tekintse meg a nettó vagyont, készpénzegyenleget, befektetéseket és a kriptot egy pillantással
+- A bevételek és kiadások nyomon követése kategóriákkal és vizuális trendekkel
+- Rendszerező tranzakciók ütemezése és opcionális helyi emlékeztetők kapása
+- Részvény-, ETF- és kriptovaluta holdingok monitorozása
+- Áttekinteni a költségalapot, a nyereség-veszteséget, valamint a portfólió-allokációt
+- Kövessék a kötelezettségeket az eszközeiddel együtt
+- Kövesse a nettó vagyontörténetet automatikus helyi pillanatképekkel
+- Értékek átalakítása gyorsítótárban tárolt ECB referencia árfolyamokkal
+- Azonnali érzékeny összegek elrejtése a Adatvédelmi móddal
+- Az alkalmazás védelme Face ID vagy Touch ID használatával
+- Exportálhatod, importálhatod és törölhetsz helyi adataidat, amikor csak szeretnél
+
+A pénzügyi adataid az eszközödön maradnak. A Wealth Compass nem igényel fiókot, és nem tárolja portfóliódat vagy tranzakciós előzményeidet fejlesztők által működtetett szervereken.
+
+Az opcionális piaci ár-frissítések API hitelesítéseket használnak, amelyeket Ön biztosít. Az igazolványok biztonságosan az iOS kulcstartóban vannak tárolva.
+
+A Wealth Compass egy információs követő eszköz. Nem kapcsolódik pénzügyi intézményekhez, nem hajt végre kereskedéseket, nem nyújt pénzügyi tanácsot, és nem garantálja a harmadik fél piaci adatainak pontosságát.

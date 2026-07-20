@@ -2516,3 +2516,7 @@ iCloud Sync core is implemented, unit-tested (160), and iOS-compiling. Remaining
 - [2026-07-18 15:37]: Tap-to-dismiss behavior for Habit Management inputs
   - *Details*: Added `onTapOutside: (_) => unfocus()` to the TextFields in the habit management modal (Habit Name and Verification Rule Threshold). This leverages Flutter's built-in TapRegion handling so clicking anywhere outside the active input instantly dismisses the keyboard without interfering with the local gestures.
   - *Tech Notes*: Modified TextField configurations in habit_management_modal.dart and verification_rule_field.dart.
+
+- [2026-07-20 09:11]: Version Bump
+  - *Details*: Updated app version to `1.1.2+23` for App Store submission.
+  - *Tech Notes*: Modified `pubspec.yaml` to `1.1.2+23`. Updated `MARKETING_VERSION` across `project.pbxproj` from `1.1.0` and `1.0` to `1.1.2`.

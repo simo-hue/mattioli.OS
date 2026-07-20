@@ -1,0 +1,21 @@
+Wealth Compass is a private, local-first personal finance dashboard that helps you understand your net worth, cash flow, investments, crypto assets, and liabilities in one place.
+
+Build a clear picture of your finances:
+
+- View net worth, cash balance, investments, and crypto at a glance
+- Track income and expenses with categories and visual trends
+- Schedule recurring transactions and receive optional local reminders
+- Monitor stock, ETF, and cryptocurrency holdings
+- Review cost basis, profit and loss, and portfolio allocation
+- Track liabilities alongside your assets
+- Follow net-worth history with automatic local snapshots
+- Convert values using cached ECB reference exchange rates
+- Hide sensitive amounts instantly with Privacy Mode
+- Protect the app with Face ID or Touch ID
+- Export, import, and delete your local data whenever you choose
+
+Your financial records stay on your device. Wealth Compass does not require an account and does not store your portfolio or transaction history on developer-operated servers.
+
+Optional market-price updates use API credentials that you provide. Credentials are stored securely in the iOS Keychain.
+
+Wealth Compass is an informational tracking tool. It does not connect to financial institutions, execute trades, provide financial advice, or guarantee the accuracy of third-party market data.

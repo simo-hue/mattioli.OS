@@ -44,5 +44,6 @@ flutter run -d macos --dart-define-from-file=.env
 flutter build macos --release --dart-define-from-file=.env
 ```
 
-## Screen Time Auto-Verification Sync
-- Since background network requests are forbidden in the iOS `DeviceActivityMonitorExtension`, the iOS app *must* be opened by the user periodically to sync the Screen Time habits to Supabase, which then reflects on the macOS app.
+## App Store Rejection - Manual Actions
+- [ ] You must upload a screen recording of the app confirming the fixes for the AI Coach and the HealthKit button to the App Store Connect resolution center as requested by Apple.
+- [ ] You can now build and release the iOS version 1.1.2 (build 23) to App Store Connect.

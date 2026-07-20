@@ -1,1 +1,37 @@
-Evolve er din ultimative app til personlig vækst. Spor dine daglige vaner og nå dine mål.
+Evolve er det ultimative værktøj til personlig vækst designet til dem, der ønsker at opbygge solide vaner, sætte klare mål og dybt forstå deres adfærdsmønstre gennem videnskabelig og distraktionsfri dataanalyse.
+
+I modsætning til traditionelle produktivitetsapplikationer, som ofte er kaotiske og overbelastede med meddelelser eller annoncer, er Evolve baseret på en minimal grænseflade, et ekstremt raffineret design og en avanceret analysemotor. Applikationen hjælper dig med at forstå ikke kun, om du udfører dine opgaver, men hvordan dine vaner påvirker hinanden, og hvordan du bedst balancerer dit velvære med din daglige produktivitet.
+
+Evolves funktionelle makroområder:
+
+1. AVANCERET VANESPORING
+- Interaktive og handlingsrettede meddelelser: Log færdiggørelsen af en vane direkte fra systemmeddelelsen uden at skulle åbne appen.
+- Enkelte og fleksible påmindelser: Indstil uafhængige notifikationstider for hver vane.
+- Apple-stiltilpasning: Konfigurer dine milepæle visuelt.
+- Dynamisk stribeberegning: Overvåg din konsistens.
+- Historisk kalender: Se de månedlige og årlige fremskridt for hver enkelt vane for nøjagtigt at identificere din konsistens over tid.
+
+2. MÅLDEFINITION OG UDVIKLING
+- Nedbrydning af delmål: Neddel dine makromål i små, opnåelige trin.
+- Radardiagrammer for livsområder: Visualiser den overordnede balance i din vækst gennem diagrammer.
+- Sæsonbestemt og historisk analyse: Observer, hvordan din produktivitet varierer på tværs af forskellige måneder af året, og tilpas dine rytmer derefter.
+- Årlig trend: Spor dine langsigtede fremskridt for at holde dit fokus højt på dine makro-milepæle.
+
+3. STATISTISK ANALYSE OG Korrelationer
+Evolve forvandler dine daglige handlinger til nyttige data for din opmærksomme vækst.
+- Wellness vs Output Index: En proprietær algoritme relaterer dit følelsesmæssige velvære til din faktiske produktivitet, og hjælper dig med at finde den perfekte balance for at forhindre udbrændthed.
+- Korrelationsanalyse: Opdag, hvordan en vane påvirker en anden. Analyser for eksempel, hvordan søvnkvalitet eller fysisk aktivitet direkte påvirker dit fokus i dagtimerne.
+- Identifikation af bedste og kritiske vaner: Appen genkender automatisk, hvilken adfærd der understøtter din vækst, og som kræver øjeblikkelig støtte.
+
+4. MINDFULNESS
+Personlig vækst er ikke kun lavet af tal, men også af mental bevidsthed.
+- Humør check-in: Log din følelsesmæssige tilstand for at forstå de faktorer, der påvirker din produktivitet.
+- Livsvisning: En visuel widget baseret på din fødselsdato, der repræsenterer ugerne i dit liv, der er gået, og de kommende. Et kraftfuldt værktøj til at minde dig om værdien af ​​tid og skubbe dig til at leve hver dag med hensigt.
+- Sikker skysynkronisering: Alle dine data gemmes sikkert i realtid takket være Supabase-integration og Apple Sign-In-godkendelse.
+- Konsekvent Premium Design: Skift problemfrit fra mørk tilstand til lys tilstand med et design, der er skræddersyet til maksimal læsbarhed og visuel komfort under alle lysforhold.
+
+EVOLVE PRO ABONNEMENT INFORMATION:
+Abonnementet fornyes automatisk, medmindre automatisk fornyelse er slået fra i dine Apple/iTunes-kontoindstillinger mindst 24 timer før udgangen af den aktuelle periode. Din konto vil blive debiteret inden for 24 timer før udgangen af ​​den aktuelle periode. Du kan administrere dit abonnement og deaktivere automatisk fornyelse ved at gå til dine Apple-kontoindstillinger efter køb.
+
+Standardvilkår for brug (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Privatlivspolitik: https://simo-hue.github.io/evolve/privacy.html

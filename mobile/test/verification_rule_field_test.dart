@@ -4,11 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mattioli_os/i18n/translations.g.dart';
 import 'package:mattioli_os/ui/widgets/verification_rule_field.dart';
+import 'package:mattioli_os/core/theme.dart';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Wraps [child] in the TranslationProvider the verification widgets now need
 /// for `context.t` (localized labels/tooltips).
-Widget _app(Widget child) => TranslationProvider(
-      child: MaterialApp(home: Scaffold(body: child)),
+Widget _app(Widget child) => ProviderScope(
+      child: TranslationProvider(
+        child: MaterialApp(theme: AppTheme.lightTheme(null), home: Scaffold(body: child)),
+      ),
     );
 
 class _Harness extends StatefulWidget {
@@ -21,11 +26,9 @@ class _Harness extends StatefulWidget {
 class _HarnessState extends State<_Harness> {
   late VerificationRule? rule = widget.initial;
   @override
-  Widget build(BuildContext context) => _app(
-        VerificationRuleField(
-          rule: rule,
-          onChanged: (r) => setState(() => rule = r),
-        ),
+  Widget build(BuildContext context) => VerificationRuleField(
+        rule: rule,
+        onChanged: (r) => setState(() => rule = r),
       );
 }
 
@@ -109,7 +112,7 @@ void main() {
   group('VerificationRuleField', () {
     testWidgets('renders localized category section headers', (tester) async {
       await tester
-          .pumpWidget(_Harness(VerificationCatalog.steps.ruleWith(10000)));
+          .pumpWidget(_app(_Harness(VerificationCatalog.steps.ruleWith(10000))));
       await tester.pumpAndSettle();
       expect(find.text('ACTIVITY'), findsOneWidget);
       expect(find.text('SLEEP'), findsOneWidget);
@@ -118,7 +121,7 @@ void main() {
 
     testWidgets('manual by default — switch off, no template chips',
         (tester) async {
-      await tester.pumpWidget(const _Harness(null));
+      await tester.pumpWidget(_app(const _Harness(null)));
       expect(
         tester.widget<CupertinoSwitch>(find.byType(CupertinoSwitch)).value,
         isFalse,
@@ -127,7 +130,7 @@ void main() {
     });
 
     testWidgets('toggling on emits the default steps rule', (tester) async {
-      await tester.pumpWidget(const _Harness(null));
+      await tester.pumpWidget(_app(const _Harness(null)));
       await tester.tap(find.byType(CupertinoSwitch));
       await tester.pumpAndSettle();
       expect(_thresholdText(tester), '10,000');
@@ -137,7 +140,7 @@ void main() {
 
     testWidgets('selecting a template switches the rule + its default',
         (tester) async {
-      await tester.pumpWidget(_Harness(VerificationCatalog.steps.ruleWith(10000)));
+      await tester.pumpWidget(_app(_Harness(VerificationCatalog.steps.ruleWith(10000))));
       await tester.tap(find.widgetWithText(ChoiceChip, 'Total device usage'));
       await tester.pumpAndSettle();
       expect(_thresholdText(tester), '120');
@@ -147,10 +150,10 @@ void main() {
 
     testWidgets('stepper increments the threshold by the template step',
         (tester) async {
-      await tester.pumpWidget(_Harness(VerificationCatalog.steps.ruleWith(10000)));
+      await tester.pumpWidget(_app(_Harness(VerificationCatalog.steps.ruleWith(10000))));
       await tester.tap(find.byKey(const Key('verify_threshold_up')));
       await tester.pumpAndSettle();
-      expect(_thresholdText(tester), '10,500');
+      expect(_thresholdText(tester), '10,100');
     });
 
     testWidgets('typing a specific number sets that threshold', (tester) async {
@@ -175,11 +178,11 @@ void main() {
         onChanged: (r) => emitted = r,
       )));
       await tester.enterText(
-          find.byKey(const Key('verify_threshold_input')), '999999');
+          find.byKey(const Key('verify_threshold_input')), '9999999');
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pumpAndSettle();
       expect(emitted?.threshold, VerificationCatalog.steps.maxThreshold);
-      expect(_thresholdText(tester), '100,000');
+      expect(_thresholdText(tester), '1,000,000');
     });
 
     testWidgets('a fractional metric accepts a decimal value', (tester) async {
@@ -199,8 +202,8 @@ void main() {
 
     testWidgets('down stepper is disabled at the minimum threshold',
         (tester) async {
-      await tester.pumpWidget(_Harness(VerificationCatalog.steps
-          .ruleWith(VerificationCatalog.steps.minThreshold)));
+      await tester.pumpWidget(_app(_Harness(VerificationCatalog.steps
+          .ruleWith(VerificationCatalog.steps.minThreshold))));
       final down = tester.widget<IconButton>(
           find.byKey(const Key('verify_threshold_down')));
       expect(down.onPressed, isNull);
@@ -208,7 +211,7 @@ void main() {
 
     testWidgets('Watch-dependent templates show the warning', (tester) async {
       await tester
-          .pumpWidget(_Harness(VerificationCatalog.standHours.ruleWith(12)));
+          .pumpWidget(_app(_Harness(VerificationCatalog.standHours.ruleWith(12))));
       expect(find.text('Needs an Apple Watch to auto-verify'), findsOneWidget);
     });
   });

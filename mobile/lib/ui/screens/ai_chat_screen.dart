@@ -25,6 +25,7 @@ import '../kit/evolve_sheet.dart';
 import '../kit/evolve_switch.dart';
 import '../../core/haptics.dart';
 import 'app_settings_screen.dart';
+import '../widgets/pro_features_modal.dart';
 
 class AIChatScreen extends ConsumerStatefulWidget {
   const AIChatScreen({super.key});
@@ -250,8 +251,25 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
       onError: (e, stack) {
         _responseSub = null;
         if (!mounted) return;
-        AppLogger.error('[AIChatScreen] Errore stream listener', e, stack);
         if (assistantMessageIndex >= _messages.length) return;
+
+        // not_subscribed: the server says this user is not Pro. Remove the
+        // empty assistant bubble and show the paywall instead of a cryptic text
+        // message. This is the defense-in-depth layer — the primary gate is at
+        // the tile level in protocollo_panel.dart.
+        if (e is CoachNotSubscribedException) {
+          setState(() {
+            _isTyping = false;
+            // Remove the empty assistant bubble that was added for the reply.
+            if (assistantMessageIndex < _messages.length) {
+              _messages.removeAt(assistantMessageIndex);
+            }
+          });
+          ProFeaturesModal.show(context);
+          return;
+        }
+
+        AppLogger.error('[AIChatScreen] Errore stream listener', e, stack);
 
         setState(() {
           _isTyping = false;

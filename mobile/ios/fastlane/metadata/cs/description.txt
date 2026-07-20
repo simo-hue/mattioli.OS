@@ -1,1 +1,37 @@
-Evolve je vaše ultimátní aplikace pro osobní růst. Sledujte své každodenní návyky a dosáhněte svých cílů.
+Evolve je dokonalý nástroj osobního růstu určený pro ty, kteří si chtějí vybudovat pevné návyky, stanovit si jasné cíle a hluboce porozumět vzorcům svého chování prostřednictvím vědecké analýzy dat bez rozptylování.
+
+Na rozdíl od tradičních aplikací pro zvýšení produktivity, které jsou často chaotické a přeplněné oznámeními nebo reklamami, je Evolve založen na minimálním rozhraní, extrémně propracovaném designu a pokročilém analytickém enginu. Aplikace vám pomůže porozumět nejen tomu, zda plníte své úkoly, ale jak se vaše návyky navzájem ovlivňují a jak nejlépe sladit svou pohodu s každodenní produktivitou.
+
+Funkční makro oblasti Evolve:
+
+1. POKROČILÉ SLEDOVÁNÍ ZVYKŮ
+- Interaktivní a akceschopná oznámení: Zaznamenejte dokončení zvyku přímo ze systémového oznámení, aniž byste museli otevírat aplikaci.
+- Jednotlivá a flexibilní připomenutí: Nastavte nezávislé časy upozornění pro každý zvyk.
+- Přizpůsobení ve stylu Apple: Nakonfigurujte své milníky vizuálně.
+- Výpočet dynamického pruhu: Sledujte svou konzistenci.
+- Historický kalendář: Zobrazte si měsíční a roční pokrok každého jednotlivého zvyku, abyste přesně identifikovali svou konzistenci v průběhu času.
+
+2. DEFINICE A ROZVOJ CÍLE
+- Rozdělení dílčích cílů: Rozdělte své makro cíle do malých, dosažitelných kroků.
+- Radarové grafy pro životní oblasti: Vizualizujte celkovou rovnováhu svého růstu prostřednictvím grafů.
+- Sezónnost a historická analýza: Sledujte, jak se vaše produktivita liší v různých měsících v roce, a podle toho přizpůsobte své rytmy.
+- Roční trend: Sledujte svůj dlouhodobý pokrok, abyste se zaměřili na své makro milníky.
+
+3. STATISTICKÁ ANALÝZA A KORELACE
+Evolve transformuje vaše každodenní činnosti na užitečná data pro váš uvědomělý růst.
+- Index wellness vs. Výstup: Patentovaný algoritmus spojuje vaši emoční pohodu s vaší skutečnou produktivitou a pomáhá vám najít dokonalou rovnováhu, abyste předešli syndromu vyhoření.
+- Korelační analýza: Zjistěte, jak jeden zvyk ovlivňuje druhý. Analyzujte například, jak kvalita spánku nebo fyzická aktivita přímo ovlivňují vaše denní soustředění.
+- Identifikace nejlepších a kritických návyků: Aplikace automaticky rozpozná, které chování podporuje váš růst a které vyžaduje okamžitou podporu.
+
+4. Všímavost
+Osobní růst není tvořen jen čísly, ale také duševním vědomím.
+- Kontrola nálady: Zaznamenejte svůj emoční stav, abyste pochopili faktory ovlivňující vaši produktivitu.
+- Life View: Vizuální widget založený na vašem datu narození, který představuje uplynulé týdny vašeho života a ty, které přijdou. Mocný nástroj, který vám připomene hodnotu času a přinutí vás žít každý den se záměrem.
+- Bezpečná cloudová synchronizace: Všechna vaše data jsou bezpečně uložena v reálném čase díky integraci Supabase a ověřování Apple Sign-In.
+- Konzistentní prémiový design: Plynule přepínejte z tmavého režimu do světlého s designem přizpůsobeným pro maximální čitelnost a vizuální pohodlí za jakýchkoli světelných podmínek.
+
+INFORMACE O PŘEDPLATNÉM EVOLVE PRO:
+Předplatné se automaticky obnoví, pokud není automatické obnovení vypnuto v nastavení účtu Apple/iTunes alespoň 24 hodin před koncem aktuálního období. Na váš účet bude stržena částka do 24 hodin před koncem aktuálního období. Své předplatné a vypnutí automatického obnovení můžete spravovat po zakoupení v Nastavení účtu Apple.
+
+Standardní podmínky použití (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Zásady ochrany osobních údajů: https://simo-hue.github.io/evolve/privacy.html

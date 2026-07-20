@@ -1,1 +1,37 @@
-Evolve on lopullinen henkilökohtaisen kasvun sovelluksesi. Seuraa päivittäisiä tapojasi ja saavuta tavoitteesi.
+Evolve on perimmäinen henkilökohtaisen kasvun työkalu, joka on suunniteltu niille, jotka haluavat rakentaa vankkoja tapoja, asettaa selkeät tavoitteet ja ymmärtää syvällisesti käyttäytymismallejaan tieteellisen ja häiriöttömän data-analyysin avulla.
+
+Toisin kuin perinteiset tuottavuussovellukset, jotka ovat usein kaoottisia ja ylikuormitettuja ilmoituksilla tai mainoksilla, Evolve perustuu minimaaliseen käyttöliittymään, erittäin hienostuneeseen suunnitteluun ja edistyneeseen analytiikkamoottoriin. Sovellus auttaa sinua ymmärtämään tehtävien suorittamisen lisäksi myös sitä, kuinka tottumukset vaikuttavat toisiinsa ja kuinka voit parhaiten tasapainottaa hyvinvointisi päivittäisen tuottavuuden kanssa.
+
+Evolven toiminnalliset makroalueet:
+
+1. EDISTYNYT TOTTUMUKSIEN SEURANTA
+- Vuorovaikutteiset ja toiminnalliset ilmoitukset: kirjaa tapauksen valmistuminen suoraan järjestelmäilmoituksesta ilman, että sinun tarvitsee avata sovellusta.
+- Yksittäiset ja joustavat muistutukset: Aseta kullekin tapalle itsenäiset ilmoitusajat.
+- Apple-tyylinen räätälöinti: Määritä virstanpylvääsi visuaalisesti.
+- Dynaaminen viivalaskenta: Tarkkaile johdonmukaisuuttasi.
+- Historiallinen kalenteri: Tarkastele jokaisen yksittäisen tavan kuukausittaista ja vuosittaista edistymistä tunnistaaksesi täsmällisyytesi ajan mittaan.
+
+2. TAVOITTEEN MÄÄRITTELY JA KEHITTÄMINEN
+- Alatavoitteiden erittely: Jaa makrotavoitteesi pieniin, saavutettavissa oleviin vaiheisiin.
+- Tutkakaaviot elämänalueille: Visualisoi kasvusi yleinen tasapaino kaavioiden avulla.
+- Kausiluontoisuus ja historiallinen analyysi: Tarkkaile, kuinka tuottavuutesi vaihtelee vuoden eri kuukausina, ja mukauta rytmiäsi sen mukaan.
+- Vuositrendi: Seuraa pitkän aikavälin edistymistäsi, jotta voit keskittyä korkealla makro-virstanpylväisiisi.
+
+3. TILASTOINEN ANALYYSI JA KORRELAATIOT
+Evolve muuttaa päivittäiset toimintasi hyödyllisiksi tiedoiksi tietoiselle kasvullesi.
+- Wellness vs Output Index: Teollisuusalgoritmi yhdistää emotionaalisen hyvinvointisi todelliseen tuottavuutesi, mikä auttaa sinua löytämään täydellisen tasapainon uupumisen estämiseksi.
+- Korrelaatioanalyysi: Ota selvää, kuinka yksi tapa vaikuttaa toiseen. Analysoi esimerkiksi, kuinka unen laatu tai fyysinen aktiivisuus vaikuttavat suoraan päiväsi keskittymiseen.
+- Parhaiden ja kriittisten tapojen tunnistaminen: Sovellus tunnistaa automaattisesti, mitkä käyttäytymiset tukevat kasvuasi ja mitkä tarvitsevat välitöntä tukea.
+
+4. TIETOJA
+Henkilökohtainen kasvu ei koostu vain numeroista, vaan myös henkisestä tietoisuudesta.
+- Tunnelman sisäänkirjautuminen: kirjaa emotionaalinen tilasi ymmärtääksesi tuottavuuteesi vaikuttavat tekijät.
+- Elämännäkymä: syntymäpäivääsi perustuva visuaalinen widget, joka edustaa elämäsi kuluneita viikkoja ja tulevia. Tehokas työkalu, joka muistuttaa sinua ajan arvosta ja saa sinut elämään joka päivä tarkoituksella.
+- Suojattu pilvisynkronointi: Kaikki tietosi tallennetaan reaaliajassa turvallisesti Supabase-integraation ja Apple Sign-In -todennuksen ansiosta.
+- Johdonmukainen premium-muotoilu: Vaihda saumattomasti tummasta tilasta vaaleaan tilaan suunnittelulla, joka on räätälöity maksimaalisen luettavuuden ja visuaalisen mukavuuden takaamiseksi kaikissa valaistusolosuhteissa.
+
+EVOLVE PRO -TILAUSTIEDOT:
+Tilaus uusiutuu automaattisesti, ellei automaattista uusimista ole poistettu käytöstä Apple/iTunes-tilisi asetuksista vähintään 24 tuntia ennen nykyisen jakson päättymistä. Tiliäsi veloitetaan 24 tunnin sisällä ennen nykyisen jakson päättymistä. Voit hallita tilaustasi ja poistaa automaattisen uusimisen käytöstä siirtymällä Apple-tilisi asetuksiin oston jälkeen.
+
+Normaalit käyttöehdot (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Tietosuojakäytäntö: https://simo-hue.github.io/evolve/privacy.html

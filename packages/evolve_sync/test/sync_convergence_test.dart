@@ -42,6 +42,9 @@ class _CappedCloud implements CloudKitBridge {
   Future<void> deleteRecords(List<String> names) => inner.deleteRecords(names);
   @override
   Future<void> deleteZone() => inner.deleteZone();
+  // Delegates: the probe is orthogonal to what these wrappers simulate.
+  @override
+  Future<bool> zoneHasRecords() => inner.zoneHasRecords();
 }
 
 /// Runs [onSave] the first time a push reaches the network, standing in for an
@@ -72,6 +75,10 @@ class _EditDuringPushCloud implements CloudKitBridge {
   Future<void> deleteRecords(List<String> names) => inner.deleteRecords(names);
   @override
   Future<void> deleteZone() => inner.deleteZone();
+
+  // Delegates: the probe is orthogonal to what this wrapper simulates.
+  @override
+  Future<bool> zoneHasRecords() => inner.zoneHasRecords();
 }
 
 void main() {

@@ -551,7 +551,17 @@
     "detailsFailed": "{count} Elemente konnten nicht hochgeladen werden",
     "detailsCopy": "Bericht kopieren",
     "detailsCopied": "Bericht kopiert",
-    "detailsUnavailable": "Diagnose nicht verfügbar"
+    "detailsUnavailable": "Diagnose nicht verfügbar",
+    "keySplitTitle": "Einige iCloud-Daten sind nicht lesbar",
+    "keySplitBody": "{count} Einträge in iCloud wurden auf einem anderen Gerät mit einem anderen Schlüssel verschlüsselt, daher kann dieses Gerät sie nicht lesen. Setze die Synchronisierung von dem Gerät aus zurück, das die Daten enthält, die du behalten möchtest.",
+    "resetFromDevice": "Synchronisierung von diesem Gerät zurücksetzen",
+    "resetFromDeviceDetail": "Alles in iCloud durch die Daten dieses Geräts ersetzen",
+    "resetFromDeviceConfirm": "Dies löscht alles, was derzeit in iCloud gespeichert ist, und lädt stattdessen die Daten dieses Geräts hoch. Deine anderen Geräte laden anschließend diese Kopie herunter. Führe dies nur auf dem Gerät aus, das die Daten enthält, die du behalten möchtest. Dies kann nicht rückgängig gemacht werden.",
+    "resetFromDeviceDone": "Synchronisierung zurückgesetzt. Die Daten dieses Geräts sind jetzt die Kopie in iCloud.",
+    "statusWaitingKey": "Warten auf den Verschlüsselungsschlüssel von deinem anderen Gerät",
+    "forceEnableTitle": "Mit diesem Gerät neu beginnen",
+    "forceEnableBody": "Die Daten eines anderen Geräts sind bereits in iCloud, aber dessen Verschlüsselungsschlüssel hat dieses Gerät noch nicht erreicht. Meist genügt es, ein paar Minuten zu warten. Ein Neuanfang löscht, was in iCloud liegt, und ersetzt es durch die Daten dieses Geräts. Dies kann nicht rückgängig gemacht werden.",
+    "forceEnable": "Neu beginnen"
   },
   "privateRecovery": {
     "preparing": "Dein privater Bereich wird vorbereitet…",

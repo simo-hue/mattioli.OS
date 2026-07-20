@@ -356,21 +356,27 @@ void main() {
       await insertGoal(dbA, 'g1', title: 'secret', at: t(10));
       await engine(dbA, cloud).syncNow(key);
 
-      // Device B pulls with the WRONG key: decrypting g1's payload throws, so the
-      // apply fails. A failed apply must NOT advance the token (that would drop
-      // the record forever) — it must hold it for a later retry.
+      // Device B pulls with the WRONG key: decrypting g1's payload throws.
+      //
+      // This record is QUARANTINED and the token ADVANCES — deliberately not
+      // held. A wrong key is not a transient fault: holding the token would pin
+      // B forever, re-downloading and re-discarding the whole zone on every
+      // sync (the state a real key split left an iPhone in — `change token:
+      // none`, 6238 records skipped per sync, indefinitely).
       final wrongKey = crypto.generateKey();
       final res = await engine(dbB, cloud).syncNow(wrongKey);
       expect(res.applied, 0);
+      expect(res.undecryptable, 1);
       expect(await readGoal(dbB, 'g1'), isNull); // nothing applied
-      expect(await SyncLocalStore(dbB).changeToken(), isNull); // token HELD
+      expect(await SyncLocalStore(dbB).changeToken(), isNotNull); // ADVANCED
 
-      // Once B can decrypt (correct key delivered), the SAME record is re-fetched
-      // (the token was held) and applied — no data lost.
+      // Recovery still works, via a different mechanism: once the correct key
+      // is delivered, the changed key fingerprint drops the token and forces one
+      // full re-fetch, which re-delivers g1 and applies it. No data lost.
       final res2 = await engine(dbB, cloud).syncNow(key);
       expect(res2.applied, 1);
       expect((await readGoal(dbB, 'g1'))!['title'], 'secret');
-      expect(await SyncLocalStore(dbB).changeToken(), isNotNull); // now advanced
+      expect(await SyncLocalStore(dbB).changeToken(), isNotNull);
       await dbA.close();
       await dbB.close();
     });

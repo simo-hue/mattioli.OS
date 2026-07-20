@@ -83,4 +83,14 @@ class FakeCloudKitBridge implements CloudKitBridge {
     _seq.clear();
     zoneDeleted = true;
   }
+
+  int zoneHasRecordsCalls = 0;
+
+  /// Mirrors the native contract: a token-free peek that must NOT disturb the
+  /// change sequence, so a probe can never cost a device its pending changes.
+  @override
+  Future<bool> zoneHasRecords() async {
+    zoneHasRecordsCalls++;
+    return _zone.isNotEmpty;
+  }
 }

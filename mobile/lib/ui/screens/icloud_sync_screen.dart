@@ -118,9 +118,51 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
       final confirmed = await _showDisclosureDialog();
       if (confirmed != true) return;
       await _runAction((service) => service.enable());
+      // enable() DEFERS rather than minting a rival key when the zone already
+      // has data this device has no key for. Explain the wait and offer the
+      // deliberate override, instead of leaving the toggle silently snapping
+      // back to off.
+      final status = _status;
+      if (mounted && status != null && status.keyPending) {
+        await _offerStartFresh();
+      }
     } else {
       await _runAction((service) => service.disable());
     }
+  }
+
+  /// The escape hatch from a permanent deferral: a device whose iCloud Keychain
+  /// will never deliver the key (it is switched off) would otherwise wait
+  /// forever. Destructive, so it is never automatic — the user is told exactly
+  /// what it costs and has to say yes.
+  Future<void> _offerStartFresh() async {
+    final confirmed = await showEvolveConfirm(
+      context: context,
+      title: context.t.icloudSync.forceEnableTitle,
+      message: context.t.icloudSync.forceEnableBody,
+      confirmLabel: context.t.icloudSync.forceEnable,
+      ref: ref,
+      isDestructive: true,
+    );
+    if (confirmed != true) return;
+    await _runAction((service) => service.enable(force: true));
+  }
+
+  Future<void> _onResetFromThisDevice() async {
+    final confirmed = await showEvolveConfirm(
+      context: context,
+      title: context.t.icloudSync.resetFromDevice,
+      message: context.t.icloudSync.resetFromDeviceConfirm,
+      confirmLabel: context.t.icloudSync.resetFromDevice,
+      ref: ref,
+      isDestructive: true,
+    );
+    if (confirmed != true) return;
+    await _runAction((service) => service.resetSyncFromThisDevice());
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.t.icloudSync.resetFromDeviceDone)),
+    );
   }
 
   Future<bool> _showDisclosureDialog() {
@@ -143,7 +185,69 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
     if (status.account != CloudAccountStatus.available) {
       return context.t.icloudSync.statusUnavailable;
     }
+    if (status.keyPending) {
+      return context.t.icloudSync.statusWaitingKey;
+    }
+    // A key split is never "Up to date": syncing runs, reports success and
+    // applies nothing, which is exactly how it stayed invisible for weeks.
+    if (status.undecryptableCount > 0) {
+      return context.t.icloudSync.keySplitTitle;
+    }
     return context.t.icloudSync.statusIdle;
+  }
+
+  /// Prominent, actionable explanation of a key split — the one sync failure a
+  /// user cannot resolve by waiting or retrying.
+  Widget _buildKeySplitCard(BuildContext context, int count) {
+    final danger = context.appColors.destructive;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: danger.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: danger.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(LucideIcons.triangleAlert, size: 18, color: danger),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  context.t.icloudSync.keySplitTitle,
+                  style: GoogleFonts.inter(
+                    color: context.appColors.foreground,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            context.t.icloudSync.keySplitBody(count: count),
+            style: GoogleFonts.inter(
+              color: context.appColors.mutedForeground,
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: _busy ? null : _onResetFromThisDevice,
+              style: TextButton.styleFrom(foregroundColor: danger),
+              child: Text(context.t.icloudSync.resetFromDevice),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// "Never synced" or "Last synced `<date> <time>`".
@@ -263,6 +367,8 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (status.undecryptableCount > 0)
+                    _buildKeySplitCard(context, status.undecryptableCount),
                   _buildSettingsCard(context, [
                     _buildSwitchRow(
                       context: context,

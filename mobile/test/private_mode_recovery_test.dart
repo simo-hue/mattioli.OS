@@ -52,7 +52,7 @@ class _FakeSync implements PrivateSyncService {
   }
 
   @override
-  Future<PrivateSyncStatus> enable() async {
+  Future<PrivateSyncStatus> enable({bool force = false}) async {
     calls.add('enable');
     return enableResult;
   }
@@ -71,6 +71,10 @@ class _FakeSync implements PrivateSyncService {
 
   @override
   Future<SyncDiagnostics?> diagnostics() async => null;
+
+  @override
+  Future<PrivateSyncStatus> resetSyncFromThisDevice() async =>
+      enableResult;
 
   @override
   Future<T> runExclusive<T>(Future<T> Function() action) => action();

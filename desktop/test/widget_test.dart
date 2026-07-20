@@ -10,6 +10,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Some surfaces run endless animations by design — the overview check-in tile
+/// pulses, and the habits calendar's day cells glow ("today" / active days), so
+/// `pumpAndSettle` on those surfaces never settles. Pump a fixed frame budget
+/// instead, which also covers the page/period transitions.
+Future<void> _settleFrames(WidgetTester tester) async {
+  await tester.pump();
+  for (var i = 0; i < 4; i++) {
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+}
+
 void main() {
   // These tests assert on the Italian UI copy, so pin the slang locale to
   // Italian (base locale is English). The global `t` accessor reads this.
@@ -56,7 +67,7 @@ void main() {
     expect(find.text('Calendario'), findsOneWidget);
 
     await tester.tap(find.text('Calendario'));
-    await tester.pumpAndSettle();
+    await _settleFrames(tester);
 
     expect(find.text('Mese'), findsOneWidget);
     expect(find.text('Settimana'), findsOneWidget);
@@ -74,7 +85,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Calendario'));
-    await tester.pumpAndSettle();
+    await _settleFrames(tester);
 
     expect(find.text('Mese'), findsOneWidget);
     expect(find.text('Settimana'), findsOneWidget);
@@ -104,13 +115,7 @@ void main() {
 
     await tester.pumpWidget(const ProviderScope(child: _DesktopTestApp()));
 
-    // The overview check-in tile runs an endless pulse animation, so
-    // pumpAndSettle would never settle — pump fixed frames instead.
-    Future<void> settleFrames() async {
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump(const Duration(milliseconds: 300));
-    }
+    Future<void> settleFrames() => _settleFrames(tester);
 
     Future<void> pressCmd(LogicalKeyboardKey key) async {
       await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
@@ -133,9 +138,15 @@ void main() {
     await pressCmd(LogicalKeyboardKey.digit4);
     expect(find.text('Settimanale'), findsOneWidget);
 
-    // ⌘5 → AI Coach.
+    // ⌘5 → AI Coach, but the Coach is Pro-gated: for a signed-out, non-Pro user
+    // with no BYOK key the shortcut opens the Pro upsell instead of navigating.
+    // Assert that gate explicitly, then dismiss it — while the modal is up it
+    // swallows the shell's shortcuts, so the rest of the run needs it closed.
     await pressCmd(LogicalKeyboardKey.digit5);
-    expect(find.text('AI Coach'), findsWidgets);
+    expect(find.text('Sblocca Evolve Pro'), findsOneWidget);
+    await tester.tap(find.text('Forse più tardi'));
+    await settleFrames();
+    expect(find.text('Sblocca Evolve Pro'), findsNothing);
 
     // ⌘1 → back to Overview (PROTOCOLLO strip is dashboard-only).
     await pressCmd(LogicalKeyboardKey.digit1);

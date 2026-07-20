@@ -1015,6 +1015,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       detail: _diagnosticsLabel(_syncDiagnostics!),
                       onTap: () => _showDiagnosticsDialog(_syncDiagnostics!),
                     ),
+                  // A key split cannot be resolved by waiting or retrying, so
+                  // the only remedy gets its own row rather than hiding behind
+                  // the diagnostics dialog.
+                  if ((_syncStatus?.undecryptableCount ?? 0) > 0)
+                    _ActionRow(
+                      icon: LucideIcons.triangleAlert,
+                      title: t.icloudSync.resetFromDevice,
+                      detail: t.icloudSync.keySplitBody(
+                        count: _syncStatus!.undecryptableCount,
+                      ),
+                      onTap: _onResetSyncFromThisDevice,
+                    ),
                 ],
               ),
             _SettingsGroup(
@@ -1844,6 +1856,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       );
       if (!accepted) return;
       await _runSyncAction((service) => service.enable());
+      // enable() DEFERS rather than minting a rival key when the zone already
+      // holds data this Mac has no key for. Explain and offer the deliberate
+      // override instead of letting the toggle snap silently back to off.
+      if (mounted && (_syncStatus?.keyPending ?? false)) {
+        await _offerStartFresh();
+      }
     } else {
       await _runSyncAction((service) => service.disable());
     }
@@ -1875,6 +1893,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     if (status.account != CloudAccountStatus.available) {
       return t.icloudSync.statusUnavailable;
     }
+    if (status.keyPending) {
+      return t.icloudSync.statusWaitingKey;
+    }
+    // A key split is never "Up to date": syncing runs, reports success and
+    // applies nothing, which is exactly how it stayed invisible for weeks.
+    if (status.undecryptableCount > 0) {
+      return t.icloudSync.keySplitTitle;
+    }
     if (!status.hasKey) {
       // Enabled + iCloud fine, but the E2E key hasn't arrived through iCloud
       // Keychain — typically an iPhone app that predates the shared keychain
@@ -1882,6 +1908,32 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       return t.icloudSync.statusWaitingKeychain;
     }
     return t.icloudSync.statusIdle;
+  }
+
+  /// The escape hatch from a permanent deferral: a Mac whose iCloud Keychain
+  /// will never deliver the key would otherwise wait forever. Destructive, so
+  /// never automatic — the user is told what it costs and has to agree.
+  Future<void> _offerStartFresh() async {
+    final accepted = await _confirm(
+      title: t.icloudSync.forceEnableTitle,
+      message: t.icloudSync.forceEnableBody,
+      destructive: true,
+    );
+    if (!accepted) return;
+    await _runSyncAction((service) => service.enable(force: true));
+  }
+
+  Future<void> _onResetSyncFromThisDevice() async {
+    final accepted = await _confirm(
+      title: t.icloudSync.resetFromDevice,
+      message: t.icloudSync.resetFromDeviceConfirm,
+      destructive: true,
+    );
+    if (!accepted) return;
+    await _runSyncAction((service) => service.resetSyncFromThisDevice());
+    if (mounted) {
+      showEvolveToast(context, message: t.icloudSync.resetFromDeviceDone);
+    }
   }
 
   /// "Never synced" or "Last synced `<date> <time>`" under the Sync-now row.

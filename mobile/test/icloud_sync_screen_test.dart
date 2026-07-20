@@ -48,12 +48,18 @@ class FakePrivateSyncService implements PrivateSyncService {
     this.throwOnStatus = false,
     this.throwOnAction = false,
     this.diagnosticsResult,
+    this.deferEnable = false,
+    int undecryptableCount = 0,
   }) : _status = PrivateSyncStatus(
           isAvailable: isAvailable,
           isEnabled: isEnabled,
           lastSyncedAt: lastSyncedAt,
           account: account,
+          undecryptableCount: undecryptableCount,
         );
+
+  /// Models the key-mint guard firing: enable() refuses and reports keyPending.
+  final bool deferEnable;
 
   /// When set, `status()` throws — simulates a Keychain/DB hiccup that must be
   /// swallowed rather than escaping as an unhandled async error (the reported
@@ -67,13 +73,19 @@ class FakePrivateSyncService implements PrivateSyncService {
   PrivateSyncStatus _status;
   final List<String> calls = [];
 
-  PrivateSyncStatus _copyWith({bool? isEnabled, DateTime? lastSyncedAt}) {
+  PrivateSyncStatus _copyWith({
+    bool? isEnabled,
+    DateTime? lastSyncedAt,
+    bool keyPending = false,
+  }) {
     return PrivateSyncStatus(
       isAvailable: _status.isAvailable,
       isEnabled: isEnabled ?? _status.isEnabled,
       lastSyncedAt: lastSyncedAt ?? _status.lastSyncedAt,
       account: _status.account,
       message: _status.message,
+      keyPending: keyPending,
+      undecryptableCount: _status.undecryptableCount,
     );
   }
 
@@ -91,9 +103,15 @@ class FakePrivateSyncService implements PrivateSyncService {
   }
 
   @override
-  Future<PrivateSyncStatus> enable() async {
-    calls.add('enable');
+  Future<PrivateSyncStatus> enable({bool force = false}) async {
+    calls.add(force ? 'enable(force)' : 'enable');
+    if (force) forceEnableCalls++;
     if (throwOnAction) throw StateError('enable boom');
+    // A non-forced enable against a zone this device has no key for DEFERS.
+    if (deferEnable && !force) {
+      _status = _copyWith(isEnabled: false, keyPending: true);
+      return _status;
+    }
     _status = _copyWith(
       isEnabled: true,
       lastSyncedAt: DateTime.utc(2026, 6, 23, 10, 30),
@@ -127,6 +145,16 @@ class FakePrivateSyncService implements PrivateSyncService {
   /// Null ⇒ no local store to inspect, which must HIDE the details row rather
   /// than render it empty.
   final SyncDiagnostics? diagnosticsResult;
+
+  int forceEnableCalls = 0;
+  int resetCalls = 0;
+
+  @override
+  Future<PrivateSyncStatus> resetSyncFromThisDevice() async {
+    calls.add('resetSyncFromThisDevice');
+    resetCalls++;
+    return _status;
+  }
 
   @override
   Future<SyncDiagnostics?> diagnostics() async {
@@ -414,6 +442,97 @@ void main() {
         // The per-table breakdown is the whole diagnostic value: an aggregate
         // count cannot tell you WHICH data never made it across.
         expect(find.textContaining('long_term_goals'), findsOneWidget);
+      });
+    });
+  });
+
+  group('key split', () {
+    testWidgets('a key mismatch is never reported as "Up to date"',
+        (tester) async {
+      await _withIosPlatform(() async {
+        // The failure that hid for weeks: sync runs, reports success, applies
+        // nothing, because the zone was sealed with another device's key.
+        final fake = FakePrivateSyncService(
+          isEnabled: true,
+          lastSyncedAt: DateTime.utc(2026, 7, 20, 9),
+          undecryptableCount: 3485,
+        );
+        await _pumpScreen(tester, fake);
+
+        expect(find.text("Some iCloud data can't be read"), findsWidgets);
+        expect(find.text('Up to date'), findsNothing);
+        expect(find.text('Reset sync from this device'), findsOneWidget);
+      });
+    });
+
+    testWidgets('resetting requires an explicit confirmation', (tester) async {
+      await _withIosPlatform(() async {
+        final fake = FakePrivateSyncService(
+          isEnabled: true,
+          undecryptableCount: 10,
+        );
+        await _pumpScreen(tester, fake);
+
+        await tester.tap(find.text('Reset sync from this device'));
+        await tester.pumpAndSettle();
+        // Destructive and unrecoverable — it must never fire on one tap.
+        expect(fake.resetCalls, 0);
+        expect(find.textContaining('erases everything'), findsOneWidget);
+      });
+    });
+
+    testWidgets('confirming runs the reset', (tester) async {
+      await _withIosPlatform(() async {
+        final fake = FakePrivateSyncService(
+          isEnabled: true,
+          undecryptableCount: 10,
+        );
+        await _pumpScreen(tester, fake);
+
+        await tester.tap(find.text('Reset sync from this device'));
+        await tester.pumpAndSettle();
+        // The confirm button carries the same label; take the dialog's copy.
+        await tester.tap(find.text('Reset sync from this device').last);
+        await tester.pumpAndSettle();
+
+        expect(fake.resetCalls, 1);
+        expect(fake.calls, contains('resetSyncFromThisDevice'));
+      });
+    });
+
+    testWidgets('a deferred enable offers the start-fresh override rather than '
+        'silently failing', (tester) async {
+      await _withIosPlatform(() async {
+        // The guard fired: the zone has data but this device has no key.
+        final fake = FakePrivateSyncService(deferEnable: true);
+        await _pumpScreen(tester, fake);
+
+        await tester.tap(find.byType(CupertinoSwitch));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Enable')); // disclosure
+        await tester.pumpAndSettle();
+
+        // Deferred, NOT enabled, and the user is told why + offered the way out.
+        expect(find.text('Start fresh from this device'), findsOneWidget);
+        expect(fake.forceEnableCalls, 0, reason: 'never automatic');
+      });
+    });
+
+    testWidgets('start-fresh only mints after the user confirms it',
+        (tester) async {
+      await _withIosPlatform(() async {
+        final fake = FakePrivateSyncService(deferEnable: true);
+        await _pumpScreen(tester, fake);
+
+        await tester.tap(find.byType(CupertinoSwitch));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Enable'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Start fresh'));
+        await tester.pumpAndSettle();
+
+        expect(fake.forceEnableCalls, 1);
+        expect(fake.calls, contains('enable(force)'));
       });
     });
   });

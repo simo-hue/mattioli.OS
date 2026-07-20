@@ -91,7 +91,7 @@ class _FakeSync implements PrivateSyncService {
   Future<PrivateSyncStatus> probe() async => _autoRecoverProbe;
 
   @override
-  Future<PrivateSyncStatus> enable() async => enableResult;
+  Future<PrivateSyncStatus> enable({bool force = false}) async => enableResult;
 
   @override
   Future<PrivateSyncStatus> status() async => _autoRecoverProbe;
@@ -107,6 +107,10 @@ class _FakeSync implements PrivateSyncService {
 
   @override
   Future<SyncDiagnostics?> diagnostics() async => null;
+
+  @override
+  Future<PrivateSyncStatus> resetSyncFromThisDevice() async =>
+      enableResult;
 
   @override
   Future<T> runExclusive<T>(Future<T> Function() action) => action();
@@ -237,5 +241,5 @@ class _ThrowingSync extends _FakeSync {
         );
 
   @override
-  Future<PrivateSyncStatus> enable() async => throw StateError('keychain blew up');
+  Future<PrivateSyncStatus> enable({bool force = false}) async => throw StateError('keychain blew up');
 }

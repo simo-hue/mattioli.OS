@@ -19,6 +19,18 @@ class _EmptyDashboardRepository extends DashboardRepository {
   Future<void> save(DashboardSnapshot snapshot) async {}
 }
 
+/// The calendar's day cells run an endless pulse (the "today" / active-day glow
+/// in `_DayCell`), so `pumpAndSettle` never settles on the Calendar surface —
+/// same reason the overview check-in tile is pumped by hand in `widget_test`.
+/// Pump a fixed budget of frames instead; it comfortably covers the period
+/// slide/fade transition.
+Future<void> _settleFrames(WidgetTester tester) async {
+  await tester.pump();
+  for (var i = 0; i < 4; i++) {
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+}
+
 Future<void> _pumpHabitsPage(WidgetTester tester) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -33,15 +45,15 @@ Future<void> _pumpHabitsPage(WidgetTester tester) async {
       ),
     ),
   );
-  await tester.pumpAndSettle();
+  await _settleFrames(tester);
 }
 
 /// Switches to the Calendar surface, Month view.
 Future<void> _openMonthCalendar(WidgetTester tester) async {
   await tester.tap(find.text(t.habitsPage.tabCalendar));
-  await tester.pumpAndSettle();
+  await _settleFrames(tester);
   await tester.tap(find.text(t.common.calendarView.month));
-  await tester.pumpAndSettle();
+  await _settleFrames(tester);
 }
 
 void main() {
@@ -62,14 +74,14 @@ void main() {
     expect(find.text(thisMonth), findsWidgets);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
-    await tester.pumpAndSettle();
+    await _settleFrames(tester);
 
     expect(find.text(nextMonth), findsWidgets);
     expect(find.text(thisMonth), findsNothing);
 
     // ← returns to the starting month.
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
-    await tester.pumpAndSettle();
+    await _settleFrames(tester);
     expect(find.text(thisMonth), findsWidgets);
   });
 
@@ -84,14 +96,14 @@ void main() {
     final now = DateTime.now();
     final thisMonth = t.common.months[now.month - 1];
     await tester.tap(find.text(t.habitsPage.tabProtocol));
-    await tester.pumpAndSettle();
+    await _settleFrames(tester);
 
     // On Protocol, arrows must not page the (hidden) calendar period.
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
-    await tester.pumpAndSettle();
+    await _settleFrames(tester);
 
     await tester.tap(find.text(t.habitsPage.tabCalendar));
-    await tester.pumpAndSettle();
+    await _settleFrames(tester);
     expect(
       find.text(thisMonth),
       findsWidgets,

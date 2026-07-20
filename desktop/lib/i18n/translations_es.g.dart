@@ -162,6 +162,16 @@ class _Translations$icloudSync$es extends Translations$icloudSync$en {
 	@override String detailsFailed({required Object count}) => '${count} elementos no se han subido';
 	@override String get detailsCopy => 'Copiar informe';
 	@override String get detailsCopied => 'Informe copiado';
+	@override String get keySplitTitle => 'Algunos datos de iCloud no se pueden leer';
+	@override String keySplitBody({required Object count}) => '${count} registros en iCloud se cifraron en otro dispositivo con una clave distinta, por lo que este dispositivo no puede leerlos. Restablece la sincronización desde el dispositivo que tenga los datos que quieres conservar.';
+	@override String get resetFromDevice => 'Restablecer la sincronización desde este dispositivo';
+	@override String get resetFromDeviceDetail => 'Sustituir todo lo que hay en iCloud por los datos de este dispositivo';
+	@override String get resetFromDeviceConfirm => 'Esto borra todo lo almacenado actualmente en iCloud y sube en su lugar los datos de este dispositivo. Tus otros dispositivos descargarán después esta copia. Hazlo solo desde el dispositivo que tenga los datos que quieres conservar. No se puede deshacer.';
+	@override String get resetFromDeviceDone => 'Sincronización restablecida. Los datos de este dispositivo son ahora la copia en iCloud.';
+	@override String get statusWaitingKey => 'Esperando la clave de cifrado de tu otro dispositivo';
+	@override String get forceEnableTitle => 'Empezar de cero desde este dispositivo';
+	@override String get forceEnableBody => 'Los datos de otro dispositivo ya están en iCloud, pero su clave de cifrado aún no ha llegado a este dispositivo. Normalmente basta con esperar unos minutos. Empezar de cero borra lo que hay en iCloud y lo sustituye por los datos de este dispositivo. No se puede deshacer.';
+	@override String get forceEnable => 'Empezar de cero';
 }
 
 // Path: privateRecovery
@@ -1751,6 +1761,16 @@ extension on TranslationsEs {
 			'icloudSync.detailsFailed' => ({required Object count}) => '${count} elementos no se han subido',
 			'icloudSync.detailsCopy' => 'Copiar informe',
 			'icloudSync.detailsCopied' => 'Informe copiado',
+			'icloudSync.keySplitTitle' => 'Algunos datos de iCloud no se pueden leer',
+			'icloudSync.keySplitBody' => ({required Object count}) => '${count} registros en iCloud se cifraron en otro dispositivo con una clave distinta, por lo que este dispositivo no puede leerlos. Restablece la sincronización desde el dispositivo que tenga los datos que quieres conservar.',
+			'icloudSync.resetFromDevice' => 'Restablecer la sincronización desde este dispositivo',
+			'icloudSync.resetFromDeviceDetail' => 'Sustituir todo lo que hay en iCloud por los datos de este dispositivo',
+			'icloudSync.resetFromDeviceConfirm' => 'Esto borra todo lo almacenado actualmente en iCloud y sube en su lugar los datos de este dispositivo. Tus otros dispositivos descargarán después esta copia. Hazlo solo desde el dispositivo que tenga los datos que quieres conservar. No se puede deshacer.',
+			'icloudSync.resetFromDeviceDone' => 'Sincronización restablecida. Los datos de este dispositivo son ahora la copia en iCloud.',
+			'icloudSync.statusWaitingKey' => 'Esperando la clave de cifrado de tu otro dispositivo',
+			'icloudSync.forceEnableTitle' => 'Empezar de cero desde este dispositivo',
+			'icloudSync.forceEnableBody' => 'Los datos de otro dispositivo ya están en iCloud, pero su clave de cifrado aún no ha llegado a este dispositivo. Normalmente basta con esperar unos minutos. Empezar de cero borra lo que hay en iCloud y lo sustituye por los datos de este dispositivo. No se puede deshacer.',
+			'icloudSync.forceEnable' => 'Empezar de cero',
 			'privateRecovery.preparing' => 'Preparando tu espacio privado…',
 			'privateRecovery.restoredFromCloudToast' => 'No se pudo desbloquear la base de datos local: tus datos se restauraron desde iCloud.',
 			'privateRecovery.waitingTitle' => 'Esperando a iCloud',
@@ -2202,6 +2222,8 @@ extension on TranslationsEs {
 			'habitsPage.deleteHabitTitle' => 'Eliminar hábito',
 			'habitsPage.deleteHabitConfirm' => ({required Object title}) => '¿Quitar "${title}" del protocolo?',
 			'habitsPage.activeProtocol' => 'Protocolo activo',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.completedToday' => 'Completadas hoy',
 			'habitsPage.dailyProtocol' => 'Protocolo diario',
 			'habitsPage.protocolSubtitle' => 'Resumen semanal, recordatorios y acciones rápidas',
@@ -2212,8 +2234,6 @@ extension on TranslationsEs {
 			'habitsPage.streakDays' => ({required Object n}) => '${n} días',
 			'habitsPage.prevPeriod' => 'Período anterior',
 			'habitsPage.nextPeriod' => 'Período siguiente',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.0' => 'LUN',
 			'habitsPage.weekdayAbbrevUpper.1' => 'MAR',
 			'habitsPage.weekdayAbbrevUpper.2' => 'MIÉ',
@@ -2716,6 +2736,8 @@ extension on TranslationsEs {
 			'coachSettings.modelHint' => 'p. ej. llama3.1:8b',
 			'coachSettings.refreshModels' => 'Actualizar modelos',
 			'coachSettings.discovering' => 'Buscando modelos…',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.noModelsFound' => 'No se encontraron modelos — escribe un id de modelo manualmente abajo.',
 			'coachSettings.manualModelLabel' => 'Id del modelo',
 			'coachSettings.manualModelAdd' => 'Usar este modelo',
@@ -2726,8 +2748,6 @@ extension on TranslationsEs {
 			'coachSettings.remoteWarning' => 'Este endpoint no es una dirección local — los mensajes saldrán de este dispositivo.',
 			'coachSettings.advanced' => 'Avanzado',
 			'coachSettings.systemPromptLabel' => 'Prompt del sistema',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.systemPromptHint' => 'Reemplaza la persona del coach (déjalo vacío para la predeterminada)',
 			'coachSettings.systemPromptReset' => 'Restablecer',
 			'coachSettings.temperatureLabel' => 'Temperatura',

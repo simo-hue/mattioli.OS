@@ -115,10 +115,23 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
     }
   }
 
-  Future<PrivateSyncStatus> _status({int appliedChanges = 0}) async {
+  Future<PrivateSyncStatus> _status({
+    int appliedChanges = 0,
+    bool keyPending = false,
+    int undecryptableCount = 0,
+  }) async {
     final enabled = await enabledStore.isEnabled();
     final account = await bridge.accountStatus();
     final store = await storeProvider();
+    // A key split persists across syncs, so the count cannot come only from the
+    // op that just ran: a user opening this screen a day later must still see
+    // it. Fall back to what is parked in the store.
+    var undecryptable = undecryptableCount;
+    if (undecryptable == 0) {
+      undecryptable = (await store.diagnostics())
+              .parkedByReason[SyncLocalStore.undecryptableReason] ??
+          0;
+    }
     return PrivateSyncStatus(
       isAvailable: account == CloudAccountStatus.available,
       isEnabled: enabled,
@@ -126,6 +139,8 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
       account: account,
       hasKey: await keys.readKey() != null,
       appliedChanges: appliedChanges,
+      keyPending: keyPending,
+      undecryptableCount: undecryptable,
     );
   }
 
@@ -143,15 +158,17 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
   }
 
   @override
-  Future<PrivateSyncStatus> enable() => _runExclusive(_enable);
+  Future<PrivateSyncStatus> enable({bool force = false}) =>
+      _runExclusive(() => _enable(force: force));
 
-  Future<PrivateSyncStatus> _enable() async {
+  Future<PrivateSyncStatus> _enable({bool force = false}) async {
     try {
       logger.info('[CloudKit] Enabling sync...');
       final store = await storeProvider();
       final engine = await _engine(store);
       final localOwner = await ownerProvider();
-      final res = await engine.enable(keys: keys, localOwner: localOwner);
+      final res =
+          await engine.enable(keys: keys, localOwner: localOwner, force: force);
       if (res.ran) {
         // On a second device the engine re-keyed every local row onto the
         // canonical sync-owner. Persist it as THIS device's owner id too, or
@@ -179,10 +196,22 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
           '[CloudKit] Sync enable deferred: canonical owner not yet synced '
           'from iCloud Keychain',
         );
+      } else if (res.keyPending) {
+        // The zone already holds records but this device has no key yet.
+        // Deliberately leaves sync OFF so the UI can explain the wait and offer
+        // the deliberate override, rather than looking enabled-but-empty.
+        logger.info(
+          '[CloudKit] Sync enable deferred: waiting for the E2E key from '
+          'iCloud Keychain (zone already has data)',
+        );
       } else {
         logger.info('[CloudKit] Sync enable skipped (blocked by: ${res.blockedBy})');
       }
-      return _status(appliedChanges: res.applied);
+      return _status(
+        appliedChanges: res.applied,
+        keyPending: res.keyPending,
+        undecryptableCount: res.undecryptable,
+      );
     } catch (e, stack) {
       logger.error('[CloudKit] Failed to enable sync', e, stack);
       rethrow;
@@ -243,6 +272,47 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
   @override
   Future<T> runExclusive<T>(Future<T> Function() action) =>
       _runExclusive(action);
+
+  @override
+  Future<PrivateSyncStatus> resetSyncFromThisDevice() =>
+      _runExclusive(() async {
+        try {
+          logger.info('[CloudKit] Resetting sync from this device...');
+          final store = await storeProvider();
+
+          // 1. Destroy the zone. Everything in it is either this device's own
+          //    data (about to be re-uploaded) or records sealed under a key
+          //    nothing can read — in both cases worthless.
+          await bridge.deleteZone();
+
+          // 2. Drop the shared secrets so step 4 mints a genuinely fresh key
+          //    rather than re-adopting the one that caused the split. This
+          //    propagates through the iCloud Keychain, which is what lets the
+          //    OTHER device stop using its rival key.
+          await keys.deleteAll();
+
+          // 3. Clear local bookkeeping: every sync_state row, the change token
+          //    and the key fingerprint describe a zone that no longer exists.
+          //    Without this, records already marked synced would never be
+          //    re-uploaded and the reset would produce an empty zone. Local
+          //    user data is untouched.
+          await store.resetSyncState();
+          await store.setPendingZoneWipe(false);
+          await enabledStore.setEnabled(false);
+
+          // 4. Re-enable as the first device. `force` is NOT needed — the zone
+          //    is empty now, so the guard passes on its own; passing it would
+          //    only mask a failed wipe in step 1.
+          final res = await _enable();
+          logger.info('[CloudKit] Sync reset complete', extras: {
+            'pushed': res.appliedChanges,
+          });
+          return res;
+        } catch (e, stack) {
+          logger.error('[CloudKit] Reset sync from this device failed', e, stack);
+          rethrow;
+        }
+      });
 
   @override
   Future<PrivateSyncStatus> requestFullReset() => _runExclusive(() async {

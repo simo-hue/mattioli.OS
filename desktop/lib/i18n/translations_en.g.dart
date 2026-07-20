@@ -282,6 +282,36 @@ class Translations$icloudSync$en {
 
 	/// en: 'Report copied'
 	String get detailsCopied => 'Report copied';
+
+	/// en: 'Some iCloud data can't be read'
+	String get keySplitTitle => 'Some iCloud data can\'t be read';
+
+	/// en: '{count} records in iCloud were encrypted on another device with a different key, so this device can't read them. Reset sync from whichever device holds the data you want to keep.'
+	String keySplitBody({required Object count}) => '${count} records in iCloud were encrypted on another device with a different key, so this device can\'t read them. Reset sync from whichever device holds the data you want to keep.';
+
+	/// en: 'Reset sync from this device'
+	String get resetFromDevice => 'Reset sync from this device';
+
+	/// en: 'Replace everything in iCloud with this device's data'
+	String get resetFromDeviceDetail => 'Replace everything in iCloud with this device\'s data';
+
+	/// en: 'This erases everything currently stored in iCloud and uploads this device's data in its place. Your other devices will then download this copy. Only do this from the device that holds the data you want to keep. This cannot be undone.'
+	String get resetFromDeviceConfirm => 'This erases everything currently stored in iCloud and uploads this device\'s data in its place. Your other devices will then download this copy. Only do this from the device that holds the data you want to keep. This cannot be undone.';
+
+	/// en: 'Sync reset. This device's data is now the copy in iCloud.'
+	String get resetFromDeviceDone => 'Sync reset. This device\'s data is now the copy in iCloud.';
+
+	/// en: 'Waiting for the encryption key from your other device'
+	String get statusWaitingKey => 'Waiting for the encryption key from your other device';
+
+	/// en: 'Start fresh from this device'
+	String get forceEnableTitle => 'Start fresh from this device';
+
+	/// en: 'Another device's data is already in iCloud, but its encryption key hasn't reached this device yet. Waiting is usually enough — it can take a few minutes. Starting fresh erases what is in iCloud and replaces it with this device's data. This cannot be undone.'
+	String get forceEnableBody => 'Another device\'s data is already in iCloud, but its encryption key hasn\'t reached this device yet. Waiting is usually enough — it can take a few minutes. Starting fresh erases what is in iCloud and replaces it with this device\'s data. This cannot be undone.';
+
+	/// en: 'Start fresh'
+	String get forceEnable => 'Start fresh';
 }
 
 // Path: privateRecovery
@@ -3997,6 +4027,16 @@ extension on Translations {
 			'icloudSync.detailsFailed' => ({required Object count}) => '${count} items failed to upload',
 			'icloudSync.detailsCopy' => 'Copy report',
 			'icloudSync.detailsCopied' => 'Report copied',
+			'icloudSync.keySplitTitle' => 'Some iCloud data can\'t be read',
+			'icloudSync.keySplitBody' => ({required Object count}) => '${count} records in iCloud were encrypted on another device with a different key, so this device can\'t read them. Reset sync from whichever device holds the data you want to keep.',
+			'icloudSync.resetFromDevice' => 'Reset sync from this device',
+			'icloudSync.resetFromDeviceDetail' => 'Replace everything in iCloud with this device\'s data',
+			'icloudSync.resetFromDeviceConfirm' => 'This erases everything currently stored in iCloud and uploads this device\'s data in its place. Your other devices will then download this copy. Only do this from the device that holds the data you want to keep. This cannot be undone.',
+			'icloudSync.resetFromDeviceDone' => 'Sync reset. This device\'s data is now the copy in iCloud.',
+			'icloudSync.statusWaitingKey' => 'Waiting for the encryption key from your other device',
+			'icloudSync.forceEnableTitle' => 'Start fresh from this device',
+			'icloudSync.forceEnableBody' => 'Another device\'s data is already in iCloud, but its encryption key hasn\'t reached this device yet. Waiting is usually enough — it can take a few minutes. Starting fresh erases what is in iCloud and replaces it with this device\'s data. This cannot be undone.',
+			'icloudSync.forceEnable' => 'Start fresh',
 			'privateRecovery.preparing' => 'Preparing your private space…',
 			'privateRecovery.restoredFromCloudToast' => 'Couldn\'t unlock the local database — restored your data from iCloud.',
 			'privateRecovery.waitingTitle' => 'Waiting for iCloud',
@@ -4448,6 +4488,8 @@ extension on Translations {
 			'habitsPage.deleteHabitTitle' => 'Delete habit',
 			'habitsPage.deleteHabitConfirm' => ({required Object title}) => 'Remove "${title}" from the protocol?',
 			'habitsPage.activeProtocol' => 'Active protocol',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.completedToday' => 'Completed today',
 			'habitsPage.dailyProtocol' => 'Daily protocol',
 			'habitsPage.protocolSubtitle' => 'Weekly overview, reminders and quick actions',
@@ -4458,8 +4500,6 @@ extension on Translations {
 			'habitsPage.streakDays' => ({required Object n}) => '${n} days',
 			'habitsPage.prevPeriod' => 'Previous period',
 			'habitsPage.nextPeriod' => 'Next period',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.0' => 'MON',
 			'habitsPage.weekdayAbbrevUpper.1' => 'TUE',
 			'habitsPage.weekdayAbbrevUpper.2' => 'WED',
@@ -4962,6 +5002,8 @@ extension on Translations {
 			'coachSettings.modelHint' => 'e.g. llama3.1:8b',
 			'coachSettings.refreshModels' => 'Refresh models',
 			'coachSettings.discovering' => 'Looking for models…',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.noModelsFound' => 'No models found — type a model id manually below.',
 			'coachSettings.manualModelLabel' => 'Model id',
 			'coachSettings.manualModelAdd' => 'Use this model',
@@ -4972,8 +5014,6 @@ extension on Translations {
 			'coachSettings.remoteWarning' => 'This endpoint isn\'t a local address — messages will leave this device.',
 			'coachSettings.advanced' => 'Advanced',
 			'coachSettings.systemPromptLabel' => 'System prompt',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.systemPromptHint' => 'Override the coach persona (leave empty for the default)',
 			'coachSettings.systemPromptReset' => 'Reset',
 			'coachSettings.temperatureLabel' => 'Temperature',

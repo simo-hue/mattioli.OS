@@ -102,6 +102,7 @@ enum CloudKitSyncBridge {
     case "fetchChanges": fetchChanges(args, result)
     case "deleteRecords": deleteRecords(args, result)
     case "deleteZone": deleteZone(result)
+    case "zoneHasRecords": zoneHasRecords(result)
     default: result(FlutterMethodNotImplemented)
     }
   }
@@ -330,6 +331,58 @@ enum CloudKitSyncBridge {
       map["assetPath"] = url.path
     }
     return map
+  }
+
+  // MARK: - Zone probe (key-mint guard)
+
+  /// Does the zone hold ANY record? Answers "is this device really the first to
+  /// enable sync?" — the guard that stops a second E2E key being minted while
+  /// the real one is still in flight through the iCloud Keychain. Minting
+  /// against a populated zone orphans every record in it, permanently, on every
+  /// device.
+  ///
+  /// Deliberately cheap and side-effect free:
+  ///  - `fetchAllChanges = false` fetches ONE batch instead of walking the zone.
+  ///  - `desiredKeys = []` asks the server for record ids only, no field data,
+  ///    so a 6000-record zone costs a single small response.
+  ///  - the returned change token is DISCARDED and never persisted, so probing
+  ///    can never advance a device past changes it has not applied.
+  ///
+  /// A missing zone means genuinely nothing is there yet → false. Any other
+  /// error is INCONCLUSIVE and must fail closed (→ true, defer the enable):
+  /// answering "empty" on an error is the branch that mints a second key.
+  private static func zoneHasRecords(_ result: @escaping FlutterResult) {
+    let config = CKFetchRecordZoneChangesOperation.ZoneConfiguration()
+    config.previousServerChangeToken = nil
+    config.desiredKeys = []
+    let op = CKFetchRecordZoneChangesOperation(
+      recordZoneIDs: [zoneID],
+      configurationsByRecordZoneID: [zoneID: config]
+    )
+    op.fetchAllChanges = false
+
+    var found = false
+    op.recordWasChangedBlock = { _, res in
+      if case .success = res { found = true }
+    }
+    // A tombstone is still evidence the zone has been written to.
+    op.recordWithIDWasDeletedBlock = { _, _ in found = true }
+    op.fetchRecordZoneChangesResultBlock = { res in
+      main {
+        switch res {
+        case .success:
+          result(found)
+        case .failure(let error):
+          if let ck = error as? CKError,
+             ck.code == .zoneNotFound || ck.code == .userDeletedZone {
+            result(false)
+          } else {
+            result(flutterError(error))
+          }
+        }
+      }
+    }
+    database.add(op)
   }
 
   // MARK: - Token (base64 of the archived CKServerChangeToken)

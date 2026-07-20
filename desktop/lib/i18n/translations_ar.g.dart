@@ -162,6 +162,16 @@ class _Translations$icloudSync$ar extends Translations$icloudSync$en {
 	@override String detailsFailed({required Object count}) => '${count} عنصرًا فشل رفعها';
 	@override String get detailsCopy => 'نسخ التقرير';
 	@override String get detailsCopied => 'تم نسخ التقرير';
+	@override String get keySplitTitle => 'تعذّرت قراءة بعض بيانات iCloud';
+	@override String keySplitBody({required Object count}) => '${count} سجلًا في iCloud جرى تشفيرها على جهاز آخر بمفتاح مختلف، لذا لا يستطيع هذا الجهاز قراءتها. أعِد ضبط المزامنة من الجهاز الذي يحتوي على البيانات التي تريد الاحتفاظ بها.';
+	@override String get resetFromDevice => 'إعادة ضبط المزامنة من هذا الجهاز';
+	@override String get resetFromDeviceDetail => 'استبدال كل ما في iCloud ببيانات هذا الجهاز';
+	@override String get resetFromDeviceConfirm => 'سيؤدي هذا إلى حذف كل ما هو مخزَّن حاليًا في iCloud ورفع بيانات هذا الجهاز بدلًا منه. ستقوم أجهزتك الأخرى بعد ذلك بتنزيل هذه النسخة. نفِّذ ذلك فقط من الجهاز الذي يحتوي على البيانات التي تريد الاحتفاظ بها. لا يمكن التراجع عن هذا الإجراء.';
+	@override String get resetFromDeviceDone => 'تمت إعادة ضبط المزامنة. بيانات هذا الجهاز هي الآن النسخة الموجودة في iCloud.';
+	@override String get statusWaitingKey => 'في انتظار مفتاح التشفير من جهازك الآخر';
+	@override String get forceEnableTitle => 'البدء من جديد من هذا الجهاز';
+	@override String get forceEnableBody => 'بيانات جهاز آخر موجودة بالفعل في iCloud، لكن مفتاح التشفير الخاص به لم يصل إلى هذا الجهاز بعد. الانتظار بضع دقائق يكفي عادةً. البدء من جديد يحذف ما في iCloud ويستبدله ببيانات هذا الجهاز، ولا يمكن التراجع عن ذلك.';
+	@override String get forceEnable => 'ابدأ من جديد';
 }
 
 // Path: privateRecovery
@@ -1751,6 +1761,16 @@ extension on TranslationsAr {
 			'icloudSync.detailsFailed' => ({required Object count}) => '${count} عنصرًا فشل رفعها',
 			'icloudSync.detailsCopy' => 'نسخ التقرير',
 			'icloudSync.detailsCopied' => 'تم نسخ التقرير',
+			'icloudSync.keySplitTitle' => 'تعذّرت قراءة بعض بيانات iCloud',
+			'icloudSync.keySplitBody' => ({required Object count}) => '${count} سجلًا في iCloud جرى تشفيرها على جهاز آخر بمفتاح مختلف، لذا لا يستطيع هذا الجهاز قراءتها. أعِد ضبط المزامنة من الجهاز الذي يحتوي على البيانات التي تريد الاحتفاظ بها.',
+			'icloudSync.resetFromDevice' => 'إعادة ضبط المزامنة من هذا الجهاز',
+			'icloudSync.resetFromDeviceDetail' => 'استبدال كل ما في iCloud ببيانات هذا الجهاز',
+			'icloudSync.resetFromDeviceConfirm' => 'سيؤدي هذا إلى حذف كل ما هو مخزَّن حاليًا في iCloud ورفع بيانات هذا الجهاز بدلًا منه. ستقوم أجهزتك الأخرى بعد ذلك بتنزيل هذه النسخة. نفِّذ ذلك فقط من الجهاز الذي يحتوي على البيانات التي تريد الاحتفاظ بها. لا يمكن التراجع عن هذا الإجراء.',
+			'icloudSync.resetFromDeviceDone' => 'تمت إعادة ضبط المزامنة. بيانات هذا الجهاز هي الآن النسخة الموجودة في iCloud.',
+			'icloudSync.statusWaitingKey' => 'في انتظار مفتاح التشفير من جهازك الآخر',
+			'icloudSync.forceEnableTitle' => 'البدء من جديد من هذا الجهاز',
+			'icloudSync.forceEnableBody' => 'بيانات جهاز آخر موجودة بالفعل في iCloud، لكن مفتاح التشفير الخاص به لم يصل إلى هذا الجهاز بعد. الانتظار بضع دقائق يكفي عادةً. البدء من جديد يحذف ما في iCloud ويستبدله ببيانات هذا الجهاز، ولا يمكن التراجع عن ذلك.',
+			'icloudSync.forceEnable' => 'ابدأ من جديد',
 			'privateRecovery.preparing' => 'جارٍ تجهيز مساحتك الخاصة…',
 			'privateRecovery.restoredFromCloudToast' => 'تعذّر فتح قاعدة البيانات المحلية — تمت استعادة بياناتك من iCloud.',
 			'privateRecovery.waitingTitle' => 'بانتظار iCloud',
@@ -2202,6 +2222,8 @@ extension on TranslationsAr {
 			'habitsPage.deleteHabitTitle' => 'حذف العادة',
 			'habitsPage.deleteHabitConfirm' => ({required Object title}) => 'هل تريد إزالة "${title}" من البروتوكول؟',
 			'habitsPage.activeProtocol' => 'البروتوكول النشط',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.completedToday' => 'أُنجزت اليوم',
 			'habitsPage.dailyProtocol' => 'البروتوكول اليومي',
 			'habitsPage.protocolSubtitle' => 'نظرة أسبوعية وتذكيرات وإجراءات سريعة',
@@ -2212,8 +2234,6 @@ extension on TranslationsAr {
 			'habitsPage.streakDays' => ({required Object n}) => '${n} أيام',
 			'habitsPage.prevPeriod' => 'الفترة السابقة',
 			'habitsPage.nextPeriod' => 'الفترة التالية',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.0' => 'اثن',
 			'habitsPage.weekdayAbbrevUpper.1' => 'ثلا',
 			'habitsPage.weekdayAbbrevUpper.2' => 'أرب',
@@ -2716,6 +2736,8 @@ extension on TranslationsAr {
 			'coachSettings.modelHint' => 'مثال: llama3.1:8b',
 			'coachSettings.refreshModels' => 'تحديث النماذج',
 			'coachSettings.discovering' => 'جارٍ البحث عن النماذج…',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.noModelsFound' => 'لم يُعثَر على نماذج — اكتب معرّف نموذج يدويًا أدناه.',
 			'coachSettings.manualModelLabel' => 'معرّف النموذج',
 			'coachSettings.manualModelAdd' => 'استخدام هذا النموذج',
@@ -2726,8 +2748,6 @@ extension on TranslationsAr {
 			'coachSettings.remoteWarning' => 'هذا الـ endpoint ليس عنوانًا محليًا — ستغادر الرسائل هذا الجهاز.',
 			'coachSettings.advanced' => 'متقدّم',
 			'coachSettings.systemPromptLabel' => 'موجّه النظام',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.systemPromptHint' => 'استبدل شخصية المدرّب (اتركه فارغًا للوضع الافتراضي)',
 			'coachSettings.systemPromptReset' => 'إعادة تعيين',
 			'coachSettings.temperatureLabel' => 'درجة الحرارة',

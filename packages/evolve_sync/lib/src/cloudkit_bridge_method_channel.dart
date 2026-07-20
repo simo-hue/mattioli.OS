@@ -38,6 +38,24 @@ class MethodChannelCloudKitBridge implements CloudKitBridge {
   }
 
   @override
+  Future<bool> zoneHasRecords() async {
+    try {
+      return await channel.invokeMethod<bool>('zoneHasRecords') ?? false;
+    } on MissingPluginException {
+      // Channel missing ⇒ sync cannot run at all, so "no records" is both true
+      // in effect and the safe answer: it cannot cause a spurious DEFER.
+      return false;
+    } on PlatformException {
+      // The probe guards against minting a second key, so an INCONCLUSIVE
+      // answer must not be read as "zone is empty" — that is the branch that
+      // mints. Fail closed: report records present so enable defers. A wrongly
+      // deferred enable is retried on the next trigger; a wrongly minted key
+      // is permanent data loss.
+      return true;
+    }
+  }
+
+  @override
   Future<SaveOutcome> saveRecords(List<CloudRecord> records) async {
     final res = await channel.invokeMapMethod<String, dynamic>('saveRecords', {
       'records': [for (final r in records) _encodeRecord(r)],

@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:pointycastle/api.dart' show InvalidCipherTextException;
+
 import 'cloudkit_bridge.dart';
 import 'private_db_schema.dart';
 import 'sync_avatar_store.dart';
@@ -19,7 +21,11 @@ import 'sync_logger.dart';
 /// might resolve on its own earns the token-hold. A permanently-unapplyable
 /// record is quarantined ([_ApplyOutcome.skipped]) precisely so it cannot pin
 /// the token forever — see [SyncLocalStore.quarantineRecord].
-enum _ApplyOutcome { applied, skipped, failed }
+/// [undecryptable] is deliberately distinct from [skipped]: both let the change
+/// token advance, but only this one means "the user has a key problem". It is
+/// counted separately so the caller can surface a real diagnosis instead of a
+/// silent, permanently-empty sync.
+enum _ApplyOutcome { applied, skipped, failed, undecryptable }
 
 class SyncResult {
   final int pushed;
@@ -38,6 +44,24 @@ class SyncResult {
   /// guard), so no data is touched.
   final bool ownerPending;
 
+  /// Set by [SyncEngine.enable] when this device has NO E2E key but the zone
+  /// already holds records — i.e. another device enabled first and its key has
+  /// not yet arrived through the iCloud Keychain. Enable is DEFERRED, never
+  /// completed by minting a fresh key.
+  ///
+  /// Minting here is unrecoverable: the existing records were sealed with a key
+  /// this device would then never adopt, so every one of them becomes permanent
+  /// ciphertext garbage on EVERY device. Deferring costs the user a wait;
+  /// minting costs them their history.
+  final bool keyPending;
+
+  /// Records the just-finished pull could not decrypt: they were sealed with a
+  /// different sync key than this device holds. Non-zero means the devices are
+  /// on divergent key lineages and this one cannot read the shared data — a
+  /// condition that must reach the user, because every sync will otherwise
+  /// report success while applying nothing.
+  final int undecryptable;
+
   /// The canonical sync-owner id [SyncEngine.enable] resolved and (on a second
   /// device) re-keyed local rows onto. The service adopts THIS exact value as
   /// the device owner id, so its adoption can't diverge from a second Keychain
@@ -51,10 +75,12 @@ class SyncResult {
     this.wiped = false,
     this.blockedBy,
     this.ownerPending = false,
+    this.keyPending = false,
+    this.undecryptable = 0,
     this.canonicalOwner,
   });
 
-  bool get ran => blockedBy == null && !ownerPending;
+  bool get ran => blockedBy == null && !ownerPending && !keyPending;
 }
 
 /// The Dart-side sync brain: pushes dirty rows, pulls remote changes, resolves
@@ -118,14 +144,42 @@ class SyncEngine {
   /// the canonical owner (re-keying local data to it on a second device so
   /// everything unions under one identity), mark existing data for upload, then
   /// run the first sync. Returns [SyncResult.blockedBy] if iCloud is unavailable.
+  /// [force] skips the populated-zone guard and mints a key even when the zone
+  /// already holds records. ONLY for a deliberate, user-confirmed "start fresh
+  /// from this device" — the guard's whole purpose is that this is destructive:
+  /// every existing record becomes unreadable. Never set it from an automatic
+  /// path, a retry counter, or any heuristic about what the user probably meant.
   Future<SyncResult> enable({
     required SyncKeyStore keys,
     required String localOwner,
+    bool force = false,
   }) async {
     final status = await bridge.accountStatus();
     if (status != CloudAccountStatus.available) {
       return SyncResult(blockedBy: status);
     }
+    // Never mint a key into a zone that already holds records. `readKey()`
+    // returns null both when no key exists anywhere AND when the key simply
+    // has not propagated through the iCloud Keychain yet, and
+    // getOrCreateKeyReporting() cannot tell those apart — it mints either way.
+    // Minting against a populated zone permanently orphans every record in it,
+    // on every device. Ask the zone instead: records present ⇒ some device
+    // already enabled ⇒ this device is NOT first, so defer and wait for the
+    // key rather than starting a second, incompatible encryption lineage.
+    //
+    // Ordered before ensureZone()/any write so a deferred enable touches
+    // nothing at all.
+    if (!force &&
+        await keys.readKey() == null &&
+        await bridge.zoneHasRecords()) {
+      logger.info(
+        '[CloudKit] Sync enable deferred: the zone already holds records but '
+        'this device has no E2E key yet (waiting for iCloud Keychain). '
+        'Refusing to mint a second key.',
+      );
+      return const SyncResult(keyPending: true);
+    }
+
     final k = await keys.getOrCreateKeyReporting();
     final canonical = await keys.resolveCanonicalOwner(
       localOwner,
@@ -151,6 +205,7 @@ class SyncEngine {
       skipped: r.skipped,
       wiped: r.wiped,
       blockedBy: r.blockedBy,
+      undecryptable: r.undecryptable,
       canonicalOwner: canonical,
     );
   }
@@ -170,6 +225,31 @@ class SyncEngine {
     }
 
     await bridge.ensureZone();
+
+    // Did this device's E2E key change since the last sync? If so, records
+    // parked as undecryptable may now open — but CloudKit will not re-deliver a
+    // record the change token has already passed. Drop the token to force ONE
+    // full re-fetch and un-park those records so they re-apply.
+    //
+    // This is what makes advancing the token past an undecryptable record safe.
+    // The alternative — holding the token — recovers the same records but pins
+    // the device forever when the key never arrives, re-downloading and
+    // re-discarding the entire zone on every sync. That is the state a real
+    // key split left an iPhone in. Advance-and-refetch-on-rotation recovers in
+    // both directions and livelocks in neither.
+    final fingerprint = crypto.keyFingerprint(key);
+    final lastFingerprint = await store.keyFingerprint();
+    if (lastFingerprint != null && lastFingerprint != fingerprint) {
+      final unparked = await store.clearUndecryptableParks();
+      if (unparked > 0) {
+        logger.info(
+          '[CloudKit] Sync key changed — re-fetching the whole zone to retry '
+          '$unparked record(s) previously sealed under a different key.',
+        );
+        await store.setChangeToken(null);
+      }
+    }
+    await store.setKeyFingerprint(fingerprint);
     // Pull BEFORE push: a newer remote record overwrites the local copy and
     // clears its dirty flag, so a stale local edit is never pushed over it. With
     // the native savePolicy of `.allKeys` (overwrite), this ordering is what
@@ -179,7 +259,12 @@ class SyncEngine {
     final pull = await _pull(key);
     final pushed = await _push(key);
     await store.setLastFullSync(_nowIso());
-    return SyncResult(pushed: pushed, applied: pull.$1, skipped: pull.$2);
+    return SyncResult(
+      pushed: pushed,
+      applied: pull.$1,
+      skipped: pull.$2,
+      undecryptable: pull.$3,
+    );
   }
 
   Future<int> _push(Uint8List key) async {
@@ -281,7 +366,7 @@ class SyncEngine {
     if (batch.isNotEmpty) yield batch;
   }
 
-  Future<(int, int)> _pull(Uint8List key) async {
+  Future<(int, int, int)> _pull(Uint8List key) async {
     // Collect all changed records across pages, then apply FK-safely.
     final all = <CloudRecord>[];
     final originalToken = await store.changeToken();
@@ -318,6 +403,7 @@ class SyncEngine {
 
     var applied = 0;
     var skipped = 0;
+    var undecryptable = 0;
     // Hold the change token at its pre-fetch value when ANY record in this
     // batch must be re-fetched on a later sync rather than lost: a clock-skew
     // deferral OR a real apply FAILURE (SQLite busy/locked, a decrypt error, a
@@ -343,6 +429,13 @@ class SyncEngine {
           // this build can never apply (quarantined, so it is recorded and
           // re-appliable) — safe to let the token advance past.
           skipped++;
+        case _ApplyOutcome.undecryptable:
+          // Sealed under another key. PERMANENT, so the token must advance —
+          // holding it here is what livelocks a key-split device forever.
+          // Counted separately so the caller can tell "nothing to do" apart
+          // from "this device cannot read the zone".
+          skipped++;
+          undecryptable++;
         case _ApplyOutcome.failed:
           // A real, potentially-transient apply failure: keep the token back so
           // the record is retried on a later sync instead of being dropped.
@@ -351,7 +444,17 @@ class SyncEngine {
       }
     }
     await store.setChangeToken(holdToken ? originalToken : token);
-    return (applied, skipped);
+    if (undecryptable > 0) {
+      logger.error(
+        '[CloudKit] $undecryptable record(s) in the zone could not be '
+        'decrypted with this device\'s key — the devices are on different '
+        'sync keys and this one cannot read the shared data.',
+        'key-mismatch',
+        null,
+        {'undecryptable': undecryptable, 'applied': applied},
+      );
+    }
+    return (applied, skipped, undecryptable);
   }
 
   /// Builds the avatar CloudRecord for push: plaintext bytes from the app's
@@ -451,6 +554,31 @@ class SyncEngine {
         if (!applied) return _ApplyOutcome.skipped;
       }
       return _ApplyOutcome.applied;
+    } on InvalidCipherTextException catch (e) {
+      // Sealed with a DIFFERENT key than this device holds. Retrying cannot
+      // help — the bytes will never open with this key — so treating it as a
+      // transient failure holds the change token and rewinds it on every sync,
+      // forever, re-downloading and re-discarding the whole zone. That is not a
+      // theoretical failure mode: it is the state a real two-key split left a
+      // user's iPhone in (`change token: none`, 6238 records skipped per sync).
+      //
+      // Quarantine instead, exactly like a row this schema cannot store: skip
+      // it, record why, let the token advance so every OTHER record still
+      // syncs. The record is untouched in the cloud and parked (not marked
+      // applied), so it re-applies if the correct key ever arrives.
+      await store.quarantineRecord(
+        rec.recordName,
+        rec.tableName,
+        rowId,
+        SyncLocalStore.undecryptableReason,
+      );
+      logger.error(
+        '[CloudKit] Quarantined an undecryptable record (key mismatch)',
+        e,
+        null,
+        {'recordName': rec.recordName, 'tableName': rec.tableName},
+      );
+      return _ApplyOutcome.undecryptable;
     } on UnstorableRowException catch (e) {
       // This build's schema can never store this record (e.g. a status value a
       // newer client's widened CHECK allows), so every retry fails identically.

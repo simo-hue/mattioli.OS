@@ -91,4 +91,22 @@ abstract class CloudKitBridge {
   Future<FetchOutcome> fetchChanges(String? token);
   Future<void> deleteRecords(List<String> recordNames);
   Future<void> deleteZone();
+
+  /// Whether the zone already holds ANY record — the "am I really the first
+  /// device?" question, and the guard that stops a second key being minted.
+  ///
+  /// [SyncKeyStore.getOrCreateKeyReporting] cannot distinguish "no key exists
+  /// anywhere" from "the key exists but iCloud Keychain hasn't delivered it to
+  /// this device yet", and mints in both cases. When the zone is already full of
+  /// records written under the key that is still in flight, that mint orphans
+  /// every one of them PERMANENTLY — no device can ever decrypt them again.
+  /// That is not hypothetical: it is what happened in production, and the whole
+  /// reason this method exists.
+  ///
+  /// Must be CHEAP — it runs on the enable path. Implementations fetch a single
+  /// batch with no desired keys (record ids only), never the whole zone, and
+  /// MUST NOT persist or advance the change token.
+  ///
+  /// Returns false for a missing zone (genuinely nothing there yet).
+  Future<bool> zoneHasRecords();
 }

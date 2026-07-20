@@ -311,4 +311,109 @@ void main() {
     expect(await SyncLocalStore(db).pendingZoneWipe(), isFalse);
     await db.close();
   });
+
+  group('resetSyncFromThisDevice', () {
+    // The escape hatch from a key split: with two divergent keys neither device
+    // can read the other's data, so no automatic policy can resolve it — the
+    // user names the authoritative device and its copy wins.
+
+    test('wipes the zone and re-uploads this device\'s data under a fresh key',
+        () async {
+      final db = await openFreshV3();
+      await seed(db);
+      final cloud = FakeCloudKitBridge();
+      final enabled = _FakeEnabled();
+      final secrets = _FakeSecretStore();
+      final svc = CloudKitPrivateSyncService(
+        bridge: cloud,
+        keys: SyncKeyStore(secrets, crypto: crypto),
+        crypto: crypto,
+        storeProvider: () async => SyncLocalStore(db),
+        ownerProvider: () async => 'owner',
+        ownerWriter: (_) async {},
+        enabledStore: enabled,
+      );
+
+      await svc.enable();
+      final firstKey = secrets.values[SyncKeyStore.keyKey];
+      expect(cloud.records.containsKey('goals:g1'), isTrue);
+
+      // Simulate the rival device's unreadable junk sitting in the zone.
+      await cloud.saveRecords([
+        const CloudRecord(
+          recordName: 'profiles:rival',
+          tableName: 'profiles',
+          updatedAtMs: 1,
+          deleted: false,
+        ),
+      ]);
+      expect(cloud.records.containsKey('profiles:rival'), isTrue);
+
+      final st = await svc.resetSyncFromThisDevice();
+
+      expect(st.isEnabled, isTrue, reason: 'sync comes back on by itself');
+      expect(cloud.records.containsKey('profiles:rival'), isFalse,
+          reason: 'the rival key\'s unreadable records are gone');
+      expect(cloud.records.containsKey('goals:g1'), isTrue,
+          reason: 'this device re-uploaded its own data');
+      expect(secrets.values[SyncKeyStore.keyKey], isNot(firstKey),
+          reason: 'a FRESH key — re-adopting the old one keeps the split');
+      await db.close();
+    });
+
+    test('re-uploads even though every row was already marked synced', () async {
+      // The regression that would make the reset silently produce an EMPTY
+      // zone: after the first enable nothing is dirty, so without clearing the
+      // local bookkeeping the re-enable would push zero records.
+      final db = await openFreshV3();
+      await seed(db);
+      final cloud = FakeCloudKitBridge();
+      final svc = service(db, cloud, _FakeEnabled());
+
+      await svc.enable();
+      expect((await SyncLocalStore(db).diagnostics()).totalPending, 0);
+
+      await svc.resetSyncFromThisDevice();
+
+      expect(cloud.records.containsKey('goals:g1'), isTrue);
+      expect(cloud.records.containsKey('profiles:owner'), isTrue);
+      await db.close();
+    });
+
+    test('leaves local user data completely untouched', () async {
+      final db = await openFreshV3();
+      await seed(db);
+      final svc = service(db, FakeCloudKitBridge(), _FakeEnabled());
+
+      await svc.enable();
+      await svc.resetSyncFromThisDevice();
+
+      expect((await db.query('goals')).length, 1);
+      expect((await db.query('profiles')).length, 1);
+      await db.close();
+    });
+  });
+
+  group('key-split status', () {
+    test('undecryptable records are reported long after the sync that found '
+        'them', () async {
+      // A key split does not go away between syncs, so opening the screen the
+      // next day must still show it — the count cannot come only from the op
+      // that just ran.
+      final db = await openFreshV3();
+      await seed(db);
+      final store = SyncLocalStore(db);
+      await store.quarantineRecord(
+        'long_term_goals:x',
+        'long_term_goals',
+        'x',
+        SyncLocalStore.undecryptableReason,
+      );
+
+      final st = await service(db, FakeCloudKitBridge(), _FakeEnabled()).status();
+
+      expect(st.undecryptableCount, 1);
+      await db.close();
+    });
+  });
 }

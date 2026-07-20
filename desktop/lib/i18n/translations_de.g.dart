@@ -162,6 +162,16 @@ class _Translations$icloudSync$de extends Translations$icloudSync$en {
 	@override String detailsFailed({required Object count}) => '${count} Elemente konnten nicht hochgeladen werden';
 	@override String get detailsCopy => 'Bericht kopieren';
 	@override String get detailsCopied => 'Bericht kopiert';
+	@override String get keySplitTitle => 'Einige iCloud-Daten sind nicht lesbar';
+	@override String keySplitBody({required Object count}) => '${count} Einträge in iCloud wurden auf einem anderen Gerät mit einem anderen Schlüssel verschlüsselt, daher kann dieses Gerät sie nicht lesen. Setze die Synchronisierung von dem Gerät aus zurück, das die Daten enthält, die du behalten möchtest.';
+	@override String get resetFromDevice => 'Synchronisierung von diesem Gerät zurücksetzen';
+	@override String get resetFromDeviceDetail => 'Alles in iCloud durch die Daten dieses Geräts ersetzen';
+	@override String get resetFromDeviceConfirm => 'Dies löscht alles, was derzeit in iCloud gespeichert ist, und lädt stattdessen die Daten dieses Geräts hoch. Deine anderen Geräte laden anschließend diese Kopie herunter. Führe dies nur auf dem Gerät aus, das die Daten enthält, die du behalten möchtest. Dies kann nicht rückgängig gemacht werden.';
+	@override String get resetFromDeviceDone => 'Synchronisierung zurückgesetzt. Die Daten dieses Geräts sind jetzt die Kopie in iCloud.';
+	@override String get statusWaitingKey => 'Warten auf den Verschlüsselungsschlüssel von deinem anderen Gerät';
+	@override String get forceEnableTitle => 'Mit diesem Gerät neu beginnen';
+	@override String get forceEnableBody => 'Die Daten eines anderen Geräts sind bereits in iCloud, aber dessen Verschlüsselungsschlüssel hat dieses Gerät noch nicht erreicht. Meist genügt es, ein paar Minuten zu warten. Ein Neuanfang löscht, was in iCloud liegt, und ersetzt es durch die Daten dieses Geräts. Dies kann nicht rückgängig gemacht werden.';
+	@override String get forceEnable => 'Neu beginnen';
 }
 
 // Path: privateRecovery
@@ -1751,6 +1761,16 @@ extension on TranslationsDe {
 			'icloudSync.detailsFailed' => ({required Object count}) => '${count} Elemente konnten nicht hochgeladen werden',
 			'icloudSync.detailsCopy' => 'Bericht kopieren',
 			'icloudSync.detailsCopied' => 'Bericht kopiert',
+			'icloudSync.keySplitTitle' => 'Einige iCloud-Daten sind nicht lesbar',
+			'icloudSync.keySplitBody' => ({required Object count}) => '${count} Einträge in iCloud wurden auf einem anderen Gerät mit einem anderen Schlüssel verschlüsselt, daher kann dieses Gerät sie nicht lesen. Setze die Synchronisierung von dem Gerät aus zurück, das die Daten enthält, die du behalten möchtest.',
+			'icloudSync.resetFromDevice' => 'Synchronisierung von diesem Gerät zurücksetzen',
+			'icloudSync.resetFromDeviceDetail' => 'Alles in iCloud durch die Daten dieses Geräts ersetzen',
+			'icloudSync.resetFromDeviceConfirm' => 'Dies löscht alles, was derzeit in iCloud gespeichert ist, und lädt stattdessen die Daten dieses Geräts hoch. Deine anderen Geräte laden anschließend diese Kopie herunter. Führe dies nur auf dem Gerät aus, das die Daten enthält, die du behalten möchtest. Dies kann nicht rückgängig gemacht werden.',
+			'icloudSync.resetFromDeviceDone' => 'Synchronisierung zurückgesetzt. Die Daten dieses Geräts sind jetzt die Kopie in iCloud.',
+			'icloudSync.statusWaitingKey' => 'Warten auf den Verschlüsselungsschlüssel von deinem anderen Gerät',
+			'icloudSync.forceEnableTitle' => 'Mit diesem Gerät neu beginnen',
+			'icloudSync.forceEnableBody' => 'Die Daten eines anderen Geräts sind bereits in iCloud, aber dessen Verschlüsselungsschlüssel hat dieses Gerät noch nicht erreicht. Meist genügt es, ein paar Minuten zu warten. Ein Neuanfang löscht, was in iCloud liegt, und ersetzt es durch die Daten dieses Geräts. Dies kann nicht rückgängig gemacht werden.',
+			'icloudSync.forceEnable' => 'Neu beginnen',
 			'privateRecovery.preparing' => 'Dein privater Bereich wird vorbereitet…',
 			'privateRecovery.restoredFromCloudToast' => 'Lokale Datenbank konnte nicht entsperrt werden – deine Daten wurden aus iCloud wiederhergestellt.',
 			'privateRecovery.waitingTitle' => 'Warten auf iCloud',
@@ -2202,6 +2222,8 @@ extension on TranslationsDe {
 			'habitsPage.deleteHabitTitle' => 'Gewohnheit löschen',
 			'habitsPage.deleteHabitConfirm' => ({required Object title}) => '„${title}“ aus dem Protokoll entfernen?',
 			'habitsPage.activeProtocol' => 'Aktives Protokoll',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.completedToday' => 'Heute erledigt',
 			'habitsPage.dailyProtocol' => 'Tägliches Protokoll',
 			'habitsPage.protocolSubtitle' => 'Wochenübersicht, Erinnerungen und Schnellaktionen',
@@ -2212,8 +2234,6 @@ extension on TranslationsDe {
 			'habitsPage.streakDays' => ({required Object n}) => '${n} Tage',
 			'habitsPage.prevPeriod' => 'Vorheriger Zeitraum',
 			'habitsPage.nextPeriod' => 'Nächster Zeitraum',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.0' => 'MO',
 			'habitsPage.weekdayAbbrevUpper.1' => 'DI',
 			'habitsPage.weekdayAbbrevUpper.2' => 'MI',
@@ -2716,6 +2736,8 @@ extension on TranslationsDe {
 			'coachSettings.modelHint' => 'z. B. llama3.1:8b',
 			'coachSettings.refreshModels' => 'Modelle aktualisieren',
 			'coachSettings.discovering' => 'Suche nach Modellen…',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.noModelsFound' => 'Keine Modelle gefunden — gib unten manuell eine Modell-ID ein.',
 			'coachSettings.manualModelLabel' => 'Modell-ID',
 			'coachSettings.manualModelAdd' => 'Dieses Modell verwenden',
@@ -2726,8 +2748,6 @@ extension on TranslationsDe {
 			'coachSettings.remoteWarning' => 'Dieser Endpunkt ist keine lokale Adresse — Nachrichten verlassen dieses Gerät.',
 			'coachSettings.advanced' => 'Erweitert',
 			'coachSettings.systemPromptLabel' => 'System-Prompt',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.systemPromptHint' => 'Coach-Persona überschreiben (leer lassen für Standard)',
 			'coachSettings.systemPromptReset' => 'Zurücksetzen',
 			'coachSettings.temperatureLabel' => 'Temperatur',

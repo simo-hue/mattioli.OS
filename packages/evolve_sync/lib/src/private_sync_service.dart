@@ -22,6 +22,17 @@ class PrivateSyncStatus {
   /// status() / no-op.
   final int appliedChanges;
 
+  /// The last enable was DEFERRED because the zone already holds records but
+  /// this device has no E2E key yet. Not a failure — the device is waiting for
+  /// the iCloud Keychain, and minting a key here would destroy the zone.
+  final bool keyPending;
+
+  /// Records in the zone this device could not decrypt: they were sealed with a
+  /// different sync key. Non-zero means the devices are on divergent keys and
+  /// this one cannot read the shared data — the single condition that must
+  /// never be reported as "Up to date", because no amount of syncing fixes it.
+  final int undecryptableCount;
+
   const PrivateSyncStatus({
     required this.isAvailable,
     required this.isEnabled,
@@ -30,6 +41,8 @@ class PrivateSyncStatus {
     this.message,
     this.hasKey = true,
     this.appliedChanges = 0,
+    this.keyPending = false,
+    this.undecryptableCount = 0,
   });
 
   const PrivateSyncStatus.localOnly()
@@ -39,7 +52,9 @@ class PrivateSyncStatus {
         account = null,
         message = 'iCloud sync is not available on this platform.',
         hasKey = false,
-        appliedChanges = 0;
+        appliedChanges = 0,
+        keyPending = false,
+        undecryptableCount = 0;
 }
 
 abstract class PrivateSyncService {
@@ -53,9 +68,28 @@ abstract class PrivateSyncService {
   /// [PrivateSyncStatus.lastSyncedAt] null (that field needs the store).
   Future<PrivateSyncStatus> probe();
 
-  Future<PrivateSyncStatus> enable();
+  /// [force] mints a key even when the zone already holds records, making every
+  /// existing record permanently unreadable. ONLY for a user who has explicitly
+  /// confirmed "start fresh from this device" after being told what it costs —
+  /// it exists so a device that will never receive the shared key (iCloud
+  /// Keychain disabled) has a way out of an otherwise permanent deferral.
+  Future<PrivateSyncStatus> enable({bool force = false});
   Future<PrivateSyncStatus> disable();
   Future<PrivateSyncStatus> syncNow();
+
+  /// Make THIS device authoritative: wipe the CloudKit zone, drop the shared
+  /// secrets, then re-enable with a fresh key and re-upload everything held
+  /// locally.
+  ///
+  /// The escape hatch from a key split — a state no automatic path can resolve,
+  /// because with two divergent keys neither device can read the other's data
+  /// and nothing can tell which copy the user wants. Deliberately destructive
+  /// and deliberately manual: it discards whatever is in the zone, so it must
+  /// be run from the device holding the data worth keeping, and only after the
+  /// user has confirmed that.
+  ///
+  /// Local user data is never touched.
+  Future<PrivateSyncStatus> resetSyncFromThisDevice();
 
   /// Full reset for "delete private data": wipe the CloudKit zone, delete the
   /// shared key + canonical owner from the iCloud Keychain, and turn sync off
@@ -94,7 +128,11 @@ class NoOpPrivateSyncService implements PrivateSyncService {
       const PrivateSyncStatus.localOnly();
 
   @override
-  Future<PrivateSyncStatus> enable() async =>
+  Future<PrivateSyncStatus> enable({bool force = false}) async =>
+      const PrivateSyncStatus.localOnly();
+
+  @override
+  Future<PrivateSyncStatus> resetSyncFromThisDevice() async =>
       const PrivateSyncStatus.localOnly();
 
   @override

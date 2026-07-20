@@ -21,7 +21,10 @@ class PrivateDbSchema {
   ///   nullable, null ⇒ ordinary manual habit). Left unconstrained (no CHECK)
   ///   so a rule synced from a newer client with a future provider/metric is
   ///   stored rather than rejected.
-  static const int version = 4;
+  /// - v5: add `sync_meta.key_fingerprint` — the E2E key this device last
+  ///   synced with. A change means previously-undecryptable records may now be
+  ///   readable, which is what triggers the full re-fetch that recovers them.
+  static const int version = 5;
 
   /// The user-data tables whose rows sync to iCloud. Each gets dirty/tombstone
   /// triggers that maintain [syncStateTable]. (Order matters for nothing here,
@@ -104,6 +107,9 @@ class PrivateDbSchema {
     if (oldVersion < 4) {
       await _upgradeToV4(db);
     }
+    if (oldVersion < 5) {
+      await _upgradeToV5(db);
+    }
   }
 
   /// Fail closed on a schema downgrade. With NO onDowngrade, sqflite's default
@@ -127,6 +133,35 @@ class PrivateDbSchema {
     throw StateError(
       'Private DB is at schema v$oldVersion; this build only knows '
       'v$newVersion. Refusing to downgrade.',
+    );
+  }
+
+  // ── v5 migration ──────────────────────────────────────────────────────────
+
+  static Future<void> _upgradeToV5(DatabaseExecutor db) async {
+    // `PRAGMA table_info` returns EMPTY both for a table without the column and
+    // for a table that does not exist at all, so the two must be told apart:
+    // ALTERing a missing table throws and would wedge every future open. A
+    // database reaching v5 without `sync_meta` is not the normal path (v3
+    // creates it), but a migration that assumes its predecessor's side effects
+    // is exactly how an upgrade chain becomes unrecoverable in the field.
+    // Nothing to do when it is absent — createSyncTables declares the column
+    // inline, so the table will be born with it.
+    final tables = await db.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+      [syncMetaTable],
+    );
+    if (tables.isEmpty) return;
+
+    // Idempotent for the same reason as v4: a version round-trip must not
+    // permanently wedge every future open on "duplicate column name".
+    final existing = <String>{
+      for (final row in await db.rawQuery('PRAGMA table_info($syncMetaTable)'))
+        row['name'] as String,
+    };
+    if (existing.contains('key_fingerprint')) return;
+    await db.execute(
+      'ALTER TABLE $syncMetaTable ADD COLUMN key_fingerprint TEXT',
     );
   }
 
@@ -411,7 +446,11 @@ CREATE TABLE $syncMetaTable (
   id INTEGER PRIMARY KEY CHECK (id = 1),
   server_change_token TEXT,
   last_full_sync_at TEXT,
-  pending_zone_wipe INTEGER NOT NULL DEFAULT 0
+  pending_zone_wipe INTEGER NOT NULL DEFAULT 0,
+  -- Fingerprint of the E2E key this device last synced with (v5). A change
+  -- means records parked as undecryptable might now open, so the engine drops
+  -- the change token and re-fetches the whole zone.
+  key_fingerprint TEXT
 )
 ''');
     await db.execute('INSERT OR IGNORE INTO $syncMetaTable (id) VALUES (1)');

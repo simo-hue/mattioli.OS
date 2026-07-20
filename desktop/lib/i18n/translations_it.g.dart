@@ -162,6 +162,16 @@ class _Translations$icloudSync$it extends Translations$icloudSync$en {
 	@override String detailsFailed({required Object count}) => '${count} elementi non caricati';
 	@override String get detailsCopy => 'Copia report';
 	@override String get detailsCopied => 'Report copiato';
+	@override String get keySplitTitle => 'Alcuni dati iCloud non sono leggibili';
+	@override String keySplitBody({required Object count}) => '${count} record in iCloud sono stati cifrati su un altro dispositivo con una chiave diversa, quindi questo dispositivo non può leggerli. Reimposta la sincronizzazione dal dispositivo che contiene i dati che vuoi conservare.';
+	@override String get resetFromDevice => 'Reimposta la sincronizzazione da questo dispositivo';
+	@override String get resetFromDeviceDetail => 'Sostituisci tutto ciò che è in iCloud con i dati di questo dispositivo';
+	@override String get resetFromDeviceConfirm => 'Questa operazione cancella tutto ciò che è attualmente in iCloud e carica al suo posto i dati di questo dispositivo. Gli altri dispositivi scaricheranno poi questa copia. Eseguila solo dal dispositivo che contiene i dati che vuoi conservare. L\'operazione non è reversibile.';
+	@override String get resetFromDeviceDone => 'Sincronizzazione reimpostata. I dati di questo dispositivo sono ora la copia in iCloud.';
+	@override String get statusWaitingKey => 'In attesa della chiave di cifratura dall\'altro dispositivo';
+	@override String get forceEnableTitle => 'Riparti da questo dispositivo';
+	@override String get forceEnableBody => 'I dati di un altro dispositivo sono già in iCloud, ma la chiave di cifratura non è ancora arrivata su questo dispositivo. Di solito basta attendere qualche minuto. Ripartire da zero cancella ciò che è in iCloud e lo sostituisce con i dati di questo dispositivo. L\'operazione non è reversibile.';
+	@override String get forceEnable => 'Riparti da zero';
 }
 
 // Path: privateRecovery
@@ -1751,6 +1761,16 @@ extension on TranslationsIt {
 			'icloudSync.detailsFailed' => ({required Object count}) => '${count} elementi non caricati',
 			'icloudSync.detailsCopy' => 'Copia report',
 			'icloudSync.detailsCopied' => 'Report copiato',
+			'icloudSync.keySplitTitle' => 'Alcuni dati iCloud non sono leggibili',
+			'icloudSync.keySplitBody' => ({required Object count}) => '${count} record in iCloud sono stati cifrati su un altro dispositivo con una chiave diversa, quindi questo dispositivo non può leggerli. Reimposta la sincronizzazione dal dispositivo che contiene i dati che vuoi conservare.',
+			'icloudSync.resetFromDevice' => 'Reimposta la sincronizzazione da questo dispositivo',
+			'icloudSync.resetFromDeviceDetail' => 'Sostituisci tutto ciò che è in iCloud con i dati di questo dispositivo',
+			'icloudSync.resetFromDeviceConfirm' => 'Questa operazione cancella tutto ciò che è attualmente in iCloud e carica al suo posto i dati di questo dispositivo. Gli altri dispositivi scaricheranno poi questa copia. Eseguila solo dal dispositivo che contiene i dati che vuoi conservare. L\'operazione non è reversibile.',
+			'icloudSync.resetFromDeviceDone' => 'Sincronizzazione reimpostata. I dati di questo dispositivo sono ora la copia in iCloud.',
+			'icloudSync.statusWaitingKey' => 'In attesa della chiave di cifratura dall\'altro dispositivo',
+			'icloudSync.forceEnableTitle' => 'Riparti da questo dispositivo',
+			'icloudSync.forceEnableBody' => 'I dati di un altro dispositivo sono già in iCloud, ma la chiave di cifratura non è ancora arrivata su questo dispositivo. Di solito basta attendere qualche minuto. Ripartire da zero cancella ciò che è in iCloud e lo sostituisce con i dati di questo dispositivo. L\'operazione non è reversibile.',
+			'icloudSync.forceEnable' => 'Riparti da zero',
 			'privateRecovery.preparing' => 'Preparazione del tuo spazio privato…',
 			'privateRecovery.restoredFromCloudToast' => 'Impossibile sbloccare il database locale: i tuoi dati sono stati ripristinati da iCloud.',
 			'privateRecovery.waitingTitle' => 'In attesa di iCloud',
@@ -2202,6 +2222,8 @@ extension on TranslationsIt {
 			'habitsPage.deleteHabitTitle' => 'Elimina abitudine',
 			'habitsPage.deleteHabitConfirm' => ({required Object title}) => 'Vuoi rimuovere "${title}" dal protocollo?',
 			'habitsPage.activeProtocol' => 'Protocollo attivo',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.completedToday' => 'Completate oggi',
 			'habitsPage.dailyProtocol' => 'Protocollo quotidiano',
 			'habitsPage.protocolSubtitle' => 'Panoramica settimanale, reminder e azioni rapide',
@@ -2212,8 +2234,6 @@ extension on TranslationsIt {
 			'habitsPage.streakDays' => ({required Object n}) => '${n} giorni',
 			'habitsPage.prevPeriod' => 'Periodo precedente',
 			'habitsPage.nextPeriod' => 'Periodo successivo',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.0' => 'LUN',
 			'habitsPage.weekdayAbbrevUpper.1' => 'MAR',
 			'habitsPage.weekdayAbbrevUpper.2' => 'MER',
@@ -2716,6 +2736,8 @@ extension on TranslationsIt {
 			'coachSettings.modelHint' => 'es. llama3.1:8b',
 			'coachSettings.refreshModels' => 'Aggiorna modelli',
 			'coachSettings.discovering' => 'Ricerca dei modelli…',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.noModelsFound' => 'Nessun modello trovato — inserisci manualmente un id modello qui sotto.',
 			'coachSettings.manualModelLabel' => 'Id modello',
 			'coachSettings.manualModelAdd' => 'Usa questo modello',
@@ -2726,8 +2748,6 @@ extension on TranslationsIt {
 			'coachSettings.remoteWarning' => 'Questo endpoint non è un indirizzo locale — i messaggi lasceranno questo dispositivo.',
 			'coachSettings.advanced' => 'Avanzate',
 			'coachSettings.systemPromptLabel' => 'Prompt di sistema',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.systemPromptHint' => 'Sostituisci la persona del coach (lascia vuoto per quella predefinita)',
 			'coachSettings.systemPromptReset' => 'Ripristina',
 			'coachSettings.temperatureLabel' => 'Temperatura',

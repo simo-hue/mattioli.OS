@@ -77,6 +77,21 @@ class SyncCrypto {
     return _cipher(false, key, nonce).process(body);
   }
 
+  /// A short, non-reversible fingerprint of [key], for detecting that THIS
+  /// device's key has changed since the last sync.
+  ///
+  /// SHA-256 truncated to 16 hex chars (64 bits) — enough that two distinct
+  /// keys never collide in practice, and one-way so persisting it in the local
+  /// database leaks nothing about the key itself. Never transmitted.
+  String keyFingerprint(Uint8List key) {
+    _checkKey(key);
+    final digest = SHA256Digest().process(key);
+    return digest
+        .take(8)
+        .map((b) => b.toRadixString(16).padLeft(2, '0'))
+        .join();
+  }
+
   Uint8List encryptString(String text, Uint8List key) =>
       encryptBytes(Uint8List.fromList(utf8.encode(text)), key);
 

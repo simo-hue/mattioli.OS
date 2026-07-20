@@ -58,7 +58,7 @@ class _ChainFakeSync implements PrivateSyncService {
   // (`enable() => _runExclusive(_enable)`), so nesting it inside another
   // runExclusive body would deadlock.
   @override
-  Future<PrivateSyncStatus> enable() => runExclusive(() async {
+  Future<PrivateSyncStatus> enable({bool force = false}) => runExclusive(() async {
         enableCalls++;
         log.add('enable');
         return const PrivateSyncStatus(
@@ -91,6 +91,10 @@ class _ChainFakeSync implements PrivateSyncService {
 
   @override
   Future<SyncDiagnostics?> diagnostics() async => null;
+
+  @override
+  Future<PrivateSyncStatus> resetSyncFromThisDevice() async =>
+      const PrivateSyncStatus.localOnly();
 }
 
 /// A recovery store that yields inside reset/reopen (so an unserialized op could

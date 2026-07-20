@@ -54,7 +54,17 @@
     "detailsPending": "{count} elementi in attesa di caricamento",
     "detailsFailed": "{count} elementi non caricati",
     "detailsCopy": "Copia report",
-    "detailsCopied": "Report copiato"
+    "detailsCopied": "Report copiato",
+    "keySplitTitle": "Alcuni dati iCloud non sono leggibili",
+    "keySplitBody": "{count} record in iCloud sono stati cifrati su un altro dispositivo con una chiave diversa, quindi questo dispositivo non può leggerli. Reimposta la sincronizzazione dal dispositivo che contiene i dati che vuoi conservare.",
+    "resetFromDevice": "Reimposta la sincronizzazione da questo dispositivo",
+    "resetFromDeviceDetail": "Sostituisci tutto ciò che è in iCloud con i dati di questo dispositivo",
+    "resetFromDeviceConfirm": "Questa operazione cancella tutto ciò che è attualmente in iCloud e carica al suo posto i dati di questo dispositivo. Gli altri dispositivi scaricheranno poi questa copia. Eseguila solo dal dispositivo che contiene i dati che vuoi conservare. L'operazione non è reversibile.",
+    "resetFromDeviceDone": "Sincronizzazione reimpostata. I dati di questo dispositivo sono ora la copia in iCloud.",
+    "statusWaitingKey": "In attesa della chiave di cifratura dall'altro dispositivo",
+    "forceEnableTitle": "Riparti da questo dispositivo",
+    "forceEnableBody": "I dati di un altro dispositivo sono già in iCloud, ma la chiave di cifratura non è ancora arrivata su questo dispositivo. Di solito basta attendere qualche minuto. Ripartire da zero cancella ciò che è in iCloud e lo sostituisce con i dati di questo dispositivo. L'operazione non è reversibile.",
+    "forceEnable": "Riparti da zero"
   },
   "privateRecovery": {
     "preparing": "Preparazione del tuo spazio privato…",

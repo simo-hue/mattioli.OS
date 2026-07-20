@@ -74,3 +74,91 @@ came through intact, the diagnosis is wrong and the cause is Mac-side apply inst
 - 6 desktop tests fail on a clean tree, unrelated to sync (`desktop_supabase_config_security_test`
   needs real dart-defines; `habits_page_keyboard_test` and `widget_test` were already red).
 - No Xcode on this machine — nothing here has been run on a real device or simulator.
+
+--- NEW ---
+
+## iCloud Sync — Root Cause CONFIRMED + commit 2 landed (2026-07-20)
+
+### What your diagnostics proved
+Your two reports refuted the push-stall theory and identified the real cause: **the iPhone and
+the Mac are on two different E2E encryption keys.** The Mac enabled sync before the iPhone's key
+had propagated through iCloud Keychain, so it minted its own. Neither device can read the other's
+records; the ~6,238 records currently in iCloud are unreadable by both.
+
+**Your data is safe** — all 6,234 rows are intact on the iPhone. The Mac has nothing to lose
+(1 profile row + 1 settings row it created itself).
+
+### ACTION REQUIRED: still do NOT enable/reset sync on either device
+Commit 2 stops this happening *again*, but does **not** repair your current state: the guard only
+fires when a device has no key, and both of yours have one (just different ones). Repair needs the
+"Reset sync from this device" action — commit 3, not yet written.
+
+### DO NOT rebuild-and-enable expecting a fix yet
+If you install this build and enable sync on the Mac, it will now correctly refuse to mint a third
+key, but you will still see no data, because the zone is full of records sealed with the iPhone's
+key while the Mac holds its own.
+
+### The recovery sequence (once commit 3 lands)
+1. iPhone → Reset sync from this device (wipes the zone + both keychain secrets).
+2. iPhone → enable sync → mints ONE key, re-uploads all 6,234 rows.
+3. **Wait** for iCloud Keychain to carry the key to the Mac.
+4. Mac → enable sync. If the key has not arrived, it now DEFERS ("waiting for iCloud Keychain")
+   instead of minting a rival — the whole point of commit 2.
+
+### Open design question for commit 3 (I will ask before implementing)
+A device that reinstalls the app with iCloud Keychain **disabled** has no key and never will, so the
+new guard defers forever with no escape. That case needs an explicit user-initiated override, or it
+trades a data-loss bug for a lockout bug.
+
+### Note
+`flutter test` on desktop must be run as:
+`flutter test --dart-define=EVOLVE_SUPABASE_URL=… --dart-define=EVOLVE_SUPABASE_PUBLISHABLE_KEY=…`
+
+---
+
+## iCloud Sync — RECOVERY PROCEDURE (commit 3 landed, 2026-07-20)
+
+The repair path now exists. Follow this order exactly — the steps are ordered so a mistake
+costs you nothing.
+
+### Before you start
+- Your 6,234 rows live ONLY on the iPhone. The Mac has nothing worth keeping.
+- Therefore: **run the reset FROM THE IPHONE.** Running it from the Mac would upload the Mac's
+  empty database and overwrite the iPhone's copy in iCloud. The confirmation text says this, but
+  it is worth saying twice.
+- Build and install BOTH apps first (iPhone and Mac). Do not start until both are on this build.
+
+### Steps
+1. **iPhone** → Settings → iCloud Sync. You should now see a red card:
+   *"Some iCloud data can't be read"* with a count.
+2. Tap **Reset sync from this device** → read the confirmation → confirm.
+   This wipes the iCloud zone, mints a fresh key, and re-uploads all 6,234 rows.
+   With ~6k records it will take a while; leave the app open and in the foreground.
+3. Verify on the iPhone: **Sync details** should show `pending 0` on every table and
+   `change token: present`.
+4. **Wait for the key to reach the Mac.** iCloud Keychain propagation is not instant —
+   give it several minutes. Both devices must be online and unlocked.
+5. **Mac** → Settings → Privacy → iCloud Sync → turn sync on.
+   - If the key has arrived: it adopts it and pulls everything.
+   - If it has NOT: it now says *"Waiting for the encryption key from your other device"*
+     and offers **Start fresh from this device**. **DO NOT tap Start fresh** — that would
+     wipe the iPhone's freshly-uploaded copy. Cancel, wait, and try again later.
+6. Verify on the Mac: **Sync details** should show the same per-table counts as the iPhone.
+
+### If step 5 keeps deferring after a long wait
+Check iCloud Keychain is enabled on both devices (Settings → Apple ID → iCloud → Passwords and
+Keychain). The "Start fresh" override exists only for a device that can NEVER receive the key —
+on your setup that is not the case, so deferring means "wait", not "override".
+
+### Still outstanding (not yet fixed)
+- [ ] `applyDelete` runs with foreign keys ON — a pulled `profiles` tombstone CASCADE-deletes
+      every synced table. **Still live.** Next commit; it matters more than usual during a reset,
+      which is exactly when tombstone traffic happens.
+- [ ] `syncNow` still stamps `last_full_sync_at` and reports success even when every record failed.
+- [ ] Mobile still has no launch sync and no periodic timer.
+- [ ] No retry/backoff or `qualityOfService` on any CloudKit operation.
+- [ ] `quarantineRecord`'s ON CONFLICT branch does not apply the quarantine stamp.
+
+### Reminder
+None of commits 1–3 has run against real CloudKit. The logic is unit-tested; the device behaviour
+is not. Report what actually happens at each step above.

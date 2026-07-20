@@ -54,7 +54,17 @@
     "detailsPending": "{count} items waiting to upload",
     "detailsFailed": "{count} items failed to upload",
     "detailsCopy": "Copy report",
-    "detailsCopied": "Report copied"
+    "detailsCopied": "Report copied",
+    "keySplitTitle": "Some iCloud data can't be read",
+    "keySplitBody": "{count} records in iCloud were encrypted on another device with a different key, so this device can't read them. Reset sync from whichever device holds the data you want to keep.",
+    "resetFromDevice": "Reset sync from this device",
+    "resetFromDeviceDetail": "Replace everything in iCloud with this device's data",
+    "resetFromDeviceConfirm": "This erases everything currently stored in iCloud and uploads this device's data in its place. Your other devices will then download this copy. Only do this from the device that holds the data you want to keep. This cannot be undone.",
+    "resetFromDeviceDone": "Sync reset. This device's data is now the copy in iCloud.",
+    "statusWaitingKey": "Waiting for the encryption key from your other device",
+    "forceEnableTitle": "Start fresh from this device",
+    "forceEnableBody": "Another device's data is already in iCloud, but its encryption key hasn't reached this device yet. Waiting is usually enough — it can take a few minutes. Starting fresh erases what is in iCloud and replaces it with this device's data. This cannot be undone.",
+    "forceEnable": "Start fresh"
   },
   "privateRecovery": {
     "preparing": "Preparing your private space…",

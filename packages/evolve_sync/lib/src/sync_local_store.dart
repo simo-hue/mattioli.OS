@@ -625,6 +625,67 @@ class SyncLocalStore {
     });
   }
 
+  /// Drop ALL sync bookkeeping: every `sync_state` row, the change token and
+  /// the key fingerprint. Local user data is untouched.
+  ///
+  /// For the recovery reset, where the cloud zone has been wiped and this
+  /// device is about to re-upload from scratch. Everything the old bookkeeping
+  /// described — records synced, records parked as undecryptable, the token's
+  /// position — refers to a zone that no longer exists, so keeping any of it
+  /// would suppress the very re-upload the reset exists to perform.
+  Future<void> resetSyncState() async {
+    await _db.delete(PrivateDbSchema.syncStateTable);
+    await _db.update(
+      PrivateDbSchema.syncMetaTable,
+      {
+        'server_change_token': null,
+        'key_fingerprint': null,
+        'last_full_sync_at': null,
+      },
+      where: 'id = 1',
+    );
+  }
+
+  // ── E2E key fingerprint (v5) ──────────────────────────────────────────────
+
+  /// The key fingerprint recorded at the last sync, or null before v5 / the
+  /// first sync on this device.
+  Future<String?> keyFingerprint() async {
+    final rows = await _db.query(
+      PrivateDbSchema.syncMetaTable,
+      columns: ['key_fingerprint'],
+      where: 'id = 1',
+      limit: 1,
+    );
+    return rows.isEmpty ? null : rows.first['key_fingerprint'] as String?;
+  }
+
+  Future<void> setKeyFingerprint(String fingerprint) => _db.update(
+        PrivateDbSchema.syncMetaTable,
+        {'key_fingerprint': fingerprint},
+        where: 'id = 1',
+      );
+
+  /// Un-park every record parked as undecryptable, so a full re-fetch re-applies
+  /// them under the new key.
+  ///
+  /// Clears `last_error` and drops the parked stamp back to [quarantineStamp]
+  /// so the engine's LWW treats a re-delivered copy as newer than anything held
+  /// locally. Deliberately narrow — it matches ONLY the undecryptable reason, so
+  /// records parked because this build's schema cannot store them stay parked
+  /// (a new key does not teach an old build a new CHECK).
+  Future<int> clearUndecryptableParks() => _db.update(
+        PrivateDbSchema.syncStateTable,
+        {'last_error': null, 'updated_at': quarantineStamp},
+        where: 'last_error = ?',
+        whereArgs: [undecryptableReason],
+      );
+
+  /// The exact `last_error` written for a record sealed under another key. A
+  /// constant because [clearUndecryptableParks] matches on it.
+  static const String undecryptableReason =
+      'undecryptable: sealed with a different sync key';
+
   // ── Diagnostics (read-only) ───────────────────────────────────────────────
 
   /// A snapshot of what has and has not moved — see [SyncDiagnostics].

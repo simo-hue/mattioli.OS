@@ -41,7 +41,7 @@ class _FakeSyncService implements PrivateSyncService {
   Future<PrivateSyncStatus> probe() async => current;
 
   @override
-  Future<PrivateSyncStatus> enable() async {
+  Future<PrivateSyncStatus> enable({bool force = false}) async {
     enableCalls++;
     current = PrivateSyncStatus(
       isAvailable: true,
@@ -80,6 +80,14 @@ class _FakeSyncService implements PrivateSyncService {
 
   @override
   Future<SyncDiagnostics?> diagnostics() async => diagnosticsResult;
+
+  int resetCalls = 0;
+
+  @override
+  Future<PrivateSyncStatus> resetSyncFromThisDevice() async {
+    resetCalls++;
+    return current;
+  }
 
   @override
   Future<T> runExclusive<T>(Future<T> Function() action) => action();

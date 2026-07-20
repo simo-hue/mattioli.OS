@@ -264,6 +264,24 @@ class Translations$icloudSync$en {
 
 	/// en: 'Turn on'
 	String get bannerAction => 'Turn on';
+
+	/// en: 'Sync details'
+	String get detailsTitle => 'Sync details';
+
+	/// en: 'Everything uploaded'
+	String get detailsAllSynced => 'Everything uploaded';
+
+	/// en: '{count} items waiting to upload'
+	String detailsPending({required Object count}) => '${count} items waiting to upload';
+
+	/// en: '{count} items failed to upload'
+	String detailsFailed({required Object count}) => '${count} items failed to upload';
+
+	/// en: 'Copy report'
+	String get detailsCopy => 'Copy report';
+
+	/// en: 'Report copied'
+	String get detailsCopied => 'Report copied';
 }
 
 // Path: privateRecovery
@@ -3973,6 +3991,12 @@ extension on Translations {
 			'icloudSync.deleteSyncNote' => 'iCloud Sync is on: this also deletes the synced copy in your iCloud and turns sync off. Other devices keep their local copy — run this on each device to erase everywhere.',
 			'icloudSync.bannerText' => 'iCloud sync is off — your habits live only on this device and are lost if you reset or replace it.',
 			'icloudSync.bannerAction' => 'Turn on',
+			'icloudSync.detailsTitle' => 'Sync details',
+			'icloudSync.detailsAllSynced' => 'Everything uploaded',
+			'icloudSync.detailsPending' => ({required Object count}) => '${count} items waiting to upload',
+			'icloudSync.detailsFailed' => ({required Object count}) => '${count} items failed to upload',
+			'icloudSync.detailsCopy' => 'Copy report',
+			'icloudSync.detailsCopied' => 'Report copied',
 			'privateRecovery.preparing' => 'Preparing your private space…',
 			'privateRecovery.restoredFromCloudToast' => 'Couldn\'t unlock the local database — restored your data from iCloud.',
 			'privateRecovery.waitingTitle' => 'Waiting for iCloud',
@@ -4434,14 +4458,14 @@ extension on Translations {
 			'habitsPage.streakDays' => ({required Object n}) => '${n} days',
 			'habitsPage.prevPeriod' => 'Previous period',
 			'habitsPage.nextPeriod' => 'Next period',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.0' => 'MON',
 			'habitsPage.weekdayAbbrevUpper.1' => 'TUE',
 			'habitsPage.weekdayAbbrevUpper.2' => 'WED',
 			'habitsPage.weekdayAbbrevUpper.3' => 'THU',
 			'habitsPage.weekdayAbbrevUpper.4' => 'FRI',
 			'habitsPage.weekdayAbbrevUpper.5' => 'SAT',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.6' => 'SUN',
 			'habitsPage.lifeView' => 'Life view',
 			'habitsPage.lifeViewSubtitle' => 'One cell represents a month of the journey up to age 85.',
@@ -4948,14 +4972,14 @@ extension on Translations {
 			'coachSettings.remoteWarning' => 'This endpoint isn\'t a local address — messages will leave this device.',
 			'coachSettings.advanced' => 'Advanced',
 			'coachSettings.systemPromptLabel' => 'System prompt',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.systemPromptHint' => 'Override the coach persona (leave empty for the default)',
 			'coachSettings.systemPromptReset' => 'Reset',
 			'coachSettings.temperatureLabel' => 'Temperature',
 			'coachSettings.save' => 'Done',
 			'coachSettings.detectedTitle' => 'Local model detected',
 			'coachSettings.detectedBody' => 'A local AI server is running on this Mac. Run the coach 100% privately?',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.detectedAction' => 'Use local',
 			'coachSettings.detectedDismiss' => 'Not now',
 			'coachSettings.activeCloud' => ({required Object model}) => 'Cloud · ${model}',

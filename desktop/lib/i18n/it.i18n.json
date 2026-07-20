@@ -48,7 +48,13 @@
     "lastSyncedAt": "Ultima sincronizzazione {time}",
     "deleteSyncNote": "La sincronizzazione iCloud è attiva: verrà eliminata anche la copia sincronizzata nel tuo iCloud e la sincronizzazione verrà disattivata. Gli altri dispositivi conservano la loro copia locale — esegui questa operazione su ciascun dispositivo per eliminare tutto ovunque.",
     "bannerText": "La sincronizzazione iCloud è disattivata: le tue abitudini sono solo su questo dispositivo e vanno perse se lo ripristini o lo sostituisci.",
-    "bannerAction": "Attiva"
+    "bannerAction": "Attiva",
+    "detailsTitle": "Dettagli sincronizzazione",
+    "detailsAllSynced": "Tutto caricato",
+    "detailsPending": "{count} elementi in attesa di caricamento",
+    "detailsFailed": "{count} elementi non caricati",
+    "detailsCopy": "Copia report",
+    "detailsCopied": "Report copiato"
   },
   "privateRecovery": {
     "preparing": "Preparazione del tuo spazio privato…",

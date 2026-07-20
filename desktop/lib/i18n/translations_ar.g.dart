@@ -156,6 +156,12 @@ class _Translations$icloudSync$ar extends Translations$icloudSync$en {
 	@override String get deleteSyncNote => 'مزامنة iCloud مفعّلة: سيؤدي هذا أيضًا إلى حذف النسخة المتزامنة من iCloud الخاص بك وإيقاف المزامنة. تحتفظ الأجهزة الأخرى بنسختها المحلية — نفّذ هذا الإجراء على كل جهاز للحذف في كل مكان.';
 	@override String get bannerText => 'مزامنة iCloud متوقفة — عاداتك موجودة فقط على هذا الجهاز وستُفقد إذا أعدت ضبطه أو استبدلته.';
 	@override String get bannerAction => 'تفعيل';
+	@override String get detailsTitle => 'تفاصيل المزامنة';
+	@override String get detailsAllSynced => 'تم رفع جميع البيانات';
+	@override String detailsPending({required Object count}) => '${count} عنصرًا في انتظار الرفع';
+	@override String detailsFailed({required Object count}) => '${count} عنصرًا فشل رفعها';
+	@override String get detailsCopy => 'نسخ التقرير';
+	@override String get detailsCopied => 'تم نسخ التقرير';
 }
 
 // Path: privateRecovery
@@ -1739,6 +1745,12 @@ extension on TranslationsAr {
 			'icloudSync.deleteSyncNote' => 'مزامنة iCloud مفعّلة: سيؤدي هذا أيضًا إلى حذف النسخة المتزامنة من iCloud الخاص بك وإيقاف المزامنة. تحتفظ الأجهزة الأخرى بنسختها المحلية — نفّذ هذا الإجراء على كل جهاز للحذف في كل مكان.',
 			'icloudSync.bannerText' => 'مزامنة iCloud متوقفة — عاداتك موجودة فقط على هذا الجهاز وستُفقد إذا أعدت ضبطه أو استبدلته.',
 			'icloudSync.bannerAction' => 'تفعيل',
+			'icloudSync.detailsTitle' => 'تفاصيل المزامنة',
+			'icloudSync.detailsAllSynced' => 'تم رفع جميع البيانات',
+			'icloudSync.detailsPending' => ({required Object count}) => '${count} عنصرًا في انتظار الرفع',
+			'icloudSync.detailsFailed' => ({required Object count}) => '${count} عنصرًا فشل رفعها',
+			'icloudSync.detailsCopy' => 'نسخ التقرير',
+			'icloudSync.detailsCopied' => 'تم نسخ التقرير',
 			'privateRecovery.preparing' => 'جارٍ تجهيز مساحتك الخاصة…',
 			'privateRecovery.restoredFromCloudToast' => 'تعذّر فتح قاعدة البيانات المحلية — تمت استعادة بياناتك من iCloud.',
 			'privateRecovery.waitingTitle' => 'بانتظار iCloud',
@@ -2200,14 +2212,14 @@ extension on TranslationsAr {
 			'habitsPage.streakDays' => ({required Object n}) => '${n} أيام',
 			'habitsPage.prevPeriod' => 'الفترة السابقة',
 			'habitsPage.nextPeriod' => 'الفترة التالية',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.0' => 'اثن',
 			'habitsPage.weekdayAbbrevUpper.1' => 'ثلا',
 			'habitsPage.weekdayAbbrevUpper.2' => 'أرب',
 			'habitsPage.weekdayAbbrevUpper.3' => 'خمي',
 			'habitsPage.weekdayAbbrevUpper.4' => 'جمع',
 			'habitsPage.weekdayAbbrevUpper.5' => 'سبت',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.6' => 'أحد',
 			'habitsPage.lifeView' => 'عرض الحياة',
 			'habitsPage.lifeViewSubtitle' => 'تمثّل كل خلية شهرًا من المسار حتى سن 85.',
@@ -2714,14 +2726,14 @@ extension on TranslationsAr {
 			'coachSettings.remoteWarning' => 'هذا الـ endpoint ليس عنوانًا محليًا — ستغادر الرسائل هذا الجهاز.',
 			'coachSettings.advanced' => 'متقدّم',
 			'coachSettings.systemPromptLabel' => 'موجّه النظام',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.systemPromptHint' => 'استبدل شخصية المدرّب (اتركه فارغًا للوضع الافتراضي)',
 			'coachSettings.systemPromptReset' => 'إعادة تعيين',
 			'coachSettings.temperatureLabel' => 'درجة الحرارة',
 			'coachSettings.save' => 'تم',
 			'coachSettings.detectedTitle' => 'تم اكتشاف نموذج محلي',
 			'coachSettings.detectedBody' => 'يعمل خادم ذكاء اصطناعي محلي على هذا الـ Mac. هل تريد تشغيل المدرّب بخصوصية كاملة؟',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.detectedAction' => 'استخدام المحلي',
 			'coachSettings.detectedDismiss' => 'ليس الآن',
 			'coachSettings.activeCloud' => ({required Object model}) => 'السحابة · ${model}',

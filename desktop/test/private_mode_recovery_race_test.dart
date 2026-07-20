@@ -88,6 +88,9 @@ class _ChainFakeSync implements PrivateSyncService {
   @override
   Future<PrivateSyncStatus> requestFullReset() async =>
       const PrivateSyncStatus.localOnly();
+
+  @override
+  Future<SyncDiagnostics?> diagnostics() async => null;
 }
 
 /// A recovery store that yields inside reset/reopen (so an unserialized op could

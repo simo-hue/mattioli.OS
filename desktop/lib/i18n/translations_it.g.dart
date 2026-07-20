@@ -156,6 +156,12 @@ class _Translations$icloudSync$it extends Translations$icloudSync$en {
 	@override String get deleteSyncNote => 'La sincronizzazione iCloud è attiva: verrà eliminata anche la copia sincronizzata nel tuo iCloud e la sincronizzazione verrà disattivata. Gli altri dispositivi conservano la loro copia locale — esegui questa operazione su ciascun dispositivo per eliminare tutto ovunque.';
 	@override String get bannerText => 'La sincronizzazione iCloud è disattivata: le tue abitudini sono solo su questo dispositivo e vanno perse se lo ripristini o lo sostituisci.';
 	@override String get bannerAction => 'Attiva';
+	@override String get detailsTitle => 'Dettagli sincronizzazione';
+	@override String get detailsAllSynced => 'Tutto caricato';
+	@override String detailsPending({required Object count}) => '${count} elementi in attesa di caricamento';
+	@override String detailsFailed({required Object count}) => '${count} elementi non caricati';
+	@override String get detailsCopy => 'Copia report';
+	@override String get detailsCopied => 'Report copiato';
 }
 
 // Path: privateRecovery
@@ -1739,6 +1745,12 @@ extension on TranslationsIt {
 			'icloudSync.deleteSyncNote' => 'La sincronizzazione iCloud è attiva: verrà eliminata anche la copia sincronizzata nel tuo iCloud e la sincronizzazione verrà disattivata. Gli altri dispositivi conservano la loro copia locale — esegui questa operazione su ciascun dispositivo per eliminare tutto ovunque.',
 			'icloudSync.bannerText' => 'La sincronizzazione iCloud è disattivata: le tue abitudini sono solo su questo dispositivo e vanno perse se lo ripristini o lo sostituisci.',
 			'icloudSync.bannerAction' => 'Attiva',
+			'icloudSync.detailsTitle' => 'Dettagli sincronizzazione',
+			'icloudSync.detailsAllSynced' => 'Tutto caricato',
+			'icloudSync.detailsPending' => ({required Object count}) => '${count} elementi in attesa di caricamento',
+			'icloudSync.detailsFailed' => ({required Object count}) => '${count} elementi non caricati',
+			'icloudSync.detailsCopy' => 'Copia report',
+			'icloudSync.detailsCopied' => 'Report copiato',
 			'privateRecovery.preparing' => 'Preparazione del tuo spazio privato…',
 			'privateRecovery.restoredFromCloudToast' => 'Impossibile sbloccare il database locale: i tuoi dati sono stati ripristinati da iCloud.',
 			'privateRecovery.waitingTitle' => 'In attesa di iCloud',
@@ -2200,14 +2212,14 @@ extension on TranslationsIt {
 			'habitsPage.streakDays' => ({required Object n}) => '${n} giorni',
 			'habitsPage.prevPeriod' => 'Periodo precedente',
 			'habitsPage.nextPeriod' => 'Periodo successivo',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.0' => 'LUN',
 			'habitsPage.weekdayAbbrevUpper.1' => 'MAR',
 			'habitsPage.weekdayAbbrevUpper.2' => 'MER',
 			'habitsPage.weekdayAbbrevUpper.3' => 'GIO',
 			'habitsPage.weekdayAbbrevUpper.4' => 'VEN',
 			'habitsPage.weekdayAbbrevUpper.5' => 'SAB',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.6' => 'DOM',
 			'habitsPage.lifeView' => 'Vista vita',
 			'habitsPage.lifeViewSubtitle' => 'Una cella rappresenta un mese del percorso fino a 85 anni.',
@@ -2714,14 +2726,14 @@ extension on TranslationsIt {
 			'coachSettings.remoteWarning' => 'Questo endpoint non è un indirizzo locale — i messaggi lasceranno questo dispositivo.',
 			'coachSettings.advanced' => 'Avanzate',
 			'coachSettings.systemPromptLabel' => 'Prompt di sistema',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.systemPromptHint' => 'Sostituisci la persona del coach (lascia vuoto per quella predefinita)',
 			'coachSettings.systemPromptReset' => 'Ripristina',
 			'coachSettings.temperatureLabel' => 'Temperatura',
 			'coachSettings.save' => 'Fatto',
 			'coachSettings.detectedTitle' => 'Modello locale rilevato',
 			'coachSettings.detectedBody' => 'Un server AI locale è in esecuzione su questo Mac. Vuoi usare il coach in modo 100% privato?',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.detectedAction' => 'Usa locale',
 			'coachSettings.detectedDismiss' => 'Non ora',
 			'coachSettings.activeCloud' => ({required Object model}) => 'Cloud · ${model}',

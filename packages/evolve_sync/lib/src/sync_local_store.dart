@@ -1,6 +1,7 @@
 import 'package:sqflite_common/sqlite_api.dart';
 
 import 'private_db_schema.dart';
+import 'sync_diagnostics.dart';
 
 /// One `sync_state` row.
 class SyncStateEntry {
@@ -622,5 +623,69 @@ class SyncLocalStore {
         );
       }
     });
+  }
+
+  // ── Diagnostics (read-only) ───────────────────────────────────────────────
+
+  /// A snapshot of what has and has not moved — see [SyncDiagnostics].
+  ///
+  /// Strictly read-only: it must be safe to call from a status screen at any
+  /// time, including mid-sync, so it takes no transaction and holds no lock. A
+  /// count read while a push is committing may be a moment stale, which is
+  /// immaterial for a diagnostic and far preferable to serialising against the
+  /// engine.
+  Future<SyncDiagnostics> diagnostics() async {
+    Future<Map<String, int>> countBy(String where) async {
+      final rows = await _db.rawQuery(
+        'SELECT table_name, COUNT(*) AS n FROM '
+        '${PrivateDbSchema.syncStateTable} WHERE $where GROUP BY table_name',
+      );
+      return {
+        for (final r in rows)
+          r['table_name'] as String: (r['n'] as int?) ?? 0,
+      };
+    }
+
+    final localRows = <String, int>{};
+    for (final t in PrivateDbSchema.syncedTables) {
+      final r = await _db.rawQuery('SELECT COUNT(*) AS n FROM $t');
+      localRows[t] = (r.first['n'] as int?) ?? 0;
+    }
+
+    // Split errored records on `dirty`, NOT on [quarantineStamp]: a record is
+    // retried iff it is dirty, and `quarantineRecord`'s ON CONFLICT branch
+    // updates only `last_error`, so a parked record that already had a
+    // `sync_state` row keeps its original stamp and a stamp test misclassifies
+    // it. `dirty` is what actually decides whether anything happens next.
+    Future<Map<String, int>> errorsWhere(int dirty) async {
+      final rows = await _db.rawQuery(
+        'SELECT last_error, COUNT(*) AS n FROM '
+        '${PrivateDbSchema.syncStateTable} '
+        'WHERE last_error IS NOT NULL AND dirty = ? '
+        'GROUP BY last_error ORDER BY n DESC',
+        [dirty],
+      );
+      return {
+        for (final r in rows) r['last_error'] as String: (r['n'] as int?) ?? 0,
+      };
+    }
+
+    final meta = await _db.query(
+      PrivateDbSchema.syncMetaTable,
+      where: 'id = 1',
+      limit: 1,
+    );
+    final metaRow = meta.isEmpty ? const <String, Object?>{} : meta.first;
+
+    return SyncDiagnostics(
+      localRowsByTable: localRows,
+      pendingByTable: await countBy('dirty = 1 AND deleted = 0'),
+      pendingDeletesByTable: await countBy('dirty = 1 AND deleted = 1'),
+      errorsByReason: await errorsWhere(1),
+      parkedByReason: await errorsWhere(0),
+      hasChangeToken: metaRow['server_change_token'] != null,
+      lastFullSyncAt:
+          DateTime.tryParse((metaRow['last_full_sync_at'] as String?) ?? ''),
+    );
   }
 }

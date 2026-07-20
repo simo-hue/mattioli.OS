@@ -156,6 +156,12 @@ class _Translations$icloudSync$es extends Translations$icloudSync$en {
 	@override String get deleteSyncNote => 'La sincronización de iCloud está activada: también se eliminará la copia sincronizada de tu iCloud y se desactivará la sincronización. Los demás dispositivos conservan su copia local — ejecuta esta acción en cada dispositivo para borrarlo todo en todas partes.';
 	@override String get bannerText => 'La sincronización con iCloud está desactivada: tus hábitos solo están en este dispositivo y se perderán si lo restableces o lo reemplazas.';
 	@override String get bannerAction => 'Activar';
+	@override String get detailsTitle => 'Detalles de sincronización';
+	@override String get detailsAllSynced => 'Todo subido';
+	@override String detailsPending({required Object count}) => '${count} elementos pendientes de subir';
+	@override String detailsFailed({required Object count}) => '${count} elementos no se han subido';
+	@override String get detailsCopy => 'Copiar informe';
+	@override String get detailsCopied => 'Informe copiado';
 }
 
 // Path: privateRecovery
@@ -1739,6 +1745,12 @@ extension on TranslationsEs {
 			'icloudSync.deleteSyncNote' => 'La sincronización de iCloud está activada: también se eliminará la copia sincronizada de tu iCloud y se desactivará la sincronización. Los demás dispositivos conservan su copia local — ejecuta esta acción en cada dispositivo para borrarlo todo en todas partes.',
 			'icloudSync.bannerText' => 'La sincronización con iCloud está desactivada: tus hábitos solo están en este dispositivo y se perderán si lo restableces o lo reemplazas.',
 			'icloudSync.bannerAction' => 'Activar',
+			'icloudSync.detailsTitle' => 'Detalles de sincronización',
+			'icloudSync.detailsAllSynced' => 'Todo subido',
+			'icloudSync.detailsPending' => ({required Object count}) => '${count} elementos pendientes de subir',
+			'icloudSync.detailsFailed' => ({required Object count}) => '${count} elementos no se han subido',
+			'icloudSync.detailsCopy' => 'Copiar informe',
+			'icloudSync.detailsCopied' => 'Informe copiado',
 			'privateRecovery.preparing' => 'Preparando tu espacio privado…',
 			'privateRecovery.restoredFromCloudToast' => 'No se pudo desbloquear la base de datos local: tus datos se restauraron desde iCloud.',
 			'privateRecovery.waitingTitle' => 'Esperando a iCloud',
@@ -2200,14 +2212,14 @@ extension on TranslationsEs {
 			'habitsPage.streakDays' => ({required Object n}) => '${n} días',
 			'habitsPage.prevPeriod' => 'Período anterior',
 			'habitsPage.nextPeriod' => 'Período siguiente',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.0' => 'LUN',
 			'habitsPage.weekdayAbbrevUpper.1' => 'MAR',
 			'habitsPage.weekdayAbbrevUpper.2' => 'MIÉ',
 			'habitsPage.weekdayAbbrevUpper.3' => 'JUE',
 			'habitsPage.weekdayAbbrevUpper.4' => 'VIE',
 			'habitsPage.weekdayAbbrevUpper.5' => 'SÁB',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.6' => 'DOM',
 			'habitsPage.lifeView' => 'Vista de vida',
 			'habitsPage.lifeViewSubtitle' => 'Una celda representa un mes del camino hasta los 85 años.',
@@ -2714,14 +2726,14 @@ extension on TranslationsEs {
 			'coachSettings.remoteWarning' => 'Este endpoint no es una dirección local — los mensajes saldrán de este dispositivo.',
 			'coachSettings.advanced' => 'Avanzado',
 			'coachSettings.systemPromptLabel' => 'Prompt del sistema',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.systemPromptHint' => 'Reemplaza la persona del coach (déjalo vacío para la predeterminada)',
 			'coachSettings.systemPromptReset' => 'Restablecer',
 			'coachSettings.temperatureLabel' => 'Temperatura',
 			'coachSettings.save' => 'Listo',
 			'coachSettings.detectedTitle' => 'Modelo local detectado',
 			'coachSettings.detectedBody' => 'Hay un servidor de IA local ejecutándose en este Mac. ¿Ejecutar el coach de forma 100 % privada?',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.detectedAction' => 'Usar local',
 			'coachSettings.detectedDismiss' => 'Ahora no',
 			'coachSettings.activeCloud' => ({required Object model}) => 'Nube · ${model}',

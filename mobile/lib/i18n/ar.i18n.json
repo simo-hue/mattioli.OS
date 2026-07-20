@@ -544,7 +544,14 @@
     "lastSyncedNever": "لم تتم المزامنة مطلقاً",
     "lastSyncedAt": "آخر مزامنة {time}",
     "bannerText": "مزامنة iCloud متوقفة — عاداتك موجودة على هذا الجهاز فقط وستُفقد إذا غيّرت هاتفك أو أعدت ضبطه.",
-    "bannerAction": "تفعيل"
+    "bannerAction": "تفعيل",
+    "detailsTitle": "تفاصيل المزامنة",
+    "detailsAllSynced": "تم رفع جميع البيانات",
+    "detailsPending": "{count} عنصرًا في انتظار الرفع",
+    "detailsFailed": "{count} عنصرًا فشل رفعها",
+    "detailsCopy": "نسخ التقرير",
+    "detailsCopied": "تم نسخ التقرير",
+    "detailsUnavailable": "التشخيص غير متاح"
   },
   "privateRecovery": {
     "preparing": "جارٍ تجهيز مساحتك الخاصة…",

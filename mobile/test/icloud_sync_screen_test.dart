@@ -47,6 +47,7 @@ class FakePrivateSyncService implements PrivateSyncService {
     CloudAccountStatus? account = CloudAccountStatus.available,
     this.throwOnStatus = false,
     this.throwOnAction = false,
+    this.diagnosticsResult,
   }) : _status = PrivateSyncStatus(
           isAvailable: isAvailable,
           isEnabled: isEnabled,
@@ -123,9 +124,37 @@ class FakePrivateSyncService implements PrivateSyncService {
     return _status;
   }
 
+  /// Null ⇒ no local store to inspect, which must HIDE the details row rather
+  /// than render it empty.
+  final SyncDiagnostics? diagnosticsResult;
+
+  @override
+  Future<SyncDiagnostics?> diagnostics() async {
+    calls.add('diagnostics');
+    return diagnosticsResult;
+  }
+
   @override
   Future<T> runExclusive<T>(Future<T> Function() action) => action();
 }
+
+/// A diagnostics snapshot with [pending] macro goals stranded — the shape of
+/// the reported bug (habits through, `long_term_goals` not).
+SyncDiagnostics _diagnostics({
+  int pending = 0,
+  int errors = 0,
+  int parked = 0,
+}) =>
+    SyncDiagnostics(
+      localRowsByTable: {'goals': 12, 'long_term_goals': pending},
+      pendingByTable: pending > 0 ? {'long_term_goals': pending} : const {},
+      pendingDeletesByTable: const {},
+      errorsByReason:
+          errors > 0 ? {'CKError 7 rate limited': errors} : const {},
+      parkedByReason: parked > 0 ? {'row rejected by schema': parked} : const {},
+      hasChangeToken: true,
+      lastFullSyncAt: DateTime.utc(2026, 7, 20, 9),
+    );
 
 Future<void> _pumpScreen(
   WidgetTester tester,
@@ -311,6 +340,81 @@ void main() {
       expect(fake.calls, contains('syncNow'));
       // Still on the screen (its title is present).
       expect(find.text('iCloud Sync'), findsOneWidget);
+    });
+  });
+
+  group('sync details', () {
+    testWidgets('reports stranded records instead of only "Up to date"',
+        (tester) async {
+      await _withIosPlatform(() async {
+        // The reported bug: sync ran, the status line says it is fine, and
+        // thousands of macro goals never left the device.
+        final fake = FakePrivateSyncService(
+          isEnabled: true,
+          lastSyncedAt: DateTime.utc(2026, 7, 20, 9),
+          diagnosticsResult: _diagnostics(pending: 5000),
+        );
+        await _pumpScreen(tester, fake);
+
+        expect(find.text('Sync details'), findsOneWidget);
+        expect(find.text('5000 items waiting to upload'), findsOneWidget);
+      });
+    });
+
+    testWidgets('failures outrank a pending count — retrying is not what is '
+        'missing', (tester) async {
+      await _withIosPlatform(() async {
+        final fake = FakePrivateSyncService(
+          isEnabled: true,
+          diagnosticsResult: _diagnostics(pending: 10, errors: 3, parked: 2),
+        );
+        await _pumpScreen(tester, fake);
+
+        expect(find.text('5 items failed to upload'), findsOneWidget);
+        expect(find.text('10 items waiting to upload'), findsNothing);
+      });
+    });
+
+    testWidgets('claims everything is uploaded only when nothing is stranded',
+        (tester) async {
+      await _withIosPlatform(() async {
+        final fake = FakePrivateSyncService(
+          isEnabled: true,
+          diagnosticsResult: _diagnostics(),
+        );
+        await _pumpScreen(tester, fake);
+
+        expect(find.text('Everything uploaded'), findsOneWidget);
+      });
+    });
+
+    testWidgets('the row is hidden when there is no store to inspect',
+        (tester) async {
+      await _withIosPlatform(() async {
+        // diagnostics() == null (no-op service / DB unopenable): showing a row
+        // reading "Everything uploaded" here would be a lie.
+        final fake = FakePrivateSyncService(isEnabled: true);
+        await _pumpScreen(tester, fake);
+
+        expect(find.text('Sync details'), findsNothing);
+      });
+    });
+
+    testWidgets('the report names the table that is stuck', (tester) async {
+      await _withIosPlatform(() async {
+        final fake = FakePrivateSyncService(
+          isEnabled: true,
+          diagnosticsResult: _diagnostics(pending: 5000),
+        );
+        await _pumpScreen(tester, fake);
+
+        await tester.tap(find.text('Sync details'));
+        await tester.pumpAndSettle();
+
+        // The per-table breakdown is the whole diagnostic value: an aggregate
+        // count cannot tell you WHICH data never made it across.
+        expect(find.textContaining('long_term_goals'), findsOneWidget);
+      });
     });
   });
 }

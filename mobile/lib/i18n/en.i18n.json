@@ -544,7 +544,14 @@
     "lastSyncedNever": "Never synced",
     "lastSyncedAt": "Last synced {time}",
     "bannerText": "iCloud sync is off — your habits live only on this device and are lost if you change or reset your phone.",
-    "bannerAction": "Turn on"
+    "bannerAction": "Turn on",
+    "detailsTitle": "Sync details",
+    "detailsAllSynced": "Everything uploaded",
+    "detailsPending": "{count} items waiting to upload",
+    "detailsFailed": "{count} items failed to upload",
+    "detailsCopy": "Copy report",
+    "detailsCopied": "Report copied",
+    "detailsUnavailable": "Diagnostics unavailable"
   },
   "privateRecovery": {
     "preparing": "Preparing your private space…",

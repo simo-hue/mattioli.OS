@@ -544,7 +544,14 @@
     "lastSyncedNever": "Noch nie synchronisiert",
     "lastSyncedAt": "Zuletzt synchronisiert {time}",
     "bannerText": "iCloud-Sync ist aus — deine Gewohnheiten liegen nur auf diesem Gerät und gehen verloren, wenn du dein Telefon wechselst oder zurücksetzt.",
-    "bannerAction": "Aktivieren"
+    "bannerAction": "Aktivieren",
+    "detailsTitle": "Synchronisierungsdetails",
+    "detailsAllSynced": "Alles hochgeladen",
+    "detailsPending": "{count} Elemente warten auf den Upload",
+    "detailsFailed": "{count} Elemente konnten nicht hochgeladen werden",
+    "detailsCopy": "Bericht kopieren",
+    "detailsCopied": "Bericht kopiert",
+    "detailsUnavailable": "Diagnose nicht verfügbar"
   },
   "privateRecovery": {
     "preparing": "Dein privater Bereich wird vorbereitet…",

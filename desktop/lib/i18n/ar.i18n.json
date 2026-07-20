@@ -48,7 +48,13 @@
     "lastSyncedAt": "آخر مزامنة {time}",
     "deleteSyncNote": "مزامنة iCloud مفعّلة: سيؤدي هذا أيضًا إلى حذف النسخة المتزامنة من iCloud الخاص بك وإيقاف المزامنة. تحتفظ الأجهزة الأخرى بنسختها المحلية — نفّذ هذا الإجراء على كل جهاز للحذف في كل مكان.",
     "bannerText": "مزامنة iCloud متوقفة — عاداتك موجودة فقط على هذا الجهاز وستُفقد إذا أعدت ضبطه أو استبدلته.",
-    "bannerAction": "تفعيل"
+    "bannerAction": "تفعيل",
+    "detailsTitle": "تفاصيل المزامنة",
+    "detailsAllSynced": "تم رفع جميع البيانات",
+    "detailsPending": "{count} عنصرًا في انتظار الرفع",
+    "detailsFailed": "{count} عنصرًا فشل رفعها",
+    "detailsCopy": "نسخ التقرير",
+    "detailsCopied": "تم نسخ التقرير"
   },
   "privateRecovery": {
     "preparing": "جارٍ تجهيز مساحتك الخاصة…",

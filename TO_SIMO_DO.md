@@ -4,9 +4,6 @@
 - [ ] Different habits & goals types, not only checkboxes like status,progress bar
 - [ ] For the desktop implementation what has been done with ollama is outstanding and I want to replicate the same thing also with LMStudio so the major local LLM providers are supported
 
-## prompt to run 1
-/grill-me we are working on the mobile and desktop flutter implementations. I've activated the iCloud sync but I saw that not everything is being synchronized, an example are the Goals. Is there anything else that's missing? As I want to save all the important things there not only a part. My case is that I've imported the goals ( in privacy mode ) but they haven't sync.
-
 ## prompt
 
 /grill-me we are working inside the flutter implementations on both desktop and mobile versions. What I was thinking about was to Add the "mixture" of habits to make it one ( for example 10 mins of workout OR 10000 steps ). Could exclusive ( OR ) or inclusive ( AND ). What do you think? How we can implement it in the most professional and user friendly way?
@@ -44,6 +41,36 @@ flutter run -d macos --dart-define-from-file=.env
 flutter build macos --release --dart-define-from-file=.env
 ```
 
-## App Store Rejection - Manual Actions
-- [ ] You must upload a screen recording of the app confirming the fixes for the AI Coach and the HealthKit button to the App Store Connect resolution center as requested by Apple.
-- [ ] You can now build and release the iOS version 1.1.2 (build 23) to App Store Connect.
+---
+
+## iCloud Sync Hardening — Manual Actions (2026-07-20)
+
+### ACTION REQUIRED: run the new diagnostic on BOTH devices
+Commit 1/7 adds a **"Sync details"** row under Settings → iCloud Sync (iPhone) and
+Settings → Privacy → iCloud Sync (Mac). It has no behaviour change — it only shows what
+was already being hidden.
+
+1. Open it on the **iPhone**, tap **Copy report**.
+2. Open it on the **Mac Mini**, tap **Copy report**.
+3. Send me both.
+
+The per-table `local` counts diffed between the two devices localise the stall exactly.
+**Prediction to check:** if the push-stall diagnosis is right, the Mac will also be missing
+`daily_moods` and `macro_goal_categories`, and its `goal_logs` count will be lower than the
+iPhone's — those sit at or after `long_term_goals` in the upload queue. If the Mac's moods
+came through intact, the diagnosis is wrong and the cause is Mac-side apply instead.
+
+### Two data-integrity issues found during the audit (NOT yet fixed — commit 3)
+- [ ] `applyDelete` runs with `PRAGMA foreign_keys = ON` while `applyUpsert` deliberately
+      turns it OFF. A pulled `macro_goal_categories` tombstone silently `SET NULL`s
+      `long_term_goals.category_id`, and a pulled `profiles` tombstone **CASCADE-deletes every
+      synced table**. Live data-loss path — scheduled for commit 3, which is why commit 3 is
+      ordered before the coverage work.
+- [ ] `quarantineRecord`'s `ON CONFLICT` branch updates only `last_error`, so a record that
+      already had a `sync_state` row is NOT parked at `quarantineStamp` as its doc comment
+      claims. Worked around in diagnostics (splits on `dirty`); fix scheduled for commit 7.
+
+### Known, accepted, unchanged
+- 6 desktop tests fail on a clean tree, unrelated to sync (`desktop_supabase_config_security_test`
+  needs real dart-defines; `habits_page_keyboard_test` and `widget_test` were already red).
+- No Xcode on this machine — nothing here has been run on a real device or simulator.

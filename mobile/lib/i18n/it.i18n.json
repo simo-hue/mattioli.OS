@@ -544,7 +544,14 @@
     "lastSyncedNever": "Mai sincronizzato",
     "lastSyncedAt": "Ultima sincronizzazione {time}",
     "bannerText": "La sincronizzazione iCloud è disattivata: le tue abitudini sono solo su questo dispositivo e vanno perse se cambi o ripristini il telefono.",
-    "bannerAction": "Attiva"
+    "bannerAction": "Attiva",
+    "detailsTitle": "Dettagli sincronizzazione",
+    "detailsAllSynced": "Tutto caricato",
+    "detailsPending": "{count} elementi in attesa di caricamento",
+    "detailsFailed": "{count} elementi non caricati",
+    "detailsCopy": "Copia report",
+    "detailsCopied": "Report copiato",
+    "detailsUnavailable": "Diagnostica non disponibile"
   },
   "privateRecovery": {
     "preparing": "Preparazione del tuo spazio privato…",

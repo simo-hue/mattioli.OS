@@ -156,6 +156,12 @@ class _Translations$icloudSync$de extends Translations$icloudSync$en {
 	@override String get deleteSyncNote => 'Die iCloud-Synchronisierung ist aktiv: Dabei wird auch die synchronisierte Kopie in deiner iCloud gelöscht und die Synchronisierung deaktiviert. Andere Geräte behalten ihre lokale Kopie — führe dies auf jedem Gerät aus, um überall zu löschen.';
 	@override String get bannerText => 'iCloud-Sync ist aus — deine Gewohnheiten liegen nur auf diesem Gerät und gehen verloren, wenn du es zurücksetzt oder ersetzt.';
 	@override String get bannerAction => 'Aktivieren';
+	@override String get detailsTitle => 'Synchronisierungsdetails';
+	@override String get detailsAllSynced => 'Alles hochgeladen';
+	@override String detailsPending({required Object count}) => '${count} Elemente warten auf den Upload';
+	@override String detailsFailed({required Object count}) => '${count} Elemente konnten nicht hochgeladen werden';
+	@override String get detailsCopy => 'Bericht kopieren';
+	@override String get detailsCopied => 'Bericht kopiert';
 }
 
 // Path: privateRecovery
@@ -1739,6 +1745,12 @@ extension on TranslationsDe {
 			'icloudSync.deleteSyncNote' => 'Die iCloud-Synchronisierung ist aktiv: Dabei wird auch die synchronisierte Kopie in deiner iCloud gelöscht und die Synchronisierung deaktiviert. Andere Geräte behalten ihre lokale Kopie — führe dies auf jedem Gerät aus, um überall zu löschen.',
 			'icloudSync.bannerText' => 'iCloud-Sync ist aus — deine Gewohnheiten liegen nur auf diesem Gerät und gehen verloren, wenn du es zurücksetzt oder ersetzt.',
 			'icloudSync.bannerAction' => 'Aktivieren',
+			'icloudSync.detailsTitle' => 'Synchronisierungsdetails',
+			'icloudSync.detailsAllSynced' => 'Alles hochgeladen',
+			'icloudSync.detailsPending' => ({required Object count}) => '${count} Elemente warten auf den Upload',
+			'icloudSync.detailsFailed' => ({required Object count}) => '${count} Elemente konnten nicht hochgeladen werden',
+			'icloudSync.detailsCopy' => 'Bericht kopieren',
+			'icloudSync.detailsCopied' => 'Bericht kopiert',
 			'privateRecovery.preparing' => 'Dein privater Bereich wird vorbereitet…',
 			'privateRecovery.restoredFromCloudToast' => 'Lokale Datenbank konnte nicht entsperrt werden – deine Daten wurden aus iCloud wiederhergestellt.',
 			'privateRecovery.waitingTitle' => 'Warten auf iCloud',
@@ -2200,14 +2212,14 @@ extension on TranslationsDe {
 			'habitsPage.streakDays' => ({required Object n}) => '${n} Tage',
 			'habitsPage.prevPeriod' => 'Vorheriger Zeitraum',
 			'habitsPage.nextPeriod' => 'Nächster Zeitraum',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.0' => 'MO',
 			'habitsPage.weekdayAbbrevUpper.1' => 'DI',
 			'habitsPage.weekdayAbbrevUpper.2' => 'MI',
 			'habitsPage.weekdayAbbrevUpper.3' => 'DO',
 			'habitsPage.weekdayAbbrevUpper.4' => 'FR',
 			'habitsPage.weekdayAbbrevUpper.5' => 'SA',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.6' => 'SO',
 			'habitsPage.lifeView' => 'Lebensansicht',
 			'habitsPage.lifeViewSubtitle' => 'Eine Zelle steht für einen Monat des Weges bis zum Alter von 85.',
@@ -2714,14 +2726,14 @@ extension on TranslationsDe {
 			'coachSettings.remoteWarning' => 'Dieser Endpunkt ist keine lokale Adresse — Nachrichten verlassen dieses Gerät.',
 			'coachSettings.advanced' => 'Erweitert',
 			'coachSettings.systemPromptLabel' => 'System-Prompt',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.systemPromptHint' => 'Coach-Persona überschreiben (leer lassen für Standard)',
 			'coachSettings.systemPromptReset' => 'Zurücksetzen',
 			'coachSettings.temperatureLabel' => 'Temperatur',
 			'coachSettings.save' => 'Fertig',
 			'coachSettings.detectedTitle' => 'Lokales Modell erkannt',
 			'coachSettings.detectedBody' => 'Auf diesem Mac läuft ein lokaler KI-Server. Den Coach zu 100 % privat ausführen?',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.detectedAction' => 'Lokal verwenden',
 			'coachSettings.detectedDismiss' => 'Jetzt nicht',
 			'coachSettings.activeCloud' => ({required Object model}) => 'Cloud · ${model}',

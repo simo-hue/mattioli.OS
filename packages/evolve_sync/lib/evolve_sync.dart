@@ -14,6 +14,7 @@ export 'src/private_db_schema.dart';
 export 'src/private_sync_service.dart';
 export 'src/sync_avatar_store.dart';
 export 'src/sync_crypto.dart';
+export 'src/sync_diagnostics.dart';
 export 'src/sync_engine.dart';
 export 'src/sync_key_store.dart';
 export 'src/sync_local_store.dart';

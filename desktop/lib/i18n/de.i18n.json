@@ -48,7 +48,13 @@
     "lastSyncedAt": "Zuletzt synchronisiert {time}",
     "deleteSyncNote": "Die iCloud-Synchronisierung ist aktiv: Dabei wird auch die synchronisierte Kopie in deiner iCloud gelöscht und die Synchronisierung deaktiviert. Andere Geräte behalten ihre lokale Kopie — führe dies auf jedem Gerät aus, um überall zu löschen.",
     "bannerText": "iCloud-Sync ist aus — deine Gewohnheiten liegen nur auf diesem Gerät und gehen verloren, wenn du es zurücksetzt oder ersetzt.",
-    "bannerAction": "Aktivieren"
+    "bannerAction": "Aktivieren",
+    "detailsTitle": "Synchronisierungsdetails",
+    "detailsAllSynced": "Alles hochgeladen",
+    "detailsPending": "{count} Elemente warten auf den Upload",
+    "detailsFailed": "{count} Elemente konnten nicht hochgeladen werden",
+    "detailsCopy": "Bericht kopieren",
+    "detailsCopied": "Bericht kopiert"
   },
   "privateRecovery": {
     "preparing": "Dein privater Bereich wird vorbereitet…",

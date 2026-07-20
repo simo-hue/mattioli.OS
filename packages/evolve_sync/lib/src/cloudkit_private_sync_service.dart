@@ -6,6 +6,7 @@ import 'cloudkit_bridge.dart';
 import 'private_sync_service.dart';
 import 'sync_avatar_store.dart';
 import 'sync_crypto.dart';
+import 'sync_diagnostics.dart';
 import 'sync_engine.dart';
 import 'sync_key_store.dart';
 import 'sync_local_store.dart';
@@ -97,6 +98,22 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
 
   @override
   Future<PrivateSyncStatus> status() => _status();
+
+  /// Off the [_runExclusive] lock on purpose: this is a pure read, and the whole
+  /// point is to be able to inspect sync health WHILE a long push is running —
+  /// queueing behind it would leave the screen blank exactly when it matters.
+  @override
+  Future<SyncDiagnostics?> diagnostics() async {
+    try {
+      final store = await storeProvider();
+      return await store.diagnostics();
+    } catch (e, st) {
+      // A locked or corrupt private DB is precisely when a user opens this
+      // screen. Degrade to "no data" rather than taking the screen down.
+      logger.error('[CloudKit] diagnostics() failed', e, st, const {});
+      return null;
+    }
+  }
 
   Future<PrivateSyncStatus> _status({int appliedChanges = 0}) async {
     final enabled = await enabledStore.isEnabled();

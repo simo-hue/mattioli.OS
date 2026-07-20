@@ -17,12 +17,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _FakeSyncService implements PrivateSyncService {
-  _FakeSyncService([PrivateSyncStatus? initial])
+  _FakeSyncService([PrivateSyncStatus? initial, this.diagnosticsResult])
       : current = initial ??
             const PrivateSyncStatus(
                 isAvailable: true,
                 isEnabled: false,
                 account: CloudAccountStatus.available);
+
+  /// Null ⇒ no local store to inspect, which must HIDE the details row rather
+  /// than render it claiming everything is fine.
+  final SyncDiagnostics? diagnosticsResult;
 
   PrivateSyncStatus current;
   int enableCalls = 0;
@@ -75,8 +79,25 @@ class _FakeSyncService implements PrivateSyncService {
   }
 
   @override
+  Future<SyncDiagnostics?> diagnostics() async => diagnosticsResult;
+
+  @override
   Future<T> runExclusive<T>(Future<T> Function() action) => action();
 }
+
+/// A snapshot with [pending] macro goals stranded — the shape of the reported
+/// bug (habits through, `long_term_goals` not).
+SyncDiagnostics _diagnostics({int pending = 0, int errors = 0}) =>
+    SyncDiagnostics(
+      localRowsByTable: {'goals': 12, 'long_term_goals': pending},
+      pendingByTable: pending > 0 ? {'long_term_goals': pending} : const {},
+      pendingDeletesByTable: const {},
+      errorsByReason:
+          errors > 0 ? {'CKError 7 rate limited': errors} : const {},
+      parkedByReason: const {},
+      hasChangeToken: true,
+      lastFullSyncAt: DateTime.utc(2026, 7, 20, 9),
+    );
 
 /// Pumps the settings page in Private mode with [fake] as the sync service and
 /// navigates to the Privacy section.
@@ -211,5 +232,36 @@ void main() {
 
     expect(fake.fullResetCalls, 1,
         reason: 'cloud wipe queued/performed before the local wipe');
+  });
+
+  testWidgets('the details row reports stranded records', (tester) async {
+    // The reported bug on the receiving Mac: sync ran, "last synced" looks
+    // healthy, and the macro goals never arrived.
+    final fake = _FakeSyncService(
+      const PrivateSyncStatus(
+        isAvailable: true,
+        isEnabled: true,
+        account: CloudAccountStatus.available,
+      ),
+      _diagnostics(pending: 5000),
+    );
+    await _pumpPrivacy(tester, fake);
+
+    expect(find.text(t.icloudSync.detailsTitle), findsOneWidget);
+    expect(find.text(t.icloudSync.detailsPending(count: 5000)), findsOneWidget);
+  });
+
+  testWidgets('the details row is hidden when there is no store to inspect',
+      (tester) async {
+    final fake = _FakeSyncService(
+      const PrivateSyncStatus(
+        isAvailable: true,
+        isEnabled: true,
+        account: CloudAccountStatus.available,
+      ),
+    );
+    await _pumpPrivacy(tester, fake);
+
+    expect(find.text(t.icloudSync.detailsTitle), findsNothing);
   });
 }

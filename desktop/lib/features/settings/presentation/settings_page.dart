@@ -370,6 +370,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   /// while an enable/disable/sync action is in flight; it drives the
   /// "Syncing…" label and disables the controls.
   PrivateSyncStatus? _syncStatus;
+
+  /// What has and has not actually reached CloudKit. Null while loading, or
+  /// when there is no local store to inspect.
+  SyncDiagnostics? _syncDiagnostics;
   bool _syncBusy = false;
 
   @override
@@ -1003,6 +1007,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     detail: _lastSyncedLabel(),
                     onTap: _onSyncNow,
                   ),
+                  // Only meaningful once there is a local store to inspect.
+                  if (_syncDiagnostics != null)
+                    _ActionRow(
+                      icon: LucideIcons.listChecks,
+                      title: t.icloudSync.detailsTitle,
+                      detail: _diagnosticsLabel(_syncDiagnostics!),
+                      onTap: () => _showDiagnosticsDialog(_syncDiagnostics!),
+                    ),
                 ],
               ),
             _SettingsGroup(
@@ -1721,6 +1733,82 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final status = await ref.read(desktopPrivateSyncServiceProvider).status();
     if (!mounted) return;
     setState(() => _syncStatus = status);
+    await _refreshSyncDiagnostics();
+  }
+
+  /// Read the pending/errored counts. Never allowed to throw: the settings page
+  /// must still render if the private DB cannot be opened, which is one of the
+  /// states a user comes here to diagnose.
+  Future<void> _refreshSyncDiagnostics() async {
+    if (!mounted) return;
+    try {
+      final d =
+          await ref.read(desktopPrivateSyncServiceProvider).diagnostics();
+      if (!mounted) return;
+      setState(() => _syncDiagnostics = d);
+    } catch (error, stack) {
+      AppLogger.error('iCloud sync diagnostics failed', error, stack);
+    }
+  }
+
+  /// The one-line truth about whether anything is stranded. Failures are named
+  /// ahead of the pending count: a user with both needs to know that retrying
+  /// is not what is missing.
+  String _diagnosticsLabel(SyncDiagnostics d) {
+    final stuck = d.totalErrors + d.totalParked;
+    if (stuck > 0) return t.icloudSync.detailsFailed(count: stuck);
+    if (d.totalPending > 0) {
+      return t.icloudSync.detailsPending(count: d.totalPending);
+    }
+    return t.icloudSync.detailsAllSynced;
+  }
+
+  /// The full per-table report, as copyable monospace text. Deliberately raw:
+  /// a per-table count is the only thing that localises a stall to a specific
+  /// table, and this Mac is one half of the pair being compared.
+  Future<void> _showDiagnosticsDialog(SyncDiagnostics d) async {
+    final report = d.toReport();
+    await showEvolveDialog<void>(
+      context: context,
+      builder: (dialogContext) => EvolveAlertDialog(
+        icon: LucideIcons.listChecks,
+        title: Text(t.icloudSync.detailsTitle),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 360),
+          // The report is a fixed-width table; wrapping would destroy the
+          // column alignment that makes it readable.
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SelectableText(
+              report,
+              // Platform monospace rather than a google_fonts family: the
+              // report's column alignment needs fixed width, and this screen
+              // must render offline (GoogleFonts fetches at runtime).
+              style: TextStyle(
+                fontFamily: 'Menlo',
+                fontFamilyFallback: const ['Courier New', 'monospace'],
+                fontSize: 11,
+                height: 1.5,
+                color: dialogContext.evolveColors.foreground,
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton.icon(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: report));
+              if (dialogContext.mounted) Navigator.pop(dialogContext);
+              if (mounted) {
+                showEvolveToast(context, message: t.icloudSync.detailsCopied);
+              }
+            },
+            icon: const Icon(LucideIcons.copy, size: 16),
+            label: Text(t.icloudSync.detailsCopy),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _runSyncAction(

@@ -1,4 +1,5 @@
 import 'cloudkit_bridge.dart';
+import 'sync_diagnostics.dart';
 
 class PrivateSyncStatus {
   final bool isAvailable;
@@ -62,6 +63,14 @@ abstract class PrivateSyncService {
   /// separately by the app's private store (`deleteAllPrivateData`).
   Future<PrivateSyncStatus> requestFullReset();
 
+  /// A read-only snapshot of what has and has not been uploaded, for the sync
+  /// health UI. Null when there is no local store to inspect (no-op service).
+  ///
+  /// Never throws for a diagnostic's sake: a status screen that itself crashes
+  /// on a broken database is worse than useless, and a locked or corrupt DB is
+  /// exactly when a user reaches for this.
+  Future<SyncDiagnostics?> diagnostics();
+
   /// Runs [action] inside the SAME serialization as enable/disable/syncNow so a
   /// caller's own critical section can't interleave with an in-flight sync op.
   /// The Private-mode recovery uses this to delete + recreate the encrypted DB
@@ -99,6 +108,9 @@ class NoOpPrivateSyncService implements PrivateSyncService {
   @override
   Future<PrivateSyncStatus> requestFullReset() async =>
       const PrivateSyncStatus.localOnly();
+
+  @override
+  Future<SyncDiagnostics?> diagnostics() async => null;
 
   // No sync engine here, so there is no op chain to serialize against — just run
   // the action.

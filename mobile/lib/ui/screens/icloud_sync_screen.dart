@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -35,6 +36,10 @@ class IcloudSyncScreen extends ConsumerStatefulWidget {
 class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
   PrivateSyncStatus? _status;
 
+  /// What has and has not actually reached CloudKit. Null while loading, or
+  /// when there is no local store to inspect (non-iOS / sync never enabled).
+  SyncDiagnostics? _diagnostics;
+
   /// True while an enable/disable/sync action is in flight; drives the
   /// "Syncing…" status text and disables the controls.
   bool _busy = false;
@@ -43,6 +48,21 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
   void initState() {
     super.initState();
     _refresh();
+  }
+
+  /// Read the pending/errored counts. Deliberately separate from [_refresh] and
+  /// never allowed to throw: the status line must still render if the private
+  /// DB cannot be opened, which is one of the states a user comes here to
+  /// diagnose.
+  Future<void> _refreshDiagnostics() async {
+    if (!mounted) return;
+    try {
+      final d = await ref.read(privateSyncServiceProvider).diagnostics();
+      if (!mounted) return;
+      setState(() => _diagnostics = d);
+    } catch (e, stack) {
+      AppLogger.error('iCloud sync diagnostics failed', e, stack);
+    }
   }
 
   Future<void> _refresh() async {
@@ -60,6 +80,7 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
     } catch (e, stack) {
       AppLogger.error('iCloud sync status refresh failed', e, stack);
     }
+    await _refreshDiagnostics();
   }
 
   Future<void> _runAction(
@@ -71,6 +92,9 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
       final status = await action(ref.read(privateSyncServiceProvider));
       if (!mounted) return;
       setState(() => _status = status);
+      // The counts are the whole point after a sync: they say whether it
+      // actually moved anything, which the status line alone cannot.
+      await _refreshDiagnostics();
       // enable()/disable() flipped the per-device flag — rebuild any widget
       // watching it (e.g. the dashboard SyncOffBanner) so it reflects the change.
       refreshSyncEnabled(ref);
@@ -136,6 +160,74 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
     return context.t.icloudSync.lastSyncedAt(time: '$date $time');
   }
 
+  /// The one-line truth about whether anything is stranded. Failures are named
+  /// ahead of the pending count: a user with both needs to know that retrying
+  /// is not what is missing.
+  String _diagnosticsLabel(BuildContext context, SyncDiagnostics d) {
+    final stuck = d.totalErrors + d.totalParked;
+    if (stuck > 0) return context.t.icloudSync.detailsFailed(count: stuck);
+    if (d.totalPending > 0) {
+      return context.t.icloudSync.detailsPending(count: d.totalPending);
+    }
+    return context.t.icloudSync.detailsAllSynced;
+  }
+
+  /// The full per-table report, as copyable monospace text.
+  ///
+  /// Deliberately raw rather than prettified: its job is to be pasted into a
+  /// bug report or read aloud from a device that cannot be attached to a
+  /// debugger, and a per-table count is the only thing that localises a stall
+  /// to a specific table.
+  Future<void> _showDiagnosticsSheet(SyncDiagnostics d) async {
+    final report = d.toReport();
+    await showEvolveSheet<void>(
+      context: context,
+      title: context.t.icloudSync.detailsTitle,
+      itemsBuilder: (sheetContext) => [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: context.appColors.card,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: context.appColors.border),
+            ),
+            // Horizontal scroll: the report is a fixed-width table and wrapping
+            // it would destroy the column alignment that makes it readable.
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SelectableText(
+                report,
+                // Platform monospace rather than a google_fonts family: the
+                // report's column alignment needs fixed width, and this screen
+                // must render offline (GoogleFonts fetches at runtime).
+                style: TextStyle(
+                  fontFamily: 'Menlo',
+                  fontFamilyFallback: const ['Courier New', 'monospace'],
+                  color: context.appColors.foreground,
+                  fontSize: 11,
+                  height: 1.5,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextButton.icon(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: report));
+              if (!sheetContext.mounted) return;
+              Navigator.pop(sheetContext);
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(context.t.icloudSync.detailsCopied)),
+              );
+            },
+            icon: const Icon(LucideIcons.copy, size: 16),
+            label: Text(context.t.icloudSync.detailsCopy),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final status = _status;
@@ -189,6 +281,18 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
                       enabled: !_busy && status.isEnabled && status.isAvailable,
                       onTap: () => _runAction((service) => service.syncNow()),
                     ),
+                    // Only meaningful once there is a local store to inspect.
+                    if (_diagnostics != null) ...[
+                      _buildDivider(context),
+                      _buildActionRow(
+                        context: context,
+                        icon: LucideIcons.listChecks,
+                        title: context.t.icloudSync.detailsTitle,
+                        subtitle: _diagnosticsLabel(context, _diagnostics!),
+                        enabled: !_busy,
+                        onTap: () => _showDiagnosticsSheet(_diagnostics!),
+                      ),
+                    ],
                   ]),
                   const SizedBox(height: 24),
                   _buildDisclosureNote(context),

@@ -19,12 +19,12 @@ import 'private_data_refresh.dart';
 /// 3. **After-write** — private-mode mutations funnel through
 ///    [DesktopPrivateDb.onPrivateWrite] and coalesce into one sync a few quiet
 ///    seconds after the last edit ([SyncWriteDebouncer]).
-/// 4. **Periodic** — a 3-minute pull, the floor on how stale an open window can
-///    get. Kept even now that push exists: silent-push delivery is explicitly
-///    not guaranteed, so this is the backstop that makes convergence certain
-///    rather than likely.
+/// 4. **Periodic** — a 60-second pull. In practice this is THE sync path: the
+///    push subscription below registers but has never been observed to deliver
+///    on either device, so this timer sets the latency the user actually
+///    experiences.
 /// 5. **CloudKit zone-change push** — a silent push from a
-///    `CKDatabaseSubscription`, giving seconds-level latency in the common case.
+///    `CKDatabaseSubscription`. Wired and registered, delivery unconfirmed.
 ///
 /// (Trigger #6, the manual "Sync now" button, lives in the settings UI.)
 ///
@@ -45,7 +45,12 @@ class DesktopSyncLifecycle extends ConsumerStatefulWidget {
 class _DesktopSyncLifecycleState extends ConsumerState<DesktopSyncLifecycle> {
   /// How often an open, focused window polls for another device's edits.
   ///
-  /// 3 minutes, down from 15. Without CloudKit push subscriptions this timer is
+  /// 60 seconds. Push is registered but has never once been observed to deliver,
+  /// so in practice this timer IS the sync — it is not a backstop. Sizing it as
+  /// though push works would mean shipping the latency the user actually
+  /// experiences rather than the one the design assumes.
+  ///
+  /// Was 15 minutes, then 3. Without CloudKit push subscriptions this timer is
   /// the ONLY way a Mac that already has focus learns about an iPhone edit —
   /// window-refocus only fires if you actually switch away and back, so a user
   /// sitting in front of the app could wait a quarter of an hour for a settings
@@ -57,7 +62,7 @@ class _DesktopSyncLifecycleState extends ConsumerState<DesktopSyncLifecycle> {
   /// handles the common case, but this stays as the backstop — Apple does not
   /// guarantee silent-push delivery, so removing it would trade certain
   /// convergence for likely convergence.
-  static const _periodicInterval = Duration(minutes: 3);
+  static const _periodicInterval = Duration(seconds: 60);
 
   late final SyncWriteDebouncer _writeDebouncer;
   late final AppLifecycleListener _lifecycle;
@@ -71,11 +76,10 @@ class _DesktopSyncLifecycleState extends ConsumerState<DesktopSyncLifecycle> {
     _lifecycle = AppLifecycleListener(onStateChange: _onLifecycleChanged);
     _periodic =
         Timer.periodic(_periodicInterval, (_) => unawaited(_sync(reason: 'poll')));
-    // CloudKit zone-change push: the low-latency path. Routes into the SAME
-    // sync as every other trigger — push changes only WHEN sync runs, never
-    // what it does. The timer above stays: silent-push delivery is not
-    // guaranteed, so push shortens the wait but is never the only way a change
-    // arrives.
+    // CloudKit zone-change push. Routes into the SAME sync as every other
+    // trigger — push changes only WHEN sync runs, never what it does. Left
+    // wired despite never having been observed to fire: it costs nothing when
+    // silent, and the timer above is what actually guarantees convergence.
     MethodChannelCloudKitBridge.setRemoteChangeHandler(
       () => unawaited(_sync(reason: 'push')),
       // Native-side APNs events: the only way an "this device has no push

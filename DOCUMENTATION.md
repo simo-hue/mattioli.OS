@@ -2121,3 +2121,16 @@ All owner actions are itemized in **TO_SIMO_DO.md**.
 - [2026-07-21T10:25:00]: Mobile UI Update - Verified Habit Badge
   - *Details*: Updated the mobile VerificationBadge to match the desktop VerifiedHabitBadge design for better visibility of automatic habits. Also added the badge to the daily tracking view (DayDetailsModal).
   - *Tech Notes*: Modified `mobile/lib/ui/widgets/verification_rule_field.dart` to use a `Container` with text and the Lucide shield-check icon. Added the badge display in `mobile/lib/ui/widgets/day_details_modal.dart` within the `GoalLogCard` Row.
+
+- [2026-07-21 16:30]: CloudKit push — diagnosed, deprioritised; polls shortened to 60s
+  - *Details*: Definitive on-device test. macOS 16:11:33 `trigger: write, pushed: 1` (a new monthly goal); iPhone 16:12:02 `trigger: poll, applied: 1` — delivered 29s later BY THE POLL. **No `trigger: push` has ever appeared on either device**, including on the iPhone, which holds a valid APNs token (`Registered ... token 32 bytes`). So push is not delivered even to a device that can receive it.
+    Established along the way, each by adding a diagnostic rather than guessing:
+    1. `applicationDidFinishLaunching` is **never invoked** in the macOS app — the Mac was never even requesting a push token. Registration moved into `CloudKitSyncBridge.register()`, on the path that provably runs (the channel and the subscription both initialise there).
+    2. With registration actually happening, macOS now reports `[APNs] Registration FAILED: OSStatus error 13` — a signing/provisioning problem (the running binary is not signed with a profile carrying `aps-environment`), outside the code.
+    3. iOS registers successfully on every launch.
+  - *Tech Notes*:
+    - **Fixed a false success I introduced**: `ensureSubscription` treated `CKError.serverRejectedRequest` as "already registered" and returned success. That is a genuine rejection, not an idempotency signal — and re-registering an existing subscription id is not an error in CloudKit anyway (`CKModifySubscriptionsOperation` updates in place), so there was no case to special-case. The app may therefore have been logging "Zone change subscription registered" on both devices while no subscription existed. Now every failure is reported, with the CKError code, through `logNative`. This was the same report-success-on-failure pattern the whole hardening pass exists to remove.
+    - **Polls shortened 3 min → 60 s** on both apps (`desktop_sync_lifecycle.dart`, `mobile/lib/main.dart`). Sized for reality rather than design intent: since push has never been observed to deliver, the timer IS the sync path, not a backstop. Foreground-only on iOS, so it costs nothing while the app is off screen.
+    - Push code left wired: it costs nothing while silent, and the subscription-error logging may yet reveal why CloudKit is not sending.
+    - Verified: evolve_sync **157/157**, mobile **431/431**, desktop **462/462**; zero analyze errors.
+  - *Current Status*: Sync is correct and converges within ~60s on both devices. Push is registered but unconfirmed; macOS additionally cannot receive (OSStatus 13, signing). **Deliberately deprioritised** — the remaining value is latency, not correctness, and the outstanding items in earlier entries (Screen Time / freezes DB / AI-config coverage, desktop settings read-back tests) matter more.

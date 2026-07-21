@@ -1358,6 +1358,15 @@ class Translations$stats$en {
 	/// en: 'Name'
 	String get sortName => 'Name';
 
+	/// en: 'Active'
+	String get filterActive => 'Active';
+
+	/// en: 'All'
+	String get filterAll => 'All';
+
+	/// en: 'No active habits — switch to All to see ended ones.'
+	String get noActiveHabits => 'No active habits — switch to All to see ended ones.';
+
 	/// en: 'Worst'
 	String get worstStreakLabel => 'Worst';
 
@@ -4385,6 +4394,9 @@ extension on Translations {
 			'stats.sortRate' => 'Rate',
 			'stats.sortStreak' => 'Streak',
 			'stats.sortName' => 'Name',
+			'stats.filterActive' => 'Active',
+			'stats.filterAll' => 'All',
+			'stats.noActiveHabits' => 'No active habits — switch to All to see ended ones.',
 			'stats.worstStreakLabel' => 'Worst',
 			'stats.momentumTitle' => 'Momentum',
 			'stats.momentumSubtitle' => 'Your current form',
@@ -4497,11 +4509,11 @@ extension on Translations {
 			'habitsPage.today' => 'Today',
 			'habitsPage.subtitle' => 'Build your daily protocol and watch consistency over time.',
 			'habitsPage.tabProtocol' => 'Protocol',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.tabCalendar' => 'Calendar',
 			'habitsPage.deleteHabitTitle' => 'Delete habit',
 			'habitsPage.deleteHabitConfirm' => ({required Object title}) => 'Remove "${title}" from the protocol?',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.activeProtocol' => 'Active protocol',
 			'habitsPage.completedToday' => 'Completed today',
 			'habitsPage.dailyProtocol' => 'Daily protocol',
@@ -5011,11 +5023,11 @@ extension on Translations {
 			'coachSettings.presetLabel' => 'Server',
 			'coachSettings.presetOllama' => 'Ollama',
 			'coachSettings.presetLmStudio' => 'LM Studio',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.presetCustom' => 'Custom…',
 			'coachSettings.baseUrlLabel' => 'Base URL',
 			'coachSettings.baseUrlHint' => 'http://localhost:11434/v1',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.modelLabel' => 'Model',
 			'coachSettings.modelHint' => 'e.g. llama3.1:8b',
 			'coachSettings.refreshModels' => 'Refresh models',

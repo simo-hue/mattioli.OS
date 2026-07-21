@@ -628,6 +628,9 @@ class _Translations$stats$es extends Translations$stats$en {
 	@override String get sortRate => 'Porcentaje';
 	@override String get sortStreak => 'Racha';
 	@override String get sortName => 'Nombre';
+	@override String get filterActive => 'Activos';
+	@override String get filterAll => 'Todos';
+	@override String get noActiveHabits => 'No hay hábitos activos. Cambia a Todos para ver los finalizados.';
 	@override String get worstStreakLabel => 'Peor';
 	@override String get momentumTitle => 'Impulso';
 	@override String get momentumSubtitle => 'Tu forma actual';
@@ -2111,6 +2114,9 @@ extension on TranslationsEs {
 			'stats.sortRate' => 'Porcentaje',
 			'stats.sortStreak' => 'Racha',
 			'stats.sortName' => 'Nombre',
+			'stats.filterActive' => 'Activos',
+			'stats.filterAll' => 'Todos',
+			'stats.noActiveHabits' => 'No hay hábitos activos. Cambia a Todos para ver los finalizados.',
 			'stats.worstStreakLabel' => 'Peor',
 			'stats.momentumTitle' => 'Impulso',
 			'stats.momentumSubtitle' => 'Tu forma actual',
@@ -2223,11 +2229,11 @@ extension on TranslationsEs {
 			'habitsPage.today' => 'Hoy',
 			'habitsPage.subtitle' => 'Construye tu protocolo diario y observa la constancia a lo largo del tiempo.',
 			'habitsPage.tabProtocol' => 'Protocolo',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.tabCalendar' => 'Calendario',
 			'habitsPage.deleteHabitTitle' => 'Eliminar hábito',
 			'habitsPage.deleteHabitConfirm' => ({required Object title}) => '¿Quitar "${title}" del protocolo?',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.activeProtocol' => 'Protocolo activo',
 			'habitsPage.completedToday' => 'Completadas hoy',
 			'habitsPage.dailyProtocol' => 'Protocolo diario',
@@ -2737,11 +2743,11 @@ extension on TranslationsEs {
 			'coachSettings.presetLabel' => 'Servidor',
 			'coachSettings.presetOllama' => 'Ollama',
 			'coachSettings.presetLmStudio' => 'LM Studio',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.presetCustom' => 'Personalizado…',
 			'coachSettings.baseUrlLabel' => 'URL base',
 			'coachSettings.baseUrlHint' => 'http://localhost:11434/v1',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.modelLabel' => 'Modelo',
 			'coachSettings.modelHint' => 'p. ej. llama3.1:8b',
 			'coachSettings.refreshModels' => 'Actualizar modelos',

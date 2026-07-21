@@ -1,9 +1,7 @@
 # TO_SIMO_DO.md
 - [ ] Widget for iPhone & MacOS
-- [ ] profile's photo bug on mobile
 - [ ] settings in desktop implementation is really weird and not intuitive as it is in the mobile app
-- [ ] From iOS I cannot understand the difference between a classic habits and an automatic one
-- [ ] Protocol from desktop only the current habits not all ( the removed one should not be visible )
+- [x] ~~Protocol from desktop only the current habits not all ( the removed one should not be visible )~~ — implemented 2026-07-21 as an Active/All toggle (mirrors mobile's `statsHabitFilter`); see DOCUMENTATION.md. Needs on-device QA on the Mac mini.
 - [ ] what happens if I modify manually an automatic habits?
 - [ ] Different habits & goals types, not only checkboxes like status,progress bar
 - [ ] For the desktop implementation what has been done with ollama is outstanding and I want to replicate the same thing also with LMStudio so the major local LLM providers are supported
@@ -163,3 +161,63 @@ is reframed as working-as-intended.
       whenever the real avatar cannot be loaded the failure looks identical to a rendering bug —
       which is why this went misdiagnosed. A neutral grey silhouette would make a genuine
       fallback readable as a fallback.
+
+---
+
+## 2026-07-21 — LM Studio launch parity: empirical checks needed (design agreed, NOT implemented)
+
+Design for LM Studio parity with the Ollama launch flow is settled (see
+`desktop/DOCUMENTATION.md`). Three facts it depends on could NOT be verified here — **neither
+LM Studio nor Ollama is installed on this Mac**. Two are error-path constants that are safe to
+correct later; the first is a build-time input and should be closed BEFORE implementation.
+
+### Blocking — do this first
+- [ ] **Confirm the LM Studio bundle id on a live install.** The design uses
+      `ai.elementlabs.lmstudio`, triangulated from the Homebrew cask's `uninstall quit:` stanza,
+      the `brew` API JSON, and an independent Info.plist scrape of v0.2.6 — three independent
+      sources, but none of them this machine. Wrong id ⇒ Start never works AND the new
+      `localAppRunning` check always reports false, so the "server isn't enabled" diagnosis
+      silently degrades to a generic launch failure.
+      ```bash
+      osascript -e 'id of app "LM Studio"'
+      # belt and braces:
+      defaults read "/Applications/LM Studio.app/Contents/Info.plist" CFBundleIdentifier
+      ```
+      While you are there, grab the URL schemes — only `lmstudio://add_mcp` is documented, and
+      confirming there is no server-start deep link would close the last open door on that idea:
+      ```bash
+      plutil -p "/Applications/LM Studio.app/Contents/Info.plist" | grep -A5 URLSchemes
+      ```
+
+### Non-blocking — one-line fixes if they come back different
+- [ ] **Does LM Studio withhold response headers during a cold model load?** Ollama does, which is
+      the entire reason `openai_compatible_client.dart:204` bounds `send()` by `firstTokenTimeout`
+      rather than `connectTimeout`. No LM Studio doc, changelog or issue states this either way.
+      If LM Studio flushes headers immediately, the 15s `connectTimeout` binds instead and raising
+      `firstTokenTimeout` to 180s achieves nothing. Point this at a LARGE, currently-unloaded model:
+      ```bash
+      curl -N -w '\ntime_starttransfer: %{time_starttransfer}\n' \
+        http://localhost:1234/v1/chat/completions \
+        -H 'Content-Type: application/json' \
+        -d '{"model":"<large-unloaded-model>","messages":[{"role":"user","content":"hi"}],"stream":true}'
+      ```
+- [ ] **What does LM Studio return when "Require Authentication" is on?** The design maps 401/403
+      on a local backend to a "this server wants a token" message. LM Studio's official auth page
+      never mentions the OpenAI-compat `/v1/*` surface and never names a status code — the
+      `/v1/*`→401 claim is corroborated only by a generated wiki, not a primary source. If it
+      returns 403, or a 200 with an error body, the mapping misses. Enable
+      Developer → Server Settings → Require Authentication, then:
+      ```bash
+      curl -i -H 'Authorization: Bearer local' http://localhost:1234/v1/models
+      ```
+
+### Process gap worth its own piece of work
+- [ ] **Desktop has no CI.** `.github/workflows/mobile-ci.yml` is scoped `paths: ['mobile/**']`, so
+      nothing runs `flutter analyze` or `flutter test` on a desktop change — the README sequence at
+      `desktop/README.md:118` is manual and unenforced. This change touches ~10 files across domain,
+      data, application, presentation, native and i18n. The existing 18 Ollama tests will catch the
+      rename, but only if someone runs them. Consider a `desktop/**` job mirroring the mobile one
+      (`flutter pub get` → `dart run slang` → `flutter analyze` → `flutter test`).
+- [ ] Related: `dart run slang` is manual and CI-unenforced, and the generated `translations_*.g.dart`
+      files ARE committed — so the JSON and the generated Dart can silently drift. Regenerating is
+      part of the i18n commit, not a follow-up.

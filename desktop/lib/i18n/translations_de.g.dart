@@ -628,6 +628,9 @@ class _Translations$stats$de extends Translations$stats$en {
 	@override String get sortRate => 'Quote';
 	@override String get sortStreak => 'Serie';
 	@override String get sortName => 'Name';
+	@override String get filterActive => 'Aktiv';
+	@override String get filterAll => 'Alle';
+	@override String get noActiveHabits => 'Keine aktiven Gewohnheiten – wechsle zu Alle, um beendete anzuzeigen.';
 	@override String get worstStreakLabel => 'Schlechteste';
 	@override String get momentumTitle => 'Momentum';
 	@override String get momentumSubtitle => 'Deine aktuelle Form';
@@ -2111,6 +2114,9 @@ extension on TranslationsDe {
 			'stats.sortRate' => 'Quote',
 			'stats.sortStreak' => 'Serie',
 			'stats.sortName' => 'Name',
+			'stats.filterActive' => 'Aktiv',
+			'stats.filterAll' => 'Alle',
+			'stats.noActiveHabits' => 'Keine aktiven Gewohnheiten – wechsle zu Alle, um beendete anzuzeigen.',
 			'stats.worstStreakLabel' => 'Schlechteste',
 			'stats.momentumTitle' => 'Momentum',
 			'stats.momentumSubtitle' => 'Deine aktuelle Form',
@@ -2223,11 +2229,11 @@ extension on TranslationsDe {
 			'habitsPage.today' => 'Heute',
 			'habitsPage.subtitle' => 'Baue dein tägliches Protokoll auf und beobachte die Konstanz im Zeitverlauf.',
 			'habitsPage.tabProtocol' => 'Protokoll',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.tabCalendar' => 'Kalender',
 			'habitsPage.deleteHabitTitle' => 'Gewohnheit löschen',
 			'habitsPage.deleteHabitConfirm' => ({required Object title}) => '„${title}“ aus dem Protokoll entfernen?',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.activeProtocol' => 'Aktives Protokoll',
 			'habitsPage.completedToday' => 'Heute erledigt',
 			'habitsPage.dailyProtocol' => 'Tägliches Protokoll',
@@ -2737,11 +2743,11 @@ extension on TranslationsDe {
 			'coachSettings.presetLabel' => 'Server',
 			'coachSettings.presetOllama' => 'Ollama',
 			'coachSettings.presetLmStudio' => 'LM Studio',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.presetCustom' => 'Benutzerdefiniert…',
 			'coachSettings.baseUrlLabel' => 'Basis-URL',
 			'coachSettings.baseUrlHint' => 'http://localhost:11434/v1',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.modelLabel' => 'Modell',
 			'coachSettings.modelHint' => 'z. B. llama3.1:8b',
 			'coachSettings.refreshModels' => 'Modelle aktualisieren',

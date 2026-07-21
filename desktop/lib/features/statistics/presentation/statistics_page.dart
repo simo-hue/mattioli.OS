@@ -9,6 +9,7 @@ import 'package:evolve_desktop/features/statistics/data/analytics_extra.dart';
 import 'package:evolve_desktop/features/statistics/data/private_analytics.dart'
     show MoodCorrelation, kIsoDowTokens;
 import 'package:evolve_desktop/features/statistics/data/statistics_rpc_providers.dart';
+import 'package:evolve_desktop/features/statistics/data/stats_habit_filter_provider.dart';
 import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/coach_tutorial.dart';
@@ -1561,6 +1562,11 @@ class _GlobalHabitsState extends ConsumerState<_GlobalHabits> {
     _HabitSort.name => t.stats.sortName,
   };
 
+  String _filterLabel(StatsHabitFilter f) => switch (f) {
+    StatsHabitFilter.active => t.stats.filterActive,
+    StatsHabitFilter.all => t.stats.filterAll,
+  };
+
   int _compare(Map<String, dynamic> a, Map<String, dynamic> b) =>
       switch (_sort) {
         _HabitSort.rate => ((b['rate'] as num?) ?? 0).compareTo(
@@ -1578,7 +1584,13 @@ class _GlobalHabitsState extends ConsumerState<_GlobalHabits> {
   @override
   Widget build(BuildContext context) {
     final statsAsync = ref.watch(habitStatsRpcProvider);
+    final filter = ref.watch(statsHabitFilterProvider);
     final habitsById = {for (final h in widget.snapshot.habits) h.id: h};
+    final now = DateTime.now();
+    bool passesFilter(Map<String, dynamic> row) {
+      if (filter.isAll) return true;
+      return habitsById[row['goal_id']]?.isActiveOn(now) ?? false;
+    }
 
     final tableLayout = LayoutBuilder(
       builder: (context, pageConstraints) {
@@ -1601,6 +1613,17 @@ class _GlobalHabitsState extends ConsumerState<_GlobalHabits> {
                     title: t.stats.performancePerHabit,
                     subtitle: t.stats.performancePerHabitSubtitle,
                   );
+                  final filterControl =
+                      EvolveSegmentedControl<StatsHabitFilter>(
+                        segments: {
+                          for (final f in StatsHabitFilter.values)
+                            f: _filterLabel(f),
+                        },
+                        selected: filter,
+                        onSelected: (f) => ref
+                            .read(statsHabitFilterProvider.notifier)
+                            .setFilter(f),
+                      );
                   final sortControl = EvolveSegmentedControl<_HabitSort>(
                     segments: {
                       for (final s in _HabitSort.values) s: _sortLabel(s),
@@ -1616,6 +1639,11 @@ class _GlobalHabitsState extends ConsumerState<_GlobalHabits> {
                         const SizedBox(height: 14),
                         ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 380),
+                          child: filterControl,
+                        ),
+                        const SizedBox(height: 10),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 380),
                           child: sortControl,
                         ),
                       ],
@@ -1626,7 +1654,9 @@ class _GlobalHabitsState extends ConsumerState<_GlobalHabits> {
                     children: [
                       Expanded(child: heading),
                       const SizedBox(width: 14),
-                      SizedBox(width: 340, child: sortControl),
+                      SizedBox(width: 200, child: filterControl),
+                      const SizedBox(width: 10),
+                      SizedBox(width: 240, child: sortControl),
                     ],
                   );
                 },
@@ -1648,7 +1678,14 @@ class _GlobalHabitsState extends ConsumerState<_GlobalHabits> {
                       title: t.stats.createHabitForAnalysis,
                     );
                   }
-                  final sorted = [...rows]..sort(_compare);
+                  final filtered = rows.where(passesFilter).toList();
+                  if (filtered.isEmpty) {
+                    return _EmptyState(
+                      icon: LucideIcons.listFilter,
+                      title: t.stats.noActiveHabits,
+                    );
+                  }
+                  final sorted = [...filtered]..sort(_compare);
                   return Column(
                     children: [
                       for (final row in sorted) ...[
@@ -1681,7 +1718,7 @@ class _GlobalHabitsState extends ConsumerState<_GlobalHabits> {
     return Column(
       children: [
         tableLayout,
-        _HabitsExtras(snapshot: widget.snapshot),
+        _HabitsExtras(snapshot: widget.snapshot, filter: filter),
       ],
     );
   }

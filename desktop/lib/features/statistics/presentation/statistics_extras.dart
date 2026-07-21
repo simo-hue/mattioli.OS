@@ -1352,25 +1352,37 @@ class _PerformanceComparisonCard extends StatelessWidget {
 // ═══ HABITS TAB (extras appended under the performance table) ════════════════
 
 class _HabitsExtras extends ConsumerWidget {
-  const _HabitsExtras({required this.snapshot});
+  const _HabitsExtras({required this.snapshot, required this.filter});
 
   final DashboardSnapshot snapshot;
+  final StatsHabitFilter filter;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final stats = ref.watch(habitStatsRpcProvider).value ?? const [];
+    final allStats = ref.watch(habitStatsRpcProvider).value ?? const [];
+    if (allStats.isEmpty) return const SizedBox.shrink();
+    final habitsById = {for (final h in snapshot.habits) h.id: h};
+    final now = DateTime.now();
+    final stats = filter.isAll
+        ? allStats
+        : allStats
+              .where(
+                (s) =>
+                    habitsById[s['goal_id']]?.isActiveOn(now) ?? false,
+              )
+              .toList();
     if (stats.isEmpty) return const SizedBox.shrink();
     return Column(
       children: [
         const SizedBox(height: 18),
         _twoUp(
-          _ConsistencyPanel(snapshot: snapshot),
+          _ConsistencyPanel(snapshot: snapshot, filter: filter),
           _MedalsPanel(snapshot: snapshot, stats: stats),
         ),
         const SizedBox(height: 18),
         _DistributionPanel(stats: stats),
         const SizedBox(height: 18),
-        _SynergyMatrixPanel(snapshot: snapshot),
+        _SynergyMatrixPanel(snapshot: snapshot, filter: filter),
       ],
     );
   }
@@ -1378,13 +1390,21 @@ class _HabitsExtras extends ConsumerWidget {
 
 /// Steadiest and most-erratic habits by the regularity (consistency) score.
 class _ConsistencyPanel extends ConsumerWidget {
-  const _ConsistencyPanel({required this.snapshot});
+  const _ConsistencyPanel({required this.snapshot, required this.filter});
 
   final DashboardSnapshot snapshot;
+  final StatsHabitFilter filter;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final scores = ref.watch(consistencyScoresProvider).value ?? const [];
+    final allScores = ref.watch(consistencyScoresProvider).value ?? const [];
+    final habitsById = {for (final h in snapshot.habits) h.id: h};
+    final now = DateTime.now();
+    final scores = filter.isAll
+        ? allScores
+        : allScores
+              .where((s) => habitsById[s.goalId]?.isActiveOn(now) ?? false)
+              .toList();
     Widget row(ConsistencyScore s, Color color) {
       final title = _habitTitleFor(snapshot, s.goalId);
       if (title == null) return const SizedBox.shrink();
@@ -1683,14 +1703,18 @@ class _DistributionPanel extends StatelessWidget {
 
 /// N×N habit co-completion matrix — which pairs of habits move together.
 class _SynergyMatrixPanel extends ConsumerWidget {
-  const _SynergyMatrixPanel({required this.snapshot});
+  const _SynergyMatrixPanel({required this.snapshot, required this.filter});
 
   final DashboardSnapshot snapshot;
+  final StatsHabitFilter filter;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final rows = ref.watch(allHabitCorrelationsRpcProvider).value ?? const [];
-    final habits = snapshot.habits;
+    final now = DateTime.now();
+    final habits = filter.isAll
+        ? snapshot.habits
+        : snapshot.habits.where((h) => h.isActiveOn(now)).toList();
     if (habits.length < 2) return const SizedBox.shrink();
 
     // pair percentage lookup

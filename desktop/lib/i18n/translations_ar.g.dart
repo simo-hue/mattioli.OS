@@ -628,6 +628,9 @@ class _Translations$stats$ar extends Translations$stats$en {
 	@override String get sortRate => 'النسبة';
 	@override String get sortStreak => 'التتابع';
 	@override String get sortName => 'الاسم';
+	@override String get filterActive => 'نشط';
+	@override String get filterAll => 'الكل';
+	@override String get noActiveHabits => 'لا توجد عادات نشطة. بدّل إلى الكل لعرض العادات المنتهية.';
 	@override String get worstStreakLabel => 'الأسوأ';
 	@override String get momentumTitle => 'الزخم';
 	@override String get momentumSubtitle => 'حالتك الحالية';
@@ -2111,6 +2114,9 @@ extension on TranslationsAr {
 			'stats.sortRate' => 'النسبة',
 			'stats.sortStreak' => 'التتابع',
 			'stats.sortName' => 'الاسم',
+			'stats.filterActive' => 'نشط',
+			'stats.filterAll' => 'الكل',
+			'stats.noActiveHabits' => 'لا توجد عادات نشطة. بدّل إلى الكل لعرض العادات المنتهية.',
 			'stats.worstStreakLabel' => 'الأسوأ',
 			'stats.momentumTitle' => 'الزخم',
 			'stats.momentumSubtitle' => 'حالتك الحالية',
@@ -2223,11 +2229,11 @@ extension on TranslationsAr {
 			'habitsPage.today' => 'اليوم',
 			'habitsPage.subtitle' => 'ابنِ بروتوكولك اليومي وراقب الاتساق عبر الزمن.',
 			'habitsPage.tabProtocol' => 'البروتوكول',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.tabCalendar' => 'التقويم',
 			'habitsPage.deleteHabitTitle' => 'حذف العادة',
 			'habitsPage.deleteHabitConfirm' => ({required Object title}) => 'هل تريد إزالة "${title}" من البروتوكول؟',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.activeProtocol' => 'البروتوكول النشط',
 			'habitsPage.completedToday' => 'أُنجزت اليوم',
 			'habitsPage.dailyProtocol' => 'البروتوكول اليومي',
@@ -2737,11 +2743,11 @@ extension on TranslationsAr {
 			'coachSettings.presetLabel' => 'الخادم',
 			'coachSettings.presetOllama' => 'Ollama',
 			'coachSettings.presetLmStudio' => 'LM Studio',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.presetCustom' => 'مخصّص…',
 			'coachSettings.baseUrlLabel' => 'عنوان URL الأساسي',
 			'coachSettings.baseUrlHint' => 'http://localhost:11434/v1',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.modelLabel' => 'النموذج',
 			'coachSettings.modelHint' => 'مثال: llama3.1:8b',
 			'coachSettings.refreshModels' => 'تحديث النماذج',

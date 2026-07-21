@@ -1089,3 +1089,79 @@ heading ellipsizing. `flutter analyze` clean; `tour_flow_test` still passes.
 - [2026-07-19]: Display Failed Habits in Desktop Protocol
   - *Details*: Updated the `_HabitRow` widget in the desktop `habits_page.dart` to correctly reflect "missed" habit states using a red cross (`LucideIcons.x`), bringing parity with the mobile app.
   - *Tech Notes*: `_HabitRow` now receives the `todayStatus` dynamically from `DashboardSnapshot.habitStatusFor`, which ensures the UI handles 'done' and 'missed' states correctly without altering the underlying data models and cache structure.
+
+- [2026-07-21]: **LM Studio launch parity — AGREED DESIGN (no code written yet)**
+  - *Details*: Design settled for bringing LM Studio to parity with the Ollama launch flow in the
+    desktop AI coach. **Nothing is implemented**; this entry records the decisions so the work can
+    start from a fixed spec. Starting point: LM Studio was already half-supported — `LocalServerPreset.lmStudio`,
+    port 1234 in `kLocalProbePorts`, model discovery, reachability pill, streaming and error mapping
+    all work today because every backend shares one `OpenAiCompatibleClient`. The gap is only the
+    launch-and-recover layer (native launcher, start controller, Start/Get button, start row,
+    offline banner, install detection, 13 strings × 5 locales, 18 tests).
+  - *Decisions*:
+    1. **Start semantics differ by product.** Launching `Ollama.app` starts its daemon; launching
+       `LM Studio.app` does NOT necessarily start its server (it is an opt-in toggle). So LM Studio
+       gets an extra terminal state — "app is open, server isn't running, here is the toggle" —
+       rather than reporting a generic failure. Mitigating fact: LM Studio persists
+       "Remember last server state", so anyone who has ever started it gets the Ollama-like path.
+    2. **Generalize rather than duplicate.** A `LocalServerTarget` descriptor keyed off
+       `LocalServerPreset` carries `displayName`, `bundleIds`, `downloadUrl`, `pollAttempts`,
+       `firstTokenTimeout`, `baseUrlHint`, `modelHint`, `needsManualServerToggle`. Rename through:
+       `OllamaLauncher`→`LocalAppLauncher`, `OllamaStartController`→`LocalServerStartController`
+       (family-keyed by preset), `StartOllamaButton`→`StartLocalServerButton(preset)`. The Swift
+       bridge becomes generic (`localAppInstalled` / `launchLocalApp` taking bundle ids), moving
+       product identity OUT of Swift — where no Flutter test can reach it — and into testable Dart.
+       **Sequencing: a pure mechanical rename commit (Ollama behaviour byte-identical, existing 18
+       tests green) BEFORE any LM Studio commit.**
+    3. **Diagnose, don't guess.** New native `localAppRunning(bundleIds:)`, called ONCE AT TIMEOUT
+       (not during the poll — LM Studio is briefly running-but-not-listening while Electron boots,
+       and mid-poll checks would hit that transient constantly). Distinguishes `serverNotEnabled`
+       from `launchFailed`. Ollama benefits too: "running but port closed" currently reads as a
+       generic timeout when it actually means the daemon died.
+    4. **macOS only, with per-platform data shape.** Windows/Linux runners are stock scaffolding
+       with no CI and no release artifact; the button is gated on `Platform.isMacOS`. This also
+       fixes a live bug: `isInstalled()` swallows `MissingPluginException` → returns false, so a
+       Linux user with Ollama installed is currently shown "Get Ollama".
+    5. **JIT-aware empty model list.** LM Studio's `GET /v1/models` is coupled to the Just-In-Time
+       loading SETTING, not the version: JIT on ⇒ all downloaded models (Ollama-like); JIT off ⇒
+       only LOADED models, i.e. often empty. The current empty-list fallback (`_ManualModelField`)
+       is a trap under JIT-off — a hand-typed id will not be loaded either. Fix is copy that names
+       the toggle, NOT a switch to LM Studio's native `/api/v0/models` (that endpoint is already
+       superseded by `/api/v1` in 0.4.0, and it would put the first product-specific endpoint into
+       a client whose whole virtue is not knowing which product it is talking to).
+    6. **Per-target first-token timeout + a loading hint.** `firstTokenTimeout` is 60s, tuned for
+       Ollama. LM Studio defaults make cold loads routine (Auto-Evict on ⇒ ≤1 JIT model resident,
+       so every model switch is a cold load; TTL 60 min). LM Studio gets ~180s — but the number
+       alone would convert a wrong error into three minutes of silence, so add a "still loading the
+       model…" hint after ~15s. Not 300s: that figure is LM Studio's server-side INFERENCE ceiling
+       (bug #944), a different thing, and its stated mlx-lm cause is impossible on the reporter's
+       Windows box.
+    7. **Auth is now possible on a local server.** LM Studio 0.4.0 added optional API tokens, and
+       LM Studio's own docs recommend enabling auth alongside "Serve on Local Network" — exactly the
+       LAN case `isLoopbackOrLan` deliberately permits. `_mapHttpError` currently maps 401/403 on
+       local to `null` (401 from localhost was assumed impossible). Change: return a message naming
+       the toggle. Deliberately NOT adding a per-local-server token field — that is a new Keychain
+       secret, new UI and ~5 more strings × 5 locales with no Ollama analogue.
+    8. **Hybrid i18n.** Parameterize the generic action/status strings with `{app}` (safe in all 5
+       locales — the product name is an untranslated Latin proper noun even in `ar`), and keep
+       DISTINCT keys for the diagnostics, because "check the menu-bar icon" and "turn on
+       Developer → Start Server" are different instructions, not one sentence with a variable.
+       ≈25 new strings instead of ≈60. `{app}` comes from the descriptor's `displayName`, not i18n.
+    9. **Make the neutral surfaces honest.** `baseUrlHint` (`…:11434/v1`) and `modelHint`
+       (`e.g. llama3.1:8b`) are Ollama-flavoured strings living in preset-agnostic widgets — and
+       `modelHint` lands in the exact fallback a JIT-off LM Studio user is dropped into. Drive both
+       off the descriptor. `_LocalDetectedBanner` names the detected product ("Ollama is running on
+       this Mac") instead of switching silently: with both servers up, `kLocalProbePorts` order means
+       Ollama wins the tie, and naming it makes an arbitrary pick visible rather than fair.
+  - *Tech Notes*: No new dependencies. No new HTTP endpoints — LM Studio is reached through the
+    same OpenAI-compatible surface (`GET /v1/models`, `POST /v1/chat/completions`) as every other
+    backend; LM Studio's native `/api/v0` and `/api/v1` are explicitly NOT used (decision 5).
+    New native MethodChannel methods on the existing `evolve/local_llm` channel:
+    `localAppInstalled`, `launchLocalApp`, `localAppRunning` — all taking a bundle-id list, all
+    following the house convention of string-enum results rather than `FlutterError`.
+    Confirmed external constants: bundle id `ai.elementlabs.lmstudio` (pending on-device
+    confirmation — see `TO_SIMO_DO.md`), download page `https://lmstudio.ai/download`, default
+    base URL `http://localhost:1234/v1`. There is NO deep link that can start the server or open
+    the Developer tab — `lmstudio://add_mcp` is the only documented action — so all guidance is
+    text the user reads and acts on. Three facts remain empirically unverified and are tracked in
+    `TO_SIMO_DO.md`; the bundle id is the only one that blocks implementation.

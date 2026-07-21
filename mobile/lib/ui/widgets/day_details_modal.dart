@@ -9,6 +9,7 @@ import '../../core/streak_utils.dart';
 import '../../core/verification_wiring.dart';
 import '../../core/haptics.dart';
 import 'habit_management_modal.dart';
+import 'verification_rule_field.dart';
 import '../../i18n/translations.g.dart';
 import '../kit/evolve_toast.dart';
 import '../kit/evolve_button.dart';
@@ -320,21 +321,31 @@ class GoalLogCard extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      habit.title,
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                        color: textColor,
-                        decoration: hasStrikethrough
-                            ? TextDecoration.lineThrough
-                            : null,
-                        decorationColor: const Color(
-                          0xFFEF4444,
-                        ).withValues(alpha: 0.5),
-                        decorationThickness: 2,
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            habit.title,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 17,
+                              fontWeight: FontWeight.w600,
+                              color: textColor,
+                              decoration: hasStrikethrough
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                              decorationColor: const Color(
+                                0xFFEF4444,
+                              ).withValues(alpha: 0.5),
+                              decorationThickness: 2,
+                            ),
+                          ),
+                        ),
+                        if (habit.isVerified) ...[
+                          const SizedBox(width: 8),
+                          const VerificationBadge(),
+                        ],
+                      ],
                     ),
                     if (couldNotVerify) ...[
                       const SizedBox(height: 2),

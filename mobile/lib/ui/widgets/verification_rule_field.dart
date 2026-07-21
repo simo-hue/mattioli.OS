@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../i18n/translations.g.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../kit/evolve_kit.dart';
 
 /// Display helpers for a verification template/rule. Localized via slang — the
@@ -123,18 +124,37 @@ class CouldNotVerifyChip extends StatelessWidget {
 
 /// A small "auto-verified" indicator shown on verified habits.
 class VerificationBadge extends StatelessWidget {
-  const VerificationBadge({super.key, this.size = 15});
+  const VerificationBadge({super.key, this.size = 11});
 
   final double size;
 
   @override
   Widget build(BuildContext context) {
+    final appColors = context.appColors;
     return Tooltip(
       message: context.t.verification.autoVerified,
-      child: Icon(
-        Icons.verified,
-        size: size,
-        color: Theme.of(context).colorScheme.primary,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: appColors.muted,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(LucideIcons.shieldCheck, size: size, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 3),
+            Text(
+              context.t.verification.autoVerified,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: appColors.mutedForeground,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

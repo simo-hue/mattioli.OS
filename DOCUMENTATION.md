@@ -2110,3 +2110,7 @@ All owner actions are itemized in **TO_SIMO_DO.md**.
     - **Sync trigger attribution**: `PrivateSyncService.syncNow({String reason})` threaded through both apps, logging `Sync starting (trigger: push|poll|launch|resume|write|manual)`. Previously every trigger logged an identical "Sync starting...", so a working push was indistinguishable from the poll that would have run anyway — making the one thing worth verifying on device impossible to verify. Six test fakes updated for the widened signature.
     - Verified: evolve_sync **157/157**, mobile **431/431**, desktop **462/462**; zero analyze errors.
   - *Current Status*: Push subscriptions register successfully on BOTH devices (`Zone change subscription registered` in both logs, no errors). Whether they DELIVER is still unproven — no `trigger: push` has appeared in any log, but no supplied log covers a window where both devices were awake and a change was made on one. The instrumentation to settle it now exists on both platforms.
+
+- [2026-07-21T10:25:00]: Mobile UI Update - Verified Habit Badge
+  - *Details*: Updated the mobile VerificationBadge to match the desktop VerifiedHabitBadge design for better visibility of automatic habits. Also added the badge to the daily tracking view (DayDetailsModal).
+  - *Tech Notes*: Modified `mobile/lib/ui/widgets/verification_rule_field.dart` to use a `Container` with text and the Lucide shield-check icon. Added the badge display in `mobile/lib/ui/widgets/day_details_modal.dart` within the `GoalLogCard` Row.

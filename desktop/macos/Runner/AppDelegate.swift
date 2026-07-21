@@ -12,15 +12,6 @@ class AppDelegate: FlutterAppDelegate {
     return true
   }
 
-  override func applicationDidFinishLaunching(_ notification: Notification) {
-    super.applicationDidFinishLaunching(notification)
-    // CloudKit zone-change pushes. Silent (`content-available`) pushes need no
-    // notification authorization, so this prompts the user for nothing.
-    CloudKitSyncBridge.logNative("info", "[APNs] Requesting registration...")
-    NSApplication.shared.registerForRemoteNotifications()
-    CloudKitSyncBridge.scheduleRegistrationWatchdog()
-  }
-
   /// A silent push telling us the CloudKit zone changed.
   ///
   /// Runs the app's ORDINARY sync — the push carries no data and decides
@@ -139,6 +130,22 @@ enum CloudKitSyncBridge {
     channel.setMethodCallHandler { call, result in
       handle(call, result)
     }
+
+    // APNs registration lives HERE, not in `applicationDidFinishLaunching`.
+    //
+    // That override was never invoked on macOS — the app logged neither the
+    // registration request nor either APNs callback, while everything set up
+    // from this function (the channel, the CloudKit subscription) worked. So the
+    // Mac never asked for a push token, which is why it never received one and
+    // why no failure was reported either: nothing had failed, nothing had been
+    // requested.
+    //
+    // This function is reached from `MainFlutterWindow`, on the path that
+    // already demonstrably runs. Silent (`content-available`) pushes need no
+    // notification authorization, so this prompts the user for nothing.
+    logNative("info", "[APNs] Requesting registration...")
+    NSApplication.shared.registerForRemoteNotifications()
+    scheduleRegistrationWatchdog()
   }
 
   private static var container: CKContainer { CKContainer(identifier: containerId) }

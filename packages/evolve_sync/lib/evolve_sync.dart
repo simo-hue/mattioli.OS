@@ -6,6 +6,7 @@
 /// from `package:evolve_sync/testing.dart` so they never ship in app code.
 library;
 
+export 'src/avatar_path.dart';
 export 'src/cloudkit_bridge.dart';
 export 'src/cloudkit_bridge_method_channel.dart';
 export 'src/cloudkit_private_sync_service.dart';

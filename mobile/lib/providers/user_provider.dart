@@ -122,8 +122,18 @@ class UserProfileNotifier extends Notifier<UserProfile> {
 
   Future<UserProfile> loadPrivateProfile() async {
     try {
-      final row = await ref.read(privateLocalDatabaseProvider).loadProfileRow();
-      final profile = _fromPrivateRow(row);
+      final db = ref.read(privateLocalDatabaseProvider);
+      final row = await db.loadProfileRow();
+      // Resolve the avatar against the CURRENT container before handing it to
+      // the UI. `profiles.avatar_url` is a legacy absolute path and iOS
+      // regenerates the container UUID in it across reinstalls, so the stored
+      // string goes stale while the image itself is still on disk. Rendering it
+      // raw is what showed the (black) default avatar instead of the photo.
+      // NOT copyWith: its `??` would keep the stale stored path whenever the
+      // resolve returns null, which is exactly the case that must show the
+      // default avatar instead of a dangling one.
+      final profile =
+          _fromPrivateRow(row, avatarPath: await db.resolveAvatarPath());
       state = profile;
       return profile;
     } catch (e, stack) {
@@ -155,7 +165,14 @@ class UserProfileNotifier extends Notifier<UserProfile> {
     await loadPrivateProfile();
   }
 
-  UserProfile _fromPrivateRow(Map<String, dynamic> row) {
+  /// [avatarPath] is the avatar RESOLVED against the current container (see
+  /// [PrivateLocalDatabase.resolveAvatarPath]) — deliberately a parameter
+  /// rather than `row['avatar_url']`, so a stale stored path can never reach
+  /// the UI.
+  UserProfile _fromPrivateRow(
+    Map<String, dynamic> row, {
+    String? avatarPath,
+  }) {
     final fullName = (row['full_name'] as String? ?? '').trim();
     final parts = fullName.split(RegExp(r'\s+'));
     final firstName = fullName.isEmpty ? null : parts.first;
@@ -165,7 +182,7 @@ class UserProfileNotifier extends Notifier<UserProfile> {
       firstName: firstName,
       lastName: lastName,
       email: null,
-      avatarUrl: row['avatar_url'] as String?,
+      avatarUrl: avatarPath,
       dateOfBirth: row['date_of_birth'] as String?,
     );
   }

@@ -153,3 +153,13 @@ is reframed as working-as-intended.
       mobile. Now that `'system'` is expressible, you may want to revisit that.
 
 ---
+
+## 2026-07-21 — Avatar fix: one action needed
+
+- [ ] **Re-select your profile image once, on either device.** The old code may already
+      have pushed a tombstone that deleted the picture from iCloud, so the copy in the zone
+      cannot be trusted. Re-picking republishes it and both devices converge.
+- [ ] Consider replacing `mobile/assets/images/default_avatar.png`. It is a BLACK image, so
+      whenever the real avatar cannot be loaded the failure looks identical to a rendering bug —
+      which is why this went misdiagnosed. A neutral grey silhouette would make a genuine
+      fallback readable as a fallback.

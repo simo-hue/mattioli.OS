@@ -475,6 +475,9 @@ class SyncEngine {
     if (entries.isEmpty) return const _PushOutcome(0, 0, 0);
 
     final records = <CloudRecord>[];
+    // Avatars whose file we could not read while one is still configured. They
+    // are push FAILURES, not deletions — see the avatar branch below.
+    var lostAvatars = 0;
     // `sync_state.updated_at` as observed when each record was serialized. A
     // record is only cleared of `dirty` if the row still carries its stamp, so
     // an app write racing the upload is re-pushed rather than dropped.
@@ -487,7 +490,32 @@ class SyncEngine {
       }
       if (e.tableName == PrivateDbSchema.avatarRecordTable) {
         final rec = await _encodeAvatar(e, key);
-        if (rec != null) records.add(rec);
+        if (rec != null) {
+          records.add(rec);
+        } else if (avatarStore != null) {
+          // With a store wired, the only way to get null is a CONFIGURED avatar
+          // whose file could not be read (see [_encodeAvatar] — no avatar at all
+          // yields a tombstone, and readable bytes yield a record).
+          //
+          // Nothing is pushed, so the zone keeps the good copy and every other
+          // device keeps its image. The record stays dirty and is counted as a
+          // push failure, so the sync does NOT stamp "last synced" and both apps
+          // report the device as not fully synced. Losing a file quietly, and
+          // then claiming to be up to date, is how this went unnoticed.
+          lostAvatars++;
+          await store.markError(
+            e.recordName,
+            SyncLocalStore.avatarFileMissingReason,
+          );
+          logger.error(
+            '[CloudKit] The local avatar file is missing but an avatar is still '
+            'configured — refusing to push a tombstone that would delete it '
+            'everywhere. Re-select the image to republish it.',
+            SyncLocalStore.avatarFileMissingReason,
+            null,
+            {'recordName': e.recordName},
+          );
+        }
         continue;
       }
       final row = await store.readRow(e.tableName, e.rowId);
@@ -514,6 +542,7 @@ class SyncEngine {
     var pushed = 0;
     var failed = 0;
     var conflicted = 0;
+    failed += lostAvatars;
     // Each batch is committed to sync_state before the next is sent, so a batch
     // that fails (or throws) leaves the batches already saved marked synced and
     // the rest still dirty for the next sync — never a silent all-or-nothing.
@@ -770,6 +799,22 @@ class SyncEngine {
     if (files == null) return null; // avatar sync not wired on this app
     final bytes = await files.readAvatarBytes();
     if (bytes == null) {
+      // No bytes for two very different reasons, and only ONE of them is a
+      // deletion.
+      //
+      // The user removing their avatar must propagate, or it reappears on the
+      // next sync from the other device. But an avatar that is still CONFIGURED
+      // and merely unreadable means we lost track of our own file — and a
+      // tombstone would then delete the good copy from the zone and from every
+      // other device, irrecoverably, while the sync reported success.
+      //
+      // This is the reported bug: `avatar_url` holds an absolute path rooted at
+      // the app container, iOS regenerates that container's UUID across
+      // reinstalls, and `markAllDirty` re-queues the avatar on nothing more than
+      // `avatar_url` being non-empty.
+      if (await files.hasAvatarConfigured()) {
+        return null; // handled by _push — reported, never replicated
+      }
       return _tombstone(e.recordName, e.tableName, e.updatedAt);
     }
     final assetPath =

@@ -19,6 +19,10 @@ class AppSyncAvatarStore implements SyncAvatarStore {
       PrivateLocalDatabase().readAvatarBytes();
 
   @override
+  Future<bool> hasAvatarConfigured() =>
+      PrivateLocalDatabase().hasAvatarConfigured();
+
+  @override
   Future<void> writeAvatarBytes(Uint8List bytes) =>
       PrivateLocalDatabase().applyPulledAvatar(bytes);
 

@@ -19,6 +19,10 @@ class DesktopSyncAvatarStore implements SyncAvatarStore {
       DesktopPrivateDb.instance.readAvatarBytes();
 
   @override
+  Future<bool> hasAvatarConfigured() =>
+      DesktopPrivateDb.instance.hasAvatarConfigured();
+
+  @override
   Future<void> writeAvatarBytes(Uint8List bytes) =>
       DesktopPrivateDb.instance.applyPulledAvatar(bytes);
 

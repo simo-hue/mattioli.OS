@@ -1014,6 +1014,14 @@ class SyncLocalStore {
         [quarantineStamp, undecryptableReason],
       );
 
+  /// Written for the avatar record when `profiles.avatar_url` is set but the
+  /// file behind it cannot be read. Names the CAUSE rather than the symptom,
+  /// because it is the string a user pastes into a bug report — and because the
+  /// engine's refusal to push a tombstone here is otherwise invisible.
+  static const String avatarFileMissingReason =
+      'avatar file missing (the image is still in iCloud — re-select it to '
+      'republish)';
+
   /// The exact `last_error` written for a record sealed under another key. A
   /// constant because [clearUndecryptableParks] matches on it.
   static const String undecryptableReason =

@@ -28,6 +28,13 @@ class FakeSyncAvatarStore implements SyncAvatarStore {
   @override
   Future<Uint8List?> readAvatarBytes() async => avatar;
 
+  /// The fake keeps bytes and configuration in one field, so these agree by
+  /// construction. A store whose file has gone missing while an avatar is still
+  /// configured — the case the engine must never turn into a tombstone — is
+  /// modelled by overriding this in the test.
+  @override
+  Future<bool> hasAvatarConfigured() async => avatar != null;
+
   @override
   Future<void> writeAvatarBytes(Uint8List bytes) async {
     writeCalls++;

@@ -72,6 +72,16 @@ abstract interface class PrivateDataStore {
 
   Future<Map<String, dynamic>> loadProfileRow();
 
+  /// The avatar file path RESOLVED against this device's current container, or
+  /// null when there is no readable avatar.
+  ///
+  /// Deliberately not `loadProfileRow()['avatar_url']`. That column stores an
+  /// ABSOLUTE path, and a container path is not a stable identifier — iOS
+  /// regenerates it across reinstalls. Rendering the stored value raw is what
+  /// showed the default avatar in place of the user's photo while the image was
+  /// still on disk.
+  Future<String?> resolveAvatarPath();
+
   Future<void> updateProfile({
     String? fullName,
     String? avatarUrl,

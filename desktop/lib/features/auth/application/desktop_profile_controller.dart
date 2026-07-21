@@ -58,7 +58,11 @@ class PrivateProfileNotifier extends AsyncNotifier<PrivateProfileState> {
         return PrivateProfileState(
           fullName: row['full_name'] as String?,
           dateOfBirth: row['date_of_birth'] as String?,
-          avatarPath: row['avatar_url'] as String?,
+          // Resolved against the CURRENT container, not read raw: the stored
+          // value is an absolute path and a container path is not a stable
+          // identifier. A stale one renders as the (black) default avatar while
+          // the image is still sitting on disk. Mirrors mobile exactly.
+          avatarPath: await DesktopPrivateDb.instance.resolveAvatarPath(),
         );
       }
     } catch (e, stack) {

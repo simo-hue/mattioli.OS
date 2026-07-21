@@ -1233,13 +1233,53 @@ class PrivateLocalDatabase implements PrivateDataStore {
   /// Plaintext bytes of the current local avatar, or null when none is set or
   /// the file has gone missing (the engine then pushes a tombstone).
   Future<Uint8List?> readAvatarBytes() async {
-    final row = await loadProfileRow();
-    final path = row['avatar_url'] as String?;
-    if (path == null || path.isEmpty) return null;
-    final file = File(path);
-    if (!await file.exists()) return null;
-    return file.readAsBytes();
+    return (await resolveAvatarFile())?.readAsBytes();
   }
+
+  /// Whether an avatar is CONFIGURED — `profiles.avatar_url` is set — whether or
+  /// not its file can currently be read.
+  ///
+  /// The engine needs this to tell "the user removed their avatar" (a tombstone
+  /// that must propagate) apart from "we lost the file" (which must never be
+  /// replicated as a deletion). See [SyncAvatarStore.hasAvatarConfigured].
+  Future<bool> hasAvatarConfigured() async {
+    final path = (await loadProfileRow())['avatar_url'] as String?;
+    return path != null && path.isNotEmpty;
+  }
+
+  /// The avatar file as it exists on THIS device right now, or null if it
+  /// cannot be found.
+  ///
+  /// Resolves by BASENAME against the current container before trusting the
+  /// stored string, because that string is a legacy absolute path and iOS
+  /// regenerates the container UUID in it across reinstalls. The image itself
+  /// never moves — only the prefix of the path we wrote down does — so looking
+  /// the file up by name repairs an install that would otherwise show the
+  /// default avatar and, worse, push a tombstone that deleted the picture on
+  /// every other device.
+  ///
+  /// Self-healing rather than a migration: it costs one extra stat, needs no
+  /// schema change, is idempotent, and fixes databases already carrying a stale
+  /// path without anything having to run first.
+  Future<File?> resolveAvatarFile() async {
+    final stored = (await loadProfileRow())['avatar_url'] as String?;
+    if (stored == null || stored.isEmpty) return null;
+    final dir = await getApplicationSupportDirectory();
+    for (final candidate in avatarPathCandidates(
+      stored: stored,
+      supportDir: dir.path,
+    )) {
+      final file = File(candidate);
+      if (await file.exists()) return file;
+    }
+    return null;
+  }
+
+  /// [resolveAvatarFile] as a path, for the UI (which needs a String and cannot
+  /// await inside `build`).
+  @override
+  Future<String?> resolveAvatarPath() async =>
+      (await resolveAvatarFile())?.path;
 
   /// Persist a PULLED avatar: write the image under `private_profile/` with a
   /// fresh name (so stale `FileImage` caches can't show the old picture),

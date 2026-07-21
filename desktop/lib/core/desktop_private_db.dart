@@ -626,22 +626,60 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
 
   /// Plaintext bytes of the current local avatar, or null when none is set or
   /// the file has gone missing (the engine then pushes a tombstone).
-  Future<Uint8List?> readAvatarBytes() async {
+  Future<Uint8List?> readAvatarBytes() async =>
+      (await resolveAvatarFile())?.readAsBytes();
+
+  /// Whether an avatar is CONFIGURED — `profiles.avatar_url` is set — whether or
+  /// not its file can currently be read.
+  ///
+  /// The engine needs this to tell "the user removed their avatar" (a tombstone
+  /// that must propagate) apart from "we lost the file" (which must never be
+  /// replicated as a deletion, or one device losing its own copy destroys the
+  /// image everywhere). See [SyncAvatarStore.hasAvatarConfigured].
+  Future<bool> hasAvatarConfigured() async {
     final db = await database;
     final owner = await ownerId;
-    final rows = await db.query(
-      'profiles',
-      columns: ['avatar_url'],
-      where: 'id = ?',
-      whereArgs: [owner],
-      limit: 1,
-    );
+    final rows = await db.query('profiles',
+        columns: ['avatar_url'], where: 'id = ?', whereArgs: [owner], limit: 1);
     final path = rows.isEmpty ? null : rows.first['avatar_url'] as String?;
-    if (path == null || path.isEmpty) return null;
-    final file = File(path);
-    if (!await file.exists()) return null;
-    return file.readAsBytes();
+    return path != null && path.isNotEmpty;
   }
+
+  /// The avatar file as it exists on THIS device right now, or null if it
+  /// cannot be found.
+  ///
+  /// Resolves by BASENAME against the current container before trusting the
+  /// stored string. `profiles.avatar_url` holds an absolute path, and a
+  /// container path is not a stable identifier — iOS regenerates it across
+  /// reinstalls, and a Mac can have one change when the app is re-signed or
+  /// migrated. Kept identical to mobile deliberately: divergence between the two
+  /// apps in exactly this kind of helper is how the accent-colour and
+  /// settings-readback bugs happened.
+  ///
+  /// Self-healing rather than a migration — one extra stat, no schema change,
+  /// idempotent, and it repairs a database already carrying a stale path.
+  Future<File?> resolveAvatarFile() async {
+    final db = await database;
+    final owner = await ownerId;
+    final rows = await db.query('profiles',
+        columns: ['avatar_url'], where: 'id = ?', whereArgs: [owner], limit: 1);
+    final stored = rows.isEmpty ? null : rows.first['avatar_url'] as String?;
+    if (stored == null || stored.isEmpty) return null;
+    final dir = await getApplicationSupportDirectory();
+    for (final candidate in avatarPathCandidates(
+      stored: stored,
+      supportDir: dir.path,
+      avatarDirName: _avatarDirName,
+    )) {
+      final file = File(candidate);
+      if (await file.exists()) return file;
+    }
+    return null;
+  }
+
+  /// [resolveAvatarFile] as a path, for the UI.
+  Future<String?> resolveAvatarPath() async =>
+      (await resolveAvatarFile())?.path;
 
   /// Persist a PULLED avatar: write the image under `private_profile/` with a
   /// fresh name (so stale `FileImage` caches can't show the old picture),

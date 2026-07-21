@@ -144,6 +144,12 @@ class FakePrivateDataStore implements PrivateDataStore {
   }
 
   // ── Profile ─────────────────────────────────────────────────────────────
+  /// The fake keeps no filesystem, so it echoes the stored column. Real
+  /// implementations resolve it against the current container.
+  @override
+  Future<String?> resolveAvatarPath() async =>
+      (await loadProfileRow())['avatar_url'] as String?;
+
   @override
   Future<Map<String, dynamic>> loadProfileRow() async =>
       <String, dynamic>{'id': 'fake'};

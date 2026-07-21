@@ -17,9 +17,31 @@ import 'dart:typed_data';
 /// row's prior sync state) — otherwise every pulled avatar re-pushes the
 /// profile row in an endless ping-pong.
 abstract class SyncAvatarStore {
-  /// Plaintext bytes of the current local avatar, or null if none is set (or
-  /// the file has gone missing — the engine then pushes a tombstone).
+  /// Plaintext bytes of the current local avatar, or null when there are none
+  /// to give — EITHER because no avatar is set OR because its file could not be
+  /// read. [hasAvatarConfigured] is what tells those two apart.
   Future<Uint8List?> readAvatarBytes();
+
+  /// Whether this device currently INTENDS to have an avatar — i.e.
+  /// `profiles.avatar_url` is set — regardless of whether the file behind it can
+  /// actually be read.
+  ///
+  /// Exists because a null from [readAvatarBytes] used to mean both "the user
+  /// removed their avatar" and "we lost the file", and the engine replicated
+  /// both as a DELETION. One device losing track of its own copy therefore
+  /// destroyed the image on every device, permanently and irrecoverably — the
+  /// bytes were removed from the zone too — while the sync reported success.
+  ///
+  /// That is not a theoretical race. `profiles.avatar_url` stores an ABSOLUTE
+  /// path rooted at the app's container, and iOS regenerates that container's
+  /// UUID across reinstalls, so the path goes stale while the database still
+  /// believes an avatar exists.
+  ///
+  /// Deliberately abstract rather than defaulted. A default of `false` would
+  /// silently preserve the destructive behaviour for any implementation that
+  /// forgot to override it, which is the precise failure mode this method
+  /// exists to remove; a compile error is the correct forcing function.
+  Future<bool> hasAvatarConfigured();
 
   /// Persist pulled plaintext [bytes] as the local avatar file and point
   /// `profiles.avatar_url` at it (see the class note about not re-dirtying).

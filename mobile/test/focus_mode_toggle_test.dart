@@ -37,17 +37,57 @@ import 'package:timezone/timezone.dart' as tz;
 
 import 'support/fake_private_data_store.dart';
 
-/// Records `cancelAll` so the "focus mode actually silences things" property can
-/// be observed without a platform notification plugin.
+/// Records both halves of the schedule so "focus mode actually silences things"
+/// AND "turning it back off actually un-silences things" can be observed.
+///
+/// It impersonates [IOSFlutterLocalNotificationsPlugin] rather than the bare
+/// [FlutterLocalNotificationsPlatform] on purpose: the plugin facade routes
+/// `zonedSchedule` through `resolvePlatformSpecificImplementation<IOS…>()`,
+/// which returns null — a silent no-op — for a non-platform-specific mock. With
+/// a generic mock the only observable is `cancelAll`, so a test could see the
+/// phone go quiet but never see it come back. That is precisely the half of
+/// Focus Mode that had no coverage. Requires
+/// `debugDefaultTargetPlatformOverride = TargetPlatform.iOS` for the resolve to
+/// match.
 class _RecordingNotificationsPlatform extends Fake
     with MockPlatformInterfaceMixin
-    implements FlutterLocalNotificationsPlatform {
+    implements IOSFlutterLocalNotificationsPlugin {
   int cancelAllCount = 0;
+
+  /// Notification ids passed to `zonedSchedule`, in call order. `0` is the
+  /// morning brief and `1` the evening review (see `NotificationService`).
+  final List<int> scheduledIds = <int>[];
 
   @override
   Future<void> cancelAll() async {
     cancelAllCount++;
+    scheduledIds.clear();
   }
+
+  @override
+  Future<void> zonedSchedule({
+    required int id,
+    String? title,
+    String? body,
+    required tz.TZDateTime scheduledDate,
+    DarwinNotificationDetails? notificationDetails,
+    String? payload,
+    DateTimeComponents? matchDateTimeComponents,
+  }) async {
+    scheduledIds.add(id);
+  }
+
+  @override
+  Future<bool?> requestPermissions({
+    bool sound = false,
+    bool alert = false,
+    bool badge = false,
+    bool provisional = false,
+    bool critical = false,
+    bool carPlay = false,
+    bool providesAppNotificationSettings = false,
+  }) async =>
+      true;
 }
 
 Future<(ProviderContainer, FakePrivateDataStore)> _pumpNotificationSettings(
@@ -166,6 +206,94 @@ void main() {
       tester.widget<EvolveSwitch>(_switchFor(t.notifications.focusMode)).value,
       isTrue,
     );
+  });
+
+  testWidgets(
+      'a Focus Mode synced in from the Mac renders ON but never silences the '
+      'phone', (tester) async {
+    // The failure this pins: `_loadPrivateSettings` applies `pref_focus_mode`
+    // to `state` and stops there. The switch flips to ON, so the phone CLAIMS
+    // to be silenced, while iOS keeps every already-pending daily repeat — the
+    // Mac's Focus Mode reaches the switch and never reaches the SCHEDULE.
+    // The sibling test above asserts only the switch, which is exactly why this
+    // survived.
+    final (container, _) = await _pumpNotificationSettings(
+      tester,
+      storedSynced: {'pref_focus_mode': '1'},
+    );
+
+    expect(container.read(settingsProvider).focusMode, isTrue);
+    expect(
+      notifications.cancelAllCount,
+      greaterThan(0),
+      reason: 'Focus Mode arrived ON from macOS and the switch renders ON, but '
+          'nothing cancelled the pending reminders — the phone is telling the '
+          'user it is silent while it goes on firing every daily repeat',
+    );
+  });
+
+  testWidgets(
+      'a private load with Focus Mode off wipes the pending schedule anyway',
+      (tester) async {
+    // The overshoot guard. "Fixing" the test above by cancelling on EVERY
+    // private load would wipe the pending reminders on every cold start and on
+    // every 60-second sync poll (sync_refresh.dart invalidates settingsProvider
+    // whenever a sync applied changes) — a strictly worse bug than the one
+    // being fixed, and one that reports success just as quietly.
+    for (final stored in const <Map<String, String?>>[
+      {'pref_focus_mode': '0'}, // explicitly off
+      {}, // never set
+    ]) {
+      final (container, _) = await _pumpNotificationSettings(
+        tester,
+        storedSynced: stored,
+      );
+      expect(container.read(settingsProvider).focusMode, isFalse);
+      expect(
+        notifications.cancelAllCount,
+        0,
+        reason: 'a private load with Focus Mode OFF cancelled the pending '
+            'reminders (stored: $stored)',
+      );
+      notifications.cancelAllCount = 0;
+    }
+  });
+
+  testWidgets(
+      'a Focus Mode the Mac turns back OFF leaves the phone permanently mute',
+      (tester) async {
+    // The mirror of the test above, and the failure that fixing only the ON
+    // half would INTRODUCE. Once a Mac-set Focus Mode really does cancel the
+    // pending reminders, a Mac-set OFF that only updates `state` leaves the
+    // phone silent for good: every switch on the screen says the reminders are
+    // on, iOS holds nothing pending, and the user has no gesture available that
+    // obviously fixes it — the switches are already where they want them.
+    await _asIos(() async {
+      final (container, fake) = await _pumpNotificationSettings(
+        tester,
+        storedSynced: {'pref_focus_mode': '1'},
+      );
+      expect(container.read(settingsProvider).focusMode, isTrue);
+      expect(notifications.scheduledIds, isEmpty,
+          reason: 'precondition: Focus Mode ON means nothing is pending');
+
+      // The Mac turns Focus Mode off. The sync applies the remote change and
+      // sync_refresh.dart invalidates settingsProvider, which re-runs the
+      // private load — this is the real mid-session path, not a cold start.
+      fake.syncedSettings['pref_focus_mode'] = '0';
+      container.invalidate(settingsProvider);
+      container.read(settingsProvider);
+      await tester.pumpAndSettle();
+
+      expect(container.read(settingsProvider).focusMode, isFalse);
+      expect(
+        notifications.scheduledIds,
+        contains(0), // 0 == the morning brief
+        reason: 'Focus Mode went OFF on the Mac and the switch renders OFF, but '
+            'nothing was rescheduled — the phone stays completely silent while '
+            'claiming its reminders are active',
+      );
+    });
   });
 
   testWidgets('the phone can turn a Mac-set Focus Mode back off', (

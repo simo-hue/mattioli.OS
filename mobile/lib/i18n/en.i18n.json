@@ -541,6 +541,7 @@
     "disclosureBody": "Your private data syncs only through your own iCloud account, end-to-end encrypted — never through our servers. The encryption key lives in your iCloud Keychain; if you turn iCloud Keychain off, synced data can't be recovered.",
     "disclosureAccept": "Enable",
     "statusIdle": "Up to date",
+    "statusNotSynced": "Not everything has synced",
     "statusSyncing": "Syncing…",
     "statusOff": "Sync is off",
     "statusNoAccount": "Sign in to iCloud to sync",

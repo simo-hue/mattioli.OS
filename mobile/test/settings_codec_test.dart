@@ -75,6 +75,156 @@ void main() {
     });
   });
 
+  group('a server profile merge coerces live values to defaults', () {
+    // The failure: `_syncFromSupabase` layers the `profiles` row onto the
+    // settings the device is already showing, and three of those assignments
+    // bypass `SettingsCodec` — which exists precisely so that an unparseable
+    // value falls back instead of being invented. `profiles` has no CHECK
+    // constraint on any of them (mobile_schema.sql), so nothing upstream
+    // guarantees they parse.
+    //
+    // This is the LIVE site. The same shape in `_applySyncedSettings` is inert:
+    // its base is always `_privateBaseSettings()` -> `_defaultSettings()`, whose
+    // accent is already `defaultAccentColor`, so "coerce to default" and "leave
+    // base standing" produce the identical Color there and nothing is ever
+    // written back (the private write path diffs). Here the base is the user's
+    // real, chosen value.
+
+    AppSettings live({
+      Color accent = const Color(0xFFEAB308), // Amber
+      String morning = '09:00',
+    }) =>
+        AppSettings(
+          themeMode: 'dark',
+          accentColor: accent,
+          defaultCalendarView: 'settimana',
+          hapticFeedback: true,
+          language: 'en',
+          timeFormat24h: true,
+          aiSuggestions: false,
+          isPro: true,
+          habitReminders: true,
+          goalDeadlines: true,
+          aiInsights: false,
+          weeklyReports: false,
+          focusMode: false,
+          milestones: true,
+          deepWorkInsights: false,
+          biometricLock: false,
+          eveningReview: true,
+          verificationNudges: true,
+          verificationCelebrations: false,
+          verificationFailureSummary: false,
+          morningBriefTime: morning,
+          eveningReviewTime: '21:00',
+          statsHabitFilter: 'active',
+        );
+
+    test('an unparseable server accent repaints the user accent white', () {
+      final merged = AppSettingsNotifier.mergeServerProfile(
+        live(),
+        {'accent_color': 'nope', 'is_pro': true},
+      );
+
+      expect(
+        merged.accentColor,
+        const Color(0xFFEAB308),
+        reason: 'the accent the user picked was replaced with the seed white, '
+            'and the caller persists this to pref_accent_color and pushes it '
+            'back up — so the loss survives restarts and reaches every device',
+      );
+      // The exact string that would be written to `pref_accent_color` and sent
+      // back to `profiles.accent_color`.
+      expect(_hex(merged.accentColor), '#EAB308');
+    });
+
+    test('an unparseable server brief time reaches the reminder scheduler', () {
+      final merged = AppSettingsNotifier.mergeServerProfile(
+        live(),
+        {'morning_brief_time': 'garbage', 'is_pro': true},
+      );
+
+      expect(
+        merged.morningBriefTime,
+        '09:00',
+        reason: 'a malformed time reaches scheduleDailyHabitReminder, whose '
+            'int.parse throws inside the try block that has already run '
+            'cancelAll() — so every reminder and both briefs are cancelled and '
+            'none are rescheduled, with only a log line to show for it',
+      );
+      expect(
+        SettingsCodec.normalizeTimeOfDay(merged.morningBriefTime),
+        isNotNull,
+        reason: 'whatever survives the merge must be schedulable',
+      );
+    });
+
+    test('two devices holding different accents disagree on one stored value',
+        () {
+      // The parity property. One `profiles` row, two phones that happen to be
+      // showing different colours. Whatever the row says, the outcome must
+      // depend on the STORED value alone — never on which device read it, and
+      // never on the seed white.
+      const deviceA = Color(0xFFEAB308); // Amber
+      const deviceB = Color(0xFF3B82F6); // Blue
+
+      // A value both can decode: they converge on it.
+      expect(
+        AppSettingsNotifier.mergeServerProfile(
+          live(accent: deviceA),
+          {'accent_color': '#10B981', 'is_pro': true},
+        ).accentColor,
+        AppSettingsNotifier.mergeServerProfile(
+          live(accent: deviceB),
+          {'accent_color': '#10B981', 'is_pro': true},
+        ).accentColor,
+      );
+
+      // A value neither can decode: each keeps what it had. Coercing to the
+      // default would make them "agree" — on white, having thrown away both
+      // users' colours. Agreement is not the property; not inventing a value
+      // is.
+      expect(
+        AppSettingsNotifier.mergeServerProfile(
+          live(accent: deviceA),
+          {'accent_color': '#GGGGGG', 'is_pro': true},
+        ).accentColor,
+        deviceA,
+      );
+      expect(
+        AppSettingsNotifier.mergeServerProfile(
+          live(accent: deviceB),
+          {'accent_color': '#GGGGGG', 'is_pro': true},
+        ).accentColor,
+        deviceB,
+      );
+    });
+
+    test('a valid server value still wins, and an absent one changes nothing',
+        () {
+      // The over-correction guard: "never trust the server" would pass the
+      // tests above and break syncing outright.
+      final applied = AppSettingsNotifier.mergeServerProfile(
+        live(),
+        {
+          'accent_color': '#3B82F6',
+          'morning_brief_time': '07:30',
+          'theme_mode': 'light',
+          'is_pro': true,
+        },
+      );
+      expect(applied.accentColor, const Color(0xFF3B82F6));
+      expect(applied.morningBriefTime, '07:30');
+      expect(applied.themeMode, 'light');
+
+      final untouched =
+          AppSettingsNotifier.mergeServerProfile(live(), {'is_pro': true});
+      expect(untouched.accentColor, const Color(0xFFEAB308));
+      expect(untouched.morningBriefTime, '09:00');
+      expect(untouched.themeMode, 'dark');
+    });
+  });
+
   group('readableAccent substitutes only when the accent is invisible', () {
     // The hazard: this used to run on every THEME CHANGE and persist its result,
     // so flipping the theme for a moment replaced the user's chosen colour and

@@ -310,14 +310,26 @@ void main() {
       await db.close();
     });
 
-    test('future-skew guard ignores implausibly-future remote records',
-        () async {
+    test('a record stamped implausibly far in the future pins the change token '
+        'on EVERY later sync, forever', () async {
+      // The skew guard defers a future-stamped record by rewinding the change
+      // token, so the record is re-fetched instead of lost. That is right for a
+      // clock a few minutes ahead — `now` catches up and the record applies.
+      //
+      // It is a trap for a stamp no clock will ever reach. The predicate
+      // `rec.updatedAtMs > nowMs + skew` is a pure function of a value frozen
+      // in CloudKit, so it is true on every pull forever: the token is rewound
+      // on every sync, the whole delta is re-downloaded and re-discarded, and
+      // it grows monotonically because the token never moves again. That is
+      // the same shape the undecryptable branch already refuses to take, and
+      // for the same stated reason ('change token: none', thousands of records
+      // re-skipped per sync, indefinitely).
       final cloud = FakeCloudKitBridge();
       final dbA = await openFreshV3();
       final dbB = await openFreshV3();
       await seedOwner(dbA);
       await seedOwner(dbB);
-      // A pushes a goal dated far in the future.
+      // A pushes a goal dated far beyond any plausible clock error.
       await insertGoal(dbA, 'g1', title: 'future', at: t(10));
       await dbA.update('goals',
           {'updated_at': DateTime.utc(2999).toIso8601String()},
@@ -325,23 +337,202 @@ void main() {
       await engine(dbA, cloud).syncNow(key);
 
       final res = await engine(dbB, cloud).syncNow(key);
-      expect(res.applied, 0); // skipped as bogus-future
+      // The guard still does its job: the bogus stamp must not win LWW.
+      expect(res.applied, 0);
       expect(await readGoal(dbB, 'g1'), isNull);
-      // #9: the record was DEFERRED, not dropped — the change token must NOT
-      // have advanced past it, so a later sync (once clocks agree) re-fetches
-      // and applies it instead of losing it forever.
-      expect(await SyncLocalStore(dbB).changeToken(), isNull);
+      // ...but it must not cost B its place in the zone.
+      expect(await SyncLocalStore(dbB).changeToken(), isNotNull,
+          reason: 'a stamp no clock will ever reach cannot be deferred: the '
+              'token must advance past it');
 
-      // A non-skewed record in the SAME zone still gets applied, and STILL the
-      // token is held (so the deferred future record keeps being re-fetched).
+      // A non-skewed record in the same zone applies, and the token STAYS
+      // advanced — B is not condemned to re-fetch the whole zone every sync.
       await insertGoal(dbA, 'g2', title: 'ok', at: t(20));
       await engine(dbA, cloud).syncNow(key);
       final res2 = await engine(dbB, cloud).syncNow(key);
-      expect(res2.applied, 1); // g2 applied
+      expect(res2.applied, 1);
       expect((await readGoal(dbB, 'g2'))!['title'], 'ok');
-      expect(await SyncLocalStore(dbB).changeToken(), isNull); // still deferring g1
+      expect(await SyncLocalStore(dbB).changeToken(), isNotNull,
+          reason: 'the poisoned record must not re-pin the token');
       await dbA.close();
       await dbB.close();
+    });
+
+    test('a PLAUSIBLY-skewed record is still deferred and still holds the '
+        'change token', () async {
+      // The other side of the same guard, and the reason the fix above cannot
+      // simply be "advance past anything future": a device whose clock is an
+      // hour ahead is ordinary, its records are real, and `now` reaches them on
+      // its own. Those must still be DEFERRED — held for a later sync — never
+      // parked and never applied early.
+      final cloud = FakeCloudKitBridge();
+      final dbA = await openFreshV3();
+      final dbB = await openFreshV3();
+      await seedOwner(dbA);
+      await seedOwner(dbB);
+      await insertGoal(dbA, 'g1', title: 'skewed', at: t(10));
+      await dbA.update(
+          'goals',
+          {
+            'updated_at': DateTime.now()
+                .toUtc()
+                .add(const Duration(hours: 1))
+                .toIso8601String(),
+          },
+          where: 'id = ?',
+          whereArgs: ['g1']);
+      await engine(dbA, cloud).syncNow(key);
+
+      final res = await engine(dbB, cloud).syncNow(key);
+      expect(res.applied, 0);
+      expect(await readGoal(dbB, 'g1'), isNull);
+      expect(await SyncLocalStore(dbB).changeToken(), isNull,
+          reason: 'a plausible skew must hold the token so the record is '
+              're-fetched once the clock catches up');
+      expect(await SyncLocalStore(dbB).stateOf('goals:g1'), isNull,
+          reason: 'deferred, NOT parked — nothing was recorded against it');
+      await dbA.close();
+      await dbB.close();
+    });
+
+    test('a record parked as implausibly-future is neither re-fetched every '
+        'sync nor lost — it applies once the clock passes its stamp', () async {
+      // Letting the token advance is only safe if the record can still come
+      // back. This is that half: a peer whose clock ran ten days fast, and a
+      // device that has to end up with its data anyway.
+      final cloud = FakeCloudKitBridge();
+      final dbA = await openFreshV3();
+      final dbB = await openFreshV3();
+      await seedOwner(dbA);
+      await seedOwner(dbB);
+
+      final bNow = DateTime.utc(2026, 1, 1, 12);
+      final stamp = bNow.add(const Duration(days: 10));
+      await insertGoal(dbA, 'g1', title: 'from a fast clock', at: t(10));
+      await dbA.update('goals', {'updated_at': stamp.toIso8601String()},
+          where: 'id = ?', whereArgs: ['g1']);
+      await engine(dbA, cloud).syncNow(key);
+
+      // B's clock is the honest one. Driving it explicitly is the only way to
+      // test a mechanism whose whole contract is about time passing.
+      SyncEngine at(DateTime now) => SyncEngine(
+            store: SyncLocalStore(dbB),
+            bridge: cloud,
+            crypto: crypto,
+            clock: () => now,
+          );
+
+      var res = await at(bNow).syncNow(key);
+      expect(res.applied, 0);
+      expect(await readGoal(dbB, 'g1'), isNull);
+      expect(await SyncLocalStore(dbB).changeToken(), isNotNull);
+      expect((await SyncLocalStore(dbB).diagnostics()).parkedByReason,
+          contains(SyncLocalStore.implausibleFutureReason),
+          reason: 'the record must be recorded, not silently dropped');
+
+      // A day later the park is not yet due. Nothing is re-fetched: `skipped`
+      // counts the records this pull was handed and could not take, so 0 is
+      // the direct measurement that the poisoned record was NOT delivered
+      // again. Under the old guard this was 1 on this sync and on every sync
+      // after it, forever.
+      res = await at(bNow.add(const Duration(days: 1))).syncNow(key);
+      expect(res.skipped, 0);
+      expect(await readGoal(dbB, 'g1'), isNull);
+      expect((await SyncLocalStore(dbB).diagnostics()).parkedByReason,
+          contains(SyncLocalStore.implausibleFutureReason),
+          reason: 'a park that is not yet due must stay parked');
+
+      // The clock passes the stamp: the park expires, one full re-fetch
+      // re-delivers the record, and it applies. No user action anywhere.
+      res = await at(stamp.add(const Duration(minutes: 1))).syncNow(key);
+      expect(res.applied, 1);
+      expect((await readGoal(dbB, 'g1'))!['title'], 'from a fast clock');
+      final after = await SyncLocalStore(dbB).diagnostics();
+      expect(after.parkedByReason, isEmpty);
+      expect(after.isFullySynced, isTrue,
+          reason: 'the park must not leave the device permanently "not synced"');
+      await dbA.close();
+      await dbB.close();
+    });
+
+    test('a timestamp beyond what DateTime can represent is parked, not thrown '
+        'out of the pull, and does not un-park itself', () async {
+      // `updatedAtMs` is an arbitrary int on the wire. The park records the
+      // record's own stamp as its retry time, which means turning that int
+      // into a DateTime — and DateTime rejects anything past ~275760 AD. An
+      // unguarded conversion throws out of the middle of `_pull`, trading a
+      // pinned change token for a sync that cannot run at all.
+      //
+      // The second half is the subtler trap: `DateTime.toIso8601String()`
+      // renders years past 9999 with a leading '+', which sorts BEFORE every
+      // ordinary year. A retry test that compared those strings in SQL would
+      // read the most absurd stamp imaginable as already due and un-park it on
+      // every sync — the re-download loop, rebuilt inside the recovery path.
+      final cloud = FakeCloudKitBridge();
+      final db = await openFreshV3();
+      await seedOwner(db);
+      await cloud.saveRecords([
+        CloudRecord(
+          recordName: 'goals:absurd',
+          tableName: 'goals',
+          updatedAtMs: 1 << 62,
+          deleted: false,
+          payload: crypto.encryptJson({'id': 'absurd', 'title': 'x'}, key),
+        ),
+      ]);
+
+      final res = await engine(db, cloud).syncNow(key);
+      expect(res.skipped, 1);
+      expect(await readGoal(db, 'absurd'), isNull);
+      expect(await SyncLocalStore(db).changeToken(), isNotNull);
+      expect((await SyncLocalStore(db).diagnostics()).parkedByReason,
+          contains(SyncLocalStore.implausibleFutureReason));
+
+      // The next sync must not revive it, and must not re-fetch it.
+      final res2 = await engine(db, cloud).syncNow(key);
+      expect(res2.skipped, 0);
+      expect((await SyncLocalStore(db).diagnostics()).parkedByReason,
+          contains(SyncLocalStore.implausibleFutureReason));
+      await db.close();
+    });
+
+    test('a maximally-NEGATIVE timestamp is skipped once, not mistaken for a '
+        'future one and re-fetched every sync', () async {
+      // The mirror image of the test above, and the reason the skew test is
+      // written as `updatedAtMs > nowMs + bound` rather than as a subtraction:
+      // `updatedAtMs - nowMs` wraps for an int64 near the floor and reports a
+      // huge POSITIVE skew. The record would then be parked with a retry time
+      // of "now", come due on the very next sync, drop the change token, be
+      // re-fetched, wrap again and be re-parked — the unbounded re-download,
+      // rebuilt inside the mechanism added to prevent it.
+      final cloud = FakeCloudKitBridge();
+      final db = await openFreshV3();
+      await seedOwner(db);
+      await cloud.saveRecords([
+        CloudRecord(
+          recordName: 'goals:ancient',
+          tableName: 'goals',
+          // Dart's int64 floor. Nothing smaller exists, so this is the only
+          // value for which `updatedAtMs - nowMs` actually wraps — a merely
+          // very negative number does not, and a test using one proves
+          // nothing.
+          updatedAtMs: 1 << 63,
+          deleted: false,
+          payload: crypto.encryptJson({'id': 'ancient', 'title': 'x'}, key),
+        ),
+      ]);
+
+      final res = await engine(db, cloud).syncNow(key);
+      expect(await SyncLocalStore(db).changeToken(), isNotNull);
+      expect(res.skipped, 1, reason: 'older than anything local: LWW skips it');
+      expect((await SyncLocalStore(db).diagnostics()).parkedByReason, isEmpty,
+          reason: 'an ancient stamp is not a FUTURE one and must not park');
+
+      // The decisive half: it is gone from the pull, not cycling through it.
+      final res2 = await engine(db, cloud).syncNow(key);
+      expect(res2.skipped, 0);
+      expect(await SyncLocalStore(db).changeToken(), isNotNull);
+      await db.close();
     });
 
     test(

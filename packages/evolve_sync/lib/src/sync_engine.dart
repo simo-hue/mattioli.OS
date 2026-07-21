@@ -27,6 +27,32 @@ import 'sync_logger.dart';
 /// silent, permanently-empty sync.
 enum _ApplyOutcome { applied, skipped, failed, undecryptable }
 
+/// What one push actually achieved. A bare `pushed` count cannot distinguish
+/// "there was nothing to upload" from "everything was rejected" — both report 0
+/// — which is why the failure and conflict counts travel with it.
+class _PushOutcome {
+  final int pushed;
+  final int failed;
+  final int conflicted;
+  const _PushOutcome(this.pushed, this.failed, this.conflicted);
+}
+
+/// What one pull actually achieved. [heldToken] is the load-bearing field: it
+/// means records were deferred or failed to apply and the change token was
+/// deliberately rewound, so this device has NOT taken everything the zone holds.
+class _PullOutcome {
+  final int applied;
+  final int skipped;
+  final int undecryptable;
+  final bool heldToken;
+  const _PullOutcome({
+    required this.applied,
+    required this.skipped,
+    required this.undecryptable,
+    required this.heldToken,
+  });
+}
+
 class SyncResult {
   final int pushed;
   final int applied;
@@ -68,6 +94,25 @@ class SyncResult {
   /// read. Null on syncNow / blocked / deferred results.
   final String? canonicalOwner;
 
+  /// Records CloudKit REJECTED in this push (a per-record error in a
+  /// `.partialFailure`, e.g. rate limiting on a large first upload). Each one is
+  /// an edit that exists only on this device and that the cloud has never seen.
+  ///
+  /// Exists because a push could previously fail for every single record while
+  /// the sync reported success and stamped `last_full_sync_at` — see
+  /// [SyncEngine.syncNow]. Left dirty, so they retry on the next sync.
+  final int pushFailed;
+
+  /// Records the server refused because it holds a NEWER version. Left dirty on
+  /// purpose (the next pull LWW-resolves them), but they are still local edits
+  /// the cloud does not have, so they count against [fullySynced].
+  final int pushConflicted;
+
+  /// The pull deliberately held the change token back: at least one record was
+  /// deferred (clock skew) or failed to apply, and must be re-fetched on a later
+  /// sync. The device has NOT taken everything the zone offered.
+  final bool pullIncomplete;
+
   const SyncResult({
     this.pushed = 0,
     this.applied = 0,
@@ -78,9 +123,28 @@ class SyncResult {
     this.keyPending = false,
     this.undecryptable = 0,
     this.canonicalOwner,
+    this.pushFailed = 0,
+    this.pushConflicted = 0,
+    this.pullIncomplete = false,
   });
 
   bool get ran => blockedBy == null && !ownerPending && !keyPending;
+
+  /// This sync moved everything it attempted, in both directions — the ONLY
+  /// condition under which `last_full_sync_at` may be stamped.
+  ///
+  /// Deliberately narrower than "did not throw". A sync that uploaded 3 of 4000
+  /// records and a sync that uploaded all 4000 both returned normally before
+  /// this existed, and both stamped the timestamp every UI renders as "Last
+  /// synced". Note it says nothing about records PARKED by an earlier sync —
+  /// that is [SyncDiagnostics.isFullySynced]'s job, and it is what a UI must
+  /// consult before claiming "up to date".
+  bool get fullySynced =>
+      ran &&
+      !wiped &&
+      pushFailed == 0 &&
+      pushConflicted == 0 &&
+      !pullIncomplete;
 }
 
 /// The Dart-side sync brain: pushes dirty rows, pulls remote changes, resolves
@@ -97,13 +161,20 @@ class SyncEngine {
   /// neither pushed nor applied (pulled ones are skipped).
   final SyncAvatarStore? avatarStore;
 
+  /// Wall clock. Injectable because the skew guard's whole correctness argument
+  /// is about the PASSAGE of time — a deferral that resolves when `now` catches
+  /// up, a park that expires when it does — and none of that is testable
+  /// against a clock that only ever reads "now". Production never passes it.
+  final DateTime Function() clock;
+
   SyncEngine({
     required this.store,
     required this.bridge,
     required this.crypto,
     this.avatarStore,
     this.logger = const SilentSyncLogger(),
-  });
+    DateTime Function()? clock,
+  }) : clock = clock ?? DateTime.now;
 
   /// FK-safe apply order: parents before children (profiles → goals/categories →
   /// logs/macro-goals/moods → the avatar, which rewrites profiles.avatar_url).
@@ -130,6 +201,26 @@ class SyncEngine {
   /// Reject timestamps more than this far in the future (clock-skew guard, Q10).
   static const int _maxFutureSkewMs = 5 * 60 * 1000;
 
+  /// Beyond this, a future stamp is not clock skew — it is a clock that is
+  /// simply wrong, or a corrupt value. The distinction decides whether the
+  /// change token may be held.
+  ///
+  /// Holding it is safe ONLY while the deferral is self-limiting: the deferred
+  /// band is `(now + _maxFutureSkewMs, now + this]`, a window that slides
+  /// forward with real time, so `now` reaches any stamp inside it within a day
+  /// and the record then applies — no attempt counter, no extra state. A stamp
+  /// ABOVE the band never becomes plausible, so `rec.updatedAtMs > nowMs +
+  /// skew` stays true on every pull forever: the token is rewound every sync,
+  /// the whole delta is re-downloaded and re-discarded, and it grows without
+  /// bound because the token never moves again. That is precisely the state the
+  /// undecryptable branch below refuses to enter, and it is reachable without
+  /// any corruption at all — iOS and macOS let a user set the date by hand, and
+  /// nothing clamps `updated_at` on the way out.
+  ///
+  /// A day is the threshold because no honest clock error survives a day of
+  /// NTP, while a device parked a day ahead is still worth waiting for.
+  static const int _maxDeferrableSkewMs = 24 * 60 * 60 * 1000;
+
   /// Records per `saveRecords` call — see [_batches]. Apple documents no hard
   /// constant (the server bounds a modify operation by record count AND total
   /// request size, and returns `CKError.limitExceeded` with guidance to split
@@ -141,6 +232,16 @@ class SyncEngine {
   /// goal description encrypts to a large blob), so a record count alone does
   /// not bound the request.
   static const int _maxPayloadBytesPerBatch = 2 * 1024 * 1024;
+
+  /// The LWW value for "this device holds no record under that name at all".
+  ///
+  /// Strictly BELOW [SyncLocalStore.unorderableMs] on purpose. A record whose
+  /// own stamp is unreadable compares at `unorderableMs`, and it still has to
+  /// win against an empty slot — otherwise a row imported from a backup with a
+  /// malformed timestamp would be skipped by every device that has never seen
+  /// it, i.e. never arrive anywhere. Collapsing the two sentinels onto one
+  /// value is what would do that.
+  static const int _noLocalRecordMs = -1;
 
   /// Hard cap on delta-fetch pages per pull. A correct CloudKit bridge sets
   /// `moreComing` with a strictly-advancing token and terminates in a handful
@@ -231,6 +332,13 @@ class SyncEngine {
       blockedBy: r.blockedBy,
       undecryptable: r.undecryptable,
       canonicalOwner: canonical,
+      // Forwarded, not defaulted: enable() runs the FIRST push of the user's
+      // entire history, which is the single most likely push to be rate-limited
+      // and the exact scenario the original bug report described. Dropping
+      // these here would restore the false success one level up.
+      pushFailed: r.pushFailed,
+      pushConflicted: r.pushConflicted,
+      pullIncomplete: r.pullIncomplete,
     );
   }
 
@@ -296,6 +404,29 @@ class SyncEngine {
       }
     }
     await store.setSyncedSchemaVersion(PrivateDbSchema.version);
+
+    // Has this device's clock reached a record parked as implausibly-future?
+    // Those parks carry the record's own stamp as the moment they become worth
+    // retrying (see [SyncLocalStore.parkFutureSkew]), so a peer whose clock ran
+    // a week fast heals a week later without the user doing anything. CloudKit
+    // will not replay a record the token has already passed, so — exactly as on
+    // key rotation and schema growth above — one full re-fetch is the only way
+    // to get it back.
+    //
+    // Gated on the clock and not run unconditionally: dropping the token every
+    // sync is precisely the unbounded re-download that parking these records
+    // exists to stop, so an un-park that fires repeatedly would reintroduce the
+    // bug through the recovery path. A park that is not yet due matches
+    // nothing and costs one small query.
+    final revived = await store.clearImplausibleFutureParks(clock().toUtc());
+    if (revived > 0) {
+      logger.info(
+        '[CloudKit] The local clock has caught up with $revived record(s) '
+        'parked as implausibly-future — re-fetching the zone to retry them.',
+      );
+      await store.setChangeToken(null);
+    }
+
     // Pull BEFORE push: a newer remote record overwrites the local copy and
     // clears its dirty flag, so a stale local edit is never pushed over it. With
     // the native savePolicy of `.allKeys` (overwrite), this ordering is what
@@ -303,19 +434,45 @@ class SyncEngine {
     // record. It also gives a freshly-enabled second device the canonical data
     // before it uploads its own.
     final pull = await _pull(key);
-    final pushed = await _push(key);
-    await store.setLastFullSync(_nowIso());
-    return SyncResult(
-      pushed: pushed,
-      applied: pull.$1,
-      skipped: pull.$2,
-      undecryptable: pull.$3,
+    final push = await _push(key);
+    final result = SyncResult(
+      pushed: push.pushed,
+      pushFailed: push.failed,
+      pushConflicted: push.conflicted,
+      applied: pull.applied,
+      skipped: pull.skipped,
+      undecryptable: pull.undecryptable,
+      pullIncomplete: pull.heldToken,
     );
+    // ONLY stamp when the sync actually moved everything it attempted.
+    //
+    // This used to be unconditional, one line after the push, which made "Last
+    // synced: just now" survivable alongside a push in which every single
+    // record had failed. Both apps render this value verbatim, so an
+    // unconditional stamp is not a cosmetic inaccuracy — it is the app telling
+    // the user their data is safe in iCloud when it is sitting in a local
+    // table and has never left the device.
+    if (result.fullySynced) {
+      await store.setLastFullSync(_nowIso());
+    } else {
+      logger.error(
+        '[CloudKit] Sync did NOT fully complete — "last synced" left unchanged',
+        'incomplete-sync',
+        null,
+        {
+          'pushed': push.pushed,
+          'pushFailed': push.failed,
+          'pushConflicted': push.conflicted,
+          'pullIncomplete': pull.heldToken,
+        },
+      );
+    }
+    return result;
   }
 
-  Future<int> _push(Uint8List key) async {
+  Future<_PushOutcome> _push(Uint8List key) async {
     final entries = await store.dirtyEntries();
-    if (entries.isEmpty) return 0;
+    if (entries.isEmpty) return const _PushOutcome(0, 0, 0);
 
     final records = <CloudRecord>[];
     // `sync_state.updated_at` as observed when each record was serialized. A
@@ -355,6 +512,8 @@ class SyncEngine {
     }
 
     var pushed = 0;
+    var failed = 0;
+    var conflicted = 0;
     // Each batch is committed to sync_state before the next is sent, so a batch
     // that fails (or throws) leaves the batches already saved marked synced and
     // the rest still dirty for the next sync — never a silent all-or-nothing.
@@ -377,8 +536,10 @@ class SyncEngine {
       // Conflicts (server has a newer version) are intentionally left dirty: the
       // pull below fetches the newer record and LWW-applies it, clearing dirty.
       pushed += outcome.saved.length;
+      failed += outcome.errors.length;
+      conflicted += outcome.conflicts.length;
     }
-    return pushed;
+    return _PushOutcome(pushed, failed, conflicted);
   }
 
   /// Split the push into operations CloudKit will accept. One unbounded
@@ -412,7 +573,7 @@ class SyncEngine {
     if (batch.isNotEmpty) yield batch;
   }
 
-  Future<(int, int, int)> _pull(Uint8List key) async {
+  Future<_PullOutcome> _pull(Uint8List key) async {
     // Collect all changed records across pages, then apply FK-safely.
     final all = <CloudRecord>[];
     final originalToken = await store.changeToken();
@@ -470,10 +631,33 @@ class SyncEngine {
     // — the exact invariant the future-skew guard already protects. Re-applying
     // an already-applied record on the next pull is idempotent (LWW skips it).
     var holdToken = false;
-    final nowMs = DateTime.now().toUtc().millisecondsSinceEpoch;
+    final nowMs = clock().toUtc().millisecondsSinceEpoch;
     for (final rec in all) {
+      // Compared against `nowMs + bound`, never as `updatedAtMs - nowMs`.
+      // `updatedAtMs` is an arbitrary int64 off the wire, so the subtraction
+      // wraps for a maximally-negative one and reports a huge POSITIVE skew —
+      // which would park an ancient record with a retry time of "now", un-park
+      // it on the next sync, re-fetch the zone, and re-park it: the unbounded
+      // re-download rebuilt through the recovery path. The additions cannot
+      // overflow because both bounds are small constants.
+      if (rec.updatedAtMs > nowMs + _maxDeferrableSkewMs) {
+        // Not skew — the authoring clock is wrong, or the value is corrupt.
+        // Deferring here defers FOREVER (see [_maxDeferrableSkewMs]), so PARK
+        // instead, on exactly the terms the undecryptable and unknown-table
+        // branches use: record why, let the token advance so the rest of the
+        // zone keeps syncing, and leave the record itself untouched in the
+        // cloud. It is not dropped — it stays counted in
+        // SyncDiagnostics.parkedByReason, and the park expires by itself once
+        // this device's clock passes the stamp.
+        await _parkImplausibleFuture(rec, nowMs);
+        skipped++;
+        continue;
+      }
       if (rec.updatedAtMs > nowMs + _maxFutureSkewMs) {
-        // Clock-skew guard: another device's clock is ahead of ours. DEFER.
+        // Plausible clock skew: another device is a little ahead of ours.
+        // DEFER — hold the token so the record is re-fetched rather than
+        // applied with a stamp that would beat every later local edit. Bounded
+        // by construction: `now` reaches this stamp within a day.
         holdToken = true;
         skipped++;
         continue;
@@ -511,8 +695,71 @@ class SyncEngine {
         {'undecryptable': undecryptable, 'applied': applied},
       );
     }
-    return (applied, skipped, undecryptable);
+    return _PullOutcome(
+      applied: applied,
+      skipped: skipped,
+      undecryptable: undecryptable,
+      heldToken: holdToken,
+    );
   }
+
+  /// Park a record stamped beyond any plausible clock error, so the change
+  /// token can advance past it WITHOUT the record being silently dropped.
+  ///
+  /// The park is bounded, not permanent: it carries the record's own stamp as
+  /// the moment it becomes worth retrying, and [syncNow] revives it — with one
+  /// full re-fetch — as soon as this device's clock passes that. A device that
+  /// received rows from a peer whose clock was a week fast therefore heals a
+  /// week later on its own.
+  ///
+  /// A stamp in the year 2999 never comes due, and that outcome is stated
+  /// plainly rather than dressed up: the record stays parked, stays counted in
+  /// [SyncDiagnostics.parkedByReason] with a reason that names the cause, and
+  /// stays intact in the cloud and on the device that wrote it. What it no
+  /// longer does is pin this device's change token for the rest of its life.
+  Future<void> _parkImplausibleFuture(CloudRecord rec, int nowMs) async {
+    // The skew test runs BEFORE _applyRemote's prefix validation, so the row id
+    // has to be parsed here. A name without the "<table>:" prefix is malformed
+    // on top of being skewed; park it under the whole name rather than skip it
+    // unrecorded — `row_id` is bookkeeping for a record that has no local row
+    // either way, and an unrecorded skip is the silent drop this branch exists
+    // to avoid.
+    final prefix = '${rec.tableName}:';
+    final rowId = rec.recordName.startsWith(prefix)
+        ? rec.recordName.substring(prefix.length)
+        : rec.recordName;
+    // `updatedAtMs` is an arbitrary int on the wire and DateTime rejects
+    // anything past ~±275760 years, so a corrupt value would throw out of
+    // `_iso` and take the whole pull down with it — trading a pinned token for
+    // a sync that cannot run at all. Clamp: a stamp above the ceiling is never
+    // coming due, which is exactly what the clamped value also says.
+    final retryMs = rec.updatedAtMs.clamp(nowMs, _maxDateTimeMs);
+    await store.parkFutureSkew(
+      rec.recordName,
+      rec.tableName,
+      rowId,
+      _iso(retryMs),
+    );
+    logger.error(
+      '[CloudKit] Parked a record stamped implausibly far in the future — the '
+      'authoring clock is wrong, not merely ahead of ours.',
+      'implausible-future-timestamp',
+      null,
+      // Both endpoints rather than their difference: the subtraction wraps for
+      // an extreme wire value and a wrapped number in a crash report is worse
+      // than no number.
+      {
+        'recordName': rec.recordName,
+        'tableName': rec.tableName,
+        'updatedAtMs': rec.updatedAtMs,
+        'nowMs': nowMs,
+      },
+    );
+  }
+
+  /// The largest epoch-ms `DateTime` accepts (±275760 years). See
+  /// [_parkImplausibleFuture].
+  static const int _maxDateTimeMs = 8640000000000000;
 
   /// Builds the avatar CloudRecord for push: plaintext bytes from the app's
   /// avatar store, sealed with the sync key, staged to a temp file the native
@@ -539,7 +786,7 @@ class SyncEngine {
 
   Future<_ApplyOutcome> _applyRemote(CloudRecord rec, Uint8List key) async {
     final local = await store.stateOf(rec.recordName);
-    final localMs = local == null ? -1 : _ms(local.updatedAt);
+    final localMs = local == null ? _noLocalRecordMs : _ms(local.updatedAt);
     // Strict >: equal timestamps keep the local copy. Exact-millisecond
     // conflicts on the same record are vanishingly rare for a single user.
     if (rec.updatedAtMs <= localMs) return _ApplyOutcome.skipped;
@@ -659,7 +906,16 @@ class SyncEngine {
       );
       return _ApplyOutcome.skipped;
     } catch (e, stack) {
-      await store.markError(rec.recordName, e.toString());
+      // markPullError, not markError: this record may have no `sync_state` row
+      // at all (the LWW read above found none), and markError's bare UPDATE
+      // would match nothing and discard the reason — leaving a device that
+      // holds its change token forever while reporting a clean sync.
+      await store.markPullError(
+        rec.recordName,
+        rec.tableName,
+        rowId,
+        e.toString(),
+      );
       logger.error(
         '[CloudKit] Record apply failed',
         e,
@@ -700,7 +956,17 @@ class SyncEngine {
       // file that CloudKit hadn't materialized yet. Treat it as [failed] so the
       // token holds and the avatar record is re-fetched next sync (the asset is
       // re-staged), rather than advancing past it and losing the avatar.
-      await store.markError(rec.recordName, e.toString());
+      //
+      // markPullError for the same reason as the row path: a device that has
+      // never held this avatar has no `sync_state` row for it, so markError's
+      // bare UPDATE would write nothing at all.
+      await store.markPullError(
+        rec.recordName,
+        rec.tableName,
+        rec.recordName
+            .substring(PrivateDbSchema.avatarRecordTable.length + 1),
+        e.toString(),
+      );
       logger.error(
         '[CloudKit] Avatar apply failed',
         e,
@@ -720,8 +986,16 @@ class SyncEngine {
         payload: Uint8List(0),
       );
 
-  int _ms(String iso) => DateTime.tryParse(iso)?.millisecondsSinceEpoch ?? 0;
+  /// The fallback is [SyncLocalStore.unorderableMs], not a literal, and that is
+  /// load-bearing: this function produces the value that goes ON THE WIRE, and
+  /// [SyncLocalStore] compares its own copy of it against that wire value when
+  /// two rows contest a natural key. If the two ever answer differently for an
+  /// unreadable stamp, the tie stops being a tie and both devices delete their
+  /// own row — see the constant's doc.
+  int _ms(String iso) =>
+      DateTime.tryParse(iso)?.millisecondsSinceEpoch ??
+          SyncLocalStore.unorderableMs;
   String _iso(int ms) =>
       DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true).toIso8601String();
-  String _nowIso() => DateTime.now().toUtc().toIso8601String();
+  String _nowIso() => clock().toUtc().toIso8601String();
 }

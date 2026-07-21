@@ -33,6 +33,18 @@ class PrivateSyncStatus {
   /// never be reported as "Up to date", because no amount of syncing fixes it.
   final int undecryptableCount;
 
+  /// The last [PrivateSyncService.enable] was DEFERRED because the shared E2E
+  /// key has arrived but the canonical owner id has not yet propagated through
+  /// the iCloud Keychain. Nothing was touched; a later enable completes it.
+  ///
+  /// Explicit because the recovery flow used to infer it from
+  /// `lastSyncedAt == null`, and that proxy is not sound: an enable that RAN but
+  /// did not fully complete (a rate-limited push, a held change token) also
+  /// leaves the timestamp unset, and would then be misread as a deferral. The
+  /// two need opposite handling — wait-and-retry versus let-the-user-choose —
+  /// so the engine's own answer travels here rather than being guessed at.
+  final bool ownerPending;
+
   const PrivateSyncStatus({
     required this.isAvailable,
     required this.isEnabled,
@@ -43,6 +55,7 @@ class PrivateSyncStatus {
     this.appliedChanges = 0,
     this.keyPending = false,
     this.undecryptableCount = 0,
+    this.ownerPending = false,
   });
 
   const PrivateSyncStatus.localOnly()
@@ -54,7 +67,8 @@ class PrivateSyncStatus {
         hasKey = false,
         appliedChanges = 0,
         keyPending = false,
-        undecryptableCount = 0;
+        undecryptableCount = 0,
+        ownerPending = false;
 }
 
 abstract class PrivateSyncService {

@@ -50,8 +50,13 @@ class _CappedCloud implements CloudKitBridge {
   Future<void> ensureSubscription() => inner.ensureSubscription();
 }
 
-/// Runs [onSave] the first time a push reaches the network, standing in for an
-/// app write that lands while the upload is in flight.
+/// Runs [onSave] the first time a push reaches the network, i.e. AFTER this
+/// device's pull has resolved everything but BEFORE any of its own writes are
+/// visible to anyone else. Two things need that window: an app write landing
+/// mid-upload, and a second device completing its own pull while this one's
+/// upload is in flight — the interleaving two devices syncing at the same time
+/// actually produce, and the only one in which both sides still see each
+/// other's row as a live upsert rather than as an already-resolved tombstone.
 class _EditDuringPushCloud implements CloudKitBridge {
   _EditDuringPushCloud(this.inner, this.onSave);
 
@@ -340,6 +345,91 @@ void main() {
       expect(aLogs.single['id'], bLogs.single['id'],
           reason: 'both devices must survive on the same row');
       expect(aLogs.single['status'], bLogs.single['status']);
+
+      await dbA.close();
+      await dbB.close();
+    });
+
+    test('rival rows whose updated_at is UNPARSEABLE are deleted from BOTH '
+        'devices instead of converging', () async {
+      // The two "ISO string -> comparable int" helpers disagreed about what an
+      // unparseable stamp means: SyncEngine._ms answered 0 (the value that goes
+      // on the wire) while SyncLocalStore._ms answered -1 (the value the
+      // natural-key rival is measured at). Nothing inside this package writes
+      // such a stamp, but the backup IMPORT path in both apps does: it coerces
+      // the file's `updated_at` with a plain string coercion rather than the
+      // validating one it uses for `start_date`/`end_date`, and writes whatever
+      // the file carried straight into the row. Restoring ONE id-less backup on
+      // two machines therefore produces exactly this state — one logical mood
+      // entry, two ids, both stamped with something DateTime.tryParse rejects.
+      //
+      // With the sentinels disagreeing, _remoteWinsNaturalKey compares 0 to -1,
+      // finds them unequal and answers "the remote one wins" on BOTH devices,
+      // never reaching the deterministic id tiebreak that exists precisely so
+      // two devices pick the same survivor. Each device then deletes its own
+      // row and adopts the peer's, the two tombstones cross on the next pass,
+      // and the user's mood entry is gone from both machines.
+      final cloud = FakeCloudKitBridge();
+      final dbA = await openFresh();
+      final dbB = await openFresh();
+      await seedOwner(dbA);
+      await seedOwner(dbB);
+
+      // A locale-formatted date: a real shape for an `updated_at` that came out
+      // of a hand-edited or third-party backup file.
+      const unparseable = '21/07/2026 14:33';
+      Future<void> seedMood(Database db, String id) => db.insert('daily_moods', {
+            'id': id,
+            'user_id': 'owner',
+            'date': '2020-01-05',
+            'mood_score': 7,
+            'energy_score': 6,
+            'created_at': t(10),
+            'updated_at': unparseable,
+          });
+      await seedMood(dbA, 'mA');
+      await seedMood(dbB, 'mB');
+
+      // Get BOTH rivals into the zone before either device has resolved
+      // anything. A private bridge per device does that without hand-building
+      // wire records — the two CloudRecords merged below are the ones the
+      // engine itself serialized, so the sentinel under test is the real one.
+      final soloA = FakeCloudKitBridge();
+      final soloB = FakeCloudKitBridge();
+      await engine(dbA, soloA).syncNow(key);
+      await engine(dbB, soloB).syncNow(key);
+      await cloud.saveRecords([
+        soloA.records['daily_moods:mA']!,
+        soloB.records['daily_moods:mB']!,
+      ]);
+      // Neither device has fetched from the SHARED zone yet.
+      await SyncLocalStore(dbA).setChangeToken(null);
+      await SyncLocalStore(dbB).setChangeToken(null);
+
+      // The devices sync CONCURRENTLY: B's pull runs inside A's push, so each
+      // side decides the contest while the other's row is still a live upsert.
+      // Syncing them strictly one after the other hides this entirely — the
+      // first mover's tombstone lands before the second one ever pulls, so the
+      // second never has a contest to get wrong.
+      await engine(
+        dbA,
+        _EditDuringPushCloud(cloud, () => engine(dbB, cloud).syncNow(key)),
+      ).syncNow(key);
+
+      // Enough passes for the tombstones each side queued to cross.
+      for (var i = 0; i < 2; i++) {
+        await engine(dbA, cloud).syncNow(key);
+        await engine(dbB, cloud).syncNow(key);
+      }
+
+      final aMoods = await dbA.query('daily_moods');
+      final bMoods = await dbB.query('daily_moods');
+      expect(aMoods, hasLength(1),
+          reason: "A must still hold the user's mood entry");
+      expect(bMoods, hasLength(1),
+          reason: "B must still hold the user's mood entry");
+      expect(bMoods.single['id'], aMoods.single['id'],
+          reason: 'both devices must survive on the SAME row');
 
       await dbA.close();
       await dbB.close();

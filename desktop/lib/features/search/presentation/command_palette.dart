@@ -77,12 +77,12 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
   List<PaletteGroup> _buildGroups(
     List<DashboardGoal> goals,
     List<DashboardHabit> habits,
-    ThemeMode themeMode,
+    bool isDark,
   ) {
     final query = _query;
     return query.isEmpty
         ? _launchpadGroups(goals)
-        : _searchGroups(query, goals, habits, themeMode);
+        : _searchGroups(query, goals, habits, isDark);
   }
 
   /// The empty-query launchpad: quick actions, this week's active goals, and
@@ -126,8 +126,10 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
             icon: LucideIcons.trophy,
             score: 0,
           ),
+          // The RENDERED brightness — under ThemeMode.system the stored mode
+          // does not say which theme is on screen.
           _themeAction(
-            ref.read(desktopAppearanceControllerProvider).themeMode,
+            Theme.of(context).brightness == Brightness.dark,
             score: 0,
           ),
         ],
@@ -153,7 +155,7 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
     String query,
     List<DashboardGoal> goals,
     List<DashboardHabit> habits,
-    ThemeMode themeMode,
+    bool isDark,
   ) {
     // Goals — match title and category; rank by score, then active-first, then
     // period nearest to today.
@@ -237,7 +239,7 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
         argument: query,
       ),
     );
-    for (final candidate in _commandCatalogue(themeMode)) {
+    for (final candidate in _commandCatalogue(isDark)) {
       final m = fuzzyMatchBest(query, [candidate.label, ...candidate.keywords]);
       if (m != null) {
         actionEntries.add(
@@ -320,8 +322,15 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
     DesktopSection.settings => const ['preferences', 'config', 'options'],
   };
 
-  ActionEntry _themeAction(ThemeMode mode, {required int score}) {
-    final toDark = mode != ThemeMode.dark;
+  /// Keyed on the brightness actually being RENDERED, not on the stored mode.
+  ///
+  /// `mode != ThemeMode.dark` was only ever safe while `ThemeMode.system` was
+  /// unreachable. On a "follow system" Mac in dark appearance it makes `toDark`
+  /// true, so the palette offers "switch to dark" against an already-dark
+  /// screen — and activating it sets the mode it thinks it is leaving, changing
+  /// nothing. A command that reports success and does nothing.
+  ActionEntry _themeAction(bool isDark, {required int score}) {
+    final toDark = !isDark;
     return ActionEntry(
       kind: PaletteActionKind.toggleTheme,
       label: toDark ? t.palette.switchToDark : t.palette.switchToLight,
@@ -330,8 +339,8 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
     );
   }
 
-  List<_Command> _commandCatalogue(ThemeMode mode) {
-    final toDark = mode != ThemeMode.dark;
+  List<_Command> _commandCatalogue(bool isDark) {
+    final toDark = !isDark;
     return [
       _Command(
         kind: PaletteActionKind.toggleTheme,
@@ -451,13 +460,18 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
       case PaletteActionKind.createHabit:
         _createHabit(entry.argument);
       case PaletteActionKind.toggleTheme:
-        final controller = ref.read(
-          desktopAppearanceControllerProvider.notifier,
-        );
-        final mode = ref.read(desktopAppearanceControllerProvider).themeMode;
-        controller.setThemeMode(
-          mode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark,
-        );
+        // Toggle away from what is on screen, not from the stored mode: for a
+        // 'system' user those are different, and toggling from the stored mode
+        // is a no-op in exactly the half of the cases where it is reachable.
+        // This also pins the result — deliberate. The user asked for the other
+        // brightness, which "follow system" cannot express.
+        ref
+            .read(desktopAppearanceControllerProvider.notifier)
+            .setThemeMode(
+              Theme.of(context).brightness == Brightness.dark
+                  ? ThemeMode.light
+                  : ThemeMode.dark,
+            );
         _dismiss();
       case PaletteActionKind.manageCategories:
         ref
@@ -548,8 +562,11 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
   @override
   Widget build(BuildContext context) {
     final snapshot = ref.watch(dashboardControllerProvider);
-    final themeMode = ref.watch(desktopAppearanceControllerProvider).themeMode;
-    final groups = _buildGroups(snapshot.goals, snapshot.habits, themeMode);
+    // Watched so a theme change (including an OS appearance flip under
+    // ThemeMode.system) relabels the command.
+    ref.watch(desktopAppearanceControllerProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final groups = _buildGroups(snapshot.goals, snapshot.habits, isDark);
     _flat = [for (final g in groups) ...g.entries];
     if (_highlightIndex >= _flat.length) {
       _highlightIndex = _flat.isEmpty ? 0 : _flat.length - 1;

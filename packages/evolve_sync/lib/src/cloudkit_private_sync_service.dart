@@ -145,6 +145,7 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
     int appliedChanges = 0,
     bool keyPending = false,
     int undecryptableCount = 0,
+    bool ownerPending = false,
   }) async {
     final enabled = await enabledStore.isEnabled();
     final account = await bridge.accountStatus();
@@ -167,6 +168,7 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
       appliedChanges: appliedChanges,
       keyPending: keyPending,
       undecryptableCount: undecryptable,
+      ownerPending: ownerPending,
     );
   }
 
@@ -249,6 +251,7 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
         appliedChanges: res.applied,
         keyPending: res.keyPending,
         undecryptableCount: res.undecryptable,
+        ownerPending: res.ownerPending,
       );
     } catch (e, stack) {
       logger.error('[CloudKit] Failed to enable sync', e, stack);

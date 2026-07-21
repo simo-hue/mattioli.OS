@@ -371,6 +371,75 @@ void main() {
     });
   });
 
+  // A1. `last_full_sync_at` was stamped even when every record in a push had
+  // failed, and the status line read it straight out and said "Up to date".
+  // The engine no longer stamps a failed sync, but the status line is the half
+  // the user actually reads: it must consult what is stranded, not just the
+  // account state. `SyncDiagnostics.isFullySynced` is documented as the ONLY
+  // condition under which a UI may make this claim.
+  group('the status line must not claim "Up to date" over stranded rows', () {
+    testWidgets('a pending backlog is never reported as "Up to date"',
+        (tester) async {
+      await _withIosPlatform(() async {
+        final fake = FakePrivateSyncService(
+          isEnabled: true,
+          lastSyncedAt: DateTime.utc(2026, 7, 20, 9),
+          diagnosticsResult: _diagnostics(pending: 5000),
+        );
+        await _pumpScreen(tester, fake);
+
+        expect(find.text('Up to date'), findsNothing,
+            reason: '5000 macro goals never left the device');
+        expect(find.text('Not everything has synced'), findsOneWidget);
+      });
+    });
+
+    testWidgets('records that FAILED to upload are never reported as '
+        '"Up to date"', (tester) async {
+      await _withIosPlatform(() async {
+        final fake = FakePrivateSyncService(
+          isEnabled: true,
+          lastSyncedAt: DateTime.utc(2026, 7, 20, 9),
+          diagnosticsResult: _diagnostics(errors: 3),
+        );
+        await _pumpScreen(tester, fake);
+
+        expect(find.text('Up to date'), findsNothing);
+        expect(find.text('Not everything has synced'), findsOneWidget);
+      });
+    });
+
+    testWidgets('records PARKED forever are never reported as "Up to date"',
+        (tester) async {
+      await _withIosPlatform(() async {
+        final fake = FakePrivateSyncService(
+          isEnabled: true,
+          lastSyncedAt: DateTime.utc(2026, 7, 20, 9),
+          diagnosticsResult: _diagnostics(parked: 2),
+        );
+        await _pumpScreen(tester, fake);
+
+        expect(find.text('Up to date'), findsNothing,
+            reason: 'nothing will retry a parked record on its own');
+      });
+    });
+
+    testWidgets('"Up to date" still shows when genuinely nothing is stranded',
+        (tester) async {
+      await _withIosPlatform(() async {
+        final fake = FakePrivateSyncService(
+          isEnabled: true,
+          lastSyncedAt: DateTime.utc(2026, 7, 20, 9),
+          diagnosticsResult: _diagnostics(),
+        );
+        await _pumpScreen(tester, fake);
+
+        expect(find.text('Up to date'), findsOneWidget,
+            reason: 'the fix must not be a blanket refusal to report success');
+      });
+    });
+  });
+
   group('sync details', () {
     testWidgets('reports stranded records instead of only "Up to date"',
         (tester) async {

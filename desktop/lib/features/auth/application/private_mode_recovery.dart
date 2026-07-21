@@ -116,11 +116,16 @@ Future<PrivateRecoveryResult> openOrRecoverPrivate(
         // behind a misleading "restored from iCloud" notice.
         await db.restoreStashedDatabase();
         if (status.isAvailable && status.hasKey) {
-          // lastSyncedAt lives IN the DB, which the stash just replaced with a
-          // fresh one (schema default NULL), and only a full sync that actually
-          // ran stamps it. Null ⇒ enable() deferred: key present, canonical
-          // owner not synced yet — wait & retry.
-          if (status.lastSyncedAt == null) {
+          // The engine's OWN answer, not an inference from the timestamp.
+          //
+          // This used to test `lastSyncedAt == null`, reasoning that only a sync
+          // which actually ran stamps it. That was never quite true and is now
+          // plainly wrong: the engine no longer stamps a sync that ran but did
+          // not fully complete (a rejected push, a held change token), so a
+          // rate-limited first pull would be reported as "waiting for iCloud
+          // Keychain" — a wait with nothing at the end of it. Deferral is a
+          // fact the engine knows (SyncResult.ownerPending); ask it.
+          if (status.ownerPending) {
             return const PrivateRecoveryResult(
               PrivateRecoveryStatus.waitingForICloudKey,
             );

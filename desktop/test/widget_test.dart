@@ -263,7 +263,12 @@ void main() {
 
     await tester.tap(find.text('Applicazione'));
     await tester.pumpAndSettle();
-    expect(find.text('Modalita scura'), findsOneWidget);
+    // A three-option theme row, not the old "Modalita scura" switch: a binary
+    // control could not express 'system', so one touch of it pinned the user
+    // (and, through the synced store, their iPhone) to a concrete theme with no
+    // way back to "follow system" from the Mac.
+    expect(find.text('Tema'), findsOneWidget);
+    expect(find.text('Modalita scura'), findsNothing);
     expect(find.text('Colore accento'), findsOneWidget);
     expect(find.text('Vista calendario predefinita'), findsOneWidget);
     // Hidden on desktop: macOS generates no haptics for this toggle (the

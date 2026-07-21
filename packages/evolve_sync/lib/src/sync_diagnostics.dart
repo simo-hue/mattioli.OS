@@ -71,6 +71,18 @@ class SyncDiagnostics {
   /// also the thing a user needs to know.
   final Map<String, int> parkedByReason;
 
+  /// Distinct reasons → count for records the PULL could not apply, and for
+  /// which the change token is consequently HELD.
+  ///
+  /// Separate from both maps above because the correct advice differs: these
+  /// are re-delivered and re-attempted by the very next sync, with no user
+  /// action — but until they succeed, the device rewinds its change token every
+  /// time and re-downloads the entire delta, so it never converges. That state
+  /// used to be completely invisible: `markError`'s bare UPDATE matched no row
+  /// for a record this device had never seen, so the error was discarded and
+  /// this snapshot reported a perfectly healthy database.
+  final Map<String, int> heldByReason;
+
   /// Whether a zone change token exists. Absent ⇒ the next pull is a FULL
   /// re-fetch of the zone, which is itself worth knowing when diagnosing.
   final bool hasChangeToken;
@@ -85,6 +97,7 @@ class SyncDiagnostics {
     required this.pendingDeletesByTable,
     required this.errorsByReason,
     required this.parkedByReason,
+    this.heldByReason = const {},
     required this.hasChangeToken,
     this.lastFullSyncAt,
   });
@@ -111,10 +124,18 @@ class SyncDiagnostics {
 
   int get totalParked => parkedByReason.values.fold(0, (a, b) => a + b);
 
+  int get totalHeld => heldByReason.values.fold(0, (a, b) => a + b);
+
+  /// Every record that is not where it should be, for whatever reason. Callers
+  /// wanting "how much is wrong" must use THIS rather than adding the buckets
+  /// up themselves — both apps did, and both would have silently under-counted
+  /// the moment [heldByReason] was added.
+  int get totalStuck => totalErrors + totalParked + totalHeld;
+
   /// True when everything local has been acknowledged by CloudKit and nothing
-  /// is parked. The ONLY condition under which a UI may claim "up to date".
-  bool get isFullySynced =>
-      totalPending == 0 && totalErrors == 0 && totalParked == 0;
+  /// is parked or stuck. The ONLY condition under which a UI may claim "up to
+  /// date".
+  bool get isFullySynced => totalPending == 0 && totalStuck == 0;
 
   /// A single-line, copy-pasteable summary. Deliberately plain text: the point
   /// is that a user can read it out or paste it into a bug report, from a
@@ -156,6 +177,18 @@ class SyncDiagnostics {
     if (parkedByReason.isNotEmpty) {
       b..writeln('')..writeln('parked (will NOT retry):');
       for (final e in parkedByReason.entries) {
+        b.writeln('  ${e.value}x  ${e.key}');
+      }
+    }
+    if (heldByReason.isNotEmpty) {
+      // Named for what it means operationally: the change token is pinned, so
+      // this device re-downloads the whole delta every sync and never
+      // converges. That is the actionable fact, not the retry itself.
+      b
+        ..writeln('')
+        ..writeln('could not apply (holding the change token, retried each '
+            'sync):');
+      for (final e in heldByReason.entries) {
         b.writeln('  ${e.value}x  ${e.key}');
       }
     }

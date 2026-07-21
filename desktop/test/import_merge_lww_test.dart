@@ -805,6 +805,95 @@ void main() {
       expect(profile['theme_mode'], 'dark');
       expect(profile['language'], 'it');
     });
+
+    test('a REPLACE import adopts the backup file\'s biometric_lock', () async {
+      // It must not. `biometric_lock` is a PrivateDbSchema.deviceLocalProfileColumn
+      // precisely because device capability differs: Face ID on one device,
+      // Touch ID or nothing on another. The sync engine strips it on push and
+      // packages/evolve_sync/test/user_settings_sync_test.dart spends a whole
+      // test on "capability differs per device" — but the IMPORT path let a
+      // file decide it, which is the same adoption through a different door.
+      //
+      // Both directions, because they fail differently and the ARM case is the
+      // one the schema comment calls the real hazard.
+      for (final (local, fromFile) in [(1, 0), (0, 1)]) {
+        final db = await seeded();
+        addTearDown(db.close);
+        await db.update(
+          'profiles',
+          {'full_name': 'Local User', 'biometric_lock': local},
+          where: 'id = ?',
+          whereArgs: [owner],
+        );
+
+        await apply(db, {
+          ...profileOnlyBackup(),
+          'profile': {'full_name': 'Backup User', 'biometric_lock': fromFile},
+        }, replace: true);
+
+        final profile = (await db.query(
+          'profiles',
+          where: 'id = ?',
+          whereArgs: [owner],
+        )).single;
+        // Asserted together on purpose: without the first expect the test could
+        // pass by breaking profile restore altogether.
+        expect(profile['full_name'], 'Backup User');
+        expect(
+          profile['biometric_lock'],
+          local,
+          reason: 'the device keeps its OWN capability flag (file said '
+              '$fromFile)',
+        );
+      }
+    });
+
+    test(
+      'a REPLACE import reports success while the old settings survive',
+      () async {
+        // The restore writes the legacy `profiles` columns and nothing else,
+        // while the REPLACE wipe clears five data tables and leaves
+        // `user_settings` alone. SyncedSettingsStore.readAll lets a row beat a
+        // column by design, so every setting the user had ever touched on this
+        // Mac silently outranks the restored one — the import says it worked
+        // and the settings are unchanged.
+        final db = await seeded();
+        addTearDown(db.close);
+
+        // The state of any device the user has ever opened Settings on.
+        await SyncedSettingsStore(db).writeAll(owner, {
+          'theme_mode': SettingsCodec.themeLight,
+          'accent_color': '#FF0000',
+          'language': 'en',
+        });
+
+        await apply(db, {
+          ...profileOnlyBackup(),
+          'profile': {
+            'full_name': 'Backup User',
+            'theme_mode': 'dark',
+            'accent_color': '#00FF00',
+            'language': 'it',
+          },
+        }, replace: true);
+
+        final read = await SyncedSettingsStore(db).readAll(owner);
+        expect(read['theme_mode'], 'dark');
+        expect(read['accent_color'], '#00FF00');
+        expect(read['language'], 'it');
+
+        // And it must travel: a local-only patch would leave the iPhone on the
+        // pre-import values after the next pull. The deterministic row id is
+        // what makes both devices converge on ONE CloudKit record.
+        final rows = await db.query(
+          'user_settings',
+          where: 'user_id = ? AND key = ?',
+          whereArgs: [owner, 'theme_mode'],
+        );
+        expect(rows.single['value'], 'dark');
+        expect(rows.single['id'], SyncedSettingsStore.rowId(owner, 'theme_mode'));
+      },
+    );
   });
 
   group('sync bookkeeping stays consistent after imports', () {

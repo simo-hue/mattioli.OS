@@ -230,9 +230,7 @@ void main() async {
   }
 
   // Apply the saved app language to slang before the first frame is built.
-  // (Private mode stores language in its local DB; the settings listener in
-  // EvolveApp re-syncs once those settings load.)
-  await LocaleSettings.setLocale(_appLocaleFor(prefs.getString('pref_language')));
+  await LocaleSettings.setLocale(_appLocaleFor(storedLanguageFor(prefs)));
 
   if (shouldStartSentry) {
     final info = await SentryService.releaseInfo();
@@ -576,6 +574,34 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
       },
     );
   }
+}
+
+/// The language preference to render the FIRST frame in, for whichever data
+/// mode the app is about to start in.
+///
+/// The two modes keep separate caches and this has to read the right one. In
+/// Private mode the source of truth is the local DB, which loads
+/// asynchronously; [AppSettingsNotifier.privateLanguagePrefKey] is the mirror
+/// that lets the first frame render in the user's language instead of visibly
+/// re-languaging a moment later. Cloud mode's cache is `pref_language`, written
+/// by `_saveToPrefs`.
+///
+/// They used to be ONE key, which is the bug this split fixes: every private
+/// load stamped the private value over `pref_language`, so a cloud-mode user who
+/// tried Private mode came back to the device locale instead of the language
+/// they had chosen. `active_data_mode` is `ActiveDataModeNotifier._key` and is
+/// readable synchronously from the same prefs.
+///
+/// The Private-mode fallback to `pref_language` covers exactly one cold start:
+/// an install that predates the split has no private mirror yet, and without the
+/// fallback that launch would flash the device locale before the DB load lands.
+@visibleForTesting
+String? storedLanguageFor(SharedPreferences prefs) {
+  final isPrivate =
+      prefs.getString('active_data_mode') == AppDataMode.private.name;
+  if (!isPrivate) return prefs.getString('pref_language');
+  return prefs.getString(AppSettingsNotifier.privateLanguagePrefKey) ??
+      prefs.getString('pref_language');
 }
 
 /// Maps the app's stored language preference to a slang [AppLocale].

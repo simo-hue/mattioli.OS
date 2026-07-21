@@ -235,6 +235,9 @@ class Translations$icloudSync$en {
 	/// en: 'Up to date'
 	String get statusIdle => 'Up to date';
 
+	/// en: 'Not everything has synced'
+	String get statusNotSynced => 'Not everything has synced';
+
 	/// en: 'Syncing…'
 	String get statusSyncing => 'Syncing…';
 
@@ -2203,11 +2206,17 @@ class Translations$settingsPage$en {
 	/// en: 'Appearance and visuals'
 	String get appearanceAndVisual => 'Appearance and visuals';
 
-	/// en: 'Dark mode'
-	String get darkMode => 'Dark mode';
+	/// en: 'Theme'
+	String get themeMode => 'Theme';
 
-	/// en: 'Use the black and white dark theme.'
-	String get darkModeDetail => 'Use the black and white dark theme.';
+	/// en: 'Light'
+	String get themeLight => 'Light';
+
+	/// en: 'Dark'
+	String get themeDark => 'Dark';
+
+	/// en: 'Follow system'
+	String get themeSystem => 'Follow system';
 
 	/// en: 'Calendar, experience and language'
 	String get calendarExperienceLanguage => 'Calendar, experience and language';
@@ -2466,6 +2475,9 @@ class Translations$settingsPage$en {
 
 	/// en: 'Operation failed.'
 	String get operationFailed => 'Operation failed.';
+
+	/// en: 'Could not save that setting. It has been restored to its previous value.'
+	String get settingSaveFailed => 'Could not save that setting. It has been restored to its previous value.';
 
 	/// en: 'Delete account'
 	String get deleteAccountGateTitle => 'Delete account';
@@ -4011,6 +4023,7 @@ extension on Translations {
 			'icloudSync.disclosureBody' => 'Your private data syncs only through your own iCloud account, end-to-end encrypted — never through our servers. The encryption key lives in your iCloud Keychain; if you turn iCloud Keychain off, synced data can\'t be recovered.',
 			'icloudSync.disclosureAccept' => 'Enable',
 			'icloudSync.statusIdle' => 'Up to date',
+			'icloudSync.statusNotSynced' => 'Not everything has synced',
 			'icloudSync.statusSyncing' => 'Syncing…',
 			'icloudSync.statusOff' => 'Sync is off',
 			'icloudSync.statusNoAccount' => 'Sign in to iCloud to sync',
@@ -4487,9 +4500,9 @@ extension on Translations {
 			'habitsPage.tabCalendar' => 'Calendar',
 			'habitsPage.deleteHabitTitle' => 'Delete habit',
 			'habitsPage.deleteHabitConfirm' => ({required Object title}) => 'Remove "${title}" from the protocol?',
-			'habitsPage.activeProtocol' => 'Active protocol',
 			_ => null,
 		} ?? switch (path) {
+			'habitsPage.activeProtocol' => 'Active protocol',
 			'habitsPage.completedToday' => 'Completed today',
 			'habitsPage.dailyProtocol' => 'Daily protocol',
 			'habitsPage.protocolSubtitle' => 'Weekly overview, reminders and quick actions',
@@ -4717,8 +4730,10 @@ extension on Translations {
 			'settingsPage.appearanceTitle' => 'Appearance and application',
 			'settingsPage.appearanceSubtitle' => 'Local preferences adapted to desktop',
 			'settingsPage.appearanceAndVisual' => 'Appearance and visuals',
-			'settingsPage.darkMode' => 'Dark mode',
-			'settingsPage.darkModeDetail' => 'Use the black and white dark theme.',
+			'settingsPage.themeMode' => 'Theme',
+			'settingsPage.themeLight' => 'Light',
+			'settingsPage.themeDark' => 'Dark',
+			'settingsPage.themeSystem' => 'Follow system',
 			'settingsPage.calendarExperienceLanguage' => 'Calendar, experience and language',
 			'settingsPage.accentColor' => 'Accent color',
 			'settingsPage.accentColorDetail' => 'Extended palette reserved for Evolve Pro.',
@@ -4814,6 +4829,7 @@ extension on Translations {
 			'settingsPage.resetDataTitle' => 'Reset data',
 			'settingsPage.resetDataSuccess' => 'Data deleted successfully.',
 			'settingsPage.operationFailed' => 'Operation failed.',
+			'settingsPage.settingSaveFailed' => 'Could not save that setting. It has been restored to its previous value.',
 			'settingsPage.deleteAccountGateTitle' => 'Delete account',
 			'settingsPage.accountDeleted' => 'Account deleted.',
 			'settingsPage.importDataGateTitle' => 'Import data',
@@ -4998,12 +5014,12 @@ extension on Translations {
 			'coachSettings.presetCustom' => 'Custom…',
 			'coachSettings.baseUrlLabel' => 'Base URL',
 			'coachSettings.baseUrlHint' => 'http://localhost:11434/v1',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.modelLabel' => 'Model',
 			'coachSettings.modelHint' => 'e.g. llama3.1:8b',
 			'coachSettings.refreshModels' => 'Refresh models',
 			'coachSettings.discovering' => 'Looking for models…',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.noModelsFound' => 'No models found — type a model id manually below.',
 			'coachSettings.manualModelLabel' => 'Model id',
 			'coachSettings.manualModelAdd' => 'Use this model',

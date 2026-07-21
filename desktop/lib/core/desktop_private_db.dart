@@ -727,7 +727,14 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
     'notif_ai_insights',
     'notif_weekly_reports',
     'notif_evening_review',
-    'biometric_lock',
+    // `biometric_lock` is deliberately ABSENT. It is a
+    // PrivateDbSchema.deviceLocalProfileColumn — device capability differs, so
+    // a value another device decided must never be adopted here. The sync
+    // engine already strips it on push; leaving it in this allow-list let a
+    // BACKUP FILE do through the import restore exactly what the engine
+    // forbids over the wire. Nothing on desktop writes it through
+    // sanitizeSettings either: the biometric controller owns it in
+    // SecureStorage/SharedPreferences.
     'morning_brief_time',
     'evening_review_time',
     'date_of_birth',
@@ -743,34 +750,33 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
   /// asserting — on the iPhone that silently reset crash-reporting consent. The
   /// Private-mode invariants are seeded once by [seedProfile] and owned by the
   /// device from then on.
+  ///
+  /// The [PrivateDbSchema.deviceLocalProfileColumns] subtraction is structural
+  /// rather than a hand-maintained coincidence: the rule "no device-local
+  /// column is decidable by another device, or by a file" now derives from the
+  /// single shared declaration, so a future addition to that list is honoured
+  /// here for free instead of quietly reopening the hole `biometric_lock` sat
+  /// in. It only READS an existing const — nothing in the shared package is
+  /// widened.
   static Map<String, Object?> sanitizeSettings(Map<String, dynamic> values) {
     return <String, Object?>{
       for (final e in values.entries)
-        if (_settingsColumns.contains(e.key))
+        if (_settingsColumns.contains(e.key) &&
+            !PrivateDbSchema.deviceLocalProfileColumns.contains(e.key))
           e.key: e.value is bool ? (e.value == true ? 1 : 0) : e.value,
     };
   }
 
-  /// Persists Private-mode settings to the profiles row (the encrypted, Phase-2
-  /// sync-ready store).
-  ///
-  /// Prefer [writeSyncedSettings] for anything in
-  /// [PrivateDbSchema.syncedSettingKeys] — this remains for the columns that are
-  /// profile fields rather than settings (name / date of birth) and for the
-  /// import restore path.
-  Future<void> updateSettings(Map<String, dynamic> values) async {
-    final sanitized = sanitizeSettings(values);
-    if (sanitized.isEmpty) return;
-    final db = await database;
-    final owner = await ownerId;
-    await db.update(
-      'profiles',
-      {...sanitized, 'updated_at': _now()},
-      where: 'id = ?',
-      whereArgs: [owner],
-    );
-    notifyWrite();
-  }
+  // There is deliberately NO `updateSettings(Map)` here any more.
+  //
+  // It had zero callers and was a trap: it wrote ONLY the legacy `profiles`
+  // columns, and [SyncedSettingsStore.readAll] lets a `user_settings` row beat
+  // a column by design. So the obvious-looking "settings writer" would have
+  // returned normally, fired notifyWrite(), and then been silently shadowed on
+  // the next read — the setting appears to save, reverts, and never reaches the
+  // user's iPhone. Use [writeSyncedSettings] for anything in
+  // [PrivateDbSchema.syncedSettingKeys] and [updateProfileFields] for
+  // name / date of birth.
 
   /// Every synced setting for this device's owner, row-first with the legacy
   /// `profiles`-column fallback. Keys absent from BOTH stores are omitted, so a
@@ -1328,9 +1334,10 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
     // Restore the profile (name / date of birth / settings) onto the owner row.
     // sanitizeSettings filters to known columns, coerces bools, and drops the
     // local-path avatar_url — so an import can never smuggle in a foreign id,
-    // entitlement, or broken avatar path. `is_pro`/`sentry_consent` are simply
-    // not in the allow-list, so the device keeps its OWN values rather than
-    // adopting whatever the backup file claimed.
+    // entitlement, or broken avatar path. The rule it enforces is general: no
+    // PrivateDbSchema.deviceLocalProfileColumn is restorable from a file, so
+    // `biometric_lock`/`is_pro`/`sentry_consent` keep the DEVICE's own values
+    // rather than adopting whatever the backup claimed.
     //
     // Wrapped so a single out-of-domain value from a foreign/older client (e.g.
     // an unknown theme_mode failing the CHECK) can't roll back the whole import,
@@ -1352,6 +1359,12 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
             where: 'id = ?',
             whereArgs: [owner],
           );
+          await _restoreSyncedSettingRows(
+            txn,
+            owner: owner,
+            sanitized: sanitized,
+            now: now,
+          );
         } catch (error, stack) {
           AppLogger.error('Skipped invalid profile on import', error, stack);
         }
@@ -1359,6 +1372,53 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
     }
 
     return stats;
+  }
+
+  /// The other half of the profile restore: the per-key `user_settings` rows.
+  ///
+  /// Without this a REPLACE import reported success and changed nothing the
+  /// user could see. The restore wrote only the legacy `profiles` columns,
+  /// while the REPLACE wipe above clears five data tables and deliberately
+  /// leaves `user_settings` alone — and [SyncedSettingsStore.readAll] lets a
+  /// row beat a column, on purpose ("the setting I turned off came back" is the
+  /// worse failure). So every setting the user had ever touched on this Mac
+  /// outranked the restored one, for good, silently.
+  ///
+  /// Raw SQL rather than [SyncedSettingsStore.writeAll] because that opens its
+  /// OWN transaction and this runs inside the import's `txn`; the statement is
+  /// kept byte-identical to the store's so both devices mint the same record
+  /// id via [SyncedSettingsStore.rowId] and ordinary last-write-wins resolves
+  /// them. Filtered to [PrivateDbSchema.syncedSettingKeys] — a non-synced or
+  /// device-local column has no business becoming a synced row.
+  ///
+  /// Consequence, deliberate and worth stating: these rows are dirty, so a
+  /// REPLACE restore now propagates to the user's other devices on the next
+  /// push. That is what "replace" means, and the profiles columns already
+  /// travelled that way.
+  static Future<void> _restoreSyncedSettingRows(
+    DatabaseExecutor txn, {
+    required String owner,
+    required Map<String, Object?> sanitized,
+    required String now,
+  }) async {
+    for (final e in sanitized.entries) {
+      if (!PrivateDbSchema.syncedSettingKeys.contains(e.key)) continue;
+      await txn.rawInsert(
+        'INSERT INTO user_settings '
+        '(id, user_id, key, value, created_at, updated_at) '
+        'VALUES (?, ?, ?, ?, ?, ?) '
+        'ON CONFLICT(user_id, key) DO UPDATE SET '
+        'value = excluded.value, updated_at = excluded.updated_at',
+        [
+          SyncedSettingsStore.rowId(owner, e.key),
+          owner,
+          e.key,
+          e.value == null ? null : '${e.value}',
+          now,
+          now,
+        ],
+      );
+    }
   }
 
   /// Full `goals` row from a canonical backup record. [createdAt] is decided

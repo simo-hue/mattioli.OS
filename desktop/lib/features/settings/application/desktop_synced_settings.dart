@@ -40,6 +40,18 @@ final desktopSyncedSettingsProvider = FutureProvider<Map<String, String?>>((
   }
 });
 
+/// The synced-settings WRITE, behind a provider.
+///
+/// `DesktopPrivateDb.instance` is a private-constructor singleton with no
+/// override hook, so a widget test could not inject a failing write — and a
+/// failed write was precisely the case that had no coverage and no user-facing
+/// signal. The default is the real method, so nothing that does not override it
+/// changes behaviour.
+final desktopSyncedSettingsWriterProvider =
+    Provider<Future<void> Function(Map<String, String?>)>(
+      (_) => DesktopPrivateDb.instance.writeSyncedSettings,
+    );
+
 /// Pushes the settings that have a live controller behind them — theme, accent
 /// and language — into that controller.
 ///

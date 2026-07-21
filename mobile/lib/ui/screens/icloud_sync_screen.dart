@@ -193,6 +193,17 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
     if (status.undecryptableCount > 0) {
       return context.t.icloudSync.keySplitTitle;
     }
+    // "Up to date" is a claim about the DATA, not about the account, and it may
+    // only be made when [SyncDiagnostics.isFullySynced] licenses it. Reaching
+    // this line used to be enough: a device with thousands of rows that had
+    // never left it, and a `last_full_sync_at` stamped moments ago by a push in
+    // which every record failed, rendered exactly the same "Up to date" as a
+    // healthy one. The per-count breakdown is on the details row below; the
+    // headline's job is simply never to lie.
+    final diagnostics = _diagnostics;
+    if (diagnostics != null && !diagnostics.isFullySynced) {
+      return context.t.icloudSync.statusNotSynced;
+    }
     return context.t.icloudSync.statusIdle;
   }
 
@@ -268,7 +279,9 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
   /// ahead of the pending count: a user with both needs to know that retrying
   /// is not what is missing.
   String _diagnosticsLabel(BuildContext context, SyncDiagnostics d) {
-    final stuck = d.totalErrors + d.totalParked;
+    // totalStuck, not a hand-rolled sum: adding a bucket to SyncDiagnostics
+    // (as `heldByReason` was) must not silently under-count here.
+    final stuck = d.totalStuck;
     if (stuck > 0) return context.t.icloudSync.detailsFailed(count: stuck);
     if (d.totalPending > 0) {
       return context.t.icloudSync.detailsPending(count: d.totalPending);

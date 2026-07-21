@@ -22,6 +22,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mattioli_os/core/private_local_database.dart';
+import 'package:mattioli_os/main.dart' show storedLanguageFor;
 import 'package:mattioli_os/providers/goal_provider.dart';
 import 'package:mattioli_os/providers/settings_provider.dart';
 import 'package:mattioli_os/providers/shared_prefs_provider.dart';
@@ -34,12 +35,16 @@ import 'support/fake_private_data_store.dart';
 
 /// No-op [FlutterLocalNotificationsPlatform] for tests.
 ///
-/// Building `settingsProvider` runs `_syncNotifications`, which drives
-/// `NotificationService` -> `flutter_local_notifications`. In a plain unit test
-/// no platform implementation is registered (the plugin's static `instance` is
-/// `late` and unset), so any call throws `LateInitializationError`. We register
-/// this mock as the instance. The only method the settings path calls directly
-/// on the platform is `cancelAll` (a no-op here); the scheduling calls go
+/// Every settings mutation runs `syncNotifications`, and the private load
+/// reaches `cancelAll` when Focus Mode arrives ON — both of which drive
+/// `NotificationService` -> `flutter_local_notifications`. (`build()` itself
+/// does NOT: an earlier version of this comment said it did, and that
+/// misreading is why the private load's missing Focus Mode cancel went
+/// unnoticed. See focus_mode_toggle_test.dart.) In a plain unit test no platform
+/// implementation is registered (the plugin's static `instance` is `late` and
+/// unset), so any call throws `LateInitializationError`. We register this mock
+/// as the instance. The only method the settings path calls directly on the
+/// platform is `cancelAll` (a no-op here); the scheduling calls go
 /// through `resolvePlatformSpecificImplementation`, which returns null for this
 /// non-platform-specific mock and is therefore a no-op. None of this is the
 /// behaviour under test — it just keeps plugin plumbing from exploding.
@@ -68,9 +73,16 @@ void main() {
     debugDefaultTargetPlatformOverride = null;
   });
 
+  /// [seed] pre-populates SharedPreferences. It has to be threaded through here
+  /// rather than set by the caller beforehand: `setMockInitialValues` REPLACES
+  /// the whole mock store, so anything seeded before this helper runs is wiped
+  /// by the helper itself.
   Future<(ProviderContainer, FakePrivateDataStore, SharedPreferences)>
-      privateContainer() async {
-    SharedPreferences.setMockInitialValues({'active_data_mode': 'private'});
+      privateContainer({Map<String, Object> seed = const {}}) async {
+    SharedPreferences.setMockInitialValues({
+      'active_data_mode': 'private',
+      ...seed,
+    });
     final prefs = await SharedPreferences.getInstance();
     final fake = FakePrivateDataStore();
     final container = ProviderContainer(
@@ -148,7 +160,7 @@ void main() {
       expect(container.read(settingsProvider).isPro, isTrue);
     });
 
-    test('pref_language is the ONE deliberate SharedPreferences mirror',
+    test('the language mirror is the ONE deliberate SharedPreferences write',
         () async {
       final (container, _, prefs) = await privateContainer();
       container.read(settingsProvider.notifier);
@@ -158,19 +170,101 @@ void main() {
             container.read(settingsProvider).copyWith(language: 'de'),
           );
 
-      // main.dart applies `pref_language` to slang BEFORE the first frame, and
+      // main.dart applies the language to slang BEFORE the first frame, and
       // Private mode used to never write it — so a private cold start rendered
       // in a stale cloud-era language until the async DB load resolved and the
       // whole UI visibly re-languaged. This mirror is a one-way cache whose
-      // source of truth stays the private DB; nothing reads it back in private
-      // mode, and it is the only `pref_*` key the private path is allowed to
-      // write beyond the pre-existing biometric-lock mirror.
-      expect(prefs.getString('pref_language'), 'de');
+      // source of truth stays the private DB.
+      //
+      // It lives under its OWN key. It used to share `pref_language` with the
+      // cloud-mode cache, which `_loadFromPrefs` reads back on every build in
+      // supabase mode — so the private path was silently overwriting the cloud
+      // mode's stored language. See the clobber test below.
+      expect(
+        prefs.getString(AppSettingsNotifier.privateLanguagePrefKey),
+        'de',
+      );
 
       // The rest of the cloud store stays untouched, as above.
+      expect(prefs.getString('pref_language'), isNull);
       expect(prefs.getString('pref_accent_color'), isNull);
       expect(prefs.getString('pref_theme_mode'), isNull);
       expect(prefs.getString('notif_morning_brief_time'), isNull);
+    });
+
+    test('the private language mirror clobbers the cloud-mode pref_language '
+        'cache', () async {
+      // `pref_language` is not merely a `pref_*` key the private path touched —
+      // it is the CLOUD mode's own cache, read back by `_loadFromPrefs()` on
+      // every build in supabase mode and by main.dart before the first frame.
+      // The old comment claimed "nothing ever reads it back in private mode",
+      // which is true and guards the wrong direction entirely.
+      final (container, fake, prefs) =
+          await privateContainer(seed: {'pref_language': 'de'});
+      // A FRESH private DB: no `language` row, so `_applySyncedSettings` leaves
+      // the base standing and the base is `_defaultSettings()` = 'system'.
+      expect(fake.syncedSettings.containsKey('language'), isFalse);
+
+      container.read(settingsProvider.notifier);
+      await settle();
+
+      expect(
+        prefs.getString('pref_language'),
+        'de',
+        reason: 'merely LOADING private settings stamped the private value over '
+            'the cloud-mode language cache, before the user touched anything',
+      );
+
+      container.read(settingsProvider.notifier).updateSettings(
+            container.read(settingsProvider).copyWith(language: 'es'),
+          );
+
+      expect(
+        prefs.getString('pref_language'),
+        'de',
+        reason: 'a language change made in Private mode rewrote the cloud '
+            "mode's cache, so returning to cloud mode loses the user's choice",
+      );
+      // ...while the mirror the private path actually needs is still captured,
+      // so the first-frame benefit that motivated it survives the fix.
+      expect(
+        prefs.getString(AppSettingsNotifier.privateLanguagePrefKey),
+        'es',
+      );
+    });
+
+    test('the first frame after a private round trip renders in the device '
+        'locale, not the cloud-mode language', () async {
+      // The user-visible end of the same bug, pinned where it is observable.
+      // `settingsProvider` cannot be built in supabase mode here — this suite
+      // deliberately never calls `Supabase.initialize`, and `authProvider`
+      // reaches for `Supabase.instance` — so the reader under test is
+      // main.dart's `storedLanguageFor`, which decides what slang renders before
+      // the first frame. It is also the coupling that breaks silently: if
+      // main.dart were left reading `pref_language` in Private mode, the private
+      // mirror would stop being applied and every private cold start would go
+      // back to visibly re-languaging.
+      final (container, _, prefs) =
+          await privateContainer(seed: {'pref_language': 'de'});
+      container.read(settingsProvider.notifier);
+      await settle();
+      container.read(settingsProvider.notifier).updateSettings(
+            container.read(settingsProvider).copyWith(language: 'es'),
+          );
+
+      // Still in Private mode: the first frame follows the private mirror.
+      expect(storedLanguageFor(prefs), 'es');
+
+      // Back in cloud mode over the SAME store — mutating the key rather than
+      // calling `setMockInitialValues` again, which would replace the store and
+      // destroy the state under test.
+      await prefs.setString('active_data_mode', 'supabase');
+      expect(
+        storedLanguageFor(prefs),
+        'de',
+        reason: 'the trip through Private mode cost the cloud-mode user the '
+            'language they had chosen',
+      );
     });
   });
 }

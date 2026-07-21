@@ -95,14 +95,18 @@ class _FakeSyncService implements PrivateSyncService {
 
 /// A snapshot with [pending] macro goals stranded — the shape of the reported
 /// bug (habits through, `long_term_goals` not).
-SyncDiagnostics _diagnostics({int pending = 0, int errors = 0}) =>
+SyncDiagnostics _diagnostics({
+  int pending = 0,
+  int errors = 0,
+  int parked = 0,
+}) =>
     SyncDiagnostics(
       localRowsByTable: {'goals': 12, 'long_term_goals': pending},
       pendingByTable: pending > 0 ? {'long_term_goals': pending} : const {},
       pendingDeletesByTable: const {},
       errorsByReason:
           errors > 0 ? {'CKError 7 rate limited': errors} : const {},
-      parkedByReason: const {},
+      parkedByReason: parked > 0 ? {'row rejected by schema': parked} : const {},
       hasChangeToken: true,
       lastFullSyncAt: DateTime.utc(2026, 7, 20, 9),
     );
@@ -271,5 +275,54 @@ void main() {
     await _pumpPrivacy(tester, fake);
 
     expect(find.text(t.icloudSync.detailsTitle), findsNothing);
+  });
+
+  // A1. `last_full_sync_at` was stamped even when every record in a push had
+  // failed, and this status line read it straight out and said "Up to date".
+  // `SyncDiagnostics.isFullySynced` is documented as the ONLY condition under
+  // which a UI may make that claim.
+  group('the status line must not claim "Up to date" over stranded rows', () {
+    const healthy = PrivateSyncStatus(
+      isAvailable: true,
+      isEnabled: true,
+      account: CloudAccountStatus.available,
+    );
+
+    testWidgets('a pending backlog is never reported as "Up to date"',
+        (tester) async {
+      final fake = _FakeSyncService(healthy, _diagnostics(pending: 5000));
+      await _pumpPrivacy(tester, fake);
+
+      expect(find.text(t.icloudSync.statusIdle), findsNothing,
+          reason: '5000 macro goals never left the device');
+      expect(find.text(t.icloudSync.statusNotSynced), findsOneWidget);
+    });
+
+    testWidgets('records that FAILED to upload are never reported as '
+        '"Up to date"', (tester) async {
+      final fake = _FakeSyncService(healthy, _diagnostics(errors: 3));
+      await _pumpPrivacy(tester, fake);
+
+      expect(find.text(t.icloudSync.statusIdle), findsNothing);
+      expect(find.text(t.icloudSync.statusNotSynced), findsOneWidget);
+    });
+
+    testWidgets('records PARKED forever are never reported as "Up to date"',
+        (tester) async {
+      final fake = _FakeSyncService(healthy, _diagnostics(parked: 2));
+      await _pumpPrivacy(tester, fake);
+
+      expect(find.text(t.icloudSync.statusIdle), findsNothing,
+          reason: 'nothing will retry a parked record on its own');
+    });
+
+    testWidgets('"Up to date" still shows when genuinely nothing is stranded',
+        (tester) async {
+      final fake = _FakeSyncService(healthy, _diagnostics());
+      await _pumpPrivacy(tester, fake);
+
+      expect(find.text(t.icloudSync.statusIdle), findsOneWidget,
+          reason: 'the fix must not be a blanket refusal to report success');
+    });
   });
 }

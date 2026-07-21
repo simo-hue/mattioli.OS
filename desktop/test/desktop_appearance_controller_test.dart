@@ -13,7 +13,10 @@ void main() {
     final appearance = container.read(desktopAppearanceControllerProvider);
 
     expect(appearance.themeMode, ThemeMode.dark);
-    expect(appearance.accentColor, const Color(0xFFFAFAFA));
+    // The canonical seed, == SettingsCodec.defaultAccentColor. Pinned by hex
+    // rather than by the symbol so this test still fails if the constant drifts
+    // away from the shared one again; accent_parity_test.dart owns that tie.
+    expect(appearance.accentColor, const Color(0xFFFFFFFF));
   });
 
   test('accent updates persist the preference keys', () async {

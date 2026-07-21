@@ -102,10 +102,20 @@ void main() {
       expect(sanitized, {'pref_time_format_24h': 1});
       expect(sanitized.containsKey('is_pro'), isFalse);
       expect(sanitized.containsKey('sentry_consent'), isFalse);
+      // NO exemption. `biometric_lock` used to be skipped here as "a real
+      // settings column"; it is not one — no desktop path writes it through
+      // sanitizeSettings, and leaving it in the allow-list let a backup file
+      // decide a column the sync engine strips on push. This loop is what keeps
+      // the two lists disjoint as deviceLocalProfileColumns grows, and it
+      // mirrors packages/evolve_sync/test/user_settings_sync_test.dart.
       for (final column in PrivateDbSchema.deviceLocalProfileColumns) {
-        if (column == 'biometric_lock') continue; // a real settings column
         expect(sanitized.containsKey(column), isFalse, reason: column);
       }
+      expect(
+        DesktopPrivateDb.sanitizeSettings({'biometric_lock': 1}),
+        isEmpty,
+        reason: 'a device-local column is not a settings column',
+      );
     });
 
     test('a device-local key cannot be pushed through the synced store', () async {
@@ -286,13 +296,11 @@ void main() {
     });
   });
 
-  group('defaults', () {
-    test('the brief times default to the canonical 09:00 / 21:00', () {
-      // macOS's field initialisers said 08:00 / 20:30 and won whenever prefs
-      // were empty, dragging the iPhone's briefs 60 and 30 minutes earlier the
-      // first time any notification toggle was touched.
-      expect(SettingsCodec.defaultMorningBriefTime, '09:00');
-      expect(SettingsCodec.defaultEveningReviewTime, '21:00');
-    });
-  });
+  // The `defaults` group that used to sit here asserted
+  // `SettingsCodec.defaultMorningBriefTime == '09:00'` — a compile-time
+  // constant from the frozen shared package, against its own literal. It ran
+  // no desktop code, so it could not fail for any desktop regression, which is
+  // the sole purpose of this file. `packages/evolve_sync/test/settings_codec_test.dart`
+  // already owns that constant. The desktop behaviour it claimed to pin now
+  // lives in settings_parity_test.dart, where it reads the rendered time.
 }

@@ -154,6 +154,62 @@ enum CloudKitSyncBridge {
     CKRecordZone.ID(zoneName: zoneName, ownerName: CKCurrentUserDefaultName)
   }
 
+  // MARK: - Retry / backoff
+
+  /// How many times an operation is re-issued before the failure is handed to
+  /// Dart. Four attempts in total.
+  ///
+  /// Bounded on purpose. The Dart engine leaves a failed record dirty and the
+  /// app re-syncs on its own timer, so an operation still throttled after the
+  /// whole backoff schedule is better reported than retried forever — the retry
+  /// that matters is the next sync, not an unbounded loop holding this one open.
+  private static let maxRetries = 3
+
+  /// Seconds to wait before re-issuing an operation that failed with [error],
+  /// or nil when the failure is not one CloudKit wants retried.
+  ///
+  /// The three codes are CloudKit's "come back later" family:
+  ///  * `.requestRateLimited` — the client is over its budget. This is the one
+  ///    that bites a NEW user, whose very first push is their entire history.
+  ///  * `.serviceUnavailable` — CloudKit itself is degraded.
+  ///  * `.zoneBusy` — another operation is already mutating the zone.
+  ///
+  /// `CKError.retryAfterSeconds` is the SERVER's own instruction and always
+  /// wins when it supplies one: ignoring it and retrying sooner is precisely
+  /// what turns a short throttle into a long one. Exponential backoff (2s, 4s,
+  /// 8s) is only the fallback for when the server declines to say.
+  private static func retryDelay(_ error: Error, attempt: Int) -> TimeInterval? {
+    guard attempt < maxRetries, let ck = error as? CKError else { return nil }
+    switch ck.code {
+    case .requestRateLimited, .serviceUnavailable, .zoneBusy:
+      if let serverHint = ck.retryAfterSeconds, serverHint > 0 { return serverHint }
+      return pow(2.0, Double(attempt + 1))
+    default:
+      return nil
+    }
+  }
+
+  /// Re-issues [work] after [delay], and says so in the app's own log.
+  ///
+  /// The log line is not decoration: a device that silently backs off is
+  /// indistinguishable from one that is simply slow, and "sync seems to take
+  /// ages on a new phone" is exactly the report this whole path exists to
+  /// explain.
+  private static func scheduleRetry(
+    _ label: String,
+    after delay: TimeInterval,
+    attempt: Int,
+    _ work: @escaping () -> Void
+  ) {
+    logNative(
+      "info",
+      "[CloudKit] \(label) throttled by iCloud — retrying in "
+        + String(format: "%.1f", delay) + "s "
+        + "(attempt \(attempt + 2) of \(maxRetries + 1))"
+    )
+    DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
+  }
+
   private static func handle(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
     let args = call.arguments as? [String: Any]
     switch call.method {
@@ -187,33 +243,46 @@ enum CloudKitSyncBridge {
 
   // MARK: - Zone
 
-  private static func ensureZone(_ result: @escaping FlutterResult) {
+  private static func ensureZone(_ result: @escaping FlutterResult, attempt: Int = 0) {
     let zone = CKRecordZone(zoneID: zoneID)
     let op = CKModifyRecordZonesOperation(recordZonesToSave: [zone], recordZoneIDsToDelete: nil)
+    op.qualityOfService = .utility
     op.modifyRecordZonesResultBlock = { res in
-      main {
-        switch res {
-        case .success: result(nil)
-        case .failure(let error): result(flutterError(error))
+      switch res {
+      case .success:
+        main { result(nil) }
+      case .failure(let error):
+        if let delay = retryDelay(error, attempt: attempt) {
+          scheduleRetry("ensureZone", after: delay, attempt: attempt) {
+            ensureZone(result, attempt: attempt + 1)
+          }
+          return
         }
+        main { result(flutterError(error)) }
       }
     }
     database.add(op)
   }
 
-  private static func deleteZone(_ result: @escaping FlutterResult) {
+  private static func deleteZone(_ result: @escaping FlutterResult, attempt: Int = 0) {
     let op = CKModifyRecordZonesOperation(recordZonesToSave: nil, recordZoneIDsToDelete: [zoneID])
+    op.qualityOfService = .utility
     op.modifyRecordZonesResultBlock = { res in
-      main {
-        switch res {
-        case .success: result(nil)
-        case .failure(let error):
-          if let ck = error as? CKError, ck.code == .zoneNotFound || ck.code == .userDeletedZone {
-            result(nil) // already gone — a no-op success
-          } else {
-            result(flutterError(error))
-          }
+      switch res {
+      case .success:
+        main { result(nil) }
+      case .failure(let error):
+        if let ck = error as? CKError, ck.code == .zoneNotFound || ck.code == .userDeletedZone {
+          main { result(nil) } // already gone — a no-op success
+          return
         }
+        if let delay = retryDelay(error, attempt: attempt) {
+          scheduleRetry("deleteZone", after: delay, attempt: attempt) {
+            deleteZone(result, attempt: attempt + 1)
+          }
+          return
+        }
+        main { result(flutterError(error)) }
       }
     }
     database.add(op)
@@ -221,12 +290,17 @@ enum CloudKitSyncBridge {
 
   // MARK: - Save
 
-  private static func saveRecords(_ args: [String: Any]?, _ result: @escaping FlutterResult) {
+  private static func saveRecords(
+    _ args: [String: Any]?,
+    _ result: @escaping FlutterResult,
+    attempt: Int = 0
+  ) {
     guard let rawRecords = args?["records"] as? [[String: Any]] else {
       result(flutterBadArgs); return
     }
     let toSave: [CKRecord] = rawRecords.map { encodeToRecord($0) }
     let op = CKModifyRecordsOperation(recordsToSave: toSave, recordIDsToDelete: nil)
+    op.qualityOfService = .utility
     // .allKeys (overwrite), NOT .ifServerRecordUnchanged: each push builds a
     // fresh CKRecord with no server change tag, so .ifServerRecordUnchanged
     // would reject EVERY update to an already-synced record as
@@ -254,6 +328,25 @@ enum CloudKitSyncBridge {
       }
     }
     op.modifyRecordsResultBlock = { res in
+      // Request-level throttling is handled BEFORE anything is reported, so a
+      // rate-limited batch is re-sent rather than handed back as a failure.
+      //
+      // This is the single most likely thing to go wrong for a new user:
+      // enable() marks their entire history dirty, so the first push is
+      // thousands of records in 400-record batches. Without this, the first
+      // batch to be throttled aborted the whole sync.
+      //
+      // A .partialFailure is deliberately NOT retryable (see retryDelay): its
+      // per-record blocks already ran, the engine keeps exactly the failed
+      // records dirty, and the next sync retries those rather than re-sending
+      // the whole batch.
+      if case .failure(let error) = res,
+         let delay = retryDelay(error, attempt: attempt) {
+        scheduleRetry("saveRecords", after: delay, attempt: attempt) {
+          saveRecords(args, result, attempt: attempt + 1)
+        }
+        return
+      }
       main {
         switch res {
         case .success:
@@ -299,10 +392,15 @@ enum CloudKitSyncBridge {
 
   // MARK: - Delete records
 
-  private static func deleteRecords(_ args: [String: Any]?, _ result: @escaping FlutterResult) {
+  private static func deleteRecords(
+    _ args: [String: Any]?,
+    _ result: @escaping FlutterResult,
+    attempt: Int = 0
+  ) {
     let names = args?["recordNames"] as? [String] ?? []
     let ids = names.map { CKRecord.ID(recordName: $0, zoneID: zoneID) }
     let op = CKModifyRecordsOperation(recordsToSave: nil, recordIDsToDelete: ids)
+    op.qualityOfService = .utility
     var deleted: [String] = []
     var errors: [[String: Any]] = []
     op.perRecordDeleteBlock = { recordID, res in
@@ -314,6 +412,13 @@ enum CloudKitSyncBridge {
       }
     }
     op.modifyRecordsResultBlock = { res in
+      if case .failure(let error) = res,
+         let delay = retryDelay(error, attempt: attempt) {
+        scheduleRetry("deleteRecords", after: delay, attempt: attempt) {
+          deleteRecords(args, result, attempt: attempt + 1)
+        }
+        return
+      }
       main {
         switch res {
         case .success:
@@ -332,13 +437,18 @@ enum CloudKitSyncBridge {
 
   // MARK: - Fetch changes
 
-  private static func fetchChanges(_ args: [String: Any]?, _ result: @escaping FlutterResult) {
+  private static func fetchChanges(
+    _ args: [String: Any]?,
+    _ result: @escaping FlutterResult,
+    attempt: Int = 0
+  ) {
     let config = CKFetchRecordZoneChangesOperation.ZoneConfiguration()
     config.previousServerChangeToken = decodeToken(args?["token"] as? String)
     let op = CKFetchRecordZoneChangesOperation(
       recordZoneIDs: [zoneID],
       configurationsByRecordZoneID: [zoneID: config]
     )
+    op.qualityOfService = .utility
 
     var records: [[String: Any]] = []
     var newToken: CKServerChangeToken?
@@ -370,9 +480,15 @@ enum CloudKitSyncBridge {
         case .failure(let error):
           if let ck = error as? CKError, ck.code == .zoneNotFound || ck.code == .userDeletedZone {
             result(["records": [], "newToken": nil as Any?, "moreComing": false])
-          } else {
-            result(flutterError(error))
+            return
           }
+          if let delay = retryDelay(error, attempt: attempt) {
+            scheduleRetry("fetchChanges", after: delay, attempt: attempt) {
+              fetchChanges(args, result, attempt: attempt + 1)
+            }
+            return
+          }
+          result(flutterError(error))
         }
       }
     }
@@ -413,7 +529,7 @@ enum CloudKitSyncBridge {
   /// A missing zone means genuinely nothing is there yet → false. Any other
   /// error is INCONCLUSIVE and must fail closed (→ true, defer the enable):
   /// answering "empty" on an error is the branch that mints a second key.
-  private static func zoneHasRecords(_ result: @escaping FlutterResult) {
+  private static func zoneHasRecords(_ result: @escaping FlutterResult, attempt: Int = 0) {
     let config = CKFetchRecordZoneChangesOperation.ZoneConfiguration()
     config.previousServerChangeToken = nil
     config.desiredKeys = []
@@ -422,6 +538,11 @@ enum CloudKitSyncBridge {
       configurationsByRecordZoneID: [zoneID: config]
     )
     op.fetchAllChanges = false
+    // .userInitiated, not .utility: this one blocks the enable the user is
+    // watching, and it is the guard that decides whether a second E2E key gets
+    // minted. Making the user wait behind a background-priority operation for
+    // the one answer that cannot be got wrong is the wrong trade.
+    op.qualityOfService = .userInitiated
 
     var found = false
     op.recordWasChangedBlock = { _, res in
@@ -438,9 +559,19 @@ enum CloudKitSyncBridge {
           if let ck = error as? CKError,
              ck.code == .zoneNotFound || ck.code == .userDeletedZone {
             result(false)
-          } else {
-            result(flutterError(error))
+            return
           }
+          // Retry before giving up. An INCONCLUSIVE answer here is the most
+          // expensive failure in the whole bridge — it is what a deferred
+          // enable is protecting against — so a transient throttle must not be
+          // allowed to decide it.
+          if let delay = retryDelay(error, attempt: attempt) {
+            scheduleRetry("zoneHasRecords", after: delay, attempt: attempt) {
+              zoneHasRecords(result, attempt: attempt + 1)
+            }
+            return
+          }
+          result(flutterError(error))
         }
       }
     }
@@ -467,7 +598,10 @@ enum CloudKitSyncBridge {
   ///
   /// Errors are reported but must be treated as non-fatal by the caller: push
   /// only changes WHEN a sync runs, and the Dart side still polls.
-  private static func ensureSubscription(_ result: @escaping FlutterResult) {
+  private static func ensureSubscription(
+    _ result: @escaping FlutterResult,
+    attempt: Int = 0
+  ) {
     let subscription = CKDatabaseSubscription(subscriptionID: subscriptionID)
     let notificationInfo = CKSubscription.NotificationInfo()
     notificationInfo.shouldSendContentAvailable = true
@@ -494,6 +628,12 @@ enum CloudKitSyncBridge {
           // CloudKit (CKModifySubscriptionsOperation updates it in place), so
           // there is no "already exists" case to special-case in the first
           // place.
+          if let delay = retryDelay(error, attempt: attempt) {
+            scheduleRetry("ensureSubscription", after: delay, attempt: attempt) {
+              ensureSubscription(result, attempt: attempt + 1)
+            }
+            return
+          }
           let ck = error as? CKError
           logNative(
             "error",

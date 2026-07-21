@@ -25,10 +25,25 @@ final desktopAppearanceControllerProvider =
     );
 
 class DesktopAppearanceController extends Notifier<DesktopAppearance> {
-  static const defaultAccent = Color(0xFFFAFAFA);
+  /// Canonical seed accent, kept identical to [SettingsCodec.defaultAccentColor]
+  /// (`#FFFFFF`) — the `profiles.accent_color` DEFAULT, what
+  /// `DesktopPrivateDb.seedProfile` writes, and what mobile seeds. Desktop
+  /// seeded `#FAFAFA` instead, so an untouched profile hydrated to a different
+  /// colour depending on which side supplied the value: the picker offered
+  /// seven swatches with no checkmark on any of them, and tapping the white one
+  /// pushed `#FAFAFA` to the iPhone, where white then rendered unselected and
+  /// the accent fell into the Pro-locked "Custom" cell.
+  /// `test/accent_parity_test.dart` guards the two against drifting apart.
+  static const defaultAccent = Color(0xFFFFFFFF);
 
-  /// What the OS currently reports. Only [SettingsCodec.resolveIsDark] is
-  /// allowed to decide what to DO with it.
+  /// What the OS currently reports.
+  ///
+  /// Used ONLY to resolve the legacy `desktop_dark_mode` bool at write time.
+  /// It is deliberately not used to decide [ThemeMode] any more: a bare
+  /// `PlatformDispatcher` read inside a Notifier registers no dependency, and
+  /// nothing in this app observes `platformBrightness`, so resolving here
+  /// happened once at launch and never again — macOS flipped to dark at sunset,
+  /// the iPhone followed, and the Mac stayed light until it was relaunched.
   static bool get _platformIsDark =>
       ui.PlatformDispatcher.instance.platformBrightness == Brightness.dark;
 
@@ -36,10 +51,38 @@ class DesktopAppearanceController extends Notifier<DesktopAppearance> {
   /// shared codec. Desktop used to say "anything that is not 'light' is dark"
   /// while mobile said "anything that is not 'dark' is light", so the `'system'`
   /// the schema explicitly permits rendered a dark Mac next to a light iPhone.
+  ///
+  /// `'system'` maps to [ThemeMode.system] and is NOT pre-resolved here. That
+  /// is the whole point: `ThemeMode.system` is the only value that makes
+  /// `MaterialApp` re-resolve when the OS appearance changes, and `'system'` is
+  /// what every user who never picked a theme has — `normalizeThemeMode`
+  /// returns it for null/unset/unrecognised input.
   static ThemeMode themeModeFor(String? stored) =>
-      SettingsCodec.resolveIsDark(stored, platformIsDark: _platformIsDark)
-      ? ThemeMode.dark
-      : ThemeMode.light;
+      switch (SettingsCodec.normalizeThemeMode(stored)) {
+        SettingsCodec.themeDark => ThemeMode.dark,
+        SettingsCodec.themeLight => ThemeMode.light,
+        _ => ThemeMode.system,
+      };
+
+  /// The inverse of [themeModeFor]: the canonical string both apps store.
+  ///
+  /// Used wherever the prefs mirror or the synced payload is written, so a
+  /// three-valued mode can never be flattened into a two-valued one on its way
+  /// out.
+  static String themeCodeFor(ThemeMode mode) => switch (mode) {
+    ThemeMode.dark => SettingsCodec.themeDark,
+    ThemeMode.light => SettingsCodec.themeLight,
+    ThemeMode.system => SettingsCodec.themeSystem,
+  };
+
+  /// Whether [mode] renders dark right now — for the legacy `desktop_dark_mode`
+  /// bool and for anything that genuinely needs a yes/no, never for deciding
+  /// what to store.
+  static bool resolvesDark(ThemeMode mode) =>
+      SettingsCodec.resolveIsDark(
+        themeCodeFor(mode),
+        platformIsDark: _platformIsDark,
+      );
 
   @override
   DesktopAppearance build() {
@@ -115,10 +158,17 @@ class DesktopAppearanceController extends Notifier<DesktopAppearance> {
   void _persist() {
     final preferences = ref.read(sharedPreferencesProvider);
     if (preferences == null) return;
-    final isDark = state.themeMode != ThemeMode.light;
+    // Three-valued, or `_persist` destroys "follow system" — and it runs on
+    // `setAccentColor` too, so merely picking a colour used to pin the user to
+    // whichever theme the OS happened to be showing at that moment.
+    final code = themeCodeFor(state.themeMode);
+    // The LEGACY bool needs a yes/no, so 'system' is resolved for that key
+    // alone. `build()` prefers `pref_theme_mode`, so this never decides the
+    // mode for a device that has written it once.
+    final isDark = resolvesDark(state.themeMode);
     final color = _toHex(state.accentColor);
     preferences
-      ..setString('pref_theme_mode', isDark ? 'dark' : 'light')
+      ..setString('pref_theme_mode', code)
       ..setString('pref_accent_color', color)
       ..setBool('desktop_dark_mode', isDark)
       ..setInt('accent_color', state.accentColor.toARGB32());
@@ -148,19 +198,39 @@ class DesktopAppearanceController extends Notifier<DesktopAppearance> {
     return color;
   }
 
+  /// The SHARED codec, not a private parser.
+  ///
+  /// This used to hand-roll `int.parse` over the raw string, which disagreed
+  /// with mobile's [SettingsCodec.normalizeAccentColor] on every spelling the
+  /// schema permits (`accent_color TEXT NOT NULL DEFAULT '#FFFFFF'` carries no
+  /// CHECK, unlike `theme_mode`). The dangerous case was silent rather than
+  /// loud: `int.parse` TRIMS, so `' #FF9500'` was 7 characters after the `#`
+  /// was stripped — the `length == 6` guard declined to prepend the alpha,
+  /// `int.parse` succeeded anyway, and the Mac seated an ALPHA-0 accent. It
+  /// then became `ColorScheme.primary`/`secondary`, the checkbox fill and the
+  /// focus ring, so the user got invisible buttons on macOS while the iPhone
+  /// rendered the correct colour from the identical stored string, with no
+  /// error and nothing in the log to pull on.
+  ///
+  /// The [fallback] parameter is the one deliberate difference from mobile:
+  /// `applyProfile` passes the live accent so "the store has no opinion" keeps
+  /// the current colour instead of snapping to [defaultAccent]. Do not collapse
+  /// it.
   static Color _parseColor(String? value, {Color fallback = defaultAccent}) {
-    if (value == null || value.isEmpty) return fallback;
-    try {
-      final normalized = value.replaceFirst('#', '');
-      final argb = normalized.length == 6 ? 'FF$normalized' : normalized;
-      return Color(int.parse(argb, radix: 16));
-    } on FormatException {
-      return fallback;
-    }
+    final normalized = SettingsCodec.normalizeAccentColor(value);
+    if (normalized == null) return fallback;
+    return Color(int.parse('FF${normalized.substring(1)}', radix: 16));
   }
 
+  /// `padLeft` before `substring`, matching `dashboardColorToHex`.
+  ///
+  /// Without it any colour whose leading alpha nibble is zero produces a
+  /// 6-character `toRadixString(16)` and `substring(2, 8)` throws RangeError —
+  /// an uncaught crash on an ordinary settings interaction, since `_persist`
+  /// runs on every `setThemeMode`/`setAccentColor`. [_parseColor] now prevents
+  /// such a colour from being constructed at all; this is the second line.
   static String _toHex(Color color) =>
-      '#${color.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
+      '#${color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2, 8).toUpperCase()}';
 
   static String? _legacyAccent(int? value) {
     if (value == null) return null;

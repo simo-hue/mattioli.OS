@@ -541,6 +541,7 @@
     "disclosureBody": "Deine privaten Daten werden ausschließlich über deinen eigenen iCloud-Account synchronisiert, Ende-zu-Ende-verschlüsselt — niemals über unsere Server. Der Verschlüsselungsschlüssel liegt in deinem iCloud-Schlüsselbund; wenn du den iCloud-Schlüsselbund deaktivierst, können synchronisierte Daten nicht wiederhergestellt werden.",
     "disclosureAccept": "Aktivieren",
     "statusIdle": "Aktuell",
+    "statusNotSynced": "Es wurde nicht alles synchronisiert",
     "statusSyncing": "Synchronisiere…",
     "statusOff": "Synchronisierung aus",
     "statusNoAccount": "Bei iCloud anmelden, um zu synchronisieren",

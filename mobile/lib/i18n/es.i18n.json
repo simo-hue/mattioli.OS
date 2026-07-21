@@ -541,6 +541,7 @@
     "disclosureBody": "Tus datos privados se sincronizan únicamente a través de tu propia cuenta de iCloud, con cifrado de extremo a extremo, nunca a través de nuestros servidores. La clave de cifrado reside en tu Llavero de iCloud; si desactivas el Llavero de iCloud, los datos sincronizados no podrán recuperarse.",
     "disclosureAccept": "Activar",
     "statusIdle": "Actualizado",
+    "statusNotSynced": "No se ha sincronizado todo",
     "statusSyncing": "Sincronizando…",
     "statusOff": "Sincronización desactivada",
     "statusNoAccount": "Inicia sesión en iCloud para sincronizar",

@@ -137,6 +137,38 @@ void main() {
       expect(store.calls, isNot(contains('restoreStashedDatabase')));
     });
 
+    // A1 fallout. This branch used to read "did the sync stamp a timestamp?" as
+    // "did enable() defer?". That proxy was already loose and became wrong once
+    // the engine stopped stamping `last_full_sync_at` for a sync that RAN but
+    // did not fully complete: a rate-limited first push now also leaves the
+    // timestamp null, and would be reported as "waiting for iCloud Keychain" —
+    // a wait that can never end, because nothing is being waited for.
+    test(
+        'a sync that RAN but did not fully complete is NOT mistaken for a '
+        'deferred enable', () async {
+      final store = _LockedFakeStore();
+      final sync = _FakeSync(
+        enableResult: const PrivateSyncStatus(
+          isAvailable: true,
+          isEnabled: true,
+          hasKey: true,
+          account: CloudAccountStatus.available,
+          // The enable RAN — it was not deferred — but its push was rejected,
+          // so nothing was applied and no timestamp was stamped.
+          appliedChanges: 0,
+          lastSyncedAt: null,
+          ownerPending: false,
+        ),
+      );
+
+      final result = await openOrRecoverPrivate(sync, store: store);
+
+      expect(result.status, PrivateRecoveryStatus.needsUserChoice,
+          reason: 'there is no pending owner to wait for');
+      expect(store.calls, contains('restoreStashedDatabase'));
+      expect(store.locked, isTrue);
+    });
+
     test(
         'enable() DEFERRED (owner not synced) → waitingForICloudKey, stash '
         'restored, NOT a false "restored" result', () async {
@@ -149,6 +181,7 @@ void main() {
           isEnabled: true,
           hasKey: true,
           account: CloudAccountStatus.available,
+          ownerPending: true,
         ),
       );
 

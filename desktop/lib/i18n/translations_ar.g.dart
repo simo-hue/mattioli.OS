@@ -146,6 +146,7 @@ class _Translations$icloudSync$ar extends Translations$icloudSync$en {
 	@override String get disclosureBody => 'تتم مزامنة بياناتك الخاصة فقط عبر حساب iCloud الخاص بك، بتشفير تام بين الطرفين — وليس عبر خوادمنا أبدًا. يُحفظ مفتاح التشفير في سلسلة مفاتيح iCloud الخاصة بك؛ إذا أوقفت سلسلة مفاتيح iCloud، فلن يمكن استرداد البيانات المتزامنة.';
 	@override String get disclosureAccept => 'تفعيل';
 	@override String get statusIdle => 'مُحدَّث';
+	@override String get statusNotSynced => 'لم تتم مزامنة كل شيء';
 	@override String get statusSyncing => 'جارٍ المزامنة…';
 	@override String get statusOff => 'المزامنة متوقفة';
 	@override String get statusNoAccount => 'سجّل الدخول إلى iCloud للمزامنة';
@@ -955,8 +956,10 @@ class _Translations$settingsPage$ar extends Translations$settingsPage$en {
 	@override String get appearanceTitle => 'المظهر والتطبيق';
 	@override String get appearanceSubtitle => 'التفضيلات المحلية المكيَّفة لسطح المكتب';
 	@override String get appearanceAndVisual => 'المظهر والعناصر المرئية';
-	@override String get darkMode => 'الوضع الداكن';
-	@override String get darkModeDetail => 'استخدم السمة الداكنة بالأبيض والأسود.';
+	@override String get themeMode => 'السمة';
+	@override String get themeLight => 'فاتحة';
+	@override String get themeDark => 'داكنة';
+	@override String get themeSystem => 'اتباع النظام';
 	@override String get calendarExperienceLanguage => 'التقويم والتجربة واللغة';
 	@override String get accentColor => 'لون التمييز';
 	@override String get accentColorDetail => 'لوحة ألوان موسّعة مخصّصة لـ Evolve Pro.';
@@ -1044,6 +1047,7 @@ class _Translations$settingsPage$ar extends Translations$settingsPage$en {
 	@override String get resetDataTitle => 'إعادة تعيين البيانات';
 	@override String get resetDataSuccess => 'تم حذف البيانات بنجاح.';
 	@override String get operationFailed => 'فشلت العملية.';
+	@override String get settingSaveFailed => 'تعذّر حفظ هذا الإعداد. تمت استعادة قيمته السابقة.';
 	@override String get deleteAccountGateTitle => 'حذف الحساب';
 	@override String get accountDeleted => 'تم حذف الحساب.';
 	@override String get importDataGateTitle => 'استيراد البيانات';
@@ -1745,6 +1749,7 @@ extension on TranslationsAr {
 			'icloudSync.disclosureBody' => 'تتم مزامنة بياناتك الخاصة فقط عبر حساب iCloud الخاص بك، بتشفير تام بين الطرفين — وليس عبر خوادمنا أبدًا. يُحفظ مفتاح التشفير في سلسلة مفاتيح iCloud الخاصة بك؛ إذا أوقفت سلسلة مفاتيح iCloud، فلن يمكن استرداد البيانات المتزامنة.',
 			'icloudSync.disclosureAccept' => 'تفعيل',
 			'icloudSync.statusIdle' => 'مُحدَّث',
+			'icloudSync.statusNotSynced' => 'لم تتم مزامنة كل شيء',
 			'icloudSync.statusSyncing' => 'جارٍ المزامنة…',
 			'icloudSync.statusOff' => 'المزامنة متوقفة',
 			'icloudSync.statusNoAccount' => 'سجّل الدخول إلى iCloud للمزامنة',
@@ -2221,9 +2226,9 @@ extension on TranslationsAr {
 			'habitsPage.tabCalendar' => 'التقويم',
 			'habitsPage.deleteHabitTitle' => 'حذف العادة',
 			'habitsPage.deleteHabitConfirm' => ({required Object title}) => 'هل تريد إزالة "${title}" من البروتوكول؟',
-			'habitsPage.activeProtocol' => 'البروتوكول النشط',
 			_ => null,
 		} ?? switch (path) {
+			'habitsPage.activeProtocol' => 'البروتوكول النشط',
 			'habitsPage.completedToday' => 'أُنجزت اليوم',
 			'habitsPage.dailyProtocol' => 'البروتوكول اليومي',
 			'habitsPage.protocolSubtitle' => 'نظرة أسبوعية وتذكيرات وإجراءات سريعة',
@@ -2451,8 +2456,10 @@ extension on TranslationsAr {
 			'settingsPage.appearanceTitle' => 'المظهر والتطبيق',
 			'settingsPage.appearanceSubtitle' => 'التفضيلات المحلية المكيَّفة لسطح المكتب',
 			'settingsPage.appearanceAndVisual' => 'المظهر والعناصر المرئية',
-			'settingsPage.darkMode' => 'الوضع الداكن',
-			'settingsPage.darkModeDetail' => 'استخدم السمة الداكنة بالأبيض والأسود.',
+			'settingsPage.themeMode' => 'السمة',
+			'settingsPage.themeLight' => 'فاتحة',
+			'settingsPage.themeDark' => 'داكنة',
+			'settingsPage.themeSystem' => 'اتباع النظام',
 			'settingsPage.calendarExperienceLanguage' => 'التقويم والتجربة واللغة',
 			'settingsPage.accentColor' => 'لون التمييز',
 			'settingsPage.accentColorDetail' => 'لوحة ألوان موسّعة مخصّصة لـ Evolve Pro.',
@@ -2548,6 +2555,7 @@ extension on TranslationsAr {
 			'settingsPage.resetDataTitle' => 'إعادة تعيين البيانات',
 			'settingsPage.resetDataSuccess' => 'تم حذف البيانات بنجاح.',
 			'settingsPage.operationFailed' => 'فشلت العملية.',
+			'settingsPage.settingSaveFailed' => 'تعذّر حفظ هذا الإعداد. تمت استعادة قيمته السابقة.',
 			'settingsPage.deleteAccountGateTitle' => 'حذف الحساب',
 			'settingsPage.accountDeleted' => 'تم حذف الحساب.',
 			'settingsPage.importDataGateTitle' => 'استيراد البيانات',
@@ -2732,12 +2740,12 @@ extension on TranslationsAr {
 			'coachSettings.presetCustom' => 'مخصّص…',
 			'coachSettings.baseUrlLabel' => 'عنوان URL الأساسي',
 			'coachSettings.baseUrlHint' => 'http://localhost:11434/v1',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.modelLabel' => 'النموذج',
 			'coachSettings.modelHint' => 'مثال: llama3.1:8b',
 			'coachSettings.refreshModels' => 'تحديث النماذج',
 			'coachSettings.discovering' => 'جارٍ البحث عن النماذج…',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.noModelsFound' => 'لم يُعثَر على نماذج — اكتب معرّف نموذج يدويًا أدناه.',
 			'coachSettings.manualModelLabel' => 'معرّف النموذج',
 			'coachSettings.manualModelAdd' => 'استخدام هذا النموذج',

@@ -126,8 +126,44 @@ class SyncLocalStore {
 
   String _nowIso() => DateTime.now().toUtc().toIso8601String();
 
-  int _ms(String? iso) =>
-      iso == null ? -1 : (DateTime.tryParse(iso)?.millisecondsSinceEpoch ?? -1);
+  /// What an `updated_at` that cannot be ORDERED compares as: absent, or a
+  /// string `DateTime.tryParse` rejects.
+  ///
+  /// [SyncEngine] shares this constant, and the two MUST agree. The engine
+  /// derives `CloudRecord.updatedAtMs` (what goes on the wire) with its own
+  /// copy of the same parse; this class derives the local natural-key rival's
+  /// stamp; and [_remoteWinsNaturalKey] compares one directly against the
+  /// other. While they disagreed — the engine answering 0, this class -1 — two
+  /// equally unorderable stamps compared UNEQUAL, so the deterministic id
+  /// tiebreak below never ran. Both devices then concluded "the remote row
+  /// wins", each deleted its own copy and adopted the peer's, and the two
+  /// tombstones crossed on the next pass and removed the row from both. The
+  /// row was not lost by the tiebreak being wrong; it was lost by the two
+  /// halves of one comparison using different arithmetic.
+  ///
+  /// Unparseable stamps are not hypothetical and are not produced here: the
+  /// backup-import path in both apps coerces the file's `updated_at` as a plain
+  /// string (unlike `start_date`/`end_date`, which it validates as dates) and
+  /// writes whatever the file carried straight into the row, whence the dirty
+  /// trigger copies it verbatim into `sync_state`.
+  ///
+  /// 0 and not -1, even though 0 sits inside the legal value domain, because
+  /// this value travels on the wire and every build already in the field
+  /// interprets it. [SyncEngine] uses -1 for "this device holds no record at
+  /// all", so at 0 an unreadable stamp still beats an empty slot and the record
+  /// lands on a device that has never seen it. Lowering the wire value to -1
+  /// would tie with that sentinel and silently strand the record on every older
+  /// device instead — the same data loss, moved.
+  ///
+  /// It does alias onto a genuine epoch stamp ([quarantineStamp] parses to
+  /// exactly 0). That is harmless here: both mean "this copy loses to anything
+  /// carrying a readable, later stamp", which is the only question either
+  /// comparison asks.
+  static const int unorderableMs = 0;
+
+  int _ms(String? iso) => iso == null
+      ? unorderableMs
+      : (DateTime.tryParse(iso)?.millisecondsSinceEpoch ?? unorderableMs);
 
   Future<Set<String>> _columnsOf(String table) async {
     final cached = _columnCache[table];
@@ -192,12 +228,70 @@ class SyncLocalStore {
         whereArgs: [recordName, pushedUpdatedAt],
       );
 
+  /// Record why a PUSH failed. A bare UPDATE is correct here and only here:
+  /// every record the push names came out of [dirtyEntries], so the row
+  /// provably exists and stays `dirty = 1` for the next attempt.
+  ///
+  /// Do NOT reuse this for a pulled record — see [markPullError].
   Future<void> markError(String recordName, String error) => _db.update(
         PrivateDbSchema.syncStateTable,
         {'last_error': error},
         where: 'record_name = ?',
         whereArgs: [recordName],
       );
+
+  /// Marks the reason a PULLED record could not be applied.
+  ///
+  /// Split from [markError] because that method's bare UPDATE silently
+  /// evaporates here. A record arriving from another device that this build has
+  /// never seen has no `sync_state` row at all — the engine's own
+  /// `stateOf()` returned null moments earlier — so the UPDATE matched zero
+  /// rows and wrote nothing. The engine meanwhile held the change token for
+  /// that record, so the device re-downloaded the entire delta on every sync,
+  /// forever, while diagnostics reported a perfectly clean database and both
+  /// apps' status row read "Everything uploaded". A permanently non-converging
+  /// device that says it is fine is the worst output this layer can produce.
+  ///
+  /// Upserts, mirroring [quarantineRecord], and for the same two load-bearing
+  /// reasons: `dirty = 0` (a dirty state row with no table row makes the push
+  /// send a TOMBSTONE for the very record being preserved), and `updated_at`
+  /// left ALONE on conflict — stamping the remote version would make LWW read
+  /// the record as one this device already holds and skip it forever.
+  ///
+  /// The reason is stored under [pullFailurePrefix] so [diagnostics] can tell
+  /// these apart from a quarantine: the change token is HELD for these, so the
+  /// next sync re-delivers and re-attempts them on its own. A quarantined
+  /// record's token has already advanced and only a full re-fetch revives it.
+  /// The two need opposite advice, so they must not share a count.
+  Future<void> markPullError(
+    String recordName,
+    String tableName,
+    String rowId,
+    String error,
+  ) =>
+      _db.rawInsert(
+        'INSERT INTO ${PrivateDbSchema.syncStateTable} '
+        '(record_name, table_name, row_id, updated_at, dirty, deleted, '
+        'last_error) VALUES (?, ?, ?, ?, 0, 0, ?) '
+        'ON CONFLICT(record_name) DO UPDATE SET last_error = excluded.last_error',
+        [
+          recordName,
+          tableName,
+          rowId,
+          quarantineStamp,
+          '$pullFailurePrefix$error',
+        ],
+      );
+
+  /// Marks a `last_error` as a pull-apply failure whose change token is HELD,
+  /// so [diagnostics] can separate "being retried" from "parked forever".
+  /// Matched with SQL `LIKE`, so it must not contain `%` or `_`.
+  ///
+  /// Nothing needs to clear this explicitly: all three apply paths
+  /// ([applyUpsert], [applyDelete], [applyAvatarState]) already write
+  /// `last_error = null` for the record they land, so a transient failure stops
+  /// being reported the moment the retry succeeds.
+  static const String pullFailurePrefix = 'pull-failed: ';
 
   /// Apply a pulled upsert: write the row, then clear dirty in the same txn.
   /// Returns false when the record LOST a natural-key contest (see below) and
@@ -241,9 +335,32 @@ class SyncLocalStore {
       throw const UnstorableRowException('payload has no string id');
     }
     final known = await _columnsOf(table);
+    // Device-local columns are dropped on the way IN as well as on the way out.
+    //
+    // `PrivateDbSchema` documents them as "stripped on push AND preserved on
+    // apply", but only the push half was implemented — this filtered by
+    // `_columnsOf` alone and wrote whatever arrived. That held solely because
+    // every CURRENT sender strips, which makes the guarantee a property of the
+    // fleet rather than of this device. Devices in the field run older builds,
+    // and `deviceLocalProfileColumns` did not always exist: a build predating it
+    // still pushes `is_pro`, `sentry_consent` and `biometric_lock` inside the
+    // payload.
+    //
+    // The consequences are the reasons the list exists. A pulled `is_pro = 1` is
+    // an in-app-purchase bypass; a pulled `sentry_consent` grants consent on a
+    // device that was never asked; a pulled `biometric_lock` either locks a user
+    // out of a device that cannot satisfy it or silently does nothing; and a
+    // pulled `avatar_url` points this device's UI at a file path that exists
+    // only on another machine.
+    //
+    // This is a NARROWING — it enforces the existing list, and does not add to
+    // it. Nothing here changes what goes on the wire, so older builds are
+    // unaffected and no coordinated release is needed.
+    final deviceLocal = PrivateDbSchema.localOnlyColumns[table] ?? const [];
     final data = {
       for (final e in row.entries)
-        if (known.contains(e.key)) e.key: e.value,
+        if (known.contains(e.key) && !deviceLocal.contains(e.key))
+          e.key: e.value,
     };
 
     var applied = true;
@@ -849,11 +966,18 @@ class SyncLocalStore {
   /// other device pushed while this one was behind: they were quarantined, the
   /// change token advanced past them, and CloudKit never replays a record it has
   /// already delivered. The device would simply never see those rows again.
-  Future<int> clearUnknownTableParks() => _db.update(
-        PrivateDbSchema.syncStateTable,
-        {'last_error': null, 'updated_at': quarantineStamp},
-        where: 'last_error = ?',
-        whereArgs: [unknownTableReason],
+  /// Kept symmetric with [clearUndecryptableParks] — including the `dirty`
+  /// guard on the rewind. An unknown-table park normally takes
+  /// [quarantineRecord]'s INSERT branch (this build has no such table, so it has
+  /// no trigger and no local row, and the row cannot be dirty), but a future
+  /// additive migration that lands the table between a park and an un-park
+  /// would make it reachable. Diverging the two helpers is how that would
+  /// become a bug again.
+  Future<int> clearUnknownTableParks() => _db.rawUpdate(
+        'UPDATE ${PrivateDbSchema.syncStateTable} SET last_error = NULL, '
+        'updated_at = CASE WHEN dirty = 1 THEN updated_at ELSE ? END '
+        'WHERE last_error = ?',
+        [quarantineStamp, unknownTableReason],
       );
 
   /// Un-park every record parked as undecryptable, so a full re-fetch re-applies
@@ -864,17 +988,148 @@ class SyncLocalStore {
   /// locally. Deliberately narrow — it matches ONLY the undecryptable reason, so
   /// records parked because this build's schema cannot store them stay parked
   /// (a new key does not teach an old build a new CHECK).
-  Future<int> clearUndecryptableParks() => _db.update(
-        PrivateDbSchema.syncStateTable,
-        {'last_error': null, 'updated_at': quarantineStamp},
-        where: 'last_error = ?',
-        whereArgs: [undecryptableReason],
+  ///
+  /// The rewind SKIPS a row with a pending local write, and that guard is
+  /// load-bearing. [quarantineRecord]'s ON CONFLICT branch deliberately
+  /// preserves `dirty`, so a record parked during a key split and then edited by
+  /// the user is both parked and queued for push. Epoch-stamping that row
+  /// destroys the edit twice over: on the pull, every remote copy — even one
+  /// OLDER than the edit — beats `localMs = 0` and overwrites it while clearing
+  /// dirty; on the push, a pending delete goes out as a tombstone stamped 1970
+  /// and loses LWW on every other device, so the deletion silently never
+  /// propagates while the sync reports success.
+  ///
+  /// Nothing is lost by skipping them: the rewind exists so a re-delivered
+  /// record beats a parked PLACEHOLDER, and a placeholder (the INSERT branch)
+  /// already sits at [quarantineStamp]. The only rows whose value the rewind
+  /// changes are the dirty ones.
+  ///
+  /// The row count is still every matched row, dirty or not, because the engine
+  /// keys the full re-fetch off it — a dirty parked record needs its newer
+  /// remote copy re-delivered just as much as a clean one.
+  Future<int> clearUndecryptableParks() => _db.rawUpdate(
+        'UPDATE ${PrivateDbSchema.syncStateTable} SET last_error = NULL, '
+        'updated_at = CASE WHEN dirty = 1 THEN updated_at ELSE ? END '
+        'WHERE last_error = ?',
+        [quarantineStamp, undecryptableReason],
       );
 
   /// The exact `last_error` written for a record sealed under another key. A
   /// constant because [clearUndecryptableParks] matches on it.
   static const String undecryptableReason =
       'undecryptable: sealed with a different sync key';
+
+  /// The exact `last_error` written for a record stamped so far in the future
+  /// that no clock error explains it. A constant because
+  /// [clearImplausibleFutureParks] matches on it.
+  ///
+  /// It names its own retry rule because [SyncDiagnostics.toReport] files every
+  /// park under "will NOT retry", which is true of the other two kinds and
+  /// false of this one: this park expires by itself once the local clock passes
+  /// the record's stamp. Saying so in the reason is what keeps the line honest
+  /// without giving the header a special case.
+  static const String implausibleFutureReason =
+      'implausible future timestamp: the authoring clock is wrong '
+      '(retried once ours passes it)';
+
+  /// Park a record whose stamp is implausibly far in the future, recording WHEN
+  /// it becomes worth retrying so the park can expire on its own.
+  ///
+  /// Everything [quarantineRecord] documents applies verbatim — `dirty = 0` so
+  /// no tombstone is ever pushed for the parked row, [quarantineStamp] on
+  /// INSERT and `updated_at` left ALONE on conflict so a re-delivered copy
+  /// still wins LWW — with one addition, and it is the difference between a
+  /// bounded park and a permanent one.
+  ///
+  /// [retryAfterIso] is the record's OWN stamp, stored in `last_synced_at`.
+  /// That column is bookkeeping with no reader anywhere in this package or
+  /// either app (grep it), and for a parked record its usual meaning — "when
+  /// this record last moved" — is vacuous, so it carries "when this record is
+  /// worth moving again" instead. [clearImplausibleFutureParks] reads it back
+  /// and un-parks only the records whose moment has come, which is what lets a
+  /// device that received a week-fast peer's rows heal a week later with no
+  /// user action. If you ever give `last_synced_at` a real reader, this needs
+  /// its own column first.
+  ///
+  /// Written on BOTH branches, unlike [quarantineRecord]'s conflict branch. A
+  /// record parked after having synced normally already carries a real, PAST
+  /// `last_synced_at`; leaving it would make the park read as due immediately
+  /// and un-park on the very next sync, which is the re-fetch-every-sync loop
+  /// this whole mechanism exists to break.
+  Future<void> parkFutureSkew(
+    String recordName,
+    String tableName,
+    String rowId,
+    String retryAfterIso,
+  ) =>
+      _db.rawInsert(
+        'INSERT INTO ${PrivateDbSchema.syncStateTable} '
+        '(record_name, table_name, row_id, updated_at, dirty, deleted, '
+        'last_error, last_synced_at) VALUES (?, ?, ?, ?, 0, 0, ?, ?) '
+        'ON CONFLICT(record_name) DO UPDATE SET '
+        'last_error = excluded.last_error, '
+        'last_synced_at = excluded.last_synced_at',
+        [
+          recordName,
+          tableName,
+          rowId,
+          quarantineStamp,
+          implausibleFutureReason,
+          retryAfterIso,
+        ],
+      );
+
+  /// Un-park every future-skew park whose retry moment has passed, so the full
+  /// re-fetch the engine drives off the returned count re-delivers them.
+  ///
+  /// Deliberately NOT a blanket clear, unlike its two siblings. A key rotation
+  /// or a schema upgrade is an event: it happens once and un-parking everything
+  /// is right. Clock skew has no event — the condition simply expires — so an
+  /// unconditional clear here would un-park, re-fetch, re-park and re-fetch on
+  /// every single sync, rebuilding the unbounded re-download that parking
+  /// exists to stop. The `<= now` test is what makes it fire at most once per
+  /// park.
+  ///
+  /// The comparison runs in Dart rather than SQL on purpose: `last_synced_at`
+  /// is TEXT, so SQL would order it lexicographically, and
+  /// `DateTime.toIso8601String()` emits a `+YYYYYY-` prefix for years past
+  /// 9999 — which sorts BEFORE every ordinary year and would make the most
+  /// absurd stamps look due immediately, i.e. the loop again, reachable by
+  /// exactly the corrupt data this guard is for. An unreadable or absent
+  /// retry stamp is treated as NOT due: failing closed leaves the record
+  /// parked and visible in [diagnostics], never silently revived.
+  ///
+  /// Keeps [clearUndecryptableParks]' `dirty` guard on the rewind, for the same
+  /// load-bearing reason: epoch-stamping a row with a pending local write
+  /// destroys that write on both the pull and the push.
+  Future<int> clearImplausibleFutureParks(DateTime now) async {
+    final parked = await _db.query(
+      PrivateDbSchema.syncStateTable,
+      columns: ['record_name', 'last_synced_at'],
+      where: 'last_error = ?',
+      whereArgs: [implausibleFutureReason],
+    );
+    final due = <String>[
+      for (final r in parked)
+        if (_isDue(r['last_synced_at'] as String?, now))
+          r['record_name'] as String,
+    ];
+    if (due.isEmpty) return 0;
+    final placeholders = List.filled(due.length, '?').join(', ');
+    return _db.rawUpdate(
+      'UPDATE ${PrivateDbSchema.syncStateTable} SET last_error = NULL, '
+      'last_synced_at = NULL, '
+      'updated_at = CASE WHEN dirty = 1 THEN updated_at ELSE ? END '
+      'WHERE record_name IN ($placeholders)',
+      [quarantineStamp, ...due],
+    );
+  }
+
+  bool _isDue(String? retryAfterIso, DateTime now) {
+    if (retryAfterIso == null) return false;
+    final at = DateTime.tryParse(retryAfterIso);
+    return at != null && !at.isAfter(now);
+  }
 
   // ── Diagnostics (read-only) ───────────────────────────────────────────────
 
@@ -931,11 +1186,32 @@ class SyncLocalStore {
         'SELECT last_error, COUNT(*) AS n FROM '
         '${PrivateDbSchema.syncStateTable} '
         'WHERE last_error IS NOT NULL AND dirty = ? '
+        'AND last_error NOT LIKE ? '
         'GROUP BY last_error ORDER BY n DESC',
-        [dirty],
+        [dirty, '$pullFailurePrefix%'],
       );
       return {
         for (final r in rows) r['last_error'] as String: (r['n'] as int?) ?? 0,
+      };
+    }
+
+    // Records the PULL could not apply. Counted separately from the parked ones
+    // above because the change token is HELD for these: the next sync
+    // re-delivers and re-attempts them without the user doing anything, whereas
+    // a quarantined record's token has already advanced past it. Telling a user
+    // "this will never retry" about a record that is being retried every 60
+    // seconds is its own small lie.
+    Future<Map<String, int>> heldErrors() async {
+      final rows = await _db.rawQuery(
+        'SELECT last_error, COUNT(*) AS n FROM '
+        '${PrivateDbSchema.syncStateTable} '
+        'WHERE last_error LIKE ? GROUP BY last_error ORDER BY n DESC',
+        ['$pullFailurePrefix%'],
+      );
+      return {
+        for (final r in rows)
+          (r['last_error'] as String).substring(pullFailurePrefix.length):
+              (r['n'] as int?) ?? 0,
       };
     }
 
@@ -954,6 +1230,7 @@ class SyncLocalStore {
       pendingDeletesByTable: await countBy('dirty = 1 AND deleted = 1'),
       errorsByReason: await errorsWhere(1),
       parkedByReason: await errorsWhere(0),
+      heldByReason: await heldErrors(),
       hasChangeToken: metaRow['server_change_token'] != null,
       lastFullSyncAt:
           DateTime.tryParse((metaRow['last_full_sync_at'] as String?) ?? ''),

@@ -146,6 +146,7 @@ class _Translations$icloudSync$it extends Translations$icloudSync$en {
 	@override String get disclosureBody => 'I tuoi dati privati si sincronizzano solo tramite il tuo account iCloud, con crittografia end-to-end — mai attraverso i nostri server. La chiave di crittografia risiede nel tuo Portachiavi iCloud; se disattivi il Portachiavi iCloud, i dati sincronizzati non potranno essere recuperati.';
 	@override String get disclosureAccept => 'Abilita';
 	@override String get statusIdle => 'Aggiornato';
+	@override String get statusNotSynced => 'Non è stato sincronizzato tutto';
 	@override String get statusSyncing => 'Sincronizzazione…';
 	@override String get statusOff => 'Sincronizzazione disattivata';
 	@override String get statusNoAccount => 'Accedi a iCloud per sincronizzare';
@@ -955,8 +956,10 @@ class _Translations$settingsPage$it extends Translations$settingsPage$en {
 	@override String get appearanceTitle => 'Aspetto e applicazione';
 	@override String get appearanceSubtitle => 'Preferenze locali adattate al desktop';
 	@override String get appearanceAndVisual => 'Aspetto e visual';
-	@override String get darkMode => 'Modalita scura';
-	@override String get darkModeDetail => 'Usa il tema scuro in bianco e nero.';
+	@override String get themeMode => 'Tema';
+	@override String get themeLight => 'Chiaro';
+	@override String get themeDark => 'Scuro';
+	@override String get themeSystem => 'Segui il sistema';
 	@override String get calendarExperienceLanguage => 'Calendario, esperienza e lingua';
 	@override String get accentColor => 'Colore accento';
 	@override String get accentColorDetail => 'Palette estesa riservata a Evolve Pro.';
@@ -1044,6 +1047,7 @@ class _Translations$settingsPage$it extends Translations$settingsPage$en {
 	@override String get resetDataTitle => 'Reset dati';
 	@override String get resetDataSuccess => 'Dati eliminati con successo.';
 	@override String get operationFailed => 'Operazione non riuscita.';
+	@override String get settingSaveFailed => 'Impossibile salvare l\'impostazione. È stata ripristinata al valore precedente.';
 	@override String get deleteAccountGateTitle => 'Elimina account';
 	@override String get accountDeleted => 'Account eliminato.';
 	@override String get importDataGateTitle => 'Importa dati';
@@ -1745,6 +1749,7 @@ extension on TranslationsIt {
 			'icloudSync.disclosureBody' => 'I tuoi dati privati si sincronizzano solo tramite il tuo account iCloud, con crittografia end-to-end — mai attraverso i nostri server. La chiave di crittografia risiede nel tuo Portachiavi iCloud; se disattivi il Portachiavi iCloud, i dati sincronizzati non potranno essere recuperati.',
 			'icloudSync.disclosureAccept' => 'Abilita',
 			'icloudSync.statusIdle' => 'Aggiornato',
+			'icloudSync.statusNotSynced' => 'Non è stato sincronizzato tutto',
 			'icloudSync.statusSyncing' => 'Sincronizzazione…',
 			'icloudSync.statusOff' => 'Sincronizzazione disattivata',
 			'icloudSync.statusNoAccount' => 'Accedi a iCloud per sincronizzare',
@@ -2221,9 +2226,9 @@ extension on TranslationsIt {
 			'habitsPage.tabCalendar' => 'Calendario',
 			'habitsPage.deleteHabitTitle' => 'Elimina abitudine',
 			'habitsPage.deleteHabitConfirm' => ({required Object title}) => 'Vuoi rimuovere "${title}" dal protocollo?',
-			'habitsPage.activeProtocol' => 'Protocollo attivo',
 			_ => null,
 		} ?? switch (path) {
+			'habitsPage.activeProtocol' => 'Protocollo attivo',
 			'habitsPage.completedToday' => 'Completate oggi',
 			'habitsPage.dailyProtocol' => 'Protocollo quotidiano',
 			'habitsPage.protocolSubtitle' => 'Panoramica settimanale, reminder e azioni rapide',
@@ -2451,8 +2456,10 @@ extension on TranslationsIt {
 			'settingsPage.appearanceTitle' => 'Aspetto e applicazione',
 			'settingsPage.appearanceSubtitle' => 'Preferenze locali adattate al desktop',
 			'settingsPage.appearanceAndVisual' => 'Aspetto e visual',
-			'settingsPage.darkMode' => 'Modalita scura',
-			'settingsPage.darkModeDetail' => 'Usa il tema scuro in bianco e nero.',
+			'settingsPage.themeMode' => 'Tema',
+			'settingsPage.themeLight' => 'Chiaro',
+			'settingsPage.themeDark' => 'Scuro',
+			'settingsPage.themeSystem' => 'Segui il sistema',
 			'settingsPage.calendarExperienceLanguage' => 'Calendario, esperienza e lingua',
 			'settingsPage.accentColor' => 'Colore accento',
 			'settingsPage.accentColorDetail' => 'Palette estesa riservata a Evolve Pro.',
@@ -2548,6 +2555,7 @@ extension on TranslationsIt {
 			'settingsPage.resetDataTitle' => 'Reset dati',
 			'settingsPage.resetDataSuccess' => 'Dati eliminati con successo.',
 			'settingsPage.operationFailed' => 'Operazione non riuscita.',
+			'settingsPage.settingSaveFailed' => 'Impossibile salvare l\'impostazione. È stata ripristinata al valore precedente.',
 			'settingsPage.deleteAccountGateTitle' => 'Elimina account',
 			'settingsPage.accountDeleted' => 'Account eliminato.',
 			'settingsPage.importDataGateTitle' => 'Importa dati',
@@ -2732,12 +2740,12 @@ extension on TranslationsIt {
 			'coachSettings.presetCustom' => 'Personalizzato…',
 			'coachSettings.baseUrlLabel' => 'URL di base',
 			'coachSettings.baseUrlHint' => 'http://localhost:11434/v1',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.modelLabel' => 'Modello',
 			'coachSettings.modelHint' => 'es. llama3.1:8b',
 			'coachSettings.refreshModels' => 'Aggiorna modelli',
 			'coachSettings.discovering' => 'Ricerca dei modelli…',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.noModelsFound' => 'Nessun modello trovato — inserisci manualmente un id modello qui sotto.',
 			'coachSettings.manualModelLabel' => 'Id modello',
 			'coachSettings.manualModelAdd' => 'Usa questo modello',

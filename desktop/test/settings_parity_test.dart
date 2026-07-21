@@ -18,11 +18,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-Future<SharedPreferences> _pumpSettings(WidgetTester tester) async {
+/// [withPreferences] false leaves `sharedPreferencesProvider` at its null
+/// default — the first-launch shape where `initState` early-returns before the
+/// prefs reads and the page's own field initialisers are what the user sees.
+Future<SharedPreferences> _pumpSettings(
+  WidgetTester tester, {
+  bool withPreferences = true,
+}) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   final container = ProviderContainer(
-    overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+    overrides: [
+      if (withPreferences) sharedPreferencesProvider.overrideWithValue(prefs),
+    ],
   );
   addTearDown(container.dispose);
 
@@ -116,4 +124,47 @@ void main() {
 
     expect(prefs.getBool('notif_weekly_reports'), isTrue);
   });
+
+  // macOS's brief-time defaults said 08:00 / 20:30 and won on a first launch,
+  // so a fresh Mac disagreed with the `profiles` schema DEFAULTs and with the
+  // iPhone. The old guard for this asserted
+  // `SettingsCodec.defaultMorningBriefTime == '09:00'` in
+  // settings_synced_readback_test.dart — two compile-time constants from the
+  // frozen shared package, against each other, executing no desktop code.
+  // Re-hardcoding a desktop literal left it green.
+  //
+  // TWO cases, because two different desktop expressions decide the answer and
+  // neither covers the other:
+  //   * prefs ABSENT  -> initState early-returns and the FIELD INITIALISERS win
+  //   * prefs EMPTY   -> initState runs on and the `?? SettingsCodec.default…`
+  //                      fallbacks win
+  // A test of only the second is green while the first is mutated back to
+  // '08:00', which is exactly the shape the original bug had.
+  for (final (name, absent) in [
+    ('SharedPreferences is absent', true),
+    ('SharedPreferences is empty', false),
+  ]) {
+    testWidgets(
+        'the brief times are not the canonical 09:00 / 21:00 when $name',
+        (tester) async {
+      await _pumpSettings(tester, withPreferences: !absent);
+      await _openSection(tester, t.settingsPage.notifications);
+
+      // The time the user actually READS, through the real initState path.
+      expect(_timePickerIn(t.settingsPage.morningBriefTime).value,
+          const TimeOfDay(hour: 9, minute: 0));
+      expect(_timePickerIn(t.settingsPage.eveningReviewTime).value,
+          const TimeOfDay(hour: 21, minute: 0));
+    });
+  }
 }
+
+/// The kit picker rendered inside the row titled [rowLabel].
+EvolveTimePicker _timePickerIn(String rowLabel) => find
+    .descendant(
+      of: find.widgetWithText(ListTile, rowLabel),
+      matching: find.byType(EvolveTimePicker),
+    )
+    .evaluate()
+    .single
+    .widget as EvolveTimePicker;

@@ -340,7 +340,15 @@ class SettingsPage extends ConsumerStatefulWidget {
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
   _SettingsSection _section = _SettingsSection.profile;
-  bool _darkMode = true;
+  /// The canonical theme CODE ('light'/'dark'/'system'), not a bool.
+  ///
+  /// It used to be `bool _darkMode`, and every write derived from it collapsed
+  /// `'system'` — the value the schema permits and the one every user who never
+  /// picked a theme has — into a concrete theme. The prefs mirror is what
+  /// `DesktopAppearanceController.build()` reads on the next cold start, so a
+  /// collapsed mirror destroyed "follow system" permanently on a Mac that never
+  /// completes a pull.
+  String _themeMode = SettingsCodec.themeSystem;
   bool _timeFormat24h = true;
   bool _habitReminders = true;
   bool _eveningReview = true;
@@ -365,8 +373,39 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   // briefs 60 and 30 minutes earlier the first time any toggle was touched.
   String _morningTime = SettingsCodec.defaultMorningBriefTime;
   String _eveningTime = SettingsCodec.defaultEveningReviewTime;
-  Color _accent = EvolveColors.primaryStrong;
+  // The accent SEED, not a theme token. `EvolveColors.primaryStrong` is chrome
+  // that legitimately stays #FAFAFA; borrowing it here made the page's idea of
+  // "no accent yet" a third independent literal. initState overwrites this from
+  // the controller, so the practical effect is nil — but the drift it invites
+  // is exactly how the Mac and the iPhone ended up on different whites.
+  Color _accent = DesktopAppearanceController.defaultAccent;
   File? _profileImage;
+
+  /// Whether the synced store has answered at least once this session.
+  ///
+  /// The read is kicked off UNAWAITED from `initState`, and in Private mode it
+  /// costs an encrypted-DB open plus a Keychain round-trip — the page is fully
+  /// interactive throughout. Without this latch, `_applySyncedSettings` came
+  /// back and overwrote every field, so a toggle flipped during that window
+  /// snapped back on screen and in the prefs mirror while `_syncProfile` had
+  /// already written the new value to the store: the UI then disagreed with
+  /// what was stored for the rest of the session, silently.
+  bool _syncedLoaded = false;
+
+  /// Synced keys the user edited BEFORE the first load landed.
+  ///
+  /// The first load skips these and applies everything else, so an edit already
+  /// made wins over what the load happened to find, while a key the user never
+  /// touched still hydrates. Cleared the moment [_syncedLoaded] latches —
+  /// keeping them would make the user's own earlier tap suppress every later
+  /// pull of that key, which is the "my iPhone change never reaches the Mac"
+  /// bug wearing the fix's clothes. Mobile's `settings_provider.dart` uses the
+  /// same pair; `test/settings_hydration_clobber_test.dart` pins both halves.
+  ///
+  /// In Supabase mode nothing ever clears it, because `_applySyncedSettings` is
+  /// a no-op there — harmless, since that mode never consults it, and it is
+  /// bounded by the number of synced keys either way.
+  final Set<String> _preloadEdits = <String>{};
 
   /// iCloud sync card state (Private mode, macOS only). [_syncBusy] is true
   /// while an enable/disable/sync action is in flight; it drives the
@@ -404,7 +443,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     unawaited(_refreshSyncStatus());
     final preferences = ref.read(sharedPreferencesProvider);
     final appearance = ref.read(desktopAppearanceControllerProvider);
-    _darkMode = appearance.themeMode != ThemeMode.light;
+    _themeMode = DesktopAppearanceController.themeCodeFor(appearance.themeMode);
     _accent = appearance.accentColor;
     // The synced store is the authority; the prefs below are only the local
     // mirror used until it answers. Kick the read-back off even when there are
@@ -668,21 +707,46 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             _SettingsGroup(
               title: t.settingsPage.appearanceAndVisual,
               children: [
-                _SwitchRow(
+                // Three options, not a switch. A binary control cannot express
+                // `'system'` — which the schema permits and which every user
+                // who never picked a theme actually has — so one touch of the
+                // old switch wrote a concrete 'dark'/'light' to the synced
+                // store, pinned the iPhone too, and left no way back to "follow
+                // system" from the Mac.
+                _SelectRow<String>(
                   icon: LucideIcons.moon,
-                  label: t.settingsPage.darkMode,
-                  detail: t.settingsPage.darkModeDetail,
-                  value: _darkMode,
+                  label: t.settingsPage.themeMode,
+                  value: _themeMode,
+                  options: [
+                    for (final code in SettingsCodec.themeModes)
+                      EvolveSelectOption(
+                        value: code,
+                        label: _themeModeOptionLabel(code),
+                      ),
+                  ],
                   onChanged: (value) {
+                    // The controller is mutated BEFORE the write is attempted,
+                    // so the rollback has to put it back too — reverting only
+                    // the row would leave the whole app repainted in a theme
+                    // that was never stored.
+                    final previousMode = ref
+                        .read(desktopAppearanceControllerProvider)
+                        .themeMode;
                     ref
                         .read(desktopAppearanceControllerProvider.notifier)
-                        .setThemeMode(value ? ThemeMode.dark : ThemeMode.light);
-                    _setBool(
-                      'desktop_dark_mode',
+                        .setThemeMode(
+                          DesktopAppearanceController.themeModeFor(value),
+                        );
+                    _setString(
+                      'pref_theme_mode',
                       value,
-                      () => _darkMode = value,
+                      (v) => _themeMode = v,
+                      previous: _themeMode,
                       profileColumn: 'theme_mode',
-                      profileValue: value ? 'dark' : 'light',
+                      profileValue: value,
+                      alsoRevert: () => ref
+                          .read(desktopAppearanceControllerProvider.notifier)
+                          .setThemeMode(previousMode),
                     );
                   },
                 ),
@@ -697,6 +761,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   detail: t.settingsPage.accentColorDetail,
                   selected: _accent,
                   onChanged: (color) {
+                    // This row does NOT go through `_setBool`/`_setString`, so
+                    // it needs its own rollback — a fix that only touched those
+                    // two helpers would leave the accent, one of the two
+                    // symptoms this whole effort started from, still failing in
+                    // silence.
+                    final previousAccent = ref
+                        .read(desktopAppearanceControllerProvider)
+                        .accentColor;
                     ref
                         .read(desktopAppearanceControllerProvider.notifier)
                         .setAccentColor(color);
@@ -707,9 +779,17 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     );
                     setState(() => _accent = accent);
                     unawaited(
-                      _syncProfile({
-                        'accent_color': dashboardColorToHex(accent),
-                      }),
+                      _persistOrRollback(
+                        values: {'accent_color': dashboardColorToHex(accent)},
+                        revert: () {
+                          ref
+                              .read(
+                                desktopAppearanceControllerProvider.notifier,
+                              )
+                              .setAccentColor(previousAccent);
+                          _accent = previousAccent;
+                        },
+                      ),
                     );
                   },
                   // Custom accent color is Pro (mobile parity). Private mode is
@@ -735,7 +815,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   onChanged: (value) => _setString(
                     'pref_default_calendar_view',
                     value,
-                    () => _calendarView = value,
+                    (v) => _calendarView = v,
+                    previous: _calendarView,
                     profileColumn: 'pref_default_calendar_view',
                   ),
                 ),
@@ -753,12 +834,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   onChanged: (value) => _setString(
                     'pref_language',
                     value,
-                    () {
-                      _language = value;
+                    // Takes the value it is HANDED, not the tapped one: on a
+                    // failed write this same callback is re-run with the
+                    // previous language, and the live locale controller has to
+                    // come back with it or the app keeps speaking a language
+                    // nothing stored.
+                    (v) {
+                      _language = v;
                       ref
                           .read(desktopLocaleControllerProvider.notifier)
-                          .setLanguage(value);
+                          .setLanguage(v);
                     },
+                    previous: _language,
                     profileColumn: 'language',
                     profileValue: value,
                   ),
@@ -771,7 +858,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   onChanged: (value) => _setBool(
                     'pref_time_format_24h',
                     value,
-                    () => _timeFormat24h = value,
+                    (v) => _timeFormat24h = v,
                     profileColumn: 'pref_time_format_24h',
                   ),
                 ),
@@ -819,7 +906,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     _setBool(
                       'pref_ai_suggestions',
                       value,
-                      () => _aiSuggestions = value,
+                      (v) => _aiSuggestions = v,
                       profileColumn: isPrivateMode
                           ? 'pref_ai_suggestions'
                           : null,
@@ -835,7 +922,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     _setBool(
                       'pref_focus_mode',
                       value,
-                      () => _focusMode = value,
+                      (v) => _focusMode = v,
                       profileColumn: isPrivateMode ? 'pref_focus_mode' : null,
                     );
                     // Focus Mode suppresses local notifications (mobile
@@ -851,7 +938,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   onChanged: (value) => _setBool(
                     'pref_milestones',
                     value,
-                    () => _milestones = value,
+                    (v) => _milestones = v,
                     profileColumn: isPrivateMode ? 'pref_milestones' : null,
                   ),
                 ),
@@ -863,7 +950,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   onChanged: (value) => _setBool(
                     'pref_deep_work_insights',
                     value,
-                    () => _deepWorkInsights = value,
+                    (v) => _deepWorkInsights = v,
                     profileColumn: isPrivateMode
                         ? 'pref_deep_work_insights'
                         : null,
@@ -900,7 +987,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   onChanged: (value) => _setNotificationBool(
                     key: 'notif_habit_reminders',
                     value: value,
-                    update: () => _habitReminders = value,
+                    update: (v) => _habitReminders = v,
                     profileColumn: 'notif_habit_reminders',
                     requestPermissions: value,
                   ),
@@ -914,7 +1001,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     onChanged: (value) => _setNotificationString(
                       'notif_morning_brief_time',
                       value,
-                      () => _morningTime = value,
+                      (v) => _morningTime = v,
+                      previous: _morningTime,
                       profileColumn: 'morning_brief_time',
                     ),
                   ),
@@ -926,7 +1014,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   onChanged: (value) => _setNotificationBool(
                     key: 'notif_evening_review',
                     value: value,
-                    update: () => _eveningReview = value,
+                    update: (v) => _eveningReview = v,
                     profileColumn: 'notif_evening_review',
                     requestPermissions: value,
                   ),
@@ -940,7 +1028,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     onChanged: (value) => _setNotificationString(
                       'notif_evening_review_time',
                       value,
-                      () => _eveningTime = value,
+                      (v) => _eveningTime = v,
+                      previous: _eveningTime,
                       profileColumn: 'evening_review_time',
                     ),
                   ),
@@ -969,7 +1058,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   onChanged: (value) => _setNotificationBool(
                     key: 'notif_ai_insights',
                     value: value,
-                    update: () => _aiInsights = value,
+                    update: (v) => _aiInsights = v,
                     profileColumn: 'notif_ai_insights',
                   ),
                 ),
@@ -981,7 +1070,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   onChanged: (value) => _setNotificationBool(
                     key: 'notif_weekly_reports',
                     value: value,
-                    update: () => _weeklyReport = value,
+                    update: (v) => _weeklyReport = v,
                     profileColumn: 'notif_weekly_reports',
                   ),
                 ),
@@ -1359,11 +1448,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   void _setNotificationBool({
     required String key,
     required bool value,
-    required VoidCallback update,
+    required ValueChanged<bool> update,
     required String profileColumn,
     bool requestPermissions = false,
   }) {
-    _setBool(key, value, update, profileColumn: profileColumn);
+    _setBool(
+      key,
+      value,
+      update,
+      profileColumn: profileColumn,
+      // The schedule is rebuilt from the page's fields, so a rollback has to
+      // rebuild it again or macOS keeps firing on the un-stored setting.
+      alsoRevert: () => unawaited(_syncNotifications()),
+    );
     if (requestPermissions) {
       unawaited(DesktopNotificationService.instance.requestPermissions());
     }
@@ -1373,10 +1470,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   void _setNotificationString(
     String key,
     String value,
-    VoidCallback update, {
+    ValueChanged<String> update, {
+    required String previous,
     required String profileColumn,
   }) {
-    _setString(key, value, update, profileColumn: profileColumn);
+    _setString(
+      key,
+      value,
+      update,
+      previous: previous,
+      profileColumn: profileColumn,
+      alsoRevert: () => unawaited(_syncNotifications()),
+    );
     unawaited(_syncNotifications());
   }
 
@@ -1792,7 +1897,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   /// ahead of the pending count: a user with both needs to know that retrying
   /// is not what is missing.
   String _diagnosticsLabel(SyncDiagnostics d) {
-    final stuck = d.totalErrors + d.totalParked;
+    // totalStuck, not a hand-rolled sum: adding a bucket to SyncDiagnostics
+    // (as `heldByReason` was) must not silently under-count here.
+    final stuck = d.totalStuck;
     if (stuck > 0) return t.icloudSync.detailsFailed(count: stuck);
     if (d.totalPending > 0) {
       return t.icloudSync.detailsPending(count: d.totalPending);
@@ -1931,6 +2038,17 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       // Keychain — typically an iPhone app that predates the shared keychain
       // group. The copy nudges the fix.
       return t.icloudSync.statusWaitingKeychain;
+    }
+    // "Up to date" is a claim about the DATA, not about the account, and it may
+    // only be made when [SyncDiagnostics.isFullySynced] licenses it. Reaching
+    // this line used to be enough: a device with thousands of rows that had
+    // never left it, and a `last_full_sync_at` stamped moments ago by a push in
+    // which every record failed, rendered exactly the same "Up to date" as a
+    // healthy one. The per-count breakdown is on the details row below; the
+    // headline's job is simply never to lie.
+    final diagnostics = _syncDiagnostics;
+    if (diagnostics != null && !diagnostics.isFullySynced) {
+      return t.icloudSync.statusNotSynced;
     }
     return t.icloudSync.statusIdle;
   }
@@ -2081,7 +2199,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         .read(desktopLocaleControllerProvider.notifier)
         .setLanguage(SettingsCodec.languageSystem);
     setState(() {
-      _darkMode = true;
+      // Reset stays on an explicit 'dark' rather than 'system', matching
+      // mobile's reset — changing only desktop would break parity.
+      _themeMode = SettingsCodec.themeDark;
       _accent = DesktopAppearanceController.defaultAccent;
       _calendarView = kCalendarViewWeek;
       _language = SettingsCodec.languageSystem;
@@ -2107,7 +2227,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     // be in this payload and is now device-local: a reset on the Mac must not
     // reach across and unlock the user's iPhone. It is reset locally, above.
     // `_syncProfile` filters the map, so this list is the contract, not a hope.
-    await _syncProfile({
+    // No rollback here — the local state has already been reset across two
+    // dozen fields and un-resetting them piecemeal would be its own bug. But
+    // the user must still be told, or a reset that never reached the store
+    // looks exactly like one that did.
+    final saved = await _syncProfile({
       kSettingThemeMode: SettingsCodec.themeDark,
       // Derived from the accent actually applied above, not a hardcoded hex —
       // the two used to be independent literals and could silently drift apart,
@@ -2131,6 +2255,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       kSettingMorningBriefTime: SettingsCodec.defaultMorningBriefTime,
       kSettingEveningReviewTime: SettingsCodec.defaultEveningReviewTime,
     });
+    if (!saved && mounted) {
+      showEvolveToast(
+        context,
+        message: t.settingsPage.settingSaveFailed,
+        kind: EvolveToastKind.error,
+      );
+    }
     await _syncNotifications();
   }
 
@@ -2157,33 +2288,72 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         );
   }
 
+  /// [update] takes the value to apply rather than closing over the tapped one,
+  /// because a failed write re-runs it with the PREVIOUS value. The previous
+  /// bool is the negation: these all come from a switch whose rendered position
+  /// is the field itself, so a tap always inverts it.
   void _setBool(
     String key,
     bool value,
-    VoidCallback update, {
+    ValueChanged<bool> update, {
     String? profileColumn,
     Object? profileValue,
+    VoidCallback? alsoRevert,
   }) {
-    setState(update);
     final preferences = ref.read(sharedPreferencesProvider);
+    final previousPref = preferences?.getBool(key);
+    setState(() => update(value));
     if (preferences != null) unawaited(preferences.setBool(key, value));
     if (profileColumn != null) {
-      unawaited(_syncProfile({profileColumn: profileValue ?? value}));
+      unawaited(
+        _persistOrRollback(
+          values: {profileColumn: profileValue ?? value},
+          revert: () {
+            update(!value);
+            alsoRevert?.call();
+            if (preferences == null) return;
+            unawaited(
+              previousPref == null
+                  ? preferences.remove(key)
+                  : preferences.setBool(key, previousPref),
+            );
+          },
+        ),
+      );
     }
   }
 
+  /// As [_setBool], but the previous value cannot be derived, so the caller
+  /// states it.
   void _setString(
     String key,
     String value,
-    VoidCallback update, {
+    ValueChanged<String> update, {
+    required String previous,
     String? profileColumn,
     Object? profileValue,
+    VoidCallback? alsoRevert,
   }) {
-    setState(update);
     final preferences = ref.read(sharedPreferencesProvider);
+    final previousPref = preferences?.getString(key);
+    setState(() => update(value));
     if (preferences != null) unawaited(preferences.setString(key, value));
     if (profileColumn != null) {
-      unawaited(_syncProfile({profileColumn: profileValue ?? value}));
+      unawaited(
+        _persistOrRollback(
+          values: {profileColumn: profileValue ?? value},
+          revert: () {
+            update(previous);
+            alsoRevert?.call();
+            if (preferences == null) return;
+            unawaited(
+              previousPref == null
+                  ? preferences.remove(key)
+                  : preferences.setString(key, previousPref),
+            );
+          },
+        ),
+      );
     }
   }
 
@@ -2197,9 +2367,25 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     // differed between the iPhone and the Mac.
     if (ref.read(activeDesktopDataModeProvider).isPrivate) {
       try {
-        final values = await ref.read(desktopSyncedSettingsProvider.future);
-        if (!mounted) return;
-        await _applySyncedSettings(values);
+        // The SNAPSHOT, not `.future`, and this is load-bearing twice over.
+        //
+        // Awaiting the future made the store land TWICE whenever it was still
+        // loading at mount — which in Private mode is the normal case, since
+        // the read costs an encrypted-DB open plus a Keychain round-trip. The
+        // `ref.listen` registered in `build()` fires when the value arrives AND
+        // this await resumes with the same map, so `_applySyncedSettings` ran
+        // twice: the first pass released the in-flight-edit guard and the
+        // second then clobbered the very edit the guard existed to protect.
+        //
+        // It also let a STALE generation win: an invalidation mid-await (every
+        // sync pull invalidates this provider) leaves the old future to
+        // complete after the listener has already applied the newer map.
+        //
+        // Nothing is lost by not awaiting: initState and the first build run in
+        // the same frame, so the listener is in place before any future can
+        // complete, and it delivers the first value.
+        final values = ref.read(desktopSyncedSettingsProvider).value;
+        if (values != null) await _applySyncedSettings(values);
       } catch (error, stack) {
         AppLogger.error('Unable to read the private settings', error, stack);
       }
@@ -2224,7 +2410,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           );
       final appearance = ref.read(desktopAppearanceControllerProvider);
       setState(() {
-        _darkMode = appearance.themeMode != ThemeMode.light;
+        _themeMode = DesktopAppearanceController.themeCodeFor(
+          appearance.themeMode,
+        );
         _timeFormat24h =
             profile['pref_time_format_24h'] as bool? ?? _timeFormat24h;
         _habitReminders =
@@ -2264,12 +2452,17 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         await Future.wait([
           // `applyProfile` no longer writes the prefs mirror (a read path must
           // not mutate), so the hydration that OWNS this refresh writes it.
-          preferences.setString('pref_theme_mode', _darkMode ? 'dark' : 'light'),
+          preferences.setString('pref_theme_mode', _themeMode),
           preferences.setString(
             'pref_accent_color',
             dashboardColorToHex(_accent),
           ),
-          preferences.setBool('desktop_dark_mode', _darkMode),
+          // The LEGACY bool needs a yes/no, so 'system' is resolved for this
+          // key alone. `pref_theme_mode` above keeps the three-valued truth.
+          preferences.setBool(
+            'desktop_dark_mode',
+            DesktopAppearanceController.resolvesDark(appearance.themeMode),
+          ),
           preferences.setBool('pref_time_format_24h', _timeFormat24h),
           preferences.setBool('notif_habit_reminders', _habitReminders),
           preferences.setBool('notif_evening_review', _eveningReview),
@@ -2306,17 +2499,31 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Future<void> _applySyncedSettings(Map<String, String?> values) async {
     if (values.isEmpty || !mounted) return;
 
+    // Keys the user changed while this very read was in flight are dropped, so
+    // the load cannot revert an edit the user has already made (and already
+    // published). Everything else still hydrates — dropping the whole load
+    // instead would resurrect the original "the Mac never reads the store back"
+    // bug. Empty after the first load, so this is a no-op for every later pull.
+    final incoming = _preloadEdits.isEmpty
+        ? values
+        : <String, String?>{
+            for (final e in values.entries)
+              if (!_preloadEdits.contains(e.key)) e.key: e.value,
+          };
+
     // Theme, accent and language live in controllers, not in this page. Without
     // this the fields below would show the pulled values while the app went on
     // rendering the old theme and speaking the old language.
-    applyDesktopSyncedSettings(ref, values);
+    applyDesktopSyncedSettings(ref, incoming);
     final appearance = ref.read(desktopAppearanceControllerProvider);
 
     bool boolOr(String key, bool current) =>
-        SyncedSettingsStore.decodeBool(values[key]) ?? current;
+        SyncedSettingsStore.decodeBool(incoming[key]) ?? current;
 
     setState(() {
-      _darkMode = appearance.themeMode != ThemeMode.light;
+      _themeMode = DesktopAppearanceController.themeCodeFor(
+        appearance.themeMode,
+      );
       _accent = appearance.accentColor;
       _timeFormat24h = boolOr(kSettingTimeFormat24h, _timeFormat24h);
       _habitReminders = boolOr(kSettingHabitReminders, _habitReminders);
@@ -2328,28 +2535,38 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       _focusMode = boolOr(kSettingFocusMode, _focusMode);
       _milestones = boolOr(kSettingMilestones, _milestones);
       _deepWorkInsights = boolOr(kSettingDeepWorkInsights, _deepWorkInsights);
-      if (values.containsKey(kSettingCalendarView)) {
-        _calendarView = normalizeCalendarViewCode(values[kSettingCalendarView]);
+      if (incoming.containsKey(kSettingCalendarView)) {
+        _calendarView = normalizeCalendarViewCode(incoming[kSettingCalendarView]);
       }
-      if (values.containsKey(kSettingLanguage)) {
-        _language = SettingsCodec.normalizeLanguage(values[kSettingLanguage]);
+      if (incoming.containsKey(kSettingLanguage)) {
+        _language = SettingsCodec.normalizeLanguage(incoming[kSettingLanguage]);
       }
       _morningTime =
-          SettingsCodec.normalizeTimeOfDay(values[kSettingMorningBriefTime]) ??
+          SettingsCodec.normalizeTimeOfDay(incoming[kSettingMorningBriefTime]) ??
           _morningTime;
       _eveningTime =
-          SettingsCodec.normalizeTimeOfDay(values[kSettingEveningReviewTime]) ??
+          SettingsCodec.normalizeTimeOfDay(incoming[kSettingEveningReviewTime]) ??
           _eveningTime;
     });
+
+    // Released HERE, not on the next tap: from now on this page is hydrated, so
+    // a pull is a genuine change made on another device and must be applied
+    // even for a key the user once touched. Latching without clearing would
+    // turn the guard into "my iPhone change never arrives on the Mac".
+    _syncedLoaded = true;
+    _preloadEdits.clear();
 
     // Local mirror only — SharedPreferences, never a synced column. This is what
     // the controllers read on the next cold start, before the store answers.
     final preferences = ref.read(sharedPreferencesProvider);
     if (preferences != null) {
       await Future.wait([
-        preferences.setString('pref_theme_mode', _darkMode ? 'dark' : 'light'),
+        preferences.setString('pref_theme_mode', _themeMode),
         preferences.setString('pref_accent_color', dashboardColorToHex(_accent)),
-        preferences.setBool('desktop_dark_mode', _darkMode),
+        preferences.setBool(
+          'desktop_dark_mode',
+          DesktopAppearanceController.resolvesDark(appearance.themeMode),
+        ),
         preferences.setInt('accent_color', _accent.toARGB32()),
         preferences.setBool('pref_time_format_24h', _timeFormat24h),
         preferences.setBool('notif_habit_reminders', _habitReminders),
@@ -2377,7 +2594,42 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     await _syncNotifications();
   }
 
-  Future<void> _syncProfile(Map<String, dynamic> values) async {
+  /// Writes [values], and on failure puts the UI back where the store actually
+  /// is and says so.
+  ///
+  /// [revert] is a LOCAL rollback on purpose. The obvious alternative —
+  /// `ref.invalidate(desktopSyncedSettingsProvider)` so the existing listeners
+  /// re-apply the true stored value — is a no-op in the dominant failure mode:
+  /// whatever made the write fail (a Keychain key-guard lockout, a corrupt
+  /// store) makes the READ fail too, `desktopSyncedSettingsProvider` swallows
+  /// that into an empty map, and both listeners are guarded on `isNotEmpty`.
+  /// The UI would go on showing a value that was never stored, silently, with
+  /// only a log line to show for it.
+  Future<void> _persistOrRollback({
+    required Map<String, dynamic> values,
+    required VoidCallback revert,
+  }) async {
+    // Keyed on the synced column name, which IS the key `_applySyncedSettings`
+    // reads, so the two always agree on what "this setting" means.
+    if (!_syncedLoaded) _preloadEdits.addAll(values.keys);
+    if (await _syncProfile(values)) return;
+    if (!mounted) return;
+    setState(revert);
+    showEvolveToast(
+      context,
+      message: t.settingsPage.settingSaveFailed,
+      kind: EvolveToastKind.error,
+    );
+  }
+
+  /// True when the values are persisted (or when there was legitimately nothing
+  /// to persist), false when a write was attempted and failed.
+  ///
+  /// It used to return `Future<void>` and every caller `unawaited` it, so a
+  /// failed write was indistinguishable from a successful one: the switch had
+  /// already moved, the prefs mirror had already been rewritten, and the user
+  /// was told nothing.
+  Future<bool> _syncProfile(Map<String, dynamic> values) async {
     // Private mode: persist through the SHARED store, which dual-writes the
     // per-key `user_settings` row and the legacy `profiles` column so a
     // not-yet-updated iPhone still sees the change.
@@ -2392,21 +2644,28 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           if (PrivateDbSchema.syncedSettingKeys.contains(e.key))
             e.key: encodeDesktopSetting(e.value),
       };
-      if (synced.isEmpty) return;
+      // Nothing synced in this payload is not a failure: the caller mixed in
+      // only device-local keys, which are already persisted by SharedPreferences.
+      if (synced.isEmpty) return true;
       try {
-        await DesktopPrivateDb.instance.writeSyncedSettings(synced);
+        await ref.read(desktopSyncedSettingsWriterProvider)(synced);
+        return true;
       } catch (error, stack) {
         AppLogger.error('Unable to save the private settings', error, stack);
+        return false;
       }
-      return;
     }
     final client = ref.read(supabaseClientProvider);
     final user = client?.auth.currentUser;
-    if (client == null || user == null) return;
+    // Signed out in cloud mode: there is no remote row to write, and the local
+    // prefs write already succeeded. Not a failure to report to the user.
+    if (client == null || user == null) return true;
     try {
       await client.from('profiles').upsert({'id': user.id, ...values});
+      return true;
     } catch (error, stack) {
       AppLogger.error('Unable to sync desktop preferences', error, stack);
+      return false;
     }
   }
 
@@ -2417,6 +2676,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     'de' => t.settingsPage.languageOptions.german,
     'ar' => t.settingsPage.languageOptions.arabic,
     _ => t.settingsPage.languageOptions.system,
+  };
+
+  /// The canonical CODE stays the value; only the label follows the UI
+  /// language, exactly like the calendar-view and language rows.
+  String _themeModeOptionLabel(String code) => switch (code) {
+    SettingsCodec.themeLight => t.settingsPage.themeLight,
+    SettingsCodec.themeDark => t.settingsPage.themeDark,
+    _ => t.settingsPage.themeSystem,
   };
 
   String _calendarViewOptionLabel(String code) => switch (code) {
@@ -2999,15 +3266,24 @@ class _ColorRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // RAW values, deliberately NOT mapped through `_visibleAccent` here. The
+    // whole list used to be mapped before this loop, so `onChanged(color)`
+    // below handed over the MAPPED colour: in a light theme, tapping the
+    // leftmost "white" swatch stored and synced `#09090B` — a near-black the
+    // user never chose — to every device. Mapping is a PAINT concern and now
+    // happens per-swatch, one line above the widget that paints it.
+    //
+    // The first entry is the seed itself rather than a parallel literal, so it
+    // cannot drift from what a fresh profile actually holds.
     final colors = [
-      const Color(0xFFFAFAFA),
+      DesktopAppearanceController.defaultAccent,
       const Color(0xFFEAB308),
       const Color(0xFF3B82F6),
       const Color(0xFF10B981),
       const Color(0xFF8B5CF6),
       const Color(0xFFEC4899),
       const Color(0xFFF97316),
-    ].map((color) => _visibleAccent(context, color));
+    ];
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -3025,23 +3301,31 @@ class _ColorRow extends StatelessWidget {
               runSpacing: 8,
               children: [
                 for (final color in colors)
-                  Tooltip(
-                    message: t.settingsPage.useAccent(hex: _toHex(color)),
-                    child: InkWell(
-                      onTap: () => onChanged(color),
-                      customBorder: const CircleBorder(),
-                      child: _Swatch(
-                        color: color,
-                        isSelected: selected == color,
-                        child: selected == color
-                            ? Icon(
-                                LucideIcons.check,
-                                size: 12,
-                                color: _checkColor(color),
-                              )
-                            : null,
-                      ),
-                    ),
+                  // `color` is the stored identity — tooltip, equality and what
+                  // gets published. `display` is pixels only.
+                  Builder(
+                    builder: (context) {
+                      final display = _visibleAccent(context, color);
+                      final isSelected = selected == color;
+                      return Tooltip(
+                        message: t.settingsPage.useAccent(hex: _toHex(color)),
+                        child: InkWell(
+                          onTap: () => onChanged(color),
+                          customBorder: const CircleBorder(),
+                          child: _Swatch(
+                            color: display,
+                            isSelected: isSelected,
+                            child: isSelected
+                                ? Icon(
+                                    LucideIcons.check,
+                                    size: 12,
+                                    color: _checkColor(display),
+                                  )
+                                : null,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 Tooltip(
                   message: t.settingsPage.customColor,
@@ -3085,9 +3369,16 @@ class _ColorRow extends StatelessWidget {
     );
   }
 
+  /// Paint-time substitution ONLY — never what gets stored or compared.
+  ///
+  /// Keyed off [DesktopAppearanceController.defaultAccent] rather than a
+  /// repeated hex literal: the two were independent constants and drifted, so
+  /// the substitution silently stopped firing for the seed white and the page
+  /// painted an invisible swatch on a light background.
   Color _visibleAccent(BuildContext context, Color color) {
     if (Theme.of(context).brightness == Brightness.light &&
-        color.toARGB32() == 0xFFFAFAFA) {
+        color.toARGB32() ==
+            DesktopAppearanceController.defaultAccent.toARGB32()) {
       return const Color(0xFF09090B);
     }
     return color;

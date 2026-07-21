@@ -169,9 +169,22 @@ class FakePrivateDataStore implements PrivateDataStore {
     settingsRowWrites.add(Map<String, Object?>.from(values));
   }
 
-  /// Every `updateSettingsRow` payload, in call order. Only DEVICE-LOCAL columns
-  /// should ever appear here now that synced settings go through
-  /// [writeSyncedSettings].
+  /// Every `updateSettingsRow` payload, in call order — i.e. every write to the
+  /// LEGACY whole-row `profiles` columns.
+  ///
+  /// Only DEVICE-LOCAL columns may ever appear here, now that synced settings go
+  /// through [writeSyncedSettings]. A synced value written into the profiles row
+  /// is subject to row-level last-write-wins, which is how a preference the Mac
+  /// owns gets reverted by an iOS default.
+  ///
+  /// Tests assert on the KEY SET here, the same way they do for [syncedWrites]:
+  /// `settings_clobber_test.dart` pins the intersection with
+  /// `PrivateDbSchema.syncedSettingKeys` empty ('a device-local write carries a
+  /// synced settings key') and pins the write-suppression guard ('an unrelated
+  /// toggle bumps the whole profiles row'). This list recorded writes that
+  /// nothing read for long enough that a whole production write —
+  /// [setPrivateAiExternalConsent] — was missing from the fake without anything
+  /// noticing.
   final List<Map<String, Object?>> settingsRowWrites = <Map<String, Object?>>[];
 
   /// Seed for [loadSyncedSettings] — pretend these already synced in from the
@@ -201,6 +214,14 @@ class FakePrivateDataStore implements PrivateDataStore {
   @override
   Future<void> setPrivateAiExternalConsent(bool value) async {
     calls.add('setPrivateAiExternalConsent');
+    // Routed through the recorder because the real store routes it the same way
+    // (`PrivateLocalDatabase.setPrivateAiExternalConsent` calls
+    // `updateSettingsRow`). Stubbing it out made a genuine device-local write
+    // invisible to [settingsRowWrites], which is the one thing that list is for.
+    // The `calls.add` above is kept as well: this adds 'updateSettingsRow' to
+    // `calls` too, which is safe because every `calls` assertion in mobile/test
+    // uses `contains` rather than an exact list.
+    await updateSettingsRow({'private_ai_external_consent': value ? 1 : 0});
   }
 
   // ── Import / export / wipe ──────────────────────────────────────────────

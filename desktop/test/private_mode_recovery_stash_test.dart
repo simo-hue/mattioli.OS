@@ -130,6 +130,7 @@ void main() {
           isEnabled: true,
           hasKey: true,
           account: CloudAccountStatus.available,
+          ownerPending: true,
         ),
       );
 

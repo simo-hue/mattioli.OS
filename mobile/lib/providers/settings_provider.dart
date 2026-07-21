@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
 import 'package:evolve_sync/evolve_sync.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/notifications.dart';
 import '../core/app_logger.dart';
@@ -169,6 +170,24 @@ class AppSettings {
 class AppSettingsNotifier extends Notifier<AppSettings> {
   final NotificationService _notificationService = NotificationService();
 
+  /// SharedPreferences key holding the Private-mode language mirror.
+  ///
+  /// Deliberately NOT `pref_language`. That key is the CLOUD mode's own cache —
+  /// `_loadFromPrefs()` reads it back on every build in supabase mode — so while
+  /// the private path wrote it too, entering Private mode overwrote the language
+  /// the user had chosen in cloud mode, and returning to cloud mode came back in
+  /// the device locale. The mirror itself is worth keeping (main.dart applies it
+  /// to slang before the first frame, which is what stops a private cold start
+  /// from visibly re-languaging); it just needs its own namespace.
+  ///
+  /// The name deliberately does not start with `pref_`: `resetToDefaults()`'s
+  /// cloud branch removes every key that does, and a cloud-mode reset has no
+  /// business wiping the Private-mode mirror.
+  ///
+  /// Public because main.dart reads it before the first frame; two spellings of
+  /// one key in two files is the drift this constant exists to prevent.
+  static const String privateLanguagePrefKey = 'private_pref_language';
+
   /// Canonical seed accent, kept identical to [SettingsCodec.defaultAccentColor]
   /// (`#FFFFFF`) — the `profiles.accent_color` DEFAULT. The Dart side used to
   /// seed `#FAFAFA` instead, so an untouched profile hydrated to a different
@@ -210,6 +229,29 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
   /// is not silently snapped back a few frames later.
   final Set<String> _preloadEdits = <String>{};
 
+  /// Which private load is the LIVE one. Bumped by every [build].
+  ///
+  /// A load captures this on entry and writes nothing back unless it still
+  /// matches — because two loads can genuinely be in flight at once (a debounced
+  /// write flushes, `syncNow` applies remote changes, `sync_refresh.dart`
+  /// invalidates this provider, all while the previous load is still awaiting
+  /// sqflite). Without the check the abandoned load's `state = loaded` lands on
+  /// the new session with a snapshot taken before the user's last tap, and its
+  /// `finally` clears the new session's [_preloadEdits] — which reopens the
+  /// snap-back this whole mechanism exists to prevent, through a second door.
+  int _privateLoadGeneration = 0;
+
+  /// The Focus Mode value THIS process last enforced on the actual iOS
+  /// schedule — not the value in [state], which is only what the UI shows.
+  ///
+  /// `null` means this process has never touched the schedule, i.e. whatever iOS
+  /// holds pending was scheduled by an earlier launch. That distinction is the
+  /// whole point: it is what lets [_applyFocusModeToSchedule] tell a cold start
+  /// (must not schedule — NOTIF-3) apart from an ON→OFF flip we ourselves caused
+  /// (must schedule, or we leave the phone mute with a switch that says
+  /// otherwise). See that method for the reasoning.
+  bool? _focusModeAppliedToSchedule;
+
   @override
   AppSettings build() {
     final dataMode = ref.watch(activeDataModeProvider);
@@ -225,6 +267,23 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
                 false,
           )
         : _loadFromPrefs();
+
+    // The notifier instance OUTLIVES build(). Riverpod re-runs build() on a
+    // data-mode flip and on `ref.invalidate(settingsProvider)` while keeping the
+    // same object: `invalidateSelf` runs the onDispose callbacks, not `dispose()`,
+    // so `classListenable.result ??=` hands back the same notifier and only
+    // `runBuild()` re-runs. Every one of these rebuilds starts a NEW load, so the
+    // previous load's bookkeeping must not survive into it.
+    //
+    // This matters far beyond the data-mode flip: sync_refresh.dart invalidates
+    // this provider after every sync that applied remote changes (main.dart's
+    // `_syncAndRefresh` — the 60s poll, app resume, a debounced write, a
+    // CloudKit push). With `_privateLoaded` latched true from the first load,
+    // every subsequent load treated an edit made while it was in flight as
+    // "post-load" and snapped it back, on a two-device user, routinely.
+    _privateLoaded = false;
+    _preloadEdits.clear();
+    _privateLoadGeneration++;
 
     if (dataMode == AppDataMode.private) {
       _loadPrivateSettings();
@@ -309,6 +368,10 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
   }
 
   Future<void> _loadPrivateSettings() async {
+    // Which rebuild this load belongs to. Everything below that mutates shared
+    // state is gated on this still being the live generation — see
+    // [_privateLoadGeneration].
+    final generation = _privateLoadGeneration;
     try {
       final store = ref.read(privateLocalDatabaseProvider);
       final row = await store.loadSettingsRow();
@@ -317,6 +380,11 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       // between devices comes from the shared SyncedSettingsStore — per-key rows
       // first, legacy profiles columns only as a fallback.
       final synced = await store.loadSyncedSettings();
+      // A newer load started while this one was awaiting sqflite. Its snapshot
+      // is more recent than ours in every respect, so this one must land
+      // nothing at all — not the state, not the prefs mirrors, and (see the
+      // `finally`) not the load-finished latch either.
+      if (generation != _privateLoadGeneration) return;
       var loaded = _applySyncedSettings(_privateBaseSettings(row), synced);
 
       // Anything the user changed while this load was in flight wins over what
@@ -336,31 +404,42 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       // Mirror the biometric lock flag into SharedPreferences so the next cold
       // start can read it synchronously before the DB row loads (see build()).
       await prefs.setBool('pref_biometric_lock', state.biometricLock);
-      // Mirror the language too. main.dart applies `pref_language` to slang
-      // BEFORE the first frame, and Private mode never wrote that key (only the
-      // cloud `_saveToPrefs` did) — so a private cold start rendered in a stale
-      // cloud-era language, or the device locale, until this load resolved and
-      // the whole UI visibly re-languaged. This is a one-way cache of a value
-      // whose source of truth stays the private DB; it is not a settings leak
-      // into the cloud store, and nothing ever reads it back in private mode.
-      await prefs.setString('pref_language', state.language);
-      // Deliberately NOT syncNotifications() here. This is a cold-start restore,
-      // not a user gesture, and every schedule* call opens with
-      // requestPermissions() — so re-syncing here fires the iOS permission alert
-      // unprompted on the first Private-mode launch, which is exactly what the
-      // deferred-prompt design (NOTIF-3) exists to avoid. Reminders are daily
-      // repeats that iOS keeps pending across launches, and the cloud branch of
-      // build() never re-syncs either; the prompt belongs to the notification
-      // settings toggles and the habit add/edit path that already own it.
+      // Mirror the language too. main.dart applies it to slang BEFORE the first
+      // frame, and Private mode never used to write it at all — so a private
+      // cold start rendered in a stale cloud-era language, or the device locale,
+      // until this load resolved and the whole UI visibly re-languaged. This is
+      // a one-way cache of a value whose source of truth stays the private DB.
+      //
+      // It goes under [privateLanguagePrefKey], NOT `pref_language`. The mirror
+      // used to share that key with the cloud-mode cache, and the old comment
+      // here justified it with "nothing ever reads it back in private mode" —
+      // true, and guarding the wrong direction: CLOUD mode reads it back, in
+      // `_loadFromPrefs()`, on every build. So this line, which fires on every
+      // private load, quietly overwrote the language a cloud-mode user had
+      // chosen. Normalized (the old line was not) so the two write sites agree.
+      await prefs.setString(
+        privateLanguagePrefKey,
+        AppLanguagePreference.normalize(state.language),
+      );
+      await _applyFocusModeToSchedule();
     } catch (e, stack) {
       AppLogger.error('[Settings] Private settings load error', e, stack);
-      state = state.copyWith(isPro: true);
+      if (generation == _privateLoadGeneration) {
+        state = state.copyWith(isPro: true);
+      }
     } finally {
       // Set even on failure. Leaving this false would keep treating every later
       // write as "pre-load" forever, which is the wrong shape of caution: the
       // per-key diff is what protects the stored settings, not this flag.
-      _privateLoaded = true;
-      _preloadEdits.clear();
+      //
+      // Only for the LIVE generation, though: an abandoned load clearing
+      // `_preloadEdits` here would discard edits the current load still has to
+      // re-apply, and latching `_privateLoaded` would stop the current load from
+      // ever collecting more.
+      if (generation == _privateLoadGeneration) {
+        _privateLoaded = true;
+        _preloadEdits.clear();
+      }
     }
   }
 
@@ -578,9 +657,27 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
   static String _accentToHex(Color color) =>
       '#${color.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
 
-  static Color _accentFromHex(String? hex) {
+  /// The accent in [hex], or the seed default when there is nothing usable.
+  ///
+  /// Correct only where "nothing stored yet" genuinely means "use the seed" —
+  /// i.e. `_loadFromPrefs`, hydrating a device that has never had an accent. Do
+  /// NOT use it to merge an incoming value onto one the user already has: it
+  /// cannot distinguish "absent" from "present but corrupt", so it answers both
+  /// with white and silently discards the live colour. Use
+  /// [_accentFromHexOrNull] there.
+  static Color _accentFromHex(String? hex) =>
+      _accentFromHexOrNull(hex) ?? defaultAccentColor;
+
+  /// The accent in [hex], or null when the shared codec cannot decode it.
+  ///
+  /// Preserving the codec's null is the point: it is how "I cannot decode this"
+  /// stays distinguishable from a real colour, so a caller can leave whatever it
+  /// already had standing. This mirrors how `morningBriefTime` has always been
+  /// handled in [_applySyncedSettings], and how macOS handles a corrupt accent
+  /// (`_parseColor(..., fallback: state.accentColor)`).
+  static Color? _accentFromHexOrNull(String? hex) {
     final normalized = SettingsCodec.normalizeAccentColor(hex);
-    if (normalized == null) return defaultAccentColor;
+    if (normalized == null) return null;
     return Color(int.parse('ff${normalized.substring(1)}', radix: 16));
   }
 
@@ -640,9 +737,15 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       themeMode: s('theme_mode') == null
           ? null
           : SettingsCodec.normalizeThemeMode(values['theme_mode']),
-      accentColor: s('accent_color') == null
-          ? null
-          : _accentFromHex(values['accent_color']),
+      // Absent, explicitly null and CORRUPT all mean "leave base standing", the
+      // same way `morningBriefTime` below has always behaved and the same way
+      // this method's own doc comment describes. It made no observable
+      // difference here — both call sites hand this a base whose accent is
+      // already `defaultAccentColor`, so coercing to the default and leaving the
+      // base produced the identical Color — but the shape was a trap, and it was
+      // copied verbatim into the server merge where the base IS the user's
+      // colour. See [mergeServerProfile].
+      accentColor: _accentFromHexOrNull(values['accent_color']),
       defaultCalendarView: s('pref_default_calendar_view'),
       hapticFeedback: b('pref_haptic_feedback'),
       timeFormat24h: b('pref_time_format_24h'),
@@ -702,7 +805,11 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     // next cold start (the private DB row loads asynchronously).
     prefs.setBool('pref_biometric_lock', s.biometricLock);
     // See _loadPrivateSettings: main.dart applies this before the first frame.
-    prefs.setString('pref_language', AppLanguagePreference.normalize(s.language));
+    // Under the private key — `pref_language` belongs to the cloud-mode cache.
+    prefs.setString(
+      privateLanguagePrefKey,
+      AppLanguagePreference.normalize(s.language),
+    );
     // Auto-verification notification prefs are device-local (iOS-only).
     prefs.setBool('notif_verification_nudges', s.verificationNudges);
     prefs.setBool('notif_verification_celebrations', s.verificationCelebrations);
@@ -829,6 +936,85 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
 
   // ── Sincronizzazione Supabase (Profiles) ──────────────────────────────────
 
+  /// A `profiles` row from the server layered onto the settings this device is
+  /// already showing.
+  ///
+  /// Extracted from [_syncFromSupabase] purely so it can be tested: `supabase`
+  /// is `Supabase.instance.client`, a hard global with no injection point, so
+  /// there is no other seam on this path.
+  ///
+  /// Every value that has a [SettingsCodec] parser goes through it. For the
+  /// three columns `profiles` does NOT constrain — `accent_color`,
+  /// `morning_brief_time`, `evening_review_time` (mobile_schema.sql:56, 84, 85,
+  /// none of which carries a CHECK) — a value the parser rejects leaves
+  /// [current] standing, because nothing upstream guarantees they parse and
+  /// inventing a value there destroys the user's.
+  ///
+  /// `theme_mode` is the exception and stays as it is: it DOES have a CHECK
+  /// (mobile_schema.sql:55) so it cannot arrive corrupt, and
+  /// [SettingsCodec.normalizeThemeMode] has no "reject" answer by design — it
+  /// folds anything unrecognised to `'system'`, exactly as [_applySyncedSettings]
+  /// does. Routing it through the codec here only removes the last raw
+  /// assignment in the block; it is not a fallback-to-current.
+  ///
+  /// The three unconstrained ones used to be wrong at once: `accent_color` went
+  /// through `_accentFromHex`, which turns "I cannot decode this" into the
+  /// DEFAULT accent, and both brief times were assigned raw. What that cost,
+  /// concretely:
+  ///  * accent — the user's chosen colour was replaced with `#FFFFFF`, then
+  ///    persisted by the `_saveToPrefs` that follows this call, then pushed back
+  ///    up by the next `_syncToSupabase`, losing it on every device.
+  ///  * brief times — a malformed string reached
+  ///    `NotificationService.scheduleDailyHabitReminder`, whose `int.parse`
+  ///    throws INSIDE the `_runNotificationSync` try block that has already run
+  ///    `cancelAll()`. Net effect: every reminder and both briefs cancelled and
+  ///    none rescheduled, with a log line as the only trace.
+  @visibleForTesting
+  static AppSettings mergeServerProfile(
+    AppSettings current,
+    Map<String, dynamic> data,
+  ) {
+    return current.copyWith(
+      themeMode: data['theme_mode'] == null
+          ? current.themeMode
+          : SettingsCodec.normalizeThemeMode(data['theme_mode'] as String?),
+      accentColor: _accentFromHexOrNull(data['accent_color'] as String?) ??
+          current.accentColor,
+      defaultCalendarView:
+          data['pref_default_calendar_view'] ?? current.defaultCalendarView,
+      hapticFeedback: data['pref_haptic_feedback'] ?? current.hapticFeedback,
+      language: AppLanguagePreference.normalize(
+        data['language']?.toString() ?? current.language,
+      ),
+      timeFormat24h: data['pref_time_format_24h'] ?? current.timeFormat24h,
+      // The server column is authoritative, not merely a grant: it is
+      // written only by the RevenueCat webhook, so OR-ing it with the local
+      // flag would make a legitimate expiry or refund unable to revoke Pro
+      // for the rest of the session. Offline (or with no profile row) this
+      // whole block never runs and the cached entitlement stands, and
+      // RevenueCat re-asserts the truth right after — see _syncAccount.
+      isPro: data['is_pro'] ?? false,
+      habitReminders: data['notif_habit_reminders'] ?? current.habitReminders,
+      goalDeadlines: data['notif_goal_deadlines'] ?? current.goalDeadlines,
+      aiInsights: data['notif_ai_insights'] ?? current.aiInsights,
+      weeklyReports: data['notif_weekly_reports'] ?? current.weeklyReports,
+      eveningReview: data['notif_evening_review'] ?? current.eveningReview,
+      // Biometric lock is a per-device security preference: a Face ID lock
+      // set on THIS phone must not be silently disabled by a stale value —
+      // or a value from another device — pulled from the server. Keep the
+      // local value authoritative instead of letting the server win.
+      biometricLock: current.biometricLock,
+      morningBriefTime: SettingsCodec.normalizeTimeOfDay(
+            data['morning_brief_time'] as String?,
+          ) ??
+          current.morningBriefTime,
+      eveningReviewTime: SettingsCodec.normalizeTimeOfDay(
+            data['evening_review_time'] as String?,
+          ) ??
+          current.eveningReviewTime,
+    );
+  }
+
   Future<void> _syncFromSupabase(String userId) async {
     try {
       final data = await supabase
@@ -838,42 +1024,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
           .maybeSingle();
 
       if (data != null) {
-        final serverSettings = state.copyWith(
-          themeMode: data['theme_mode'] ?? state.themeMode,
-          accentColor: data['accent_color'] != null
-              ? _accentFromHex(data['accent_color'] as String?)
-              : state.accentColor,
-          defaultCalendarView:
-              data['pref_default_calendar_view'] ?? state.defaultCalendarView,
-          hapticFeedback: data['pref_haptic_feedback'] ?? state.hapticFeedback,
-          language: AppLanguagePreference.normalize(
-            data['language']?.toString() ?? state.language,
-          ),
-          timeFormat24h: data['pref_time_format_24h'] ?? state.timeFormat24h,
-          // The server column is authoritative, not merely a grant: it is
-          // written only by the RevenueCat webhook, so OR-ing it with the local
-          // flag would make a legitimate expiry or refund unable to revoke Pro
-          // for the rest of the session. Offline (or with no profile row) this
-          // whole block never runs and the cached entitlement stands, and
-          // RevenueCat re-asserts the truth right after — see _syncAccount.
-          isPro: data['is_pro'] ?? false,
-          habitReminders: data['notif_habit_reminders'] ?? state.habitReminders,
-          goalDeadlines: data['notif_goal_deadlines'] ?? state.goalDeadlines,
-          aiInsights: data['notif_ai_insights'] ?? state.aiInsights,
-          weeklyReports: data['notif_weekly_reports'] ?? state.weeklyReports,
-          eveningReview: data['notif_evening_review'] ?? state.eveningReview,
-          // Biometric lock is a per-device security preference: a Face ID lock
-          // set on THIS phone must not be silently disabled by a stale value —
-          // or a value from another device — pulled from the server. Keep the
-          // local value authoritative instead of letting the server win.
-          biometricLock: state.biometricLock,
-          morningBriefTime:
-              data['morning_brief_time'] ?? state.morningBriefTime,
-          eveningReviewTime:
-              data['evening_review_time'] ?? state.eveningReviewTime,
-        );
-
-        state = serverSettings;
+        state = mergeServerProfile(state, data);
         _saveToPrefs(state);
       }
     } catch (e, stack) {
@@ -925,6 +1076,56 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
 
   void syncNotifications() => unawaited(_runNotificationSync());
 
+  /// Makes the SCHEDULE agree with a Focus Mode that arrived from the Mac.
+  ///
+  /// Called from [_loadPrivateSettings], which is the only path a macOS-written
+  /// `pref_focus_mode` takes into this app — and which used to stop at
+  /// `state = loaded`. That left the switch rendering ON while iOS went on
+  /// firing every pending daily repeat: the switch said the phone was silent and
+  /// the phone was not. Cross-device suppression is the entire product promise
+  /// of this synced setting, so it has to reach the schedule, not just the UI.
+  ///
+  /// This deliberately does NOT just call [syncNotifications]. The two halves
+  /// have opposite permission costs and so get opposite treatment:
+  ///
+  ///  * ON → a bare [NotificationService.cancelAll], applied unconditionally.
+  ///    `cancelAll` never calls `requestPermissions()` (core/notifications.dart),
+  ///    so honouring it cannot fire the iOS permission alert. The NOTIF-3
+  ///    deferred-prompt design is about the `schedule*` calls; it never covered
+  ///    the cancel, which is why dropping the cancel here was a mistake rather
+  ///    than a trade-off.
+  ///
+  ///  * OFF → a full re-sync, but ONLY when [_focusModeAppliedToSchedule] is
+  ///    `true`, i.e. when this same process is the one that emptied the
+  ///    schedule. Then rescheduling is restoring what we removed, and any
+  ///    permission prompt was already going to be needed for the reminders the
+  ///    user has switched on. On a cold start the field is `null`, nothing is
+  ///    scheduled, and today's launch behaviour is preserved exactly: iOS keeps
+  ///    daily repeats pending across launches, so there is nothing to restore
+  ///    and no reason to ask for permission unprompted.
+  ///
+  /// Note this runs on far more than a cold start. `_loadPrivateSettings` re-runs
+  /// on every sync that applied remote changes — main.dart's `_syncAndRefresh`
+  /// calls `invalidatePrivateDataProviders`, and sync_refresh.dart invalidates
+  /// `settingsProvider` — so this is the mid-session path a Focus Mode toggled on
+  /// the Mac actually travels.
+  Future<void> _applyFocusModeToSchedule() async {
+    if (state.focusMode) {
+      await _guarded(
+        () => _notificationService.cancelAll(),
+        '[Settings] Focus Mode cancel on private load failed',
+      );
+      _focusModeAppliedToSchedule = true;
+      return;
+    }
+    if (_focusModeAppliedToSchedule != true) return;
+    // We silenced this device earlier in this session and the Mac has now turned
+    // Focus Mode back off. Without this the phone stays completely mute while
+    // its switches claim the reminders are on — the same lie as the ON case,
+    // pointing the other way.
+    syncNotifications();
+  }
+
   Future<void> _runNotificationSync() async {
     // Snapshot every input before the first await. The schedules below are
     // awaited one at a time, which leaves the provider room to be disposed
@@ -944,6 +1145,11 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
 
     try {
       await _notificationService.cancelAll();
+      // Record what the schedule now reflects, so a later Focus Mode arriving
+      // from the Mac can tell "this process silenced the device" apart from
+      // "iOS is holding repeats an earlier launch scheduled" — see
+      // [_applyFocusModeToSchedule].
+      _focusModeAppliedToSchedule = settings.focusMode;
       if (settings.focusMode) return;
 
       // Every schedule is awaited in turn. scheduleHabitReminder's iOS

@@ -1,4 +1,9 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'privacy_utils.dart';
@@ -38,6 +43,27 @@ class LogEntry {
 
   static String _pad(int n) => n.toString().padLeft(2, '0');
   static String _pad3(int n) => n.toString().padLeft(3, '0');
+
+  Map<String, dynamic> toJson() => {
+        'timestamp': timestamp.toIso8601String(),
+        'level': level.name,
+        'message': message,
+        if (error != null) 'error': error,
+        if (stackTrace != null) 'stackTrace': stackTrace,
+        if (extras != null) 'extras': extras,
+      };
+
+  static LogEntry fromJson(Map<String, dynamic> json) => LogEntry(
+        timestamp: DateTime.parse(json['timestamp'] as String),
+        level: AppLogLevel.values.firstWhere(
+          (l) => l.name == json['level'],
+          orElse: () => AppLogLevel.info,
+        ),
+        message: json['message'] as String,
+        error: json['error'] as String?,
+        stackTrace: json['stackTrace'] as String?,
+        extras: (json['extras'] as Map?)?.cast<String, dynamic>(),
+      );
 }
 
 /// Centralized error/diagnostic logging.
@@ -45,9 +71,16 @@ class LogEntry {
 /// - Debug: prints to the console (`debugPrint`).
 /// - Release: reports to Sentry (unless external reporting is disabled — Private
 ///   mode), with the message as the `source` tag.
-/// - Always: keeps entries in an in-memory ring buffer for the in-app log viewer
-///   (see `app_logs_dialog.dart`). The buffer is process-local and not persisted
-///   to disk.
+/// - Always: keeps entries in a ring buffer for the in-app log viewer (see
+///   `app_logs_dialog.dart`), PERSISTED to disk and reloaded at startup.
+///
+/// Persistence matters more here than it looks. The buffer used to be
+/// process-local, so quitting and reopening the app erased it — and quitting and
+/// reopening is exactly what a user does when sync appears stuck. The single
+/// action taken to work around a problem destroyed the only record of it, and
+/// every log exported after that showed a clean session starting AFTER the
+/// interesting moment. Mobile has always persisted; this brings the Mac to
+/// parity so the two apps can actually be compared.
 class AppLogger {
   const AppLogger._();
 
@@ -94,12 +127,78 @@ class AppLogger {
     _logs.add(entry);
     if (_logs.length > _maxEntries) _logs.removeAt(0);
     _notifyListeners();
+    _scheduleSave();
   }
 
-  /// Clears every stored entry.
+  /// Clears every stored entry, on disk as well as in memory.
   static void clearLogs() {
     _logs.clear();
     _notifyListeners();
+    _scheduleSave();
+  }
+
+  // ── Persistence ───────────────────────────────────────────────────────────
+
+  static Timer? _saveTimer;
+  static bool _isLoading = false;
+
+  /// Set false in widget tests. The debounced save schedules a real 2-second
+  /// timer, and `pumpWidget` fails a test that finishes with one pending — so
+  /// without this seam any test that logs anything (which is most of them, via
+  /// the code under test) would fail on a timer it never asked for.
+  ///
+  /// Deliberately opt-OUT rather than opt-in: production must persist by
+  /// default, and a logger that silently stops recording because a flag was not
+  /// set is the failure this whole change exists to prevent.
+  @visibleForTesting
+  static bool persistenceEnabled = true;
+
+  static Future<File> get _logFile async {
+    final dir = await getApplicationSupportDirectory();
+    return File('${dir.path}/app_logs.json');
+  }
+
+  /// Reload the persisted buffer. Call once at startup, before anything worth
+  /// logging happens.
+  static Future<void> loadLogs() async {
+    if (_isLoading) return;
+    _isLoading = true;
+    try {
+      final file = await _logFile;
+      if (!await file.exists()) return;
+      final decoded = jsonDecode(await file.readAsString()) as List<dynamic>;
+      _logs.clear();
+      for (final item in decoded) {
+        try {
+          _logs.add(LogEntry.fromJson(item as Map<String, dynamic>));
+        } catch (_) {
+          // Skip a malformed entry rather than losing the whole history to it.
+        }
+      }
+      _notifyListeners();
+    } catch (e) {
+      if (kDebugMode) debugPrint('[AppLogger] Failed to load persisted logs: $e');
+    } finally {
+      _isLoading = false;
+    }
+  }
+
+  /// Debounced so a burst of entries costs one write. Deliberately fire-and-
+  /// forget: logging must never fail an operation it is only observing.
+  static void _scheduleSave() {
+    if (!persistenceEnabled) return;
+    _saveTimer?.cancel();
+    _saveTimer = Timer(const Duration(seconds: 2), () async {
+      try {
+        final file = await _logFile;
+        final copy = _logs.toList(); // avoid concurrent modification
+        await file.writeAsString(
+          jsonEncode(copy.map((e) => e.toJson()).toList()),
+        );
+      } catch (e) {
+        if (kDebugMode) debugPrint('[AppLogger] Failed to persist logs: $e');
+      }
+    });
   }
 
   static void error(

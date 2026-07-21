@@ -19,6 +19,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Restore the persisted log buffer FIRST, so a session's entries append to the
+  // previous history instead of replacing it. Without this the Mac's log showed
+  // only the current run — and since quitting and reopening is what a user does
+  // when sync looks stuck, the workaround erased the evidence of the problem.
+  await AppLogger.loadLogs();
   // NEVER install a mock secure-storage backend here. `setMockInitialValues`
   // swaps the *static* FlutterSecureStoragePlatform.instance for an in-memory
   // map, so nothing reaches the Keychain: the SQLCipher key would exist only in

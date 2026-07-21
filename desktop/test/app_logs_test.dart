@@ -9,8 +9,13 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   setUp(() {
     LocaleSettings.setLocale(AppLocale.it);
+    // The debounced disk save schedules a real 2s timer; a widget test that
+    // ends with one pending fails. These tests exercise the buffer, not
+    // persistence.
+    AppLogger.persistenceEnabled = false;
     AppLogger.clearLogs();
   });
+  tearDown(() => AppLogger.persistenceEnabled = true);
 
   test('AppLogger buffers by level, newest first, with working counts', () {
     AppLogger.info('info message');

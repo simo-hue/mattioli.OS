@@ -2,6 +2,13 @@
 
 ## Recent Changes
 
+- [2026-07-21]: **Fix iOS Release Build and Missing appColors Import**
+  - *Details*: Fixed a build error blocking the iOS IPA generation for mobile and cleared the Xcode DerivedData cache to resolve a stubborn disk I/O error.
+  - *Tech Notes*:
+    - Imported `../../core/theme.dart` in `lib/ui/widgets/verification_rule_field.dart` to make `context.appColors` available.
+    - Aggressively purged Xcode's zombie processes and `DerivedData` via `chflags` and `rm -rf` after multiple cache corruption errors.
+    - Successfully built the App Store IPA to `build/ios/ipa`.
+
 - [2026-07-20]: **Desktop 7-Day Rolling Trend Graph**
   - *Details*: Updated the Weekly trend graph on the desktop dashboard to display a 7-day rolling window ending on the current day, instead of the static Monday-to-Sunday current week window. The X-axis labels are now also dynamically localized using the app's internationalization strings.
   - *Tech Notes*:

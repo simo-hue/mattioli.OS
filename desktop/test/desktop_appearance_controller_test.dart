@@ -34,24 +34,57 @@ void main() {
     expect(preferences.getString('pref_theme_mode'), 'dark');
   });
 
-  test('theme changes keep the accent visible', () async {
+  test('a theme change does NOT rewrite the stored accent', () async {
+    // It used to. Coercing the accent on a theme flip persisted a NEW colour
+    // and — once settings synced — pushed it to every other device, so merely
+    // switching to dark mode on the Mac changed the accent on the iPhone.
+    // The stored value is now whatever the user chose, in both themes.
     final container = await _containerWithPreferences({});
     addTearDown(container.dispose);
     final controller = container.read(
       desktopAppearanceControllerProvider.notifier,
     );
+    const chosen = Color(0xFFFFFFFF); // white: illegible on a light theme
+    controller.setAccentColor(chosen);
 
     controller.setThemeMode(ThemeMode.light);
     expect(
       container.read(desktopAppearanceControllerProvider).accentColor,
-      const Color(0xFF09090B),
+      chosen,
+      reason: 'the stored accent survives a theme flip',
     );
 
     controller.setThemeMode(ThemeMode.dark);
     expect(
       container.read(desktopAppearanceControllerProvider).accentColor,
-      const Color(0xFFFAFAFA),
+      chosen,
+      reason: 'and survives flipping back — no third colour is invented',
     );
+  });
+
+  test('legibility is applied at PAINT time instead', () async {
+    // The guarantee the old test was really protecting: an accent that would be
+    // invisible is substituted when painting — without touching what is stored,
+    // and therefore without changing what other devices see.
+    expect(
+      DesktopAppearanceController.readableAccent(
+        const Color(0xFFFFFFFF),
+        Brightness.light,
+      ),
+      const Color(0xFF09090B),
+    );
+    expect(
+      DesktopAppearanceController.readableAccent(
+        const Color(0xFF000000),
+        Brightness.dark,
+      ),
+      DesktopAppearanceController.defaultAccent,
+    );
+    // A legible colour is passed straight through in both themes.
+    const orange = Color(0xFFFF9500);
+    for (final b in Brightness.values) {
+      expect(DesktopAppearanceController.readableAccent(orange, b), orange);
+    }
   });
 }
 

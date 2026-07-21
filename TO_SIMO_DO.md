@@ -56,3 +56,27 @@ flutter build ipa --release
 - [ ] Mobile still has no launch sync and no periodic timer.
 - [ ] No retry/backoff or `qualityOfService` on any CloudKit operation.
 - [ ] `quarantineRecord`'s ON CONFLICT branch does not apply the quarantine stamp.
+
+---
+
+### iOS settings sync (2026-07-21) — on-device QA required
+The iOS settings path now writes per-key `user_settings` rows through the shared
+`SyncedSettingsStore`. Nothing to configure, but two things can only be confirmed on real
+hardware with both devices signed into the same iCloud account:
+
+- [ ] **Focus Mode round-trip.** Turn Focus Mode ON on the Mac, sync, confirm the new switch
+      at the top of iPhone → Settings → Notifications shows ON. Turn it OFF on the iPhone and
+      confirm the Mac follows. This is the case that previously had no cure from the phone.
+- [ ] **Per-key convergence.** Change the accent on the iPhone and the language on the Mac
+      inside one sync window. Both changes must survive — under the old whole-row write one
+      of them silently reverted.
+- [ ] **Cold-start language.** With the app language set to something other than the device
+      locale, force-quit and relaunch the iPhone app. The FIRST frame must already be in the
+      chosen language (no visible re-languaging a beat later).
+- [ ] **Accent no longer ping-pongs.** Flip the iPhone between dark and light a few times.
+      The stored accent must not change, and the Mac must not receive a new accent.
+
+Ordering note: the iPhone build must be installed alongside a Mac build that already has the
+v6 settings work. `SyncedSettingsStore` dual-writes the legacy `profiles` columns for exactly
+this reason, so a lagging device keeps working — but the round-trip checks above are only
+meaningful once both sides are on v6.

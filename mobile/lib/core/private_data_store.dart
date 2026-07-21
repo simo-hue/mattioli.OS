@@ -83,6 +83,27 @@ abstract interface class PrivateDataStore {
 
   Future<void> updateSettingsRow(Map<String, Object?> values);
 
+  /// Every SYNCED setting for the local owner, as canonical
+  /// `PrivateDbSchema.syncedSettingKeys` -> string value.
+  ///
+  /// Backed by the shared `SyncedSettingsStore`, so the per-key `user_settings`
+  /// record wins over the legacy `profiles` column and both apps read the value
+  /// through exactly one parser. Keys absent from both stores are OMITTED, which
+  /// is what lets the caller tell "never set" from "set to null" and apply its
+  /// own default.
+  Future<Map<String, String?>> loadSyncedSettings();
+
+  /// Writes ONLY [values] — one independent record per key.
+  ///
+  /// The old whole-row write coupled every setting's fate: touching one toggle
+  /// re-stamped all ~20 columns, so a stale in-memory value (or a plain default
+  /// seeded before the async load resolved) silently overwrote settings the user
+  /// had set on another device. Per-key writes make that structurally impossible.
+  ///
+  /// Throws [ArgumentError] for a key outside `PrivateDbSchema.syncedSettingKeys`
+  /// — device-local settings must not travel through here.
+  Future<void> writeSyncedSettings(Map<String, String?> values);
+
   Future<bool> hasPrivateAiExternalConsent();
 
   Future<void> setPrivateAiExternalConsent(bool value);

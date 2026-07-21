@@ -2,7 +2,8 @@
 //
 // Guarantee under test: when the active data mode is `private`, settings
 // changes persist ONLY to the on-device store (via
-// `PrivateDataStore.updateSettingsRow`) and NEVER to the SharedPreferences /
+// `PrivateDataStore.writeSyncedSettings`, backed by the shared
+// `SyncedSettingsStore`) and NEVER to the SharedPreferences /
 // Supabase "cloud-settings" store. The cloud path is `_saveToPrefs`, which is
 // the only code that writes the `pref_*` SharedPreferences keys (and from there
 // would sync to Supabase). If a Private-mode branch ever fell through to
@@ -103,7 +104,7 @@ void main() {
           .setAccentColor(const Color(0xFF10B981)); // Emerald
 
       // The private write happened (local store touched)...
-      expect(fake.calls, contains('updateSettingsRow'));
+      expect(fake.calls, contains('writeSyncedSettings'));
       // ...and the accent color is reflected in state.
       expect(
         container.read(settingsProvider).accentColor,
@@ -135,7 +136,7 @@ void main() {
       container.read(settingsProvider.notifier).updateSettings(updated);
 
       // Private write happened...
-      expect(fake.calls, contains('updateSettingsRow'));
+      expect(fake.calls, contains('writeSyncedSettings'));
       // ...the change is in state...
       expect(container.read(settingsProvider).hapticFeedback, isFalse);
 
@@ -145,6 +146,31 @@ void main() {
 
       // Private mode keeps Pro unlocked even after a full settings update.
       expect(container.read(settingsProvider).isPro, isTrue);
+    });
+
+    test('pref_language is the ONE deliberate SharedPreferences mirror',
+        () async {
+      final (container, _, prefs) = await privateContainer();
+      container.read(settingsProvider.notifier);
+      await settle();
+
+      container.read(settingsProvider.notifier).updateSettings(
+            container.read(settingsProvider).copyWith(language: 'de'),
+          );
+
+      // main.dart applies `pref_language` to slang BEFORE the first frame, and
+      // Private mode used to never write it — so a private cold start rendered
+      // in a stale cloud-era language until the async DB load resolved and the
+      // whole UI visibly re-languaged. This mirror is a one-way cache whose
+      // source of truth stays the private DB; nothing reads it back in private
+      // mode, and it is the only `pref_*` key the private path is allowed to
+      // write beyond the pre-existing biometric-lock mirror.
+      expect(prefs.getString('pref_language'), 'de');
+
+      // The rest of the cloud store stays untouched, as above.
+      expect(prefs.getString('pref_accent_color'), isNull);
+      expect(prefs.getString('pref_theme_mode'), isNull);
+      expect(prefs.getString('notif_morning_brief_time'), isNull);
     });
   });
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
+import 'package:evolve_sync/evolve_sync.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/notifications.dart';
 import '../core/app_logger.dart';
@@ -23,52 +24,16 @@ class AppLanguagePreference {
 
   static const supportedOverrides = [italian, english, spanish, german, arabic];
 
-  static String normalize(String? value) {
-    final normalized = value?.trim().toLowerCase();
-
-    switch (normalized) {
-      case null:
-      case '':
-      case system:
-      case 'iphone':
-      case 'ios':
-      case 'device':
-      case 'italiano':
-      case 'english':
-        return system;
-      case italian:
-      case 'it_it':
-        return italian;
-      case english:
-      case 'en_us':
-      case 'en_gb':
-        return english;
-      case arabic:
-      case 'ar_sa':
-      case 'ar_ae':
-      case 'arabic':
-      case 'العربية':
-        return arabic;
-      case spanish:
-      case 'es_es':
-      case 'es_mx':
-      case 'spanish':
-      case 'spagnolo':
-      case 'espanol':
-      case 'español':
-        return spanish;
-      case german:
-      case 'de_de':
-      case 'de_at':
-      case 'de_ch':
-      case 'german':
-      case 'tedesco':
-      case 'deutsch':
-        return german;
-      default:
-        return system;
-    }
-  }
+  /// Canonicalises a stored/typed language value.
+  ///
+  /// Delegates to [SettingsCodec.normalizeLanguage] — the shared parser — rather
+  /// than keeping its own switch. The two implementations had already drifted:
+  /// this one mapped the legacy label `'italiano'` to `system`, while macOS
+  /// mapped it to `it`, so ONE synced value produced two different UI languages.
+  /// The public API is kept because `localeOverrideFor`, `_loadFromPrefs`,
+  /// `main.dart` and several screens call it.
+  static String normalize(String? value) =>
+      SettingsCodec.normalizeLanguage(value);
 
   static Locale? localeOverrideFor(String value) {
     final normalized = normalize(value);
@@ -204,8 +169,15 @@ class AppSettings {
 class AppSettingsNotifier extends Notifier<AppSettings> {
   final NotificationService _notificationService = NotificationService();
 
+  /// Canonical seed accent, kept identical to [SettingsCodec.defaultAccentColor]
+  /// (`#FFFFFF`) — the `profiles.accent_color` DEFAULT. The Dart side used to
+  /// seed `#FAFAFA` instead, so an untouched profile hydrated to a different
+  /// colour depending on which side supplied the value.
+  /// `test/settings_codec_test.dart` guards the two against drifting apart.
+  static const Color defaultAccentColor = Color(0xFFFFFFFF);
+
   static const List<Color> premiumAccentColors = [
-    Color(0xFFFAFAFA), // Default White
+    defaultAccentColor, // Default White (== SettingsCodec.defaultAccentColor)
     Color(0xFFEAB308), // Amber/Gold
     Color(0xFF3B82F6), // Blue
     Color(0xFF10B981), // Emerald
@@ -213,6 +185,30 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     Color(0xFFEC4899), // Pink
     Color(0xFFF97316), // Orange
   ];
+
+  /// Substitute used when an accent would be invisible on a light background.
+  static const Color _darkAccentFallback = Color(0xFF09090B); // Zinc 950
+
+  /// The surfaces the accent has to stay legible against (AppColors.background
+  /// for each theme).
+  static const Color _lightBackground = Color(0xFFFFFFFF);
+  static const Color _darkBackground = Color(0xFF09090B);
+
+  /// Below this WCAG contrast ratio against the background the accent is not
+  /// "low contrast", it is *gone* — white on white. 1.5 sits far under the 3.0
+  /// AA large-text bar on purpose: this guard exists to prevent invisibility,
+  /// not to police the user's taste.
+  static const double _minAccentContrast = 1.5;
+
+  /// Whether [_loadPrivateSettings] has finished. Until it has, `state` is the
+  /// DEFAULT seed, not the user's stored settings — which is exactly why the old
+  /// write-everything save was destructive.
+  bool _privateLoaded = false;
+
+  /// Synced keys the user changed BEFORE the load resolved. The load re-applies
+  /// them on top of the loaded values, so a toggle flipped during a cold start
+  /// is not silently snapped back a few frames later.
+  final Set<String> _preloadEdits = <String>{};
 
   @override
   AppSettings build() {
@@ -314,15 +310,40 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
 
   Future<void> _loadPrivateSettings() async {
     try {
-      final row = await ref
-          .read(privateLocalDatabaseProvider)
-          .loadSettingsRow();
-      state = _settingsFromPrivateRow(row);
+      final store = ref.read(privateLocalDatabaseProvider);
+      final row = await store.loadSettingsRow();
+      // Two reads, two responsibilities: the profiles row still carries the
+      // DEVICE-LOCAL columns (biometric lock), while every setting that travels
+      // between devices comes from the shared SyncedSettingsStore — per-key rows
+      // first, legacy profiles columns only as a fallback.
+      final synced = await store.loadSyncedSettings();
+      var loaded = _applySyncedSettings(_privateBaseSettings(row), synced);
+
+      // Anything the user changed while this load was in flight wins over what
+      // the load found. Those edits are ALREADY persisted (the write path fires
+      // immediately); re-applying them here is purely so the visible state does
+      // not snap back to the stored value a few frames after the tap.
+      if (_preloadEdits.isNotEmpty) {
+        final live = _syncedSettingsMap(state);
+        loaded = _applySyncedSettings(loaded, {
+          for (final e in live.entries)
+            if (_preloadEdits.contains(e.key)) e.key: e.value,
+        });
+      }
+      state = loaded;
+
+      final prefs = ref.read(sharedPrefsProvider);
       // Mirror the biometric lock flag into SharedPreferences so the next cold
       // start can read it synchronously before the DB row loads (see build()).
-      await ref
-          .read(sharedPrefsProvider)
-          .setBool('pref_biometric_lock', state.biometricLock);
+      await prefs.setBool('pref_biometric_lock', state.biometricLock);
+      // Mirror the language too. main.dart applies `pref_language` to slang
+      // BEFORE the first frame, and Private mode never wrote that key (only the
+      // cloud `_saveToPrefs` did) — so a private cold start rendered in a stale
+      // cloud-era language, or the device locale, until this load resolved and
+      // the whole UI visibly re-languaged. This is a one-way cache of a value
+      // whose source of truth stays the private DB; it is not a settings leak
+      // into the cloud store, and nothing ever reads it back in private mode.
+      await prefs.setString('pref_language', state.language);
       // Deliberately NOT syncNotifications() here. This is a cold-start restore,
       // not a user gesture, and every schedule* call opens with
       // requestPermissions() — so re-syncing here fires the iOS permission alert
@@ -334,6 +355,12 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     } catch (e, stack) {
       AppLogger.error('[Settings] Private settings load error', e, stack);
       state = state.copyWith(isPro: true);
+    } finally {
+      // Set even on failure. Leaving this false would keep treating every later
+      // write as "pre-load" forever, which is the wrong shape of caution: the
+      // per-key diff is what protects the stored settings, not this flag.
+      _privateLoaded = true;
+      _preloadEdits.clear();
     }
   }
 
@@ -343,7 +370,11 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     if (ref.read(activeDataModeProvider) == AppDataMode.private) {
       final defaults = _defaultSettings().copyWith(isPro: true);
       state = defaults;
-      _saveToPrivate(defaults);
+      _savePrivateDeviceLocal(defaults);
+      // The ONE place a full write is right: the user explicitly asked for every
+      // setting to go back to its default, so stamping all of them is the intent
+      // rather than an accident of a stale in-memory snapshot.
+      unawaited(_writeSyncedSettings(_syncedSettingsMap(defaults)));
       syncNotifications();
       return;
     }
@@ -359,74 +390,100 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
   }
 
   void updateSettings(AppSettings newSettings) {
-    AppSettings finalSettings = newSettings.copyWith(
+    final previous = state;
+    // Deliberately NO accent rewrite on a theme change. It used to happen here,
+    // and because the accent is a SYNCED value the rewrite did not stay on this
+    // phone: flipping the theme for a moment replaced the user's chosen colour
+    // and pushed the replacement to every other device — and flipping back
+    // pushed a third colour, since each mode's fallback is unreadable in the
+    // other. Readability is now settled where it belongs, at render time, by
+    // [readableAccent]; the stored value keeps being whatever the user picked.
+    state = newSettings.copyWith(
       language: AppLanguagePreference.normalize(newSettings.language),
+      morningBriefTime:
+          SettingsCodec.normalizeTimeOfDay(newSettings.morningBriefTime) ??
+              SettingsCodec.defaultMorningBriefTime,
+      eveningReviewTime:
+          SettingsCodec.normalizeTimeOfDay(newSettings.eveningReviewTime) ??
+              SettingsCodec.defaultEveningReviewTime,
     );
-
-    // Smart visibility check: adjust accent color if theme mode changes
-    if (finalSettings.themeMode != state.themeMode) {
-      final safeAccent = _ensureSafeAccentColor(
-        finalSettings.accentColor,
-        finalSettings.themeMode,
-      );
-      finalSettings = finalSettings.copyWith(accentColor: safeAccent);
-    }
-
-    state = finalSettings;
-    if (ref.read(activeDataModeProvider) == AppDataMode.private) {
-      state = state.copyWith(isPro: true);
-      _saveToPrivate(state);
-    } else {
-      _saveToPrefs(state);
-      _syncToSupabase(state);
-    }
+    _persist(previous);
     syncNotifications();
   }
 
   void setAccentColor(Color color) {
-    final safeColor = _ensureSafeAccentColor(color, state.themeMode);
-    state = state.copyWith(accentColor: safeColor);
-    if (ref.read(activeDataModeProvider) == AppDataMode.private) {
-      state = state.copyWith(isPro: true);
-      _saveToPrivate(state);
-    } else {
-      _saveToPrefs(state);
-      _syncToSupabase(state);
-    }
+    final previous = state;
+    // Clamped only HERE: an explicit pick, made on this device, in this moment,
+    // is the one point where correcting an invisible colour is honest and
+    // visible to the user rather than a silent mutation of a synced value.
+    state = state.copyWith(
+      accentColor: _ensureSafeAccentColor(color, state.themeMode),
+    );
+    _persist(previous);
   }
 
-  /// Robust check to prevent "invisible" UI elements (e.g. white accent on white background)
-  Color _ensureSafeAccentColor(Color color, String mode) {
-    final double luminance = color.computeLuminance();
-
-    if (mode == 'light') {
-      // If switching to Light Mode, ensure the accent color is dark enough
-      // luminance > 0.9 is basically white or very pale yellow
-      if (luminance > 0.9) {
-        return const Color(0xFF09090B); // Zinc 950 (Rich Black)
-      }
-    } else {
-      // If switching to Dark Mode, ensure the accent color is light enough
-      // luminance < 0.1 is very dark grey or black
-      if (luminance < 0.1) {
-        return const Color(0xFFFAFAFA); // Zinc 50 (Off White)
-      }
-    }
-    return color;
+  /// The accent as it should be PAINTED for [themeMode] — never as it is stored.
+  ///
+  /// Returns [color] untouched unless it is genuinely unreadable (contrast under
+  /// [_minAccentContrast] against that theme's background, i.e. white-on-white
+  /// territory), in which case the canonical seed for the opposite end is used.
+  /// Callers pass [platformIsDark] because only they can see the platform
+  /// brightness; `'system'` is resolved through [SettingsCodec.resolveIsDark] so
+  /// a theme value written by macOS renders the same on both.
+  static Color readableAccent(
+    Color color,
+    String? themeMode, {
+    required bool platformIsDark,
+  }) {
+    final isDark = SettingsCodec.resolveIsDark(
+      themeMode,
+      platformIsDark: platformIsDark,
+    );
+    final background = isDark ? _darkBackground : _lightBackground;
+    if (_contrastRatio(color, background) >= _minAccentContrast) return color;
+    return isDark ? defaultAccentColor : _darkAccentFallback;
   }
+
+  /// WCAG 2.x relative-contrast ratio, 1.0 (identical) to 21.0 (black/white).
+  static double _contrastRatio(Color a, Color b) {
+    final la = a.computeLuminance();
+    final lb = b.computeLuminance();
+    final lighter = la > lb ? la : lb;
+    final darker = la > lb ? lb : la;
+    return (lighter + 0.05) / (darker + 0.05);
+  }
+
+  Color _ensureSafeAccentColor(Color color, String mode) => readableAccent(
+        color,
+        mode,
+        platformIsDark: _platformIsDark(),
+      );
+
+  static bool _platformIsDark() =>
+      PlatformDispatcher.instance.platformBrightness == Brightness.dark;
 
   void toggleAi(bool value) {
     if (state.isPro ||
         ref.read(activeDataModeProvider) == AppDataMode.private) {
+      final previous = state;
       state = state.copyWith(aiSuggestions: value);
-      if (ref.read(activeDataModeProvider) == AppDataMode.private) {
-        state = state.copyWith(isPro: true);
-        _saveToPrivate(state);
-      } else {
-        _saveToPrefs(state);
-        _syncToSupabase(state);
-      }
+      _persist(previous);
       syncNotifications();
+    }
+  }
+
+  /// Routes a just-applied state change to the right store.
+  ///
+  /// [previous] is what the state was BEFORE the change — the private branch
+  /// needs it to work out which settings actually moved.
+  void _persist(AppSettings previous) {
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+      state = state.copyWith(isPro: true);
+      _savePrivateDeviceLocal(state, previous: previous);
+      _savePrivateSynced(previous, state);
+    } else {
+      _saveToPrefs(state);
+      _syncToSupabase(state);
     }
   }
 
@@ -435,22 +492,9 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
   AppSettings _loadFromPrefs() {
     final prefs = ref.read(sharedPrefsProvider);
 
-    // Helper per leggere colori in esadecimale
-    Color parseColor(String? hexString) {
-      if (hexString == null || hexString.isEmpty) return premiumAccentColors[0];
-      try {
-        final buffer = StringBuffer();
-        if (hexString.length == 6 || hexString.length == 7) buffer.write('ff');
-        buffer.write(hexString.replaceFirst('#', ''));
-        return Color(int.parse(buffer.toString(), radix: 16));
-      } catch (e) {
-        return premiumAccentColors[0];
-      }
-    }
-
     return AppSettings(
       themeMode: prefs.getString('pref_theme_mode') ?? 'dark',
-      accentColor: parseColor(prefs.getString('pref_accent_color')),
+      accentColor: _accentFromHex(prefs.getString('pref_accent_color')),
       defaultCalendarView:
           prefs.getString('pref_default_calendar_view') ??
           (Platform.isMacOS || Platform.isWindows || Platform.isLinux
@@ -481,9 +525,14 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
 
       biometricLock: prefs.getBool('pref_biometric_lock') ?? false,
 
-      morningBriefTime: prefs.getString('notif_morning_brief_time') ?? '09:00',
-      eveningReviewTime:
-          prefs.getString('notif_evening_review_time') ?? '21:00',
+      morningBriefTime: SettingsCodec.normalizeTimeOfDay(
+            prefs.getString('notif_morning_brief_time'),
+          ) ??
+          SettingsCodec.defaultMorningBriefTime,
+      eveningReviewTime: SettingsCodec.normalizeTimeOfDay(
+            prefs.getString('notif_evening_review_time'),
+          ) ??
+          SettingsCodec.defaultEveningReviewTime,
       statsHabitFilter: prefs.getString('pref_stats_habit_filter') ?? 'active',
     );
   }
@@ -491,7 +540,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
   AppSettings _defaultSettings() {
     return AppSettings(
       themeMode: 'dark',
-      accentColor: premiumAccentColors[0],
+      accentColor: defaultAccentColor,
       defaultCalendarView: Platform.isMacOS || Platform.isWindows || Platform.isLinux
           ? 'mese'
           : 'settimana',
@@ -512,25 +561,111 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       verificationCelebrations: false,
       verificationFailureSummary: false,
       biometricLock: false,
-      morningBriefTime: '09:00',
-      eveningReviewTime: '21:00',
+      morningBriefTime: SettingsCodec.defaultMorningBriefTime,
+      eveningReviewTime: SettingsCodec.defaultEveningReviewTime,
       statsHabitFilter: 'active',
     );
   }
 
-  AppSettings _settingsFromPrivateRow(Map<String, dynamic> row) {
-    Color parseColor(String? hexString) {
-      if (hexString == null || hexString.isEmpty) return premiumAccentColors[0];
-      try {
-        final buffer = StringBuffer();
-        if (hexString.length == 6 || hexString.length == 7) buffer.write('ff');
-        buffer.write(hexString.replaceFirst('#', ''));
-        return Color(int.parse(buffer.toString(), radix: 16));
-      } catch (_) {
-        return premiumAccentColors[0];
-      }
+  // ── Private mode: synced settings ─────────────────────────────────────────
+  //
+  // Every setting that travels between the iPhone and the Mac goes through the
+  // shared [SyncedSettingsStore] against [PrivateDbSchema.syncedSettingKeys].
+  // The two maps below are the ONLY translation between `AppSettings` and those
+  // canonical keys, and they are exact inverses — a key that appears in one and
+  // not the other is a setting that would save but never load back.
+
+  static String _accentToHex(Color color) =>
+      '#${color.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
+
+  static Color _accentFromHex(String? hex) {
+    final normalized = SettingsCodec.normalizeAccentColor(hex);
+    if (normalized == null) return defaultAccentColor;
+    return Color(int.parse('ff${normalized.substring(1)}', radix: 16));
+  }
+
+  /// [s] as canonical synced keys.
+  ///
+  /// A deliberate SUBSET of [PrivateDbSchema.syncedSettingKeys]:
+  /// `pref_glass_effects`, `pref_start_week_on_monday`, `pref_show_weekend` and
+  /// `tutorial_completed` have no iOS field, so iOS has no value for them worth
+  /// writing — emitting an invented default would push macOS's real setting away,
+  /// which is the exact failure this whole refactor removes.
+  Map<String, String?> _syncedSettingsMap(AppSettings s) {
+    String b(bool v) => SyncedSettingsStore.encodeBool(v);
+    return {
+      'language': AppLanguagePreference.normalize(s.language),
+      'theme_mode': SettingsCodec.normalizeThemeMode(s.themeMode),
+      'accent_color': _accentToHex(s.accentColor),
+      'pref_default_calendar_view': s.defaultCalendarView,
+      'pref_haptic_feedback': b(s.hapticFeedback),
+      'pref_time_format_24h': b(s.timeFormat24h),
+      'pref_ai_suggestions': b(s.aiSuggestions),
+      'pref_focus_mode': b(s.focusMode),
+      'pref_milestones': b(s.milestones),
+      'pref_deep_work_insights': b(s.deepWorkInsights),
+      'notif_habit_reminders': b(s.habitReminders),
+      'notif_goal_deadlines': b(s.goalDeadlines),
+      'notif_ai_insights': b(s.aiInsights),
+      'notif_weekly_reports': b(s.weeklyReports),
+      'notif_evening_review': b(s.eveningReview),
+      'morning_brief_time':
+          SettingsCodec.normalizeTimeOfDay(s.morningBriefTime) ??
+              SettingsCodec.defaultMorningBriefTime,
+      'evening_review_time':
+          SettingsCodec.normalizeTimeOfDay(s.eveningReviewTime) ??
+              SettingsCodec.defaultEveningReviewTime,
+    };
+  }
+
+  /// Layers [values] onto [base]. A key that is absent — or present but null,
+  /// i.e. explicitly unset — leaves [base]'s value standing, which is what makes
+  /// [base] the place app defaults live.
+  AppSettings _applySyncedSettings(
+    AppSettings base,
+    Map<String, String?> values,
+  ) {
+    bool? b(String key) => values.containsKey(key)
+        ? SyncedSettingsStore.decodeBool(values[key])
+        : null;
+    String? s(String key) {
+      final v = values[key];
+      return (v == null || v.isEmpty) ? null : v;
     }
 
+    return base.copyWith(
+      language: values.containsKey('language')
+          ? AppLanguagePreference.normalize(values['language'])
+          : null,
+      themeMode: s('theme_mode') == null
+          ? null
+          : SettingsCodec.normalizeThemeMode(values['theme_mode']),
+      accentColor: s('accent_color') == null
+          ? null
+          : _accentFromHex(values['accent_color']),
+      defaultCalendarView: s('pref_default_calendar_view'),
+      hapticFeedback: b('pref_haptic_feedback'),
+      timeFormat24h: b('pref_time_format_24h'),
+      aiSuggestions: b('pref_ai_suggestions'),
+      focusMode: b('pref_focus_mode'),
+      milestones: b('pref_milestones'),
+      deepWorkInsights: b('pref_deep_work_insights'),
+      habitReminders: b('notif_habit_reminders'),
+      goalDeadlines: b('notif_goal_deadlines'),
+      aiInsights: b('notif_ai_insights'),
+      weeklyReports: b('notif_weekly_reports'),
+      eveningReview: b('notif_evening_review'),
+      morningBriefTime:
+          SettingsCodec.normalizeTimeOfDay(values['morning_brief_time']),
+      eveningReviewTime:
+          SettingsCodec.normalizeTimeOfDay(values['evening_review_time']),
+    );
+  }
+
+  /// Defaults + the DEVICE-LOCAL half of Private mode: the `profiles` columns
+  /// that never sync (biometric lock) and the SharedPreferences-only flags.
+  /// Synced values are layered on top by [_applySyncedSettings].
+  AppSettings _privateBaseSettings(Map<String, dynamic> row) {
     bool boolValue(String key, bool fallback) {
       final value = row[key];
       if (value is bool) return value;
@@ -538,98 +673,95 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       return fallback;
     }
 
-    return AppSettings(
-      themeMode: row['theme_mode'] as String? ?? 'dark',
-      accentColor: parseColor(row['accent_color'] as String?),
-      defaultCalendarView:
-          row['pref_default_calendar_view'] as String? ??
-          (Platform.isMacOS || Platform.isWindows || Platform.isLinux
-              ? 'mese'
-              : 'settimana'),
-      hapticFeedback: boolValue('pref_haptic_feedback', true),
-      language: AppLanguagePreference.normalize(row['language'] as String?),
-      timeFormat24h: boolValue('pref_time_format_24h', true),
-      aiSuggestions: boolValue('pref_ai_suggestions', false),
+    final prefs = ref.read(sharedPrefsProvider);
+    return _defaultSettings().copyWith(
+      // Private mode unlocks Pro locally; it is never gated on a server row.
       isPro: true,
-      habitReminders: boolValue('notif_habit_reminders', true),
-      goalDeadlines: boolValue('notif_goal_deadlines', true),
-      aiInsights: boolValue('notif_ai_insights', false),
-      weeklyReports: boolValue('notif_weekly_reports', false),
-      focusMode: boolValue('pref_focus_mode', false),
-      milestones: boolValue('pref_milestones', true),
-      deepWorkInsights: boolValue('pref_deep_work_insights', false),
       biometricLock: boolValue('biometric_lock', false),
-      eveningReview: boolValue('notif_evening_review', true),
-      // Device-local (SharedPreferences), not part of the private settings row.
-      verificationNudges:
-          ref.read(sharedPrefsProvider).getBool('notif_verification_nudges') ??
-              true,
-      verificationCelebrations: ref
-              .read(sharedPrefsProvider)
-              .getBool('notif_verification_celebrations') ??
-          false,
-      verificationFailureSummary: ref
-              .read(sharedPrefsProvider)
-              .getBool('notif_verification_failure_summary') ??
-          false,
-      morningBriefTime: row['morning_brief_time'] as String? ?? '09:00',
-      eveningReviewTime: row['evening_review_time'] as String? ?? '21:00',
-      statsHabitFilter: ref.read(sharedPrefsProvider).getString('pref_stats_habit_filter') ?? 'active',
+      // Device-local (SharedPreferences), never part of the synced settings.
+      verificationNudges: prefs.getBool('notif_verification_nudges') ?? true,
+      verificationCelebrations:
+          prefs.getBool('notif_verification_celebrations') ?? false,
+      verificationFailureSummary:
+          prefs.getBool('notif_verification_failure_summary') ?? false,
+      statsHabitFilter: prefs.getString('pref_stats_habit_filter') ?? 'active',
     );
   }
 
-  void _saveToPrivate(AppSettings s) {
-    // Save UI-only preferences to SharedPreferences to avoid SQLite schema migrations
-    ref.read(sharedPrefsProvider).setString('pref_stats_habit_filter', s.statsHabitFilter);
+  /// The device-local half of a Private-mode save. Never syncs.
+  ///
+  /// [previous] lets the `profiles` write be skipped when the biometric flag did
+  /// not move: `updateSettingsRow` re-stamps `is_pro`/`sentry_consent` and bumps
+  /// `updated_at` (marking the whole profile row dirty for sync), so calling it
+  /// on every unrelated toggle was pure noise on the wire.
+  void _savePrivateDeviceLocal(AppSettings s, {AppSettings? previous}) {
+    final prefs = ref.read(sharedPrefsProvider);
+    // UI-only preferences live in SharedPreferences to avoid a schema migration.
+    prefs.setString('pref_stats_habit_filter', s.statsHabitFilter);
     // Mirror the biometric lock flag for a synchronous first-frame read on the
     // next cold start (the private DB row loads asynchronously).
-    ref.read(sharedPrefsProvider).setBool('pref_biometric_lock', s.biometricLock);
-    // Auto-verification notification prefs are device-local, so they live only
-    // in SharedPreferences (not the private settings row).
-    ref
-        .read(sharedPrefsProvider)
-        .setBool('notif_verification_nudges', s.verificationNudges);
-    ref
-        .read(sharedPrefsProvider)
-        .setBool('notif_verification_celebrations', s.verificationCelebrations);
-    ref.read(sharedPrefsProvider).setBool(
-        'notif_verification_failure_summary', s.verificationFailureSummary);
+    prefs.setBool('pref_biometric_lock', s.biometricLock);
+    // See _loadPrivateSettings: main.dart applies this before the first frame.
+    prefs.setString('pref_language', AppLanguagePreference.normalize(s.language));
+    // Auto-verification notification prefs are device-local (iOS-only).
+    prefs.setBool('notif_verification_nudges', s.verificationNudges);
+    prefs.setBool('notif_verification_celebrations', s.verificationCelebrations);
+    prefs.setBool(
+      'notif_verification_failure_summary',
+      s.verificationFailureSummary,
+    );
 
-    String toHex(Color color) =>
-        '#${color.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
+    if (previous != null && previous.biometricLock == s.biometricLock) return;
+    unawaited(
+      _guarded(
+        () => ref.read(privateLocalDatabaseProvider).updateSettingsRow({
+          'biometric_lock': s.biometricLock ? 1 : 0,
+        }),
+        '[Settings] Private device-local write failed',
+      ),
+    );
+  }
 
-    ref.read(privateLocalDatabaseProvider).updateSettingsRow({
-      'theme_mode': s.themeMode,
-      'accent_color': toHex(s.accentColor),
-      'pref_default_calendar_view': s.defaultCalendarView,
-      'pref_haptic_feedback': s.hapticFeedback ? 1 : 0,
-      'language': AppLanguagePreference.normalize(s.language),
-      'pref_time_format_24h': s.timeFormat24h ? 1 : 0,
-      'pref_ai_suggestions': s.aiSuggestions ? 1 : 0,
-      'pref_focus_mode': s.focusMode ? 1 : 0,
-      'pref_milestones': s.milestones ? 1 : 0,
-      'pref_deep_work_insights': s.deepWorkInsights ? 1 : 0,
-      'notif_habit_reminders': s.habitReminders ? 1 : 0,
-      'notif_goal_deadlines': s.goalDeadlines ? 1 : 0,
-      'notif_ai_insights': s.aiInsights ? 1 : 0,
-      'notif_weekly_reports': s.weeklyReports ? 1 : 0,
-      'notif_evening_review': s.eveningReview ? 1 : 0,
-      'biometric_lock': s.biometricLock ? 1 : 0,
-      'morning_brief_time': s.morningBriefTime,
-      'evening_review_time': s.eveningReviewTime,
-      'is_pro': 1,
-      'sentry_consent': 0,
-    });
+  /// The synced half of a Private-mode save: ONLY the keys that actually moved.
+  ///
+  /// This is the fix for the all-columns clobber. `build()` seeds state from
+  /// `_defaultSettings()` synchronously while `_loadPrivateSettings()` is still
+  /// in flight, so a toggle tapped in that window used to write DEFAULTS across
+  /// all ~20 settings columns — silently reverting, on both devices, settings
+  /// that only macOS even has UI for. Diffing means a toggle writes exactly one
+  /// key, whatever the rest of the in-memory snapshot happens to be.
+  void _savePrivateSynced(AppSettings previous, AppSettings next) {
+    final before = _syncedSettingsMap(previous);
+    final after = _syncedSettingsMap(next);
+    final changed = <String, String?>{
+      for (final e in after.entries)
+        if (before[e.key] != e.value) e.key: e.value,
+    };
+    if (changed.isEmpty) return;
+    // Remember pre-load edits so the in-flight load re-applies them instead of
+    // snapping the UI back to the stored value (see _loadPrivateSettings).
+    if (!_privateLoaded) _preloadEdits.addAll(changed.keys);
+    unawaited(_writeSyncedSettings(changed));
+  }
+
+  Future<void> _writeSyncedSettings(Map<String, String?> values) => _guarded(
+        () => ref.read(privateLocalDatabaseProvider).writeSyncedSettings(values),
+        '[Settings] Private synced settings write failed',
+      );
+
+  Future<void> _guarded(Future<void> Function() action, String context) async {
+    try {
+      await action();
+    } catch (e, stack) {
+      AppLogger.error(context, e, stack);
+    }
   }
 
   void _saveToPrefs(AppSettings s) {
     final prefs = ref.read(sharedPrefsProvider);
 
-    String toHex(Color color) =>
-        '#${color.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
-
     prefs.setString('pref_theme_mode', s.themeMode);
-    prefs.setString('pref_accent_color', toHex(s.accentColor));
+    prefs.setString('pref_accent_color', _accentToHex(s.accentColor));
     prefs.setString('pref_default_calendar_view', s.defaultCalendarView);
     prefs.setBool('pref_haptic_feedback', s.hapticFeedback);
     prefs.setString(
@@ -706,21 +838,10 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
           .maybeSingle();
 
       if (data != null) {
-        // Applica i dati dal server allo stato locale
-        Color parseColor(String hexString) {
-          try {
-            return Color(
-              int.parse(hexString.replaceFirst('#', 'ff'), radix: 16),
-            );
-          } catch (_) {
-            return premiumAccentColors[0];
-          }
-        }
-
         final serverSettings = state.copyWith(
           themeMode: data['theme_mode'] ?? state.themeMode,
           accentColor: data['accent_color'] != null
-              ? parseColor(data['accent_color'])
+              ? _accentFromHex(data['accent_color'] as String?)
               : state.accentColor,
           defaultCalendarView:
               data['pref_default_calendar_view'] ?? state.defaultCalendarView,
@@ -769,14 +890,11 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     if (user == null) return;
 
     try {
-      String toHex(Color color) =>
-          '#${color.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
-
       await supabase
           .from('profiles')
           .update({
             'theme_mode': s.themeMode,
-            'accent_color': toHex(s.accentColor),
+            'accent_color': _accentToHex(s.accentColor),
             'pref_default_calendar_view': s.defaultCalendarView,
             'pref_haptic_feedback': s.hapticFeedback,
             'language': s.language,

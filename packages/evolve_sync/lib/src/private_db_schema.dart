@@ -24,7 +24,13 @@ class PrivateDbSchema {
   /// - v5: add `sync_meta.key_fingerprint` — the E2E key this device last
   ///   synced with. A change means previously-undecryptable records may now be
   ///   readable, which is what triggers the full re-fetch that recovers them.
-  static const int version = 5;
+  /// - v6: add the `user_settings` key/value table (one synced record PER
+  ///   SETTING) and `sync_meta.schema_version`. Settings previously lived only
+  ///   as columns on the single `profiles` row, so the whole row was one sync
+  ///   record under row-level last-write-wins: changing accent on one device and
+  ///   language on the other inside a sync window silently reverted one of them.
+  ///   Per-key records make that structurally impossible.
+  static const int version = 6;
 
   /// The user-data tables whose rows sync to iCloud. Each gets dirty/tombstone
   /// triggers that maintain [syncStateTable]. (Order matters for nothing here,
@@ -37,6 +43,7 @@ class PrivateDbSchema {
     'daily_moods',
     'goal_category_settings',
     'macro_goal_categories',
+    'user_settings',
   ];
 
   static const String syncStateTable = 'sync_state';
@@ -49,6 +56,66 @@ class PrivateDbSchema {
   static const String avatarRecordTable = 'avatar';
 
   static String avatarRecordName(String owner) => 'avatar:$owner';
+
+  /// The settings that sync, as canonical keys in the `user_settings` table.
+  ///
+  /// Declared HERE, in the shared package, so the two apps cannot drift: a key
+  /// spelled differently on iOS and macOS would produce two independent records
+  /// that never converge, and the user would see a setting that simply refuses
+  /// to travel.
+  ///
+  /// Membership is a product decision, not a technical one — everything a user
+  /// thinks of as "my preference" belongs here, and everything derived from what
+  /// a specific device can DO does not (see [deviceLocalProfileColumns]).
+  static const List<String> syncedSettingKeys = [
+    'language',
+    'theme_mode',
+    'accent_color',
+    'pref_glass_effects',
+    'pref_default_calendar_view',
+    'pref_start_week_on_monday',
+    'pref_show_weekend',
+    'pref_haptic_feedback',
+    'pref_time_format_24h',
+    'pref_ai_suggestions',
+    'pref_focus_mode',
+    'pref_milestones',
+    'pref_deep_work_insights',
+    'notif_habit_reminders',
+    'notif_goal_deadlines',
+    'notif_ai_insights',
+    'notif_weekly_reports',
+    'notif_evening_review',
+    'morning_brief_time',
+    'evening_review_time',
+    'tutorial_completed',
+  ];
+
+  /// `profiles` columns that must NEVER cross the sync boundary, beyond the
+  /// avatar path. Stripped on push and preserved on apply by [localOnlyColumns].
+  ///
+  /// Two distinct reasons, both deliberate:
+  ///  * **Device capability** — `biometric_lock` means Face ID on one device,
+  ///    Touch ID or nothing on another. A synced `true` either locks a user out
+  ///    of a device that cannot satisfy it, or silently does nothing; for a
+  ///    security setting the silent case is the worse one.
+  ///  * **Entitlement and consent** — `is_pro`/`pro_expires_at` must derive from
+  ///    the device's OWN receipt, never from a row another device wrote (a synced
+  ///    `is_pro = 1` is an in-app-purchase bypass). Consent is given on the
+  ///    device that asked for it: propagating "accepted" to a device that never
+  ///    showed the dialog is wrong both legally and ethically.
+  ///
+  /// Until this list existed, macOS stamped `is_pro: 1` and `sentry_consent: 0`
+  /// into the synced row on EVERY settings write, so toggling any unrelated
+  /// preference on the Mac silently reset crash-reporting consent on the iPhone.
+  static const List<String> deviceLocalProfileColumns = [
+    'biometric_lock',
+    'is_pro',
+    'pro_expires_at',
+    'sentry_consent',
+    'private_ai_external_consent',
+    'terms_accepted_at',
+  ];
 
   /// Columns whose values are device-local and MUST NOT cross the sync boundary.
   /// `profiles.avatar_url` is a local filesystem path to the cached avatar — the
@@ -72,7 +139,7 @@ class PrivateDbSchema {
   /// Supabase — is enforced where those payloads are built (the mobile app's
   /// `applyAutoVerdict` and `stripHealthMeasurements`), not here.
   static const Map<String, List<String>> localOnlyColumns = {
-    'profiles': ['avatar_url'],
+    'profiles': ['avatar_url', ...deviceLocalProfileColumns],
   };
 
   // ── sqflite open callbacks ────────────────────────────────────────────────
@@ -110,6 +177,9 @@ class PrivateDbSchema {
     if (oldVersion < 5) {
       await _upgradeToV5(db);
     }
+    if (oldVersion < 6) {
+      await _upgradeToV6(db);
+    }
   }
 
   /// Fail closed on a schema downgrade. With NO onDowngrade, sqflite's default
@@ -135,6 +205,110 @@ class PrivateDbSchema {
       'v$newVersion. Refusing to downgrade.',
     );
   }
+
+  // ── v6 migration ──────────────────────────────────────────────────────────
+
+  /// DDL for the per-setting sync table. Shared between [createCoreTables] and
+  /// the v6 upgrade so a fresh install and a migrated database cannot drift.
+  ///
+  /// `value` is TEXT and nullable: every setting is stored as its string form
+  /// (booleans as `'0'`/`'1'`, matching how they are already persisted on
+  /// `profiles`), and NULL means "explicitly unset". Storing an unset as NULL
+  /// rather than deleting the row matters — a deletion would emit a tombstone,
+  /// and a tombstone racing an edit from another device is exactly the
+  /// resurrection problem per-key records exist to avoid.
+  static const String _userSettingsTableDdl = '''
+CREATE TABLE user_settings (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  key TEXT NOT NULL,
+  value TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE(user_id, key)
+)
+''';
+
+  static Future<void> _upgradeToV6(DatabaseExecutor db) async {
+    // Idempotent: a version round-trip must not wedge every future open.
+    final existing = await db.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+      ['user_settings'],
+    );
+    if (existing.isEmpty) {
+      await db.execute(_userSettingsTableDdl);
+      await db.execute(
+        'CREATE INDEX idx_user_settings_owner ON user_settings (user_id)',
+      );
+      // The sync triggers are generated from `syncedTables`, which now includes
+      // this table — but createSyncTriggers would fail re-creating the existing
+      // ones, so add just this table's set.
+      await _createTriggersFor(db, 'user_settings');
+    }
+
+    // sync_meta.schema_version: lets the engine notice that THIS build now
+    // understands a table it previously quarantined records for, and re-fetch
+    // them. Without it, records pushed by an already-upgraded device while this
+    // one was behind are skipped, the token advances past them, and CloudKit
+    // never re-delivers them — the settings would silently never arrive.
+    final metaExists = await db.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+      [syncMetaTable],
+    );
+    if (metaExists.isNotEmpty) {
+      final cols = <String>{
+        for (final r in await db.rawQuery('PRAGMA table_info($syncMetaTable)'))
+          r['name'] as String,
+      };
+      if (!cols.contains('schema_version')) {
+        await db.execute(
+          'ALTER TABLE $syncMetaTable ADD COLUMN schema_version INTEGER',
+        );
+      }
+    }
+
+    // Backfill from the profiles columns so an upgrading device keeps the
+    // settings it already had. Only the SYNCED keys move; device-local columns
+    // (entitlement, consent, biometric) deliberately stay on `profiles` and out
+    // of the sync payload entirely.
+    final profileCols = <String>{
+      for (final r in await db.rawQuery('PRAGMA table_info(profiles)'))
+        r['name'] as String,
+    };
+    final movable =
+        syncedSettingKeys.where(profileCols.contains).toList(growable: false);
+    if (movable.isEmpty) return;
+
+    for (final p in await db.rawQuery(
+      'SELECT id, ${movable.join(', ')}, created_at FROM profiles',
+    )) {
+      final ownerId = p['id'] as String;
+      for (final k in movable) {
+        final v = p[k];
+        if (v == null) continue;
+        await db.rawInsert(
+          'INSERT OR IGNORE INTO user_settings '
+          '(id, user_id, key, value, created_at, updated_at) '
+          'VALUES (?, ?, ?, ?, ?, ?)',
+          [
+            '$ownerId:$k',
+            ownerId,
+            k,
+            '$v',
+            p['created_at'],
+            // Stamped NOW, not from profiles.updated_at: these rows must win
+            // last-write-wins against a peer that has not migrated yet and is
+            // still pushing the legacy columns. A backfill that loses to stale
+            // data would silently undo the user's settings.
+            _nowExprValue(),
+          ],
+        );
+      }
+    }
+  }
+
+  /// UTC ISO-8601 stamp matching the format every other table uses.
+  static String _nowExprValue() => DateTime.now().toUtc().toIso8601String();
 
   // ── v5 migration ──────────────────────────────────────────────────────────
 
@@ -415,6 +589,10 @@ CREATE TABLE macro_goal_categories (
     await db.execute(
       'CREATE INDEX macro_goal_categories_active_idx ON macro_goal_categories (user_id, created_at) WHERE archived_at IS NULL',
     );
+    await db.execute(_userSettingsTableDdl);
+    await db.execute(
+      'CREATE INDEX idx_user_settings_owner ON user_settings (user_id)',
+    );
   }
 
   // ── Sync bookkeeping (v3) ───────────────────────────────────────────────────
@@ -450,7 +628,12 @@ CREATE TABLE $syncMetaTable (
   -- Fingerprint of the E2E key this device last synced with (v5). A change
   -- means records parked as undecryptable might now open, so the engine drops
   -- the change token and re-fetches the whole zone.
-  key_fingerprint TEXT
+  key_fingerprint TEXT,
+  -- Schema version at the last sync (v6). An INCREASE means this build now
+  -- understands tables it previously had to quarantine records for, so those
+  -- records must be re-fetched — the token has already advanced past them and
+  -- CloudKit will not replay them on its own.
+  schema_version INTEGER
 )
 ''');
     await db.execute('INSERT OR IGNORE INTO $syncMetaTable (id) VALUES (1)');
@@ -467,12 +650,33 @@ CREATE TABLE $syncMetaTable (
   /// (`macro_goal_categories.updated_at` on legacy rows) so sync_state.updated_at
   /// (NOT NULL) is always satisfied.
   static Future<void> createSyncTriggers(DatabaseExecutor db) async {
-    const nowExpr = "strftime('%Y-%m-%dT%H:%M:%fZ','now')";
+    // Skip tables that do not exist YET. This runs from the v3 migration, which
+    // predates later additive tables (`user_settings` arrives in v6), so a
+    // database migrating 2 -> 6 reaches here before those tables are created.
+    // Creating a trigger on a missing table is a hard error that would wedge the
+    // whole upgrade chain. Each later migration installs its own table's
+    // triggers, so nothing is lost by skipping here.
+    final present = <String>{
+      for (final r in await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type = 'table'",
+      ))
+        r['name'] as String,
+    };
     for (final t in syncedTables) {
-      const upsertCols =
-          '(record_name, table_name, row_id, updated_at, dirty, deleted)';
-      String writeTrigger(String suffix, String event) =>
-          '''
+      if (!present.contains(t)) continue;
+      await _createTriggersFor(db, t);
+    }
+  }
+
+  /// The dirty/tombstone trigger set for ONE table. Split out so a migration
+  /// that adds a single synced table can install just its triggers — running the
+  /// whole loop would fail re-creating the ones that already exist.
+  static Future<void> _createTriggersFor(DatabaseExecutor db, String t) async {
+    const nowExpr = "strftime('%Y-%m-%dT%H:%M:%fZ','now')";
+    const upsertCols =
+        '(record_name, table_name, row_id, updated_at, dirty, deleted)';
+    String writeTrigger(String suffix, String event) =>
+        '''
 CREATE TRIGGER ${t}_sync_$suffix AFTER $event ON $t BEGIN
   INSERT INTO $syncStateTable $upsertCols
   VALUES ('$t:'||NEW.id, '$t', NEW.id, COALESCE(NEW.updated_at, $nowExpr), 1, 0)
@@ -480,9 +684,9 @@ CREATE TRIGGER ${t}_sync_$suffix AFTER $event ON $t BEGIN
     updated_at=COALESCE(NEW.updated_at, $nowExpr), dirty=1, deleted=0;
 END;
 ''';
-      await db.execute(writeTrigger('ai', 'INSERT'));
-      await db.execute(writeTrigger('au', 'UPDATE'));
-      await db.execute('''
+    await db.execute(writeTrigger('ai', 'INSERT'));
+    await db.execute(writeTrigger('au', 'UPDATE'));
+    await db.execute('''
 CREATE TRIGGER ${t}_sync_ad AFTER DELETE ON $t BEGIN
   INSERT INTO $syncStateTable $upsertCols
   VALUES ('$t:'||OLD.id, '$t', OLD.id, $nowExpr, 1, 1)
@@ -490,6 +694,5 @@ CREATE TRIGGER ${t}_sync_ad AFTER DELETE ON $t BEGIN
     updated_at=$nowExpr, dirty=1, deleted=1;
 END;
 ''');
-    }
   }
 }

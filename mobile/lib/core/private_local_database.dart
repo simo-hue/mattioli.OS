@@ -197,8 +197,23 @@ class PrivateLocalDatabase implements PrivateDataStore {
     // (_reconcileOrphanedOwner swallows its own errors, so only _ensureProfile
     // can throw here.)
     try {
-      await _ensureProfile(db);
+      // Reconcile BEFORE seeding, never after.
+      //
+      // _ensureProfile materialises a profiles + goal_category_settings PAIR
+      // keyed on whatever ownerId() currently returns. Running it first means a
+      // stale owner id gets a full identity minted for it, and only THEN does
+      // the self-heal notice that id owns no data and adopt the one that does —
+      // leaving the pair behind forever, with its INSERT trigger replicating it
+      // to every other device. That is how a user ended up with 3 profiles on
+      // one device and 2 on the other, in lockstep with goal_category_settings
+      // (whose user_id is UNIQUE, so its count IS the number of identities ever
+      // seeded).
+      //
+      // Reconciling first lets the self-heal adopt the correct owner while the
+      // database is still untouched, so _ensureProfile then finds that owner's
+      // profile already present and seeds nothing.
       await _reconcileOrphanedOwner(db);
+      await _ensureProfile(db);
     } catch (_) {
       await db.close().catchError((_) {});
       rethrow;
@@ -840,6 +855,25 @@ class PrivateLocalDatabase implements PrivateDataStore {
       where: 'id = ?',
       whereArgs: [owner],
     );
+    _notifyWrite();
+  }
+
+  @override
+  Future<Map<String, String?>> loadSyncedSettings() async {
+    final db = await _database();
+    final owner = await ownerId();
+    // Reading through the shared store (not a hand-rolled query) is the point:
+    // it owns the row-beats-legacy-column precedence, and a second copy of that
+    // rule on this side is exactly how the two apps would drift apart again.
+    return SyncedSettingsStore(db).readAll(owner);
+  }
+
+  @override
+  Future<void> writeSyncedSettings(Map<String, String?> values) async {
+    if (values.isEmpty) return;
+    final db = await _database();
+    final owner = await ownerId();
+    await SyncedSettingsStore(db).writeAll(owner, values);
     _notifyWrite();
   }
 

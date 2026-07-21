@@ -15,6 +15,7 @@ void main() {
         inMemoryDatabasePath,
         options: OpenDatabaseOptions(
           version: PrivateDbSchema.version,
+          singleInstance: false,
           onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
           onCreate: PrivateDbSchema.onCreate,
           onUpgrade: PrivateDbSchema.onUpgrade,
@@ -202,6 +203,7 @@ void main() {
         inMemoryDatabasePath,
         options: OpenDatabaseOptions(
           version: 2,
+          singleInstance: false,
           onCreate: (db, _) async {
             for (final t in const [
               'profiles',
@@ -258,6 +260,7 @@ void main() {
         inMemoryDatabasePath,
         options: OpenDatabaseOptions(
           version: 3,
+          singleInstance: false,
           onCreate: (db, _) async {
             await db.execute('''
 CREATE TABLE goals (

@@ -166,6 +166,32 @@ class FakePrivateDataStore implements PrivateDataStore {
   @override
   Future<void> updateSettingsRow(Map<String, Object?> values) async {
     calls.add('updateSettingsRow');
+    settingsRowWrites.add(Map<String, Object?>.from(values));
+  }
+
+  /// Every `updateSettingsRow` payload, in call order. Only DEVICE-LOCAL columns
+  /// should ever appear here now that synced settings go through
+  /// [writeSyncedSettings].
+  final List<Map<String, Object?>> settingsRowWrites = <Map<String, Object?>>[];
+
+  /// Seed for [loadSyncedSettings] — pretend these already synced in from the
+  /// other device.
+  Map<String, String?> syncedSettings = <String, String?>{};
+
+  /// Every `writeSyncedSettings` payload, in call order. Tests assert on the
+  /// KEY SET here: the whole point of the per-key store is that an unrelated
+  /// setting is never touched.
+  final List<Map<String, String?>> syncedWrites = <Map<String, String?>>[];
+
+  @override
+  Future<Map<String, String?>> loadSyncedSettings() async =>
+      Map<String, String?>.from(syncedSettings);
+
+  @override
+  Future<void> writeSyncedSettings(Map<String, String?> values) async {
+    calls.add('writeSyncedSettings');
+    syncedWrites.add(Map<String, String?>.from(values));
+    syncedSettings.addAll(values);
   }
 
   // ── Privacy / consent ───────────────────────────────────────────────────

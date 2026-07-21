@@ -116,6 +116,8 @@ class SyncEngine {
     'goal_logs': 2,
     'long_term_goals': 2,
     'daily_moods': 2,
+    // Child of profiles, so it must not land before its parent.
+    'user_settings': 2,
     PrivateDbSchema.avatarRecordTable: 3,
   };
 
@@ -155,9 +157,21 @@ class SyncEngine {
   /// from this device" — the guard's whole purpose is that this is destructive:
   /// every existing record becomes unreadable. Never set it from an automatic
   /// path, a retry counter, or any heuristic about what the user probably meant.
+  /// [adoptOwner] persists the canonical owner id as this device's own. It is
+  /// invoked BEFORE the local re-key, not after.
+  ///
+  /// Ordering matters and used to be wrong. `reKeyOwner` commits the whole
+  /// database onto the canonical id; if the Keychain write happens afterwards
+  /// and anything interrupts the gap — app kill, a throw inside the first sync —
+  /// the database is re-keyed while `ownerId()` still returns the old id. The
+  /// next open then seeds a fresh identity for that stale id, and the orphan is
+  /// permanent. Writing the Keychain first inverts the failure: the id is
+  /// adopted but the rows are not yet moved, which the orphaned-owner self-heal
+  /// already detects and repairs on the next open.
   Future<SyncResult> enable({
     required SyncKeyStore keys,
     required String localOwner,
+    Future<void> Function(String canonicalOwner)? adoptOwner,
     bool force = false,
   }) async {
     final status = await bridge.accountStatus();
@@ -198,6 +212,10 @@ class SyncEngine {
       return const SyncResult(ownerPending: true);
     }
     if (canonical != localOwner) {
+      // Adopt the id FIRST, then move the rows. See [adoptOwner]: an interruption
+      // between the two must leave the id ahead of the data (self-healing on the
+      // next open), never the data ahead of the id (a permanent orphan).
+      await adoptOwner?.call(canonical);
       // Second device: unify identity (also clears+rebuilds sync_state dirty).
       await store.reKeyOwner(localOwner, canonical);
     } else {
@@ -256,6 +274,28 @@ class SyncEngine {
       }
     }
     await store.setKeyFingerprint(fingerprint);
+
+    // Did THIS build's schema grow since the last sync? If so it may now
+    // understand tables whose records it previously had to quarantine. The
+    // change token has already advanced past them and CloudKit will not replay
+    // them, so the only way to recover those rows is one full re-fetch.
+    //
+    // Generalises the key-rotation recovery above, and makes every FUTURE
+    // additive table migration safe: without it, whichever device updates second
+    // silently never receives the rows the first one pushed in the meantime.
+    final syncedVersion = await store.syncedSchemaVersion();
+    if (syncedVersion != null && syncedVersion < PrivateDbSchema.version) {
+      final unparked = await store.clearUnknownTableParks();
+      if (unparked > 0) {
+        logger.info(
+          '[CloudKit] Schema upgraded v$syncedVersion -> '
+          'v${PrivateDbSchema.version}; re-fetching the zone to retry '
+          '$unparked record(s) this build previously had no table for.',
+        );
+        await store.setChangeToken(null);
+      }
+    }
+    await store.setSyncedSchemaVersion(PrivateDbSchema.version);
     // Pull BEFORE push: a newer remote record overwrites the local copy and
     // clears its dirty flag, so a stale local edit is never pushed over it. With
     // the native savePolicy of `.allKeys` (overwrite), this ordering is what
@@ -536,7 +576,7 @@ class SyncEngine {
         rec.recordName,
         rec.tableName,
         rowId,
-        'no schema for this table in this build',
+        SyncLocalStore.unknownTableReason,
       );
       logger.error(
         '[CloudKit] Skipping record for a table this build has no schema for',

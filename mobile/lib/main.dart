@@ -477,13 +477,31 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
       unawaited(_reconcileSentry());
     });
 
+    // Theme resolution goes through the shared codec. The old check here was
+    // `themeMode == 'dark' ? dark : light`, which silently rendered LIGHT for
+    // the `'system'` value the schema permits and macOS can write — while macOS
+    // rendered the same stored string DARK. resolveIsDark is the one answer both
+    // apps now use.
+    final platformIsDark =
+        MediaQuery.platformBrightnessOf(context) == Brightness.dark;
+    final isDark = SettingsCodec.resolveIsDark(
+      settings.themeMode,
+      platformIsDark: platformIsDark,
+    );
+    // Readability is applied at PAINT time, never written back: an accent that
+    // is invisible in one theme stays the user's stored choice, and the swap is
+    // not pushed to their other devices. See AppSettingsNotifier.readableAccent.
+    final accent = AppSettingsNotifier.readableAccent(
+      settings.accentColor,
+      settings.themeMode,
+      platformIsDark: platformIsDark,
+    );
+
     return MaterialApp.router(
       title: 'Evolve',
-      theme: AppTheme.lightTheme(settings.accentColor),
-      darkTheme: AppTheme.darkTheme(settings.accentColor),
-      themeMode: settings.themeMode == 'dark'
-          ? ThemeMode.dark
-          : ThemeMode.light,
+      theme: AppTheme.lightTheme(accent),
+      darkTheme: AppTheme.darkTheme(accent),
+      themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
       locale: TranslationProvider.of(context).flutterLocale,
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       supportedLocales: AppLocaleUtils.supportedLocales,

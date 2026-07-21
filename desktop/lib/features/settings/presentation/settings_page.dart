@@ -29,6 +29,7 @@ import 'package:evolve_desktop/features/dashboard/application/dashboard_controll
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/features/settings/application/desktop_biometric_controller.dart';
 import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
+import 'package:evolve_desktop/features/settings/application/desktop_synced_settings.dart';
 import 'package:evolve_desktop/features/settings/data/desktop_notification_service.dart';
 import 'package:evolve_desktop/features/settings/data/desktop_system_settings_service.dart';
 import 'package:evolve_desktop/features/settings/presentation/app_logs_dialog.dart';
@@ -96,17 +97,13 @@ Future<List<Map<String, dynamic>>> fetchAllRowsPaginated(
   return rows;
 }
 
-/// Canonical language codes for the Settings language picker. These are the
-/// values persisted to `pref_language` and to the profiles `language` column,
-/// and the ones [DesktopLocaleController.setLanguage] normalizes to.
-const String _kLanguageSystem = 'system';
+/// Canonical language codes for the Settings language picker, in picker order.
+/// These are the values persisted to `pref_language` and to the synced
+/// `language` setting, and the ones [SettingsCodec.normalizeLanguage] — the one
+/// parser both apps share — resolves to.
 const List<String> _kLanguageCodes = [
-  _kLanguageSystem,
-  'it',
-  'en',
-  'es',
-  'de',
-  'ar',
+  SettingsCodec.languageSystem,
+  ...SettingsCodec.languageCodes,
 ];
 
 /// Calendar-view codes in picker order.
@@ -360,9 +357,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   // Canonical CODES, not display labels: these are what gets persisted, and the
   // pickers match on them, so they must not move when the UI language does.
   String _calendarView = kCalendarViewWeek;
-  String _language = _kLanguageSystem;
-  String _morningTime = '08:00';
-  String _eveningTime = '20:30';
+  String _language = SettingsCodec.languageSystem;
+  // The canonical defaults, from the shared codec — these MUST match the
+  // `profiles` schema DEFAULTs and mobile. They used to read '08:00'/'20:30'
+  // here, and because initState early-returns when SharedPreferences is absent
+  // they won whenever prefs were empty: a first-launch Mac dragged the iPhone's
+  // briefs 60 and 30 minutes earlier the first time any toggle was touched.
+  String _morningTime = SettingsCodec.defaultMorningBriefTime;
+  String _eveningTime = SettingsCodec.defaultEveningReviewTime;
   Color _accent = EvolveColors.primaryStrong;
   File? _profileImage;
 
@@ -404,7 +406,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final appearance = ref.read(desktopAppearanceControllerProvider);
     _darkMode = appearance.themeMode != ThemeMode.light;
     _accent = appearance.accentColor;
-    if (preferences == null) return;
+    // The synced store is the authority; the prefs below are only the local
+    // mirror used until it answers. Kick the read-back off even when there are
+    // no preferences to read, otherwise a fresh install never hydrates.
+    if (preferences == null) {
+      unawaited(_loadProfilePreferences());
+      return;
+    }
     _timeFormat24h = preferences.getBool('pref_time_format_24h') ?? true;
     _habitReminders = preferences.getBool('notif_habit_reminders') ?? true;
     _eveningReview = preferences.getBool('notif_evening_review') ?? true;
@@ -422,18 +430,26 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     _calendarView = normalizeCalendarViewCode(
       preferences.getString('pref_default_calendar_view'),
     );
-    _language = _languageCode(
+    _language = SettingsCodec.normalizeLanguage(
       preferences.getString('pref_language') ??
           preferences.getString('language'),
     );
+    // NOTE the two different names on purpose: 'notif_morning_brief_time' is the
+    // SharedPreferences key, 'morning_brief_time' is the DB column / synced key.
+    // The legacy prefs fallback below reads the OLD prefs spelling, not the
+    // column — conflating them would make a prefs read look like a store read.
     _morningTime =
-        preferences.getString('notif_morning_brief_time') ??
-        preferences.getString('morning_brief_time') ??
-        '09:00';
+        SettingsCodec.normalizeTimeOfDay(
+          preferences.getString('notif_morning_brief_time') ??
+              preferences.getString('morning_brief_time'),
+        ) ??
+        SettingsCodec.defaultMorningBriefTime;
     _eveningTime =
-        preferences.getString('notif_evening_review_time') ??
-        preferences.getString('evening_review_time') ??
-        '21:00';
+        SettingsCodec.normalizeTimeOfDay(
+          preferences.getString('notif_evening_review_time') ??
+              preferences.getString('evening_review_time'),
+        ) ??
+        SettingsCodec.defaultEveningReviewTime;
     unawaited(_loadProfilePreferences());
   }
 
@@ -443,6 +459,15 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       if (request) {
         setState(() => _section = _SettingsSection.subscription);
         ref.read(subscriptionSettingsRequestProvider.notifier).consume();
+      }
+    });
+
+    // A sync pull invalidates the synced settings; re-hydrate the visible fields
+    // so a preference changed on the iPhone shows up here without a restart.
+    ref.listen(desktopSyncedSettingsProvider, (_, next) {
+      final values = next.value;
+      if (values != null && values.isNotEmpty) {
+        unawaited(_applySyncedSettings(values));
       }
     });
 
@@ -2052,11 +2077,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     ref
         .read(desktopAppearanceControllerProvider.notifier)
         .setAccentColor(DesktopAppearanceController.defaultAccent);
+    ref
+        .read(desktopLocaleControllerProvider.notifier)
+        .setLanguage(SettingsCodec.languageSystem);
     setState(() {
       _darkMode = true;
       _accent = DesktopAppearanceController.defaultAccent;
       _calendarView = kCalendarViewWeek;
-      _language = _kLanguageSystem;
+      _language = SettingsCodec.languageSystem;
       _timeFormat24h = true;
       _habitReminders = true;
       _goalDeadlines = true;
@@ -2069,27 +2097,39 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       _milestones = true;
       _deepWorkInsights = false;
       _eveningReview = true;
-      _morningTime = '09:00';
-      _eveningTime = '21:00';
+      _morningTime = SettingsCodec.defaultMorningBriefTime;
+      _eveningTime = SettingsCodec.defaultEveningReviewTime;
     });
     await ref
         .read(desktopBiometricControllerProvider.notifier)
         .setEnabled(false);
+    // Only keys in PrivateDbSchema.syncedSettingKeys. `biometric_lock` used to
+    // be in this payload and is now device-local: a reset on the Mac must not
+    // reach across and unlock the user's iPhone. It is reset locally, above.
+    // `_syncProfile` filters the map, so this list is the contract, not a hope.
     await _syncProfile({
-      'theme_mode': 'dark',
-      'accent_color': '#FAFAFA',
-      'pref_default_calendar_view': 'settimana',
-      'pref_haptic_feedback': true,
-      'language': 'system',
-      'pref_time_format_24h': true,
-      'notif_habit_reminders': true,
-      'notif_goal_deadlines': true,
-      'notif_ai_insights': false,
-      'notif_weekly_reports': false,
-      'notif_evening_review': true,
-      'biometric_lock': false,
-      'morning_brief_time': '09:00',
-      'evening_review_time': '21:00',
+      kSettingThemeMode: SettingsCodec.themeDark,
+      // Derived from the accent actually applied above, not a hardcoded hex —
+      // the two used to be independent literals and could silently drift apart,
+      // which is how the Mac and the iPhone ended up on different whites.
+      kSettingAccentColor: dashboardColorToHex(
+        DesktopAppearanceController.defaultAccent,
+      ),
+      kSettingCalendarView: kCalendarViewWeek,
+      kSettingHapticFeedback: true,
+      kSettingLanguage: SettingsCodec.languageSystem,
+      kSettingTimeFormat24h: true,
+      kSettingAiSuggestions: false,
+      kSettingFocusMode: false,
+      kSettingMilestones: true,
+      kSettingDeepWorkInsights: false,
+      kSettingHabitReminders: true,
+      kSettingGoalDeadlines: true,
+      kSettingAiInsights: false,
+      kSettingWeeklyReports: false,
+      kSettingEveningReview: true,
+      kSettingMorningBriefTime: SettingsCodec.defaultMorningBriefTime,
+      kSettingEveningReviewTime: SettingsCodec.defaultEveningReviewTime,
     });
     await _syncNotifications();
   }
@@ -2147,7 +2187,25 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
   }
 
+  /// Hydrates the page (and the live controllers) from whichever store owns the
+  /// settings in the active mode.
   Future<void> _loadProfilePreferences() async {
+    // Private mode has NO Supabase session, so the Supabase branch below used to
+    // return on its first line and the page hydrated purely from this Mac's own
+    // SharedPreferences — it wrote settings into the synced row and read none of
+    // them back. That is the whole reason the accent and the app language
+    // differed between the iPhone and the Mac.
+    if (ref.read(activeDesktopDataModeProvider).isPrivate) {
+      try {
+        final values = await ref.read(desktopSyncedSettingsProvider.future);
+        if (!mounted) return;
+        await _applySyncedSettings(values);
+      } catch (error, stack) {
+        AppLogger.error('Unable to read the private settings', error, stack);
+      }
+      return;
+    }
+
     final client = ref.read(supabaseClientProvider);
     final user = client?.auth.currentUser;
     if (client == null || user == null) return;
@@ -2181,15 +2239,36 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         _calendarView = normalizeCalendarViewCode(
           profile['pref_default_calendar_view'] as String?,
         );
-        _language = _languageCode(profile['language'] as String?);
-        _morningTime = profile['morning_brief_time'] as String? ?? _morningTime;
+        _language = SettingsCodec.normalizeLanguage(
+          profile['language'] as String?,
+        );
+        _morningTime =
+            SettingsCodec.normalizeTimeOfDay(
+              profile['morning_brief_time'] as String?,
+            ) ??
+            _morningTime;
         _eveningTime =
-            profile['evening_review_time'] as String? ?? _eveningTime;
+            SettingsCodec.normalizeTimeOfDay(
+              profile['evening_review_time'] as String?,
+            ) ??
+            _eveningTime;
         _accent = appearance.accentColor;
       });
+      // Reading is not enough: the locale controller is what actually changes
+      // the UI language, so the pulled value has to reach it.
+      ref
+          .read(desktopLocaleControllerProvider.notifier)
+          .applyProfile(_language);
       final preferences = ref.read(sharedPreferencesProvider);
       if (preferences != null) {
         await Future.wait([
+          // `applyProfile` no longer writes the prefs mirror (a read path must
+          // not mutate), so the hydration that OWNS this refresh writes it.
+          preferences.setString('pref_theme_mode', _darkMode ? 'dark' : 'light'),
+          preferences.setString(
+            'pref_accent_color',
+            dashboardColorToHex(_accent),
+          ),
           preferences.setBool('desktop_dark_mode', _darkMode),
           preferences.setBool('pref_time_format_24h', _timeFormat24h),
           preferences.setBool('notif_habit_reminders', _habitReminders),
@@ -2217,11 +2296,108 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
   }
 
+  /// Applies settings READ from the synced store: the live controllers first
+  /// (theme / accent / language), then this page's fields, then the local prefs
+  /// mirror, then the notification schedule.
+  ///
+  /// Keys the store has no value for are left untouched — [SyncedSettingsStore]
+  /// omits "never set" keys precisely so a caller can keep its own default
+  /// instead of being handed a fabricated one.
+  Future<void> _applySyncedSettings(Map<String, String?> values) async {
+    if (values.isEmpty || !mounted) return;
+
+    // Theme, accent and language live in controllers, not in this page. Without
+    // this the fields below would show the pulled values while the app went on
+    // rendering the old theme and speaking the old language.
+    applyDesktopSyncedSettings(ref, values);
+    final appearance = ref.read(desktopAppearanceControllerProvider);
+
+    bool boolOr(String key, bool current) =>
+        SyncedSettingsStore.decodeBool(values[key]) ?? current;
+
+    setState(() {
+      _darkMode = appearance.themeMode != ThemeMode.light;
+      _accent = appearance.accentColor;
+      _timeFormat24h = boolOr(kSettingTimeFormat24h, _timeFormat24h);
+      _habitReminders = boolOr(kSettingHabitReminders, _habitReminders);
+      _eveningReview = boolOr(kSettingEveningReview, _eveningReview);
+      _goalDeadlines = boolOr(kSettingGoalDeadlines, _goalDeadlines);
+      _aiInsights = boolOr(kSettingAiInsights, _aiInsights);
+      _weeklyReport = boolOr(kSettingWeeklyReports, _weeklyReport);
+      _aiSuggestions = boolOr(kSettingAiSuggestions, _aiSuggestions);
+      _focusMode = boolOr(kSettingFocusMode, _focusMode);
+      _milestones = boolOr(kSettingMilestones, _milestones);
+      _deepWorkInsights = boolOr(kSettingDeepWorkInsights, _deepWorkInsights);
+      if (values.containsKey(kSettingCalendarView)) {
+        _calendarView = normalizeCalendarViewCode(values[kSettingCalendarView]);
+      }
+      if (values.containsKey(kSettingLanguage)) {
+        _language = SettingsCodec.normalizeLanguage(values[kSettingLanguage]);
+      }
+      _morningTime =
+          SettingsCodec.normalizeTimeOfDay(values[kSettingMorningBriefTime]) ??
+          _morningTime;
+      _eveningTime =
+          SettingsCodec.normalizeTimeOfDay(values[kSettingEveningReviewTime]) ??
+          _eveningTime;
+    });
+
+    // Local mirror only — SharedPreferences, never a synced column. This is what
+    // the controllers read on the next cold start, before the store answers.
+    final preferences = ref.read(sharedPreferencesProvider);
+    if (preferences != null) {
+      await Future.wait([
+        preferences.setString('pref_theme_mode', _darkMode ? 'dark' : 'light'),
+        preferences.setString('pref_accent_color', dashboardColorToHex(_accent)),
+        preferences.setBool('desktop_dark_mode', _darkMode),
+        preferences.setInt('accent_color', _accent.toARGB32()),
+        preferences.setBool('pref_time_format_24h', _timeFormat24h),
+        preferences.setBool('notif_habit_reminders', _habitReminders),
+        preferences.setBool('notif_evening_review', _eveningReview),
+        preferences.setBool('notif_goal_deadlines', _goalDeadlines),
+        preferences.setBool('notif_ai_insights', _aiInsights),
+        preferences.setBool('notif_weekly_reports', _weeklyReport),
+        preferences.setBool('pref_ai_suggestions', _aiSuggestions),
+        preferences.setBool('pref_focus_mode', _focusMode),
+        preferences.setBool('pref_milestones', _milestones),
+        preferences.setBool('pref_deep_work_insights', _deepWorkInsights),
+        preferences.setString('pref_default_calendar_view', _calendarView),
+        preferences.setString('pref_language', _language),
+        // Prefs key ≠ DB column, deliberately: 'notif_morning_brief_time' here,
+        // 'morning_brief_time' in the store.
+        preferences.setString('notif_morning_brief_time', _morningTime),
+        preferences.setString('notif_evening_review_time', _eveningTime),
+      ]);
+    }
+
+    // Times and toggles only take effect once the schedule is rebuilt. Guarded:
+    // the prefs write above is awaited, so the page can be gone by now and
+    // `_syncNotifications` reads providers off `ref`.
+    if (!mounted) return;
+    await _syncNotifications();
+  }
+
   Future<void> _syncProfile(Map<String, dynamic> values) async {
-    // Private mode: persist settings to the encrypted DB profiles row (never
-    // Supabase), keeping them Phase-2-sync-ready.
+    // Private mode: persist through the SHARED store, which dual-writes the
+    // per-key `user_settings` row and the legacy `profiles` column so a
+    // not-yet-updated iPhone still sees the change.
     if (ref.read(activeDesktopDataModeProvider).isPrivate) {
-      await DesktopPrivateDb.instance.updateSettings(values);
+      // Filtered to the canonical list rather than passed through: a key that is
+      // not synced (a device-local column, or a typo) would otherwise be written
+      // into a payload that travels to the user's other devices. The store
+      // throws on an unknown key by design; filtering here keeps a caller that
+      // mixes in a local-only value from taking the whole write down with it.
+      final synced = <String, String?>{
+        for (final e in values.entries)
+          if (PrivateDbSchema.syncedSettingKeys.contains(e.key))
+            e.key: encodeDesktopSetting(e.value),
+      };
+      if (synced.isEmpty) return;
+      try {
+        await DesktopPrivateDb.instance.writeSyncedSettings(synced);
+      } catch (error, stack) {
+        AppLogger.error('Unable to save the private settings', error, stack);
+      }
       return;
     }
     final client = ref.read(supabaseClientProvider);
@@ -2233,18 +2409,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       AppLogger.error('Unable to sync desktop preferences', error, stack);
     }
   }
-
-  /// Maps any persisted value to a canonical language code. Older builds wrote
-  /// the display LABEL to `pref_language`, so those are accepted too; anything
-  /// unrecognised falls back to [_kLanguageSystem].
-  String _languageCode(String? value) => switch (value?.trim().toLowerCase()) {
-    'it' || 'italiano' => 'it',
-    'en' || 'english' => 'en',
-    'es' || 'espanol' => 'es',
-    'de' || 'deutsch' => 'de',
-    'ar' || 'arabic' => 'ar',
-    _ => _kLanguageSystem,
-  };
 
   String _languageOptionLabel(String code) => switch (code) {
     'it' => t.settingsPage.languageOptions.italian,

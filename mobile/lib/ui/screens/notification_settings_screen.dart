@@ -63,6 +63,38 @@ class NotificationSettingsScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Focus Mode comes FIRST, above every other switch, because it
+            // overrides all of them: `_runNotificationSync` cancels everything
+            // and returns early while it is on. macOS has always had this toggle
+            // and syncs the value, so before this row existed the Mac could
+            // permanently silence the iPhone with no visible cause and no way to
+            // undo it on the phone. A person whose reminders stopped opens this
+            // screen — the switch that explains it has to be the first thing
+            // they see, not buried under the switches it is suppressing.
+            _buildSectionHeader(context, context.t.notifications.focusHeader),
+            _buildSettingsCard(context, [
+              _buildSwitchRow(
+                context: context,
+                ref: ref,
+                icon: LucideIcons.moonStar,
+                title: context.t.notifications.focusMode,
+                // The sync note is part of the subtitle, not a footnote: this
+                // switch is a SYNCED setting, so turning it on here also
+                // silences the Mac (and vice versa). Saying so is what makes the
+                // cross-device silence explainable rather than a mystery.
+                subtitle: '${context.t.notifications.focusModeSubtitle} '
+                    '${context.t.notifications.focusModeSyncNote}',
+                value: settings.focusMode,
+                onChanged: (val) {
+                  final currentSettings = ref.read(settingsProvider);
+                  notifier.updateSettings(
+                    currentSettings.copyWith(focusMode: val),
+                  );
+                  ref.hapticLight();
+                },
+              ),
+            ]),
+            const SizedBox(height: 32),
             _buildSectionHeader(
               context,
               context.t.notifications.operationalRemindersHeader,

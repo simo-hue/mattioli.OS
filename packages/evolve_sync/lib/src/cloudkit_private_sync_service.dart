@@ -169,8 +169,15 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
       final store = await storeProvider();
       final engine = await _engine(store);
       final localOwner = await ownerProvider();
-      final res =
-          await engine.enable(keys: keys, localOwner: localOwner, force: force);
+      final res = await engine.enable(
+        keys: keys,
+        localOwner: localOwner,
+        force: force,
+        // Persisted BEFORE the re-key, inside the engine — see
+        // SyncEngine.enable's [adoptOwner] doc. The post-hoc write below is kept
+        // as a belt-and-braces retry for the case where this one failed.
+        adoptOwner: ownerWriter,
+      );
       if (res.ran) {
         // On a second device the engine re-keyed every local row onto the
         // canonical sync-owner. Persist it as THIS device's owner id too, or
@@ -255,6 +262,20 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
       
       logger.info('[CloudKit] Sync starting...');
       final r = await (await _engine(store)).syncNow(key);
+
+      // Sweep abandoned identity shells left by the seed-then-reconcile bug (and
+      // by any future interrupted re-key). Deliberately AFTER the sync, so a
+      // profile row still arriving from another device has already landed and
+      // cannot be mistaken for an orphan. Local-only and precondition-guarded —
+      // it never touches an identity that owns data, which is also what makes it
+      // safe when this device's active owner is transiently stale.
+      final reaped = await store.reapOrphanIdentities(await ownerProvider());
+      if (reaped.isNotEmpty) {
+        logger.info(
+          '[CloudKit] Reaped ${reaped.length} abandoned identity shell(s)',
+        );
+      }
+
       logger.info('[CloudKit] Sync finished', extras: {
         'pushed': r.pushed,
         'applied': r.applied,

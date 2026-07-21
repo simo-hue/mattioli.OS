@@ -1,3 +1,4 @@
+import 'package:evolve_sync/evolve_sync.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -77,7 +78,16 @@ class AppSettingsScreen extends ConsumerWidget {
                 context: context,
                 icon: LucideIcons.moon,
                 title: context.t.settings.appearance.darkMode,
-                value: settings.themeMode == 'dark',
+                // Reflects what is actually ON SCREEN, not a string match: the
+                // stored value may be `'system'` (macOS can write it, the schema
+                // allows it), and a switch reading "off" over a dark UI is worse
+                // than useless. Flipping it still writes an explicit dark/light.
+                value: SettingsCodec.resolveIsDark(
+                  settings.themeMode,
+                  platformIsDark:
+                      MediaQuery.platformBrightnessOf(context) ==
+                          Brightness.dark,
+                ),
                 onChanged: (val) {
                   final currentSettings = ref.read(settingsProvider);
                   notifier.updateSettings(
@@ -674,13 +684,18 @@ class AppSettingsScreen extends ConsumerWidget {
               child: EvolveColorSwatchGrid(
                 selected: currentColor,
                 palette: [
+                  // Same render-time readability rule the whole app uses, so a
+                  // swatch never shows a colour the user would not actually see.
                   for (final c in AppSettingsNotifier.premiumAccentColors.take(
                     3,
                   ))
-                    (settings.themeMode == 'light' &&
-                            c.toARGB32() == 0xFFFAFAFA)
-                        ? const Color(0xFF09090B)
-                        : c,
+                    AppSettingsNotifier.readableAccent(
+                      c,
+                      settings.themeMode,
+                      platformIsDark:
+                          MediaQuery.platformBrightnessOf(context) ==
+                              Brightness.dark,
+                    ),
                 ],
                 customLocked: !settings.isPro,
                 onChanged: (color) {
@@ -720,7 +735,16 @@ class AppSettingsScreen extends ConsumerWidget {
         return StatefulBuilder(
           builder: (context, setState) {
             final double luminance = pickedColor.computeLuminance();
-            final bool isTooDark = themeMode == 'dark' && luminance < 0.15;
+            // `themeMode` can be `'system'`; resolve it the shared way rather
+            // than comparing to the literal `'dark'`, or the too-dark warning
+            // silently stops appearing for a device following the system theme.
+            final bool isTooDark = SettingsCodec.resolveIsDark(
+                  themeMode,
+                  platformIsDark:
+                      MediaQuery.platformBrightnessOf(context) ==
+                          Brightness.dark,
+                ) &&
+                luminance < 0.15;
 
             return AlertDialog(
               backgroundColor: context.appColors.card,

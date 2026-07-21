@@ -71,6 +71,12 @@ class SyncLocalStore {
     // Seeded once per profile by both apps (_ensureProfile), so a second
     // device's enable ALWAYS brings a rival row for this one.
     'goal_category_settings': ['user_id'],
+    // Both apps mint a row id independently the first time a setting is
+    // written, so the SAME setting can exist under two ids. Without this the
+    // two rows would never merge and the setting would flip between values
+    // depending on which record was applied last — the exact failure per-key
+    // settings records exist to prevent.
+    'user_settings': ['user_id', 'key'],
   };
 
   /// Rows referencing a [naturalKeys] table, as `parent -> {childTable: column}`.
@@ -672,6 +678,128 @@ class SyncLocalStore {
     );
   }
 
+  // ── Orphan identity reap ──────────────────────────────────────────────────
+
+  /// Tables holding real user data. `profiles` and `goal_category_settings` are
+  /// excluded because they ARE the identity scaffolding — both are minted as a
+  /// pair by `_ensureProfile`/`seedProfile` and `goal_category_settings` is
+  /// never read or written by the app (see the note on its DDL). Counting them
+  /// as data would make every orphan look occupied and the reap a no-op.
+  static const List<String> _identityDataTables = [
+    'goals',
+    'goal_logs',
+    'daily_moods',
+    'long_term_goals',
+    'macro_goal_categories',
+  ];
+
+  /// Delete abandoned identities: `profiles` rows that are neither [canonical]
+  /// nor own a single row of user data, together with their
+  /// `goal_category_settings` shell. Returns the ids actually reaped.
+  ///
+  /// LOCAL ONLY — nothing propagates. The `sync_state` rows for the deleted
+  /// records are restored exactly as they were, which does two things: the
+  /// tombstones the delete triggers just wrote are erased, so no deletion
+  /// crosses the wire; and the preserved `updated_at` makes the engine's LWW
+  /// treat the cloud copy as not-newer, so a later full re-fetch cannot
+  /// resurrect the row.
+  ///
+  /// Local-only is a deliberate choice over propagating tombstones. A device
+  /// can transiently hold an OLD id as its active owner (the re-key writes the
+  /// database before the Keychain), so letting one device's identity verdict
+  /// delete rows on another risks a device deleting its own live profile and
+  /// then re-seeding it in a loop. Each device instead reaches the same verdict
+  /// independently from shared facts, and converges without coordinating. The
+  /// cost is that the orphan record lingers in CloudKit as a few hundred
+  /// harmless bytes.
+  ///
+  /// THE PRECONDITION IS LOAD-BEARING. Refusing to touch an identity that owns
+  /// any data is what makes this safe, and it guards two distinct hazards:
+  /// a genuine orphan-with-data needs a MIGRATION rather than a delete, and a
+  /// device whose active owner is transiently stale would otherwise reap the
+  /// real canonical identity — which owns everything, so it is always skipped.
+  Future<List<String>> reapOrphanIdentities(String canonical) async {
+    final reaped = <String>[];
+    final profiles = await _db.query('profiles', columns: ['id']);
+
+    for (final p in profiles) {
+      final id = p['id'] as String;
+      if (id == canonical) continue;
+
+      var owned = 0;
+      for (final t in _identityDataTables) {
+        final r = await _db.rawQuery(
+          'SELECT COUNT(*) AS n FROM $t WHERE user_id = ?',
+          [id],
+        );
+        owned += (r.first['n'] as int?) ?? 0;
+      }
+      // Owns real data: NOT an orphan shell. Leave it entirely alone — this
+      // needs data migration and a human decision, not a silent delete.
+      if (owned > 0) continue;
+
+      final settings = await _db.query(
+        'goal_category_settings',
+        columns: ['id'],
+        where: 'user_id = ?',
+        whereArgs: [id],
+      );
+      final names = <String>[
+        'profiles:$id',
+        for (final s in settings) 'goal_category_settings:${s['id']}',
+      ];
+
+      // Snapshot the bookkeeping BEFORE the delete triggers overwrite it.
+      final snapshot = <String, Map<String, Object?>>{};
+      for (final n in names) {
+        final rows = await _db.query(
+          PrivateDbSchema.syncStateTable,
+          where: 'record_name = ?',
+          whereArgs: [n],
+          limit: 1,
+        );
+        if (rows.isNotEmpty) snapshot[n] = Map<String, Object?>.of(rows.first);
+      }
+
+      // FK OFF: delete the child explicitly rather than letting CASCADE infer
+      // it, so exactly the rows intended are removed and nothing else can be
+      // dragged along by a constraint added later.
+      await _db.execute('PRAGMA foreign_keys = OFF');
+      try {
+        await _db.transaction((txn) async {
+          await txn.delete(
+            'goal_category_settings',
+            where: 'user_id = ?',
+            whereArgs: [id],
+          );
+          await txn.delete('profiles', where: 'id = ?', whereArgs: [id]);
+          for (final n in names) {
+            final prior = snapshot[n];
+            if (prior == null) {
+              // No bookkeeping before ⇒ remove the tombstone the trigger just
+              // invented, so this deletion stays local.
+              await txn.delete(
+                PrivateDbSchema.syncStateTable,
+                where: 'record_name = ?',
+                whereArgs: [n],
+              );
+            } else {
+              await txn.insert(
+                PrivateDbSchema.syncStateTable,
+                prior,
+                conflictAlgorithm: ConflictAlgorithm.replace,
+              );
+            }
+          }
+        });
+      } finally {
+        await _db.execute('PRAGMA foreign_keys = ON');
+      }
+      reaped.add(id);
+    }
+    return reaped;
+  }
+
   // ── E2E key fingerprint (v5) ──────────────────────────────────────────────
 
   /// The key fingerprint recorded at the last sync, or null before v5 / the
@@ -690,6 +818,42 @@ class SyncLocalStore {
         PrivateDbSchema.syncMetaTable,
         {'key_fingerprint': fingerprint},
         where: 'id = 1',
+      );
+
+  /// The schema version recorded at the last sync, or null before v6.
+  Future<int?> syncedSchemaVersion() async {
+    final rows = await _db.query(
+      PrivateDbSchema.syncMetaTable,
+      columns: ['schema_version'],
+      where: 'id = 1',
+      limit: 1,
+    );
+    return rows.isEmpty ? null : rows.first['schema_version'] as int?;
+  }
+
+  Future<void> setSyncedSchemaVersion(int version) => _db.update(
+        PrivateDbSchema.syncMetaTable,
+        {'schema_version': version},
+        where: 'id = 1',
+      );
+
+  /// The exact `last_error` written for a record whose table this build did not
+  /// know. A constant because [clearUnknownTableParks] matches on it.
+  static const String unknownTableReason =
+      'no schema for this table in this build';
+
+  /// Un-park records skipped because this build had no table for them, so a
+  /// full re-fetch re-applies them now that it does.
+  ///
+  /// Without this an additive table migration silently loses every record the
+  /// other device pushed while this one was behind: they were quarantined, the
+  /// change token advanced past them, and CloudKit never replays a record it has
+  /// already delivered. The device would simply never see those rows again.
+  Future<int> clearUnknownTableParks() => _db.update(
+        PrivateDbSchema.syncStateTable,
+        {'last_error': null, 'updated_at': quarantineStamp},
+        where: 'last_error = ?',
+        whereArgs: [unknownTableReason],
       );
 
   /// Un-park every record parked as undecryptable, so a full re-fetch re-applies

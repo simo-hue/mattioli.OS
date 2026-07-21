@@ -733,21 +733,31 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
     'date_of_birth',
   };
 
-  /// Pure: filters [values] to known settings columns, coerces bools to 0/1,
-  /// and re-forces `is_pro`/`sentry_consent` (unlocked / never-report). Empty
-  /// when no known keys are present.
+  /// Pure: filters [values] to known settings columns and coerces bools to 0/1.
+  /// Empty when no known keys are present.
+  ///
+  /// It deliberately does NOT stamp `is_pro: 1` / `sentry_consent: 0` any more.
+  /// Both are [PrivateDbSchema.deviceLocalProfileColumns] now, so appending them
+  /// to every settings write meant toggling any unrelated preference on the Mac
+  /// re-published an entitlement and a consent decision the Mac had no business
+  /// asserting — on the iPhone that silently reset crash-reporting consent. The
+  /// Private-mode invariants are seeded once by [seedProfile] and owned by the
+  /// device from then on.
   static Map<String, Object?> sanitizeSettings(Map<String, dynamic> values) {
-    final filtered = <String, Object?>{
+    return <String, Object?>{
       for (final e in values.entries)
         if (_settingsColumns.contains(e.key))
           e.key: e.value is bool ? (e.value == true ? 1 : 0) : e.value,
     };
-    if (filtered.isEmpty) return const {};
-    return {...filtered, 'is_pro': 1, 'sentry_consent': 0};
   }
 
   /// Persists Private-mode settings to the profiles row (the encrypted, Phase-2
   /// sync-ready store).
+  ///
+  /// Prefer [writeSyncedSettings] for anything in
+  /// [PrivateDbSchema.syncedSettingKeys] — this remains for the columns that are
+  /// profile fields rather than settings (name / date of birth) and for the
+  /// import restore path.
   Future<void> updateSettings(Map<String, dynamic> values) async {
     final sanitized = sanitizeSettings(values);
     if (sanitized.isEmpty) return;
@@ -759,6 +769,34 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
       where: 'id = ?',
       whereArgs: [owner],
     );
+    notifyWrite();
+  }
+
+  /// Every synced setting for this device's owner, row-first with the legacy
+  /// `profiles`-column fallback. Keys absent from BOTH stores are omitted, so a
+  /// caller can tell "never set" from "set to null" and keep its own default.
+  ///
+  /// The read counterpart of [writeSyncedSettings], and the private-mode
+  /// equivalent of the Supabase `profiles` select the settings page used to be
+  /// able to do only when signed in. Mirrors mobile's `loadSettingsRow`.
+  Future<Map<String, String?>> loadSettingsRow() async {
+    final db = await database;
+    final owner = await ownerId;
+    return SyncedSettingsStore(db).readAll(owner);
+  }
+
+  /// Writes settings through the shared [SyncedSettingsStore], which dual-writes
+  /// the per-key `user_settings` row AND the legacy `profiles` column so a
+  /// not-yet-updated device keeps seeing the change.
+  ///
+  /// Keys must be in [PrivateDbSchema.syncedSettingKeys]; the store throws
+  /// otherwise rather than silently dropping a setting that would then refuse to
+  /// travel between devices.
+  Future<void> writeSyncedSettings(Map<String, String?> values) async {
+    if (values.isEmpty) return;
+    final db = await database;
+    final owner = await ownerId;
+    await SyncedSettingsStore(db).writeAll(owner, values);
     notifyWrite();
   }
 
@@ -1288,10 +1326,11 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
     await recomputeStreaksForGoals(txn, affectedGoals);
 
     // Restore the profile (name / date of birth / settings) onto the owner row.
-    // sanitizeSettings filters to known columns, coerces bools, forces the
-    // Private-mode invariants (is_pro=1 / sentry_consent=0), and drops the
+    // sanitizeSettings filters to known columns, coerces bools, and drops the
     // local-path avatar_url — so an import can never smuggle in a foreign id,
-    // entitlement, or broken avatar path.
+    // entitlement, or broken avatar path. `is_pro`/`sentry_consent` are simply
+    // not in the allow-list, so the device keeps its OWN values rather than
+    // adopting whatever the backup file claimed.
     //
     // Wrapped so a single out-of-domain value from a foreign/older client (e.g.
     // an unknown theme_mode failing the CHECK) can't roll back the whole import,
@@ -1403,6 +1442,18 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
       },
       onCreate: PrivateDbSchema.onCreate,
       onUpgrade: PrivateDbSchema.onUpgrade,
+      // Fail closed on a downgrade — mobile has always done this, desktop had
+      // not. With NO onDowngrade, sqflite neither throws nor wipes: it silently
+      // stamps `user_version` DOWN while leaving the NEWER physical schema in
+      // place, so a later migration re-runs against tables/columns that already
+      // exist and the database permanently fails to open.
+      //
+      // Not hypothetical on this platform: macOS ships independently of iOS and
+      // users keep old `.app` bundles, so running an older build after a newer
+      // one is routine. Throwing leaves `user_version` at the newer value, so
+      // the newer build still opens cleanly and the older build simply refuses
+      // a schema it does not understand.
+      onDowngrade: PrivateDbSchema.onDowngrade,
     );
     // A reset/stash/restore may have run WHILE this open was in flight (those
     // paths mutate the DB file outside any lock). If so, this handle points at a
@@ -1418,8 +1469,14 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
     // the orphaned-owner self-heal below. (_reconcileOrphanedOwner swallows its
     // own errors, so only seedProfile can throw here.)
     try {
-      await seedProfile(db, owner: await ownerId, now: _now());
+      // Reconcile BEFORE seeding, never after — see the matching comment in the
+      // mobile client. seedProfile materialises a profiles +
+      // goal_category_settings PAIR for whatever `ownerId` currently returns, so
+      // seeding first mints a full identity for a stale id and the self-heal
+      // then adopts a different one, stranding the pair permanently and
+      // replicating it to every other device.
       await _reconcileOrphanedOwner(db);
+      await seedProfile(db, owner: await ownerId, now: _now());
     } catch (_) {
       await db.close().catchError((_) {});
       rethrow;

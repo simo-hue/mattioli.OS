@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/theme.dart';
 import '../../i18n/translations.g.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../kit/evolve_kit.dart';

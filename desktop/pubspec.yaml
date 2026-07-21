@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # CFBundleShortVersionString is pinned to 1.0 in macos/Runner/Info.plist; only
 # the build number (after the +) feeds CFBundleVersion. Bump it every upload —
 # App Store Connect already has macOS builds 1, 2 and 3, so the next free one is 4.
-version: 1.0.0+10
+version: 1.0.0+11
 
 environment:
   sdk: ^3.11.5

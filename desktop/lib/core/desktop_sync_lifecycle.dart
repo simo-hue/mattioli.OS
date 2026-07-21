@@ -77,7 +77,13 @@ class _DesktopSyncLifecycleState extends ConsumerState<DesktopSyncLifecycle> {
     // guaranteed, so push shortens the wait but is never the only way a change
     // arrives.
     MethodChannelCloudKitBridge.setRemoteChangeHandler(
-        () => unawaited(_sync(reason: 'push')));
+      () => unawaited(_sync(reason: 'push')),
+      // Native-side APNs events: the only way an "this device has no push
+      // token" state becomes visible in an exported log.
+      onNativeLog: (level, message) => level == 'error'
+          ? AppLogger.error(message, 'native')
+          : AppLogger.info(message),
+    );
     WidgetsBinding.instance
         .addPostFrameCallback((_) => unawaited(_sync(reason: 'launch')));
   }

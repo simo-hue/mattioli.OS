@@ -36,6 +36,26 @@ class AppDelegate: FlutterAppDelegate {
     }
     CloudKitSyncBridge.notifyRemoteChange()
   }
+  /// APNs registration outcome — see the iOS bridge for why this is logged.
+  override func application(
+    _ application: NSApplication,
+    didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+  ) {
+    CloudKitSyncBridge.logNative(
+      "info",
+      "[APNs] Registered for remote notifications (token \(deviceToken.count) bytes)"
+    )
+  }
+
+  override func application(
+    _ application: NSApplication,
+    didFailToRegisterForRemoteNotificationsWithError error: Error
+  ) {
+    CloudKitSyncBridge.logNative(
+      "error",
+      "[APNs] Registration FAILED: \(error.localizedDescription)"
+    )
+  }
 }
 
 /// Native half of Private mode's local-only guarantee: a thin MethodChannel
@@ -472,6 +492,22 @@ enum CloudKitSyncBridge {
   /// Deliberately carries no payload and does no work of its own. The push is a
   /// hint about TIMING; everything about what to fetch, merge and resolve stays
   /// in the one Dart path that has been hardened for it.
+  /// Surface a native-side event in the app's own log, so an APNs problem is
+  /// visible in the exported log rather than only in a Console session.
+  ///
+  /// Push failures are otherwise completely silent: `registerForRemoteNotifications`
+  /// is fire-and-forget, and "subscription registered" only proves CloudKit
+  /// ACCEPTED the subscription — it says nothing about whether this device can
+  /// RECEIVE a push.
+  static func logNative(_ level: String, _ message: String) {
+    main {
+      channel?.invokeMethod(
+        "nativeLog",
+        arguments: ["level": level, "message": message]
+      )
+    }
+  }
+
   static func notifyRemoteChange() {
     main { channel?.invokeMethod("remoteChange", arguments: nil) }
   }

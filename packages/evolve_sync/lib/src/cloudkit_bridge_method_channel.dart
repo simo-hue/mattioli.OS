@@ -47,9 +47,25 @@ class MethodChannelCloudKitBridge implements CloudKitBridge {
   /// does.
   ///
   /// Safe to call more than once — the last handler wins.
-  static void setRemoteChangeHandler(void Function() onChange) {
+  /// [onNativeLog] receives `(level, message)` for events the SWIFT side needs
+  /// to surface — chiefly APNs registration success/failure, which is otherwise
+  /// completely invisible: `registerForRemoteNotifications()` is fire-and-forget,
+  /// and a device with no push token looks identical to a working one.
+  static void setRemoteChangeHandler(
+    void Function() onChange, {
+    void Function(String level, String message)? onNativeLog,
+  }) {
     channel.setMethodCallHandler((call) async {
-      if (call.method == 'remoteChange') onChange();
+      switch (call.method) {
+        case 'remoteChange':
+          onChange();
+        case 'nativeLog':
+          final args = (call.arguments as Map?)?.cast<String, Object?>();
+          onNativeLog?.call(
+            '${args?['level'] ?? 'info'}',
+            '${args?['message'] ?? ''}',
+          );
+      }
       return null;
     });
   }

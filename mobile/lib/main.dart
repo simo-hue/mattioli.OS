@@ -389,7 +389,13 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
     // discretion, so push can shorten the wait but must never be the only way a
     // change arrives.
     MethodChannelCloudKitBridge.setRemoteChangeHandler(
-        () => _syncIfPrivate('push'));
+      () => _syncIfPrivate('push'),
+      // Native-side APNs events: the only way an "this device has no push
+      // token" state becomes visible in an exported log.
+      onNativeLog: (level, message) => level == 'error'
+          ? AppLogger.error(message, null)
+          : AppLogger.info(message),
+    );
   }
 
   @override

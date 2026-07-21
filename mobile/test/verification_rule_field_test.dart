@@ -2,6 +2,7 @@ import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mattioli_os/i18n/translations.g.dart';
 import 'package:mattioli_os/ui/widgets/verification_rule_field.dart';
 import 'package:mattioli_os/core/theme.dart';
@@ -218,7 +219,9 @@ void main() {
 
   testWidgets('VerificationBadge renders a verified indicator', (tester) async {
     await tester.pumpWidget(_app(const VerificationBadge()));
-    expect(find.byIcon(Icons.verified), findsOneWidget);
+    // The badge moved from Icons.verified to the Lucide set with the rest of
+    // the kit; the assertion had been left behind on the Material icon.
+    expect(find.byIcon(LucideIcons.shieldCheck), findsOneWidget);
   });
 
   testWidgets('CouldNotVerifyChip shows "?" and is tappable', (tester) async {

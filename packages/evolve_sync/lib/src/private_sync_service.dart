@@ -75,7 +75,9 @@ abstract class PrivateSyncService {
   /// Keychain disabled) has a way out of an otherwise permanent deferral.
   Future<PrivateSyncStatus> enable({bool force = false});
   Future<PrivateSyncStatus> disable();
-  Future<PrivateSyncStatus> syncNow();
+  /// [reason] names the trigger (push / poll / launch / resume / write /
+  /// manual) purely so the logs can tell them apart on device.
+  Future<PrivateSyncStatus> syncNow({String reason = 'manual'});
 
   /// Make THIS device authoritative: wipe the CloudKit zone, drop the shared
   /// secrets, then re-enable with a fresh key and re-upload everything held
@@ -140,7 +142,7 @@ class NoOpPrivateSyncService implements PrivateSyncService {
       const PrivateSyncStatus.localOnly();
 
   @override
-  Future<PrivateSyncStatus> syncNow() async =>
+  Future<PrivateSyncStatus> syncNow({String reason = 'manual'}) async =>
       const PrivateSyncStatus.localOnly();
 
   @override

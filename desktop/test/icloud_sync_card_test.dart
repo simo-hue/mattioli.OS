@@ -63,7 +63,7 @@ class _FakeSyncService implements PrivateSyncService {
   }
 
   @override
-  Future<PrivateSyncStatus> syncNow() async {
+  Future<PrivateSyncStatus> syncNow({String reason = 'manual'}) async {
     syncNowCalls++;
     return current;
   }

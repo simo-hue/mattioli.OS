@@ -370,23 +370,26 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _writeDebouncer = SyncWriteDebouncer(onFlush: _syncAndRefresh);
+    _writeDebouncer =
+        SyncWriteDebouncer(onFlush: () => _syncAndRefresh(reason: 'write'));
     PrivateLocalDatabase.onPrivateWrite = _onPrivateWrite;
 
     // Launch sync. A cold start does NOT emit `resumed`, so without this the
     // first pull of a session waited for the user to background the app and
     // come back — the reason a freshly-opened iPhone could sit on stale data
     // indefinitely.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _syncIfPrivate());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _syncIfPrivate('launch'));
     _periodicSync =
-        Timer.periodic(_periodicSyncInterval, (_) => _syncIfPrivate());
+        Timer.periodic(_periodicSyncInterval, (_) => _syncIfPrivate('poll'));
 
     // CloudKit zone-change push: the low-latency path. It routes into the SAME
     // mode-gated sync as every other trigger — push changes only WHEN sync runs.
     // The timer above is deliberately kept: iOS drops silent pushes at its own
     // discretion, so push can shorten the wait but must never be the only way a
     // change arrives.
-    MethodChannelCloudKitBridge.setRemoteChangeHandler(_syncIfPrivate);
+    MethodChannelCloudKitBridge.setRemoteChangeHandler(
+        () => _syncIfPrivate('push'));
   }
 
   @override
@@ -405,10 +408,10 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
   /// calls CloudKit in Supabase mode; the service itself no-ops on Android and
   /// when sync is disabled. Guarded on `mounted` because both callers fire from
   /// timers that can outlive a dispose.
-  void _syncIfPrivate() {
+  void _syncIfPrivate([String reason = 'unknown']) {
     if (!mounted) return;
     if (ref.read(activeDataModeProvider) != AppDataMode.private) return;
-    unawaited(_syncAndRefresh());
+    unawaited(_syncAndRefresh(reason: reason));
   }
 
   void _onPrivateWrite() {
@@ -429,7 +432,7 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
     // disabled. Fire-and-forget — failures never affect the UI.
     if (state == AppLifecycleState.resumed &&
         ref.read(activeDataModeProvider) == AppDataMode.private) {
-      unawaited(_syncAndRefresh());
+      unawaited(_syncAndRefresh(reason: 'resume'));
     }
 
     // Auto-verified habits: lazy reconcile on foreground is the authoritative
@@ -475,8 +478,9 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
     }
   }
 
-  Future<void> _syncAndRefresh() async {
-    final status = await ref.read(privateSyncServiceProvider).syncNow();
+  Future<void> _syncAndRefresh({String reason = 'manual'}) async {
+    final status =
+        await ref.read(privateSyncServiceProvider).syncNow(reason: reason);
     // If the sync pulled remote changes, refresh the cached providers so the UI
     // shows them (the engine writes straight to the local DB).
     if (mounted && status.appliedChanges > 0) {

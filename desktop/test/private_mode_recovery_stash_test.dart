@@ -100,7 +100,7 @@ class _FakeSync implements PrivateSyncService {
   Future<PrivateSyncStatus> disable() async => enableResult;
 
   @override
-  Future<PrivateSyncStatus> syncNow() async => enableResult;
+  Future<PrivateSyncStatus> syncNow({String reason = 'manual'}) async => enableResult;
 
   @override
   Future<PrivateSyncStatus> requestFullReset() async => enableResult;

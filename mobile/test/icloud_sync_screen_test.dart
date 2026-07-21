@@ -128,7 +128,7 @@ class FakePrivateSyncService implements PrivateSyncService {
   }
 
   @override
-  Future<PrivateSyncStatus> syncNow() async {
+  Future<PrivateSyncStatus> syncNow({String reason = 'manual'}) async {
     calls.add('syncNow');
     if (throwOnAction) throw StateError('syncNow boom');
     _status = _copyWith(lastSyncedAt: DateTime.utc(2026, 6, 23, 11, 0));

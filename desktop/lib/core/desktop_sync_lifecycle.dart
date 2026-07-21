@@ -66,17 +66,20 @@ class _DesktopSyncLifecycleState extends ConsumerState<DesktopSyncLifecycle> {
   @override
   void initState() {
     super.initState();
-    _writeDebouncer = SyncWriteDebouncer(onFlush: _sync);
+    _writeDebouncer = SyncWriteDebouncer(onFlush: () => _sync(reason: 'write'));
     DesktopPrivateDb.onPrivateWrite = _onPrivateWrite;
     _lifecycle = AppLifecycleListener(onStateChange: _onLifecycleChanged);
-    _periodic = Timer.periodic(_periodicInterval, (_) => unawaited(_sync()));
+    _periodic =
+        Timer.periodic(_periodicInterval, (_) => unawaited(_sync(reason: 'poll')));
     // CloudKit zone-change push: the low-latency path. Routes into the SAME
     // sync as every other trigger — push changes only WHEN sync runs, never
     // what it does. The timer above stays: silent-push delivery is not
     // guaranteed, so push shortens the wait but is never the only way a change
     // arrives.
-    MethodChannelCloudKitBridge.setRemoteChangeHandler(() => unawaited(_sync()));
-    WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_sync()));
+    MethodChannelCloudKitBridge.setRemoteChangeHandler(
+        () => unawaited(_sync(reason: 'push')));
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => unawaited(_sync(reason: 'launch')));
   }
 
   @override
@@ -96,17 +99,17 @@ class _DesktopSyncLifecycleState extends ConsumerState<DesktopSyncLifecycle> {
   }
 
   void _onLifecycleChanged(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) unawaited(_sync());
+    if (state == AppLifecycleState.resumed) unawaited(_sync(reason: 'refocus'));
   }
 
   bool get _isPrivateMode =>
       ref.read(activeDesktopDataModeProvider) == DesktopDataMode.private;
 
-  Future<void> _sync() async {
+  Future<void> _sync({String reason = 'unknown'}) async {
     if (!mounted || !_isPrivateMode) return;
     try {
       final status =
-          await ref.read(desktopPrivateSyncServiceProvider).syncNow();
+          await ref.read(desktopPrivateSyncServiceProvider).syncNow(reason: reason);
       // The engine writes pulled records straight to the encrypted DB, bypassing
       // the controllers — refresh the same full private surface the manual
       // "Sync now" and notification-write paths refresh (incl. profile +

@@ -82,7 +82,7 @@ class _ChainFakeSync implements PrivateSyncService {
       const PrivateSyncStatus.localOnly();
 
   @override
-  Future<PrivateSyncStatus> syncNow() async =>
+  Future<PrivateSyncStatus> syncNow({String reason = 'manual'}) async =>
       const PrivateSyncStatus.localOnly();
 
   @override

@@ -270,10 +270,18 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
         }
       });
 
+  /// [reason] names what triggered this sync (push / poll / launch / resume /
+  /// write / manual) and appears in the log.
+  ///
+  /// Without it every trigger logged an identical "Sync starting...", so a
+  /// working push was indistinguishable from the periodic poll that would have
+  /// run anyway — which made the one thing worth verifying on device impossible
+  /// to verify.
   @override
-  Future<PrivateSyncStatus> syncNow() => _runExclusive(_syncNow);
+  Future<PrivateSyncStatus> syncNow({String reason = 'manual'}) =>
+      _runExclusive(() => _syncNow(reason: reason));
 
-  Future<PrivateSyncStatus> _syncNow() async {
+  Future<PrivateSyncStatus> _syncNow({String reason = 'manual'}) async {
     try {
       final store = await storeProvider();
       // Honor a queued full-reset wipe even when sync is disabled (it's cleanup).
@@ -291,7 +299,7 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
       
       await _ensureSubscribed();
 
-      logger.info('[CloudKit] Sync starting...');
+      logger.info('[CloudKit] Sync starting (trigger: $reason)');
       final r = await (await _engine(store)).syncNow(key);
 
       // Sweep abandoned identity shells left by the seed-then-reconcile bug (and

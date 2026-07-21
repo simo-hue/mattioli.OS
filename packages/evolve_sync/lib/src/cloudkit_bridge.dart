@@ -109,4 +109,17 @@ abstract class CloudKitBridge {
   ///
   /// Returns false for a missing zone (genuinely nothing there yet).
   Future<bool> zoneHasRecords();
+
+  /// Register the CloudKit subscription that makes the server send this device a
+  /// silent push whenever the zone changes.
+  ///
+  /// A pure LATENCY optimisation over the periodic poll, never a replacement for
+  /// it. Apple does not guarantee silent-push delivery — the system throttles and
+  /// drops them at its own discretion based on battery, usage and thermal state —
+  /// so a device that receives nothing must still converge on its timer. Every
+  /// caller therefore treats a failure here as a non-event: log and carry on.
+  ///
+  /// MUST be idempotent. CloudKit subscriptions outlive app reinstalls, so this
+  /// runs against a subscription that already exists far more often than not.
+  Future<void> ensureSubscription();
 }

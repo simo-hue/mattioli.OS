@@ -45,6 +45,9 @@ class _CappedCloud implements CloudKitBridge {
   // Delegates: the probe is orthogonal to what these wrappers simulate.
   @override
   Future<bool> zoneHasRecords() => inner.zoneHasRecords();
+
+  @override
+  Future<void> ensureSubscription() => inner.ensureSubscription();
 }
 
 /// Runs [onSave] the first time a push reaches the network, standing in for an
@@ -79,6 +82,9 @@ class _EditDuringPushCloud implements CloudKitBridge {
   // Delegates: the probe is orthogonal to what this wrapper simulates.
   @override
   Future<bool> zoneHasRecords() => inner.zoneHasRecords();
+
+  @override
+  Future<void> ensureSubscription() => inner.ensureSubscription();
 }
 
 void main() {

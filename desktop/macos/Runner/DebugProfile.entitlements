@@ -2,6 +2,13 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- CloudKit zone-change silent pushes. Value is `development`: Xcode
+	     rewrites it to `production` when exporting for distribution, so this is
+	     the correct literal to commit. Requires the Push Notifications
+	     capability on App ID com.simo.evolve (enabled 2026-07-21) — without it
+	     the build fails at the SIGNING step, not at compile. -->
+	<key>aps-environment</key>
+	<string>development</string>
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
 	<key>com.apple.security.cs.allow-jit</key>

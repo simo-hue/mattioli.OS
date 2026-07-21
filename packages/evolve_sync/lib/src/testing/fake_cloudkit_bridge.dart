@@ -84,6 +84,13 @@ class FakeCloudKitBridge implements CloudKitBridge {
     zoneDeleted = true;
   }
 
+  int ensureSubscriptionCalls = 0;
+
+  /// Mirrors the native contract: idempotent, and never throws — a device that
+  /// cannot subscribe must still converge on its poll.
+  @override
+  Future<void> ensureSubscription() async => ensureSubscriptionCalls++;
+
   int zoneHasRecordsCalls = 0;
 
   /// Mirrors the native contract: a token-free peek that must NOT disturb the

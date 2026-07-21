@@ -37,6 +37,40 @@ class MethodChannelCloudKitBridge implements CloudKitBridge {
     }
   }
 
+  /// Wire [onChange] to the silent pushes CloudKit delivers when the zone
+  /// changes. The native side invokes `remoteChange` on this channel; the app
+  /// responds by running its ORDINARY sync.
+  ///
+  /// Deliberately a plain callback into the existing sync path rather than a
+  /// second, push-specific one: a separate path is how two code paths that must
+  /// agree start disagreeing. Push only changes WHEN sync runs, never WHAT it
+  /// does.
+  ///
+  /// Safe to call more than once — the last handler wins.
+  static void setRemoteChangeHandler(void Function() onChange) {
+    channel.setMethodCallHandler((call) async {
+      if (call.method == 'remoteChange') onChange();
+      return null;
+    });
+  }
+
+  /// Detach the handler (app teardown / mode switch).
+  static void clearRemoteChangeHandler() => channel.setMethodCallHandler(null);
+
+  @override
+  Future<void> ensureSubscription() async {
+    try {
+      await channel.invokeMethod<void>('ensureSubscription');
+    } on MissingPluginException {
+      // No channel ⇒ no sync at all on this platform; the poll is the whole
+      // story and nothing is lost.
+    } on PlatformException catch (_) {
+      // Non-fatal BY DESIGN. A device that never registers simply falls back to
+      // the periodic poll, which is exactly where it was before push existed.
+      // Throwing here would take down enable() over a latency optimisation.
+    }
+  }
+
   @override
   Future<bool> zoneHasRecords() async {
     try {

@@ -356,12 +356,37 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
   /// into one sync a few quiet seconds after the last edit.
   late final SyncWriteDebouncer _writeDebouncer;
 
+  /// Polls for another device's edits while the app is open and in the
+  /// foreground — desktop has always had this; iOS did not.
+  ///
+  /// Without it the ONLY automatic pull was `resumed`, so an iPhone left open on
+  /// a screen never learned about a Mac edit at all: no launch sync, no timer,
+  /// and no CloudKit push subscription. Matching desktop's cadence is also what
+  /// makes the two apps behave the same way, which is the point of the exercise.
+  Timer? _periodicSync;
+  static const _periodicSyncInterval = Duration(minutes: 3);
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _writeDebouncer = SyncWriteDebouncer(onFlush: _syncAndRefresh);
     PrivateLocalDatabase.onPrivateWrite = _onPrivateWrite;
+
+    // Launch sync. A cold start does NOT emit `resumed`, so without this the
+    // first pull of a session waited for the user to background the app and
+    // come back — the reason a freshly-opened iPhone could sit on stale data
+    // indefinitely.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncIfPrivate());
+    _periodicSync =
+        Timer.periodic(_periodicSyncInterval, (_) => _syncIfPrivate());
+
+    // CloudKit zone-change push: the low-latency path. It routes into the SAME
+    // mode-gated sync as every other trigger — push changes only WHEN sync runs.
+    // The timer above is deliberately kept: iOS drops silent pushes at its own
+    // discretion, so push can shorten the wait but must never be the only way a
+    // change arrives.
+    MethodChannelCloudKitBridge.setRemoteChangeHandler(_syncIfPrivate);
   }
 
   @override
@@ -369,9 +394,21 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
     if (identical(PrivateLocalDatabase.onPrivateWrite, _onPrivateWrite)) {
       PrivateLocalDatabase.onPrivateWrite = null;
     }
+    _periodicSync?.cancel();
+    MethodChannelCloudKitBridge.clearRemoteChangeHandler();
     _writeDebouncer.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  /// Mode-gated fire-and-forget sync. Gated so it never opens the private DB or
+  /// calls CloudKit in Supabase mode; the service itself no-ops on Android and
+  /// when sync is disabled. Guarded on `mounted` because both callers fire from
+  /// timers that can outlive a dispose.
+  void _syncIfPrivate() {
+    if (!mounted) return;
+    if (ref.read(activeDataModeProvider) != AppDataMode.private) return;
+    unawaited(_syncAndRefresh());
   }
 
   void _onPrivateWrite() {

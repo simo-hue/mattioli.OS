@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:evolve_sync/evolve_sync.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,10 +19,14 @@ import 'private_data_refresh.dart';
 /// 3. **After-write** — private-mode mutations funnel through
 ///    [DesktopPrivateDb.onPrivateWrite] and coalesce into one sync a few quiet
 ///    seconds after the last edit ([SyncWriteDebouncer]).
-/// 4. **Periodic** — a coarse 15-minute pull. With CloudKit push deferred,
-///    this is how a Mac that sits open-and-idle learns about iPhone edits.
+/// 4. **Periodic** — a 3-minute pull, the floor on how stale an open window can
+///    get. Kept even now that push exists: silent-push delivery is explicitly
+///    not guaranteed, so this is the backstop that makes convergence certain
+///    rather than likely.
+/// 5. **CloudKit zone-change push** — a silent push from a
+///    `CKDatabaseSubscription`, giving seconds-level latency in the common case.
 ///
-/// (Trigger #5, the manual "Sync now" button, lives in the settings UI.)
+/// (Trigger #6, the manual "Sync now" button, lives in the settings UI.)
 ///
 /// Every path funnels through [_sync], which is gated to Private mode; the
 /// service itself additionally no-ops when sync is disabled, the platform
@@ -38,7 +43,21 @@ class DesktopSyncLifecycle extends ConsumerStatefulWidget {
 }
 
 class _DesktopSyncLifecycleState extends ConsumerState<DesktopSyncLifecycle> {
-  static const _periodicInterval = Duration(minutes: 15);
+  /// How often an open, focused window polls for another device's edits.
+  ///
+  /// 3 minutes, down from 15. Without CloudKit push subscriptions this timer is
+  /// the ONLY way a Mac that already has focus learns about an iPhone edit —
+  /// window-refocus only fires if you actually switch away and back, so a user
+  /// sitting in front of the app could wait a quarter of an hour for a settings
+  /// change to appear. That reads as "sync is broken" long before it reads as
+  /// "sync is slow".
+  ///
+  /// The cost is more CloudKit round-trips; each is a delta fetch that returns
+  /// nothing when idle, so for a zone this size it is negligible. Push now
+  /// handles the common case, but this stays as the backstop — Apple does not
+  /// guarantee silent-push delivery, so removing it would trade certain
+  /// convergence for likely convergence.
+  static const _periodicInterval = Duration(minutes: 3);
 
   late final SyncWriteDebouncer _writeDebouncer;
   late final AppLifecycleListener _lifecycle;
@@ -51,6 +70,12 @@ class _DesktopSyncLifecycleState extends ConsumerState<DesktopSyncLifecycle> {
     DesktopPrivateDb.onPrivateWrite = _onPrivateWrite;
     _lifecycle = AppLifecycleListener(onStateChange: _onLifecycleChanged);
     _periodic = Timer.periodic(_periodicInterval, (_) => unawaited(_sync()));
+    // CloudKit zone-change push: the low-latency path. Routes into the SAME
+    // sync as every other trigger — push changes only WHEN sync runs, never
+    // what it does. The timer above stays: silent-push delivery is not
+    // guaranteed, so push shortens the wait but is never the only way a change
+    // arrives.
+    MethodChannelCloudKitBridge.setRemoteChangeHandler(() => unawaited(_sync()));
     WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_sync()));
   }
 
@@ -62,6 +87,7 @@ class _DesktopSyncLifecycleState extends ConsumerState<DesktopSyncLifecycle> {
     _writeDebouncer.dispose();
     _lifecycle.dispose();
     _periodic?.cancel();
+    MethodChannelCloudKitBridge.clearRemoteChangeHandler();
     super.dispose();
   }
 
@@ -95,7 +121,7 @@ class _DesktopSyncLifecycleState extends ConsumerState<DesktopSyncLifecycle> {
       // code-signing change that rotated the Keychain access group). Recovering
       // it belongs to [PrivateModeGate], which offers reset / iCloud-restore /
       // import; the mode is still `private` while that screen is up, so these
-      // triggers (window refocus, the 15-min timer, the post-frame launch sync)
+      // triggers (window refocus, the periodic timer, the post-frame launch sync)
       // keep firing. They run fire-and-forget via `unawaited`, so an uncaught
       // throw here becomes an UNHANDLED zone exception and crashes the app.
       // Swallow it quietly and let the gate drive recovery.

@@ -11,6 +11,31 @@ class AppDelegate: FlutterAppDelegate {
   override func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
     return true
   }
+
+  override func applicationDidFinishLaunching(_ notification: Notification) {
+    super.applicationDidFinishLaunching(notification)
+    // CloudKit zone-change pushes. Silent (`content-available`) pushes need no
+    // notification authorization, so this prompts the user for nothing.
+    NSApplication.shared.registerForRemoteNotifications()
+  }
+
+  /// A silent push telling us the CloudKit zone changed.
+  ///
+  /// Runs the app's ORDINARY sync — the push carries no data and decides
+  /// nothing; it changes only WHEN sync happens. The periodic poll stays
+  /// alongside it, because push delivery is not guaranteed.
+  override func application(
+    _ application: NSApplication,
+    didReceiveRemoteNotification userInfo: [String: Any]
+  ) {
+    guard let notification = CKNotification(fromRemoteNotificationDictionary: userInfo),
+          notification.containerIdentifier == CloudKitSyncBridge.containerId
+    else {
+      super.application(application, didReceiveRemoteNotification: userInfo)
+      return
+    }
+    CloudKitSyncBridge.notifyRemoteChange()
+  }
 }
 
 /// Native half of Private mode's local-only guarantee: a thin MethodChannel
@@ -77,11 +102,16 @@ enum CloudKitSyncBridge {
   static let zoneName = "PrivateZone"
   static let recordType = "PrivateRecord"
 
+  /// Retained so a silent push can invoke BACK into Dart. It used to be a local
+  /// `let`, which made the channel one-directional.
+  private static var channel: FlutterMethodChannel?
+
   static func register(_ messenger: FlutterBinaryMessenger) {
     let channel = FlutterMethodChannel(
       name: "evolve/cloudkit",
       binaryMessenger: messenger
     )
+    Self.channel = channel
     channel.setMethodCallHandler { call, result in
       handle(call, result)
     }
@@ -103,6 +133,7 @@ enum CloudKitSyncBridge {
     case "deleteRecords": deleteRecords(args, result)
     case "deleteZone": deleteZone(result)
     case "zoneHasRecords": zoneHasRecords(result)
+    case "ensureSubscription": ensureSubscription(result)
     default: result(FlutterMethodNotImplemented)
     }
   }
@@ -383,6 +414,66 @@ enum CloudKitSyncBridge {
       }
     }
     database.add(op)
+  }
+
+  // MARK: - Zone change subscription (silent push)
+
+  /// Fixed id so registering is IDEMPOTENT. CloudKit subscriptions outlive app
+  /// reinstalls, so this runs against an existing subscription far more often
+  /// than not; a fresh uuid each time would pile up duplicates server-side and
+  /// deliver one push per duplicate.
+  private static let subscriptionID = "evolve-private-zone-changes"
+
+  /// Ask CloudKit to send this device a silent push whenever the private
+  /// database changes.
+  ///
+  /// A `CKDatabaseSubscription` rather than a zone subscription: it keeps
+  /// working unchanged if a second zone is ever added, and it is the shape Apple
+  /// documents for this pattern.
+  ///
+  /// Silent-only — no alert, badge or sound — which is also why this needs NO
+  /// user permission: `shouldSendContentAvailable` pushes never prompt.
+  ///
+  /// Errors are reported but must be treated as non-fatal by the caller: push
+  /// only changes WHEN a sync runs, and the Dart side still polls.
+  private static func ensureSubscription(_ result: @escaping FlutterResult) {
+    let subscription = CKDatabaseSubscription(subscriptionID: subscriptionID)
+    let notificationInfo = CKSubscription.NotificationInfo()
+    notificationInfo.shouldSendContentAvailable = true
+    subscription.notificationInfo = notificationInfo
+
+    let op = CKModifySubscriptionsOperation(
+      subscriptionsToSave: [subscription],
+      subscriptionIDsToDelete: nil
+    )
+    op.qualityOfService = .utility
+    op.modifySubscriptionsResultBlock = { res in
+      main {
+        switch res {
+        case .success:
+          result(nil)
+        case .failure(let error):
+          // Already registered is a SUCCESS, not an error: the desired end state
+          // holds. Treating it as a failure would make every launch after the
+          // first look broken.
+          if let ck = error as? CKError, ck.code == .serverRejectedRequest {
+            result(nil)
+          } else {
+            result(flutterError(error))
+          }
+        }
+      }
+    }
+    database.add(op)
+  }
+
+  /// Tell Dart the zone changed, so it runs its ORDINARY sync.
+  ///
+  /// Deliberately carries no payload and does no work of its own. The push is a
+  /// hint about TIMING; everything about what to fetch, merge and resolve stays
+  /// in the one Dart path that has been hardened for it.
+  static func notifyRemoteChange() {
+    main { channel?.invokeMethod("remoteChange", arguments: nil) }
   }
 
   // MARK: - Token (base64 of the archived CKServerChangeToken)

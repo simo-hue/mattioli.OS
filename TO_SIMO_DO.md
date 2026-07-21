@@ -59,3 +59,39 @@ flutter build ipa --release
 - [ ] `quarantineRecord`'s ON CONFLICT branch does not apply the quarantine stamp.
 
 ---
+---
+
+## CloudKit Push Subscriptions — build prerequisites (2026-07-21)
+
+### DONE BY YOU
+- [x] Push Notifications capability enabled on App ID `com.simo.evolve`.
+
+### BEFORE THE FIRST BUILD — refresh provisioning profiles
+The apps now declare `aps-environment` in their entitlements. If the profile on
+disk predates the capability, the build fails at the **SIGNING** step, not at compile.
+- Xcode → Settings → Accounts → your team → **Download Manual Profiles** (automatic signing),
+  or regenerate + re-download both apps' profiles in the portal (manual signing).
+- If you see an error mentioning a missing `aps-environment` entitlement: it is the
+  PROFILE, not the code.
+- You do NOT need an APNs certificate. CloudKit sends subscription pushes itself;
+  the portal's "Certificates (0)" is for pushing from your own server.
+
+### ON-DEVICE VERIFICATION
+1. Build BOTH apps. Watch the logs for `[CloudKit] Zone change subscription registered`.
+   Absent ⇒ registration failed; sync still works on the 3-minute poll (by design).
+2. Change the accent colour on the iPhone. The Mac should update in **seconds**, without
+   Cmd+Q and without switching away and back.
+3. Change a setting on the Mac. Same, in reverse.
+4. If it takes ~3 minutes instead of seconds, push is not being delivered but polling is
+   covering — check step 1's log line first.
+
+### KNOWN LIMITS (by design, not bugs)
+- Apple does NOT guarantee silent-push delivery; iOS throttles them by battery, usage and
+  thermal state. The 3-minute poll is deliberately kept as the backstop, so the worst case
+  is exactly today's behaviour.
+- iOS `aps-environment` is committed as `development`; Xcode rewrites it to `production` on
+  distribution export. **Verify push still works on a TestFlight build** — that is the one
+  step that cannot be checked from a local build.
+- None of the native push code has been executed. It is unit-tested only where Dart can
+  reach it (registration is idempotent, a failure never breaks sync, the poll alone still
+  converges).

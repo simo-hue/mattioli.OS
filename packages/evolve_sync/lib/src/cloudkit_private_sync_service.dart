@@ -96,6 +96,30 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
     return completer.future;
   }
 
+  /// Whether the zone subscription has been registered in THIS process.
+  ///
+  /// Once per process, not once ever: CloudKit subscriptions survive reinstalls,
+  /// so re-registering is the common case and must be cheap and safe — but a
+  /// device that failed to register (offline, transient CloudKit error) should
+  /// retry on a later sync rather than being written off until the next launch.
+  /// A process-scoped flag gives both.
+  bool _subscribed = false;
+
+  Future<void> _ensureSubscribed() async {
+    if (_subscribed) return;
+    try {
+      await bridge.ensureSubscription();
+      _subscribed = true;
+      logger.info('[CloudKit] Zone change subscription registered');
+    } catch (e, st) {
+      // Non-fatal by design: push is a latency optimisation over the periodic
+      // poll. A device that never subscribes keeps converging on its timer,
+      // which is precisely where it was before push existed. Letting this throw
+      // would break sync entirely to protect a nice-to-have.
+      logger.error('[CloudKit] Subscription registration failed', e, st, const {});
+    }
+  }
+
   @override
   Future<PrivateSyncStatus> status() => _status();
 
@@ -197,6 +221,11 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
           await ownerWriter(canonical);
         }
         await enabledStore.setEnabled(true);
+        // Subscribe as soon as sync is on, rather than waiting for the next
+        // periodic tick — otherwise a user who enables sync and leaves the app
+        // sitting there gets no pushes for the first few minutes, which is
+        // exactly when they are watching to see whether it works.
+        await _ensureSubscribed();
         logger.info('[CloudKit] Sync enabled successfully');
       } else if (res.ownerPending) {
         // Key synced but the canonical owner hasn't yet: leave sync disabled so
@@ -260,6 +289,8 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
       final key = await keys.readKey();
       if (key == null) return status(); // key not in iCloud Keychain yet
       
+      await _ensureSubscribed();
+
       logger.info('[CloudKit] Sync starting...');
       final r = await (await _engine(store)).syncNow(key);
 

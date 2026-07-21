@@ -16,7 +16,9 @@ class AppDelegate: FlutterAppDelegate {
     super.applicationDidFinishLaunching(notification)
     // CloudKit zone-change pushes. Silent (`content-available`) pushes need no
     // notification authorization, so this prompts the user for nothing.
+    CloudKitSyncBridge.logNative("info", "[APNs] Requesting registration...")
     NSApplication.shared.registerForRemoteNotifications()
+    CloudKitSyncBridge.scheduleRegistrationWatchdog()
   }
 
   /// A silent push telling us the CloudKit zone changed.
@@ -41,6 +43,7 @@ class AppDelegate: FlutterAppDelegate {
     _ application: NSApplication,
     didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
   ) {
+    CloudKitSyncBridge.noteApnsCallback()
     CloudKitSyncBridge.logNative(
       "info",
       "[APNs] Registered for remote notifications (token \(deviceToken.count) bytes)"
@@ -51,6 +54,7 @@ class AppDelegate: FlutterAppDelegate {
     _ application: NSApplication,
     didFailToRegisterForRemoteNotificationsWithError error: Error
   ) {
+    CloudKitSyncBridge.noteApnsCallback()
     CloudKitSyncBridge.logNative(
       "error",
       "[APNs] Registration FAILED: \(error.localizedDescription)"
@@ -499,6 +503,33 @@ enum CloudKitSyncBridge {
   /// is fire-and-forget, and "subscription registered" only proves CloudKit
   /// ACCEPTED the subscription — it says nothing about whether this device can
   /// RECEIVE a push.
+  /// True once either APNs callback has fired.
+  private static var apnsCallbackSeen = false
+
+  static func noteApnsCallback() { apnsCallbackSeen = true }
+
+  /// Log if APNs answers with NEITHER success nor failure.
+  ///
+  /// That silence is a real, distinct state — it is what a Mac signed without a
+  /// push-capable provisioning profile does — and it is invisible otherwise:
+  /// `registerForRemoteNotifications()` returns immediately and the delegate is
+  /// simply never called. Without this, "no APNs line in the log" could equally
+  /// mean the request was never made, and the two have completely different
+  /// fixes.
+  static func scheduleRegistrationWatchdog() {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 15) {
+      guard !apnsCallbackSeen else { return }
+      logNative(
+        "error",
+        "[APNs] No registration callback after 15s — neither success nor "
+          + "failure. The app asked for a push token and the system never "
+          + "answered, which usually means this build is not signed with a "
+          + "provisioning profile that authorises the aps-environment "
+          + "entitlement. Sync still converges on the periodic poll."
+      )
+    }
+  }
+
   static func logNative(_ level: String, _ message: String) {
     main {
       channel?.invokeMethod(

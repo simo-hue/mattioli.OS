@@ -7,6 +7,7 @@ import '../../core/theme.dart';
 import '../../i18n/translations.g.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../kit/evolve_kit.dart';
+import '../../core/theme.dart';
 
 /// Display helpers for a verification template/rule. Localized via slang — the
 /// [Translations] instance is passed in so the pure helpers stay testable

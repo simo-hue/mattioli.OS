@@ -1,5 +1,7 @@
 # TO_SIMO_DO.md
 - [ ] Widget for iPhone & MacOS
+- [ ] profile's photo bug on mobile
+- [ ] settings in desktop implementation is really weird and not intuitive as it is in the mobile app
 - [ ] From iOS I cannot understand the difference between a classic habits and an automatic one
 - [ ] Protocol from desktop only the current habits not all ( the removed one should not be visible )
 - [ ] what happens if I modify manually an automatic habits?

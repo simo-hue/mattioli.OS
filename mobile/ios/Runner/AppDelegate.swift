@@ -503,14 +503,24 @@ enum CloudKitSyncBridge {
         case .success:
           result(nil)
         case .failure(let error):
-          // Already registered is a SUCCESS, not an error: the desired end state
-          // holds. Treating it as a failure would make every launch after the
-          // first look broken.
-          if let ck = error as? CKError, ck.code == .serverRejectedRequest {
-            result(nil)
-          } else {
-            result(flutterError(error))
-          }
+          // Report EVERY failure. `.serverRejectedRequest` was previously
+          // swallowed as "already registered" — it is not; it is a genuine
+          // rejection, and treating it as success meant the app logged
+          // "subscription registered" while no subscription existed. That is the
+          // exact false-success this codebase has spent a week removing.
+          //
+          // Re-registering an existing subscription id is NOT an error in
+          // CloudKit (CKModifySubscriptionsOperation updates it in place), so
+          // there is no "already exists" case to special-case in the first
+          // place.
+          let ck = error as? CKError
+          logNative(
+            "error",
+            "[CloudKit] Subscription registration failed"
+              + " (CKError \(ck?.code.rawValue ?? -1)):"
+              + " \(error.localizedDescription)"
+          )
+          result(flutterError(error))
         }
       }
     }

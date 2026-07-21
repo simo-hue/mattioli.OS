@@ -359,12 +359,17 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
   /// Polls for another device's edits while the app is open and in the
   /// foreground — desktop has always had this; iOS did not.
   ///
+  /// 60 seconds, matching desktop. Push is registered but has never been
+  /// observed to deliver, so this timer is the real sync path, not a fallback.
+  /// Foreground-only: iOS suspends timers in the background, so this costs
+  /// nothing while the app is not on screen.
+  ///
   /// Without it the ONLY automatic pull was `resumed`, so an iPhone left open on
   /// a screen never learned about a Mac edit at all: no launch sync, no timer,
   /// and no CloudKit push subscription. Matching desktop's cadence is also what
   /// makes the two apps behave the same way, which is the point of the exercise.
   Timer? _periodicSync;
-  static const _periodicSyncInterval = Duration(minutes: 3);
+  static const _periodicSyncInterval = Duration(seconds: 60);
 
   @override
   void initState() {

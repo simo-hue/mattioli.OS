@@ -2,6 +2,14 @@
 
 ## Recent Changes
 
+- [2026-07-22]: **iOS & macOS Version and Build Number Bump for Release**
+  - *Details*: Incremented patch versions and build numbers across the Flutter iOS (`mobile/`) and macOS (`desktop/`) projects in preparation for App Store releases.
+  - *Tech Notes*:
+    - Mobile (`mobile/pubspec.yaml`): Updated version from `1.1.2+35` to `1.1.3+36`.
+    - Mobile Xcode (`mobile/ios/Runner.xcodeproj/project.pbxproj`): Updated `MARKETING_VERSION` from `1.1.2` to `1.1.3`.
+    - Desktop (`desktop/pubspec.yaml`): Updated version from `1.0.0+18` to `1.0.1+19`.
+    - Desktop Xcode (`desktop/macos/Runner.xcodeproj/project.pbxproj`): Updated `MARKETING_VERSION` from `1.0` to `1.0.1`.
+
 - [2026-07-21]: **Fix iOS Release Build and Missing appColors Import**
   - *Details*: Fixed a build error blocking the iOS IPA generation for mobile and cleared the Xcode DerivedData cache to resolve a stubborn disk I/O error.
   - *Tech Notes*:

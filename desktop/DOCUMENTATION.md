@@ -1,5 +1,24 @@
 # DOCUMENTATION
 
+## [2026-07-22]: Fix macOS APNs Registration Failure (OSStatus error 13)
+
+### Details
+The macOS TestFlight build failed to register for Apple Push Notification service (APNs) with `OSStatus error 13` (permission denied). CloudKit uses silent pushes to notify devices of zone changes, so without APNs the macOS app could only detect remote changes via the periodic poll timer.
+
+### Root Cause
+The Xcode project file (`project.pbxproj`) declared only `com.apple.Sandbox` in its `SystemCapabilities` section. With `CODE_SIGN_STYLE = Automatic`, Xcode derives the provisioning profile's entitlements from these capabilities. Since `com.apple.Push` was not listed, the `aps-environment` entitlement was silently **stripped** from the signed binary during code signing — even though it was present in `Release.entitlements`. Verified by running `codesign -d --entitlements :- /Applications/Evolve.app` which confirmed the installed app had no `aps-environment` key.
+
+Push Notifications was correctly enabled in the Apple Developer portal for the App ID, but that alone is insufficient — the Xcode project must also declare the capability.
+
+### Changes Made
+- **File**: `macos/Runner.xcodeproj/project.pbxproj`
+- **Fix**: Added `com.apple.Push = { enabled = 1; }` to the Runner target's `SystemCapabilities` dictionary.
+
+### Tech Notes
+- No new dependencies.
+- Requires re-archiving and re-uploading to TestFlight for the fix to take effect.
+- iOS was not affected because the iOS project already had the Push Notifications capability registered (different Xcode project).
+
 ## [2026-07-14]: Fix Goals Page Quick Add Text Field Vertical Alignment
 
 ### Details

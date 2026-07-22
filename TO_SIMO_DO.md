@@ -1,7 +1,6 @@
 # TO_SIMO_DO.md
 - [ ] Widget for iPhone & MacOS
 - [ ] settings in desktop implementation is really weird and not intuitive as it is in the mobile app
-- [x] ~~Protocol from desktop only the current habits not all ( the removed one should not be visible )~~ — implemented 2026-07-21 as an Active/All toggle (mirrors mobile's `statsHabitFilter`); see DOCUMENTATION.md. Needs on-device QA on the Mac mini.
 - [ ] what happens if I modify manually an automatic habits?
 - [ ] Different habits & goals types, not only checkboxes like status,progress bar
 - [ ] For the desktop implementation what has been done with ollama is outstanding and I want to replicate the same thing also with LMStudio so the major local LLM providers are supported
@@ -46,54 +45,6 @@ flutter build macos --release --dart-define-from-file=.env
 ```bash
 flutter build ipa --release
 ```
-
----
-
-### Still outstanding (not yet fixed)
-- [x] ~~`applyDelete` runs with foreign keys ON~~ — fixed in an earlier session.
-- [x] ~~`syncNow` still stamps `last_full_sync_at` and reports success even when every record
-      failed.~~ — fixed 2026-07-21 (Tier A1).
-- [ ] Mobile still has no launch sync and no periodic timer.
-- [x] ~~No retry/backoff or `qualityOfService` on any CloudKit operation.~~ — written 2026-07-21
-      (Tier A2/A3). **Compiles but has never been executed — see the checklist below.**
-- [x] ~~`quarantineRecord`'s ON CONFLICT branch does not apply the quarantine stamp.~~ — this
-      turned out NOT to be a defect (the doc comment specifies that behaviour deliberately, and
-      forcing `dirty = 0` there would drop pending local writes). The real bug was in its
-      counterpart, `clearUndecryptableParks`, and is now fixed. See DOCUMENTATION.md.
-
----
-
-## 2026-07-21 — iCloud sync Tier A: native verification needed (Mac mini, Xcode)
-
-The Swift changes below are the only part of this pass I could not execute. **There is no Xcode
-on the dev machine**, so nothing native was built or run.
-
-**What I could verify:** both bridges typecheck cleanly against the real CloudKit framework
-(`swiftc -typecheck`, Swift 6.3, macOS SDK, Command Line Tools). That confirms the API surface
-is right — `CKError.retryAfterSeconds` exists and is `Double?`, `.requestRateLimited` /
-`.serviceUnavailable` / `.zoneBusy` are valid codes, `qualityOfService` is settable on every
-operation type used. It does **not** confirm any runtime behaviour.
-
-**What I could NOT verify — and what only the Mac mini can settle:**
-
-- [ ] **Both apps still build and launch.** `flutter build macos --release` and
-      `flutter build ipa --release`. The bridges are `Runner`-target members, so a compile error
-      here surfaces only in Xcode.
-- [ ] **A throttled push actually recovers.** The retry path has never run. The realistic way to
-      hit it is a large first push: enable sync on a device with a full dataset and watch the log
-      for `[CloudKit] saveRecords throttled by iCloud — retrying in Ns (attempt K of 4)`.
-      If you never see that line, the path is simply untested — not proven good.
-- [ ] **The retry does not double-apply anything.** After any retry, run the diagnostics report on
-      both devices and confirm the per-table counts still match.
-- [ ] **`qualityOfService` did not make sync feel slower.** Every operation is now `.utility`
-      except `zoneHasRecords`, which is `.userInitiated` because it blocks the enable the user is
-      watching. If enable or first sync feels sluggish, that trade is the thing to revisit.
-
-Note both `AppDelegate.swift` files were patched from one script precisely so they stay
-line-for-line ports of each other; every line changed is byte-identical between them. If you edit
-one by hand, mirror it.
-
----
 
 ## 2026-07-21 — iCloud sync Tier C: residual items (none block the release)
 

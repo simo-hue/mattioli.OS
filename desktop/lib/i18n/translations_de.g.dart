@@ -1342,9 +1342,7 @@ class _Translations$coachSettings$de extends Translations$coachSettings$en {
 	@override String get presetLmStudio => 'LM Studio';
 	@override String get presetCustom => 'Benutzerdefiniert…';
 	@override String get baseUrlLabel => 'Basis-URL';
-	@override String get baseUrlHint => 'http://localhost:11434/v1';
 	@override String get modelLabel => 'Modell';
-	@override String get modelHint => 'z. B. llama3.1:8b';
 	@override String get refreshModels => 'Modelle aktualisieren';
 	@override String get discovering => 'Suche nach Modellen…';
 	@override String get noModelsFound => 'Keine Modelle gefunden — gib unten manuell eine Modell-ID ein.';
@@ -1361,8 +1359,8 @@ class _Translations$coachSettings$de extends Translations$coachSettings$en {
 	@override String get systemPromptReset => 'Zurücksetzen';
 	@override String get temperatureLabel => 'Temperatur';
 	@override String get save => 'Fertig';
-	@override String get detectedTitle => 'Lokales Modell erkannt';
-	@override String get detectedBody => 'Auf diesem Mac läuft ein lokaler KI-Server. Den Coach zu 100 % privat ausführen?';
+	@override String detectedTitle({required Object app}) => '${app} erkannt';
+	@override String detectedBody({required Object app}) => '${app} läuft auf diesem Mac. Den Coach zu 100 % privat ausführen?';
 	@override String get detectedAction => 'Lokal verwenden';
 	@override String get detectedDismiss => 'Jetzt nicht';
 	@override String activeCloud({required Object model}) => 'Cloud · ${model}';
@@ -1380,17 +1378,23 @@ class _Translations$coachSettings$de extends Translations$coachSettings$en {
 	@override String get temperatureRaise => 'Temperatur erhöhen';
 	@override String get sendMessage => 'Senden';
 	@override String get stopResponse => 'Stopp';
-	@override String get startOllama => 'Ollama starten';
-	@override String get getOllama => 'Ollama installieren';
-	@override String get startingOllama => 'Ollama wird gestartet…';
-	@override String get ollamaOfflineTitle => 'Ollama läuft nicht';
-	@override String get ollamaOfflineBody => 'Starte deinen lokalen Server, um privat zu chatten — ganz ohne Terminal.';
-	@override String get ollamaNotInstalledTitle => 'Ollama ist nicht installiert';
-	@override String get ollamaNotInstalledBody => 'Installiere die kostenlose Ollama-App und drücke dann Start.';
+	@override String startLocalServer({required Object app}) => '${app} starten';
+	@override String getLocalServer({required Object app}) => '${app} installieren';
+	@override String startingLocalServer({required Object app}) => '${app} wird gestartet…';
+	@override String localServerOfflineTitle({required Object app}) => '${app} läuft nicht';
+	@override String get localServerOfflineBody => 'Starte deinen lokalen Server, um privat zu chatten — ganz ohne Terminal.';
+	@override String localServerNotInstalledTitle({required Object app}) => '${app} ist nicht installiert';
+	@override String localServerNotInstalledBody({required Object app}) => 'Installiere die kostenlose ${app}-App und drücke dann Start.';
+	@override String get localServerStartingBody => 'Das kann ein paar Sekunden dauern…';
+	@override String localServerStartFailed({required Object app}) => '${app} konnte nicht gestartet werden — versuche, es aus dem Programme-Ordner zu öffnen.';
+	@override String localServerDownloadFailed({required Object url}) => 'Browser konnte nicht geöffnet werden — besuche ${url}';
 	@override String get ollamaStartTimeout => 'Dauert länger als erwartet — prüfe das Ollama-Symbol in der Menüleiste (der erste Start braucht evtl. eine Freigabe).';
-	@override String get ollamaStartingBody => 'Das kann ein paar Sekunden dauern…';
-	@override String get ollamaStartFailed => 'Ollama konnte nicht gestartet werden — versuche, es aus dem Programme-Ordner zu öffnen.';
-	@override String get ollamaDownloadFailed => 'Browser konnte nicht geöffnet werden — besuche ollama.com/download';
+	@override String get ollamaServerOffTitle => 'Ollama läuft, antwortet aber nicht';
+	@override String get ollamaServerOffBody => 'Ollama ist geöffnet, antwortet aber nicht auf seinem Port. Beende es über die Menüleiste und drücke dann erneut Start.';
+	@override String get lmStudioStartTimeout => 'Dauert länger als erwartet — öffne LM Studio und prüfe, ob der Start abgeschlossen ist.';
+	@override String get lmStudioServerOffTitle => 'Der Server von LM Studio läuft nicht';
+	@override String get lmStudioServerOffBody => 'LM Studio ist geöffnet, aber sein lokaler Server ist aus. Schalte ihn über Developer → Start Server ein oder aktiviere Settings → Run the LLM server on login.';
+	@override String get lmStudioNoModelsJit => 'LM Studio listet keine Modelle auf. Es listet nur geladene Modelle, wenn Just-In-Time-Laden aus ist — lade ein Modell in LM Studio oder aktiviere Developer → Server Settings → Just In Time Model Loading.';
 	@override String get backendStandard => 'Evolve AI';
 	@override String get standardDesc => 'In Evolve Pro enthalten. Wir betreiben ein kostenloses Google-Modell (Gemma) für dich — keine Schlüssel, keine Einrichtung. Deine Nachrichten gehen an Googles kostenlose Stufe, die sie zur Verbesserung ihrer Dienste verwenden kann.';
 	@override String activeStandard({required Object model}) => 'Evolve AI · ${model}';
@@ -1644,6 +1648,8 @@ class _Translations$ai$local$de extends Translations$ai$local$en {
 	@override String get streamError => '❌ Verbindung zum lokalen Modell fehlgeschlagen.';
 	@override String get timeout => '❌ Das lokale Modell braucht zu lange — es wird möglicherweise noch geladen. Versuche es erneut.';
 	@override String get modelNotFound => '❌ Dieses Modell ist auf dem Server nicht verfügbar. Öffne die Modellauswahl, um eines zu wählen oder zu laden.';
+	@override String authRequired({required Object app}) => '❌ ${app} verweigert die Verbindung — es erfordert ein API-Token. Deaktiviere die Authentifizierung in den Servereinstellungen oder richte Evolve auf einen Server, der keines verlangt.';
+	@override String get stillLoading => 'Das Modell wird noch geladen — ein Kaltstart kann eine Weile dauern.';
 }
 
 // Path: ai.standard
@@ -2375,6 +2381,8 @@ extension on TranslationsDe {
 			'ai.local.streamError' => '❌ Verbindung zum lokalen Modell fehlgeschlagen.',
 			'ai.local.timeout' => '❌ Das lokale Modell braucht zu lange — es wird möglicherweise noch geladen. Versuche es erneut.',
 			'ai.local.modelNotFound' => '❌ Dieses Modell ist auf dem Server nicht verfügbar. Öffne die Modellauswahl, um eines zu wählen oder zu laden.',
+			'ai.local.authRequired' => ({required Object app}) => '❌ ${app} verweigert die Verbindung — es erfordert ein API-Token. Deaktiviere die Authentifizierung in den Servereinstellungen oder richte Evolve auf einen Server, der keines verlangt.',
+			'ai.local.stillLoading' => 'Das Modell wird noch geladen — ein Kaltstart kann eine Weile dauern.',
 			'ai.standard.sessionExpired' => '⚠️ Deine Sitzung ist abgelaufen. Melde dich erneut an, um Evolve AI weiter zu nutzen.',
 			'ai.standard.needsPro' => '⚠️ Evolve AI ist Teil von Evolve Pro. Schließe in den Einstellungen ein Abo ab — oder wechsle die Engine zu deinem eigenen OpenRouter-Konto, das ist kostenlos.',
 			'ai.standard.rateLimited' => '⚠️ Du hast das Fair-Use-Limit von Evolve AI vorerst erreicht. Versuch es später noch einmal oder wechsle zu deinem eigenen OpenRouter-Konto.',
@@ -2741,15 +2749,13 @@ extension on TranslationsDe {
 			'coachSettings.cloudDesc' => 'Verbinde dein eigenes OpenRouter-Konto und zahle direkt an den Anbieter. Kostenlos — kein Abo nötig. Der geteilte Kontext wird an den Anbieter gesendet.',
 			'coachSettings.localDesc' => 'Dein eigenes Modell über Ollama, LM Studio oder einen beliebigen OpenAI-kompatiblen Server. Nichts verlässt dieses Gerät.',
 			'coachSettings.presetLabel' => 'Server',
-			'coachSettings.presetOllama' => 'Ollama',
-			'coachSettings.presetLmStudio' => 'LM Studio',
 			_ => null,
 		} ?? switch (path) {
+			'coachSettings.presetOllama' => 'Ollama',
+			'coachSettings.presetLmStudio' => 'LM Studio',
 			'coachSettings.presetCustom' => 'Benutzerdefiniert…',
 			'coachSettings.baseUrlLabel' => 'Basis-URL',
-			'coachSettings.baseUrlHint' => 'http://localhost:11434/v1',
 			'coachSettings.modelLabel' => 'Modell',
-			'coachSettings.modelHint' => 'z. B. llama3.1:8b',
 			'coachSettings.refreshModels' => 'Modelle aktualisieren',
 			'coachSettings.discovering' => 'Suche nach Modellen…',
 			'coachSettings.noModelsFound' => 'Keine Modelle gefunden — gib unten manuell eine Modell-ID ein.',
@@ -2766,8 +2772,8 @@ extension on TranslationsDe {
 			'coachSettings.systemPromptReset' => 'Zurücksetzen',
 			'coachSettings.temperatureLabel' => 'Temperatur',
 			'coachSettings.save' => 'Fertig',
-			'coachSettings.detectedTitle' => 'Lokales Modell erkannt',
-			'coachSettings.detectedBody' => 'Auf diesem Mac läuft ein lokaler KI-Server. Den Coach zu 100 % privat ausführen?',
+			'coachSettings.detectedTitle' => ({required Object app}) => '${app} erkannt',
+			'coachSettings.detectedBody' => ({required Object app}) => '${app} läuft auf diesem Mac. Den Coach zu 100 % privat ausführen?',
 			'coachSettings.detectedAction' => 'Lokal verwenden',
 			'coachSettings.detectedDismiss' => 'Jetzt nicht',
 			'coachSettings.activeCloud' => ({required Object model}) => 'Cloud · ${model}',
@@ -2785,17 +2791,23 @@ extension on TranslationsDe {
 			'coachSettings.temperatureRaise' => 'Temperatur erhöhen',
 			'coachSettings.sendMessage' => 'Senden',
 			'coachSettings.stopResponse' => 'Stopp',
-			'coachSettings.startOllama' => 'Ollama starten',
-			'coachSettings.getOllama' => 'Ollama installieren',
-			'coachSettings.startingOllama' => 'Ollama wird gestartet…',
-			'coachSettings.ollamaOfflineTitle' => 'Ollama läuft nicht',
-			'coachSettings.ollamaOfflineBody' => 'Starte deinen lokalen Server, um privat zu chatten — ganz ohne Terminal.',
-			'coachSettings.ollamaNotInstalledTitle' => 'Ollama ist nicht installiert',
-			'coachSettings.ollamaNotInstalledBody' => 'Installiere die kostenlose Ollama-App und drücke dann Start.',
+			'coachSettings.startLocalServer' => ({required Object app}) => '${app} starten',
+			'coachSettings.getLocalServer' => ({required Object app}) => '${app} installieren',
+			'coachSettings.startingLocalServer' => ({required Object app}) => '${app} wird gestartet…',
+			'coachSettings.localServerOfflineTitle' => ({required Object app}) => '${app} läuft nicht',
+			'coachSettings.localServerOfflineBody' => 'Starte deinen lokalen Server, um privat zu chatten — ganz ohne Terminal.',
+			'coachSettings.localServerNotInstalledTitle' => ({required Object app}) => '${app} ist nicht installiert',
+			'coachSettings.localServerNotInstalledBody' => ({required Object app}) => 'Installiere die kostenlose ${app}-App und drücke dann Start.',
+			'coachSettings.localServerStartingBody' => 'Das kann ein paar Sekunden dauern…',
+			'coachSettings.localServerStartFailed' => ({required Object app}) => '${app} konnte nicht gestartet werden — versuche, es aus dem Programme-Ordner zu öffnen.',
+			'coachSettings.localServerDownloadFailed' => ({required Object url}) => 'Browser konnte nicht geöffnet werden — besuche ${url}',
 			'coachSettings.ollamaStartTimeout' => 'Dauert länger als erwartet — prüfe das Ollama-Symbol in der Menüleiste (der erste Start braucht evtl. eine Freigabe).',
-			'coachSettings.ollamaStartingBody' => 'Das kann ein paar Sekunden dauern…',
-			'coachSettings.ollamaStartFailed' => 'Ollama konnte nicht gestartet werden — versuche, es aus dem Programme-Ordner zu öffnen.',
-			'coachSettings.ollamaDownloadFailed' => 'Browser konnte nicht geöffnet werden — besuche ollama.com/download',
+			'coachSettings.ollamaServerOffTitle' => 'Ollama läuft, antwortet aber nicht',
+			'coachSettings.ollamaServerOffBody' => 'Ollama ist geöffnet, antwortet aber nicht auf seinem Port. Beende es über die Menüleiste und drücke dann erneut Start.',
+			'coachSettings.lmStudioStartTimeout' => 'Dauert länger als erwartet — öffne LM Studio und prüfe, ob der Start abgeschlossen ist.',
+			'coachSettings.lmStudioServerOffTitle' => 'Der Server von LM Studio läuft nicht',
+			'coachSettings.lmStudioServerOffBody' => 'LM Studio ist geöffnet, aber sein lokaler Server ist aus. Schalte ihn über Developer → Start Server ein oder aktiviere Settings → Run the LLM server on login.',
+			'coachSettings.lmStudioNoModelsJit' => 'LM Studio listet keine Modelle auf. Es listet nur geladene Modelle, wenn Just-In-Time-Laden aus ist — lade ein Modell in LM Studio oder aktiviere Developer → Server Settings → Just In Time Model Loading.',
 			'coachSettings.backendStandard' => 'Evolve AI',
 			'coachSettings.standardDesc' => 'In Evolve Pro enthalten. Wir betreiben ein kostenloses Google-Modell (Gemma) für dich — keine Schlüssel, keine Einrichtung. Deine Nachrichten gehen an Googles kostenlose Stufe, die sie zur Verbesserung ihrer Dienste verwenden kann.',
 			'coachSettings.activeStandard' => ({required Object model}) => 'Evolve AI · ${model}',

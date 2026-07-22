@@ -20,8 +20,9 @@ class MainFlutterWindow: NSWindow {
     // Private-mode local-only bridge (`evolve/private_storage`): flags the
     // encrypted DB directory as backup-excluded. Same channel contract as iOS.
     PrivateStorageBridge.register(flutterViewController.engine.binaryMessenger)
-    // Local-LLM bridge (`evolve/local_llm`): launches the installed Ollama app
-    // so the user can start the local server without touching the terminal.
+    // Local-LLM bridge (`evolve/local_llm`): launches an installed local-LLM app
+    // (Ollama, LM Studio) so the user can start the local server without
+    // touching the terminal. Product identity comes from Dart, not from here.
     LocalLlmBridge.register(flutterViewController.engine.binaryMessenger)
 
     super.awakeFromNib()

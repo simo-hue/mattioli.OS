@@ -7,29 +7,32 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../application/ollama_start_controller.dart';
+import '../application/local_server_start_controller.dart';
+import '../domain/local_server_target.dart';
 
-/// The in-app control that starts the local Ollama server (or points to the
-/// download when it isn't installed). Reflects the launch-and-poll status:
-/// "Start Ollama" → "Starting Ollama…" (spinner) → hidden once reachable.
-class StartOllamaButton extends ConsumerWidget {
-  const StartOllamaButton({super.key});
+/// The in-app control that starts a local LLM server (or points to the download
+/// when its app isn't installed). Reflects the launch-and-poll status:
+/// "Start {app}" → "Starting {app}…" (spinner) → hidden once reachable.
+class StartLocalServerButton extends ConsumerWidget {
+  const StartLocalServerButton({required this.target, super.key});
 
-  static final Uri _downloadUrl = Uri.parse('https://ollama.com/download');
+  final LocalServerTarget target;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final status = ref.watch(ollamaStartControllerProvider);
-    // Assume installed until the probe resolves, to avoid flashing "Get Ollama"
-    // for the users who picked the Ollama preset because they have it.
-    final installed = ref.watch(ollamaInstalledProvider).asData?.value ?? true;
+    final status = ref.watch(localServerStartControllerProvider);
+    // Assume installed until the probe resolves, to avoid flashing "Get {app}"
+    // at the users who picked this preset precisely because they have it.
+    final installed =
+        ref.watch(localAppInstalledProvider(target.preset)).asData?.value ??
+        true;
 
-    final starting = status == OllamaStartStatus.starting;
-
-    if (starting) {
-      return const _PillButton(
+    if (status == LocalServerStartStatus.starting) {
+      return _PillButton(
         label: null,
-        spinner: true,
+        spinnerLabel: t.coachSettings.startingLocalServer(
+          app: target.displayName,
+        ),
         onTap: null,
       );
     }
@@ -37,15 +40,16 @@ class StartOllamaButton extends ConsumerWidget {
     // install flips this back to "Start" without a sticky terminal status.
     if (!installed) {
       return _PillButton(
-        label: t.coachSettings.getOllama,
+        label: t.coachSettings.getLocalServer(app: target.displayName),
         icon: LucideIcons.download,
         onTap: () => _openDownload(context),
       );
     }
     return _PillButton(
-      label: t.coachSettings.startOllama,
+      label: t.coachSettings.startLocalServer(app: target.displayName),
       icon: LucideIcons.play,
-      onTap: () => ref.read(ollamaStartControllerProvider.notifier).start(),
+      onTap: () =>
+          ref.read(localServerStartControllerProvider.notifier).start(),
     );
   }
 
@@ -54,14 +58,19 @@ class StartOllamaButton extends ConsumerWidget {
   Future<void> _openDownload(BuildContext context) async {
     var opened = false;
     try {
-      opened = await launchUrl(_downloadUrl, mode: LaunchMode.externalApplication);
+      opened = await launchUrl(
+        Uri.parse(target.downloadUrl),
+        mode: LaunchMode.externalApplication,
+      );
     } catch (_) {
       opened = false;
     }
     if (!opened && context.mounted) {
       showEvolveToast(
         context,
-        message: t.coachSettings.ollamaDownloadFailed,
+        message: t.coachSettings.localServerDownloadFailed(
+          url: target.downloadUrl,
+        ),
         kind: EvolveToastKind.error,
       );
     }
@@ -73,18 +82,21 @@ class _PillButton extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.icon,
-    this.spinner = false,
+    this.spinnerLabel,
   });
 
   final String? label;
   final IconData? icon;
-  final bool spinner;
+
+  /// Non-null puts the button in its spinner state, with this as the caption.
+  final String? spinnerLabel;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final accent = context.evolveAccent;
     final onAccent = Theme.of(context).colorScheme.onPrimary;
+    final spinnerCaption = spinnerLabel;
     return SizedBox(
       height: 34,
       child: FilledButton(
@@ -103,10 +115,10 @@ class _PillButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (spinner) ...[
+            if (spinnerCaption != null) ...[
               EvolveSpinner(radius: 7, color: onAccent),
               const SizedBox(width: 9),
-              Text(t.coachSettings.startingOllama),
+              Text(spinnerCaption),
             ] else ...[
               if (icon != null) ...[
                 Icon(icon, size: 15),

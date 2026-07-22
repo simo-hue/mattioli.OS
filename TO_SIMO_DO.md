@@ -164,20 +164,28 @@ is reframed as working-as-intended.
 
 ---
 
-## 2026-07-21 — LM Studio launch parity: empirical checks needed (design agreed, NOT implemented)
+## 2026-07-21 — LM Studio launch parity: IMPLEMENTED, on-device QA pending
 
-Design for LM Studio parity with the Ollama launch flow is settled (see
-`desktop/DOCUMENTATION.md`). Three facts it depends on could NOT be verified here — **neither
-LM Studio nor Ollama is installed on this Mac**. Two are error-path constants that are safe to
-correct later; the first is a build-time input and should be closed BEFORE implementation.
+The feature is built and green (`flutter analyze` clean, `flutter test` 512/512, `dart format`
+clean on every touched file, AppKit surface `swiftc -typecheck`'d). See `desktop/DOCUMENTATION.md`
+for the design and the implementation record.
 
-### Blocking — do this first
-- [ ] **Confirm the LM Studio bundle id on a live install.** The design uses
+**What could NOT be verified here**: the full macOS build (no Xcode on this Mac) and every runtime
+behaviour — **neither LM Studio nor Ollama is installed on this machine**. Three facts remain
+empirical. None of them blocks the build; each is a one-line fix if it comes back different.
+
+### Do this first (cheapest, and the only one that could break the happy path)
+- [ ] **Confirm the LM Studio bundle id on a live install.** The code uses
       `ai.elementlabs.lmstudio`, triangulated from the Homebrew cask's `uninstall quit:` stanza,
       the `brew` API JSON, and an independent Info.plist scrape of v0.2.6 — three independent
-      sources, but none of them this machine. Wrong id ⇒ Start never works AND the new
-      `localAppRunning` check always reports false, so the "server isn't enabled" diagnosis
-      silently degrades to a generic launch failure.
+      sources, but none of them this machine. A wrong id degrades rather than breaks: the
+      `/Applications/LM Studio.app` path fallback still resolves a default install, so Start works
+      — but `localAppRunning` matches by bundle id ONLY, so the "your server isn't enabled"
+      diagnosis would silently fall back to the generic timeout message.
+      **If it differs, change one line**: `bundleIds` in
+      `desktop/lib/features/ai_coach/domain/local_server_target.dart` (and the assertion in
+      `desktop/test/local_server_target_test.dart`). That constant is in Dart precisely so it is
+      one testable line and not a Swift constant no test can reach.
       ```bash
       osascript -e 'id of app "LM Studio"'
       # belt and braces:
@@ -211,13 +219,36 @@ correct later; the first is a build-time input and should be closed BEFORE imple
       curl -i -H 'Authorization: Bearer local' http://localhost:1234/v1/models
       ```
 
+### On-device QA checklist (macOS, once LM Studio is installed)
+- [ ] Settings → AI Coach → engine **Local** → preset **LM Studio**: the status pill, the
+      **Start LM Studio** button, and the base-URL placeholder (`http://localhost:1234/v1`) all
+      appear and name LM Studio, not Ollama.
+- [ ] With LM Studio installed but **never started**: press Start, wait out the poll (~60s), and
+      confirm you get *"LM Studio is open, but its local server is off…"* — NOT a generic failure.
+      Then flip Developer → Start Server and confirm the banner **clears itself within ~3s** without
+      touching Evolve.
+- [ ] With LM Studio **not** installed: the button reads **Get LM Studio** and opens
+      `https://lmstudio.ai/download`.
+- [ ] With **Just-In-Time loading off** and no model loaded: the model picker shows the JIT
+      explanation naming the toggle, not the generic "type a model id manually".
+- [ ] Send a message to a **large, cold** model: the typing dots gain *"Still loading the model…"*
+      after ~15s instead of sitting silent, and the reply lands rather than timing out.
+- [ ] Ollama regression pass: Start / Get / Starting / offline banner / model discovery all behave
+      exactly as before. This is the part most worth a careful look — it was working and I renamed
+      through it.
+
 ### Process gap worth its own piece of work
 - [ ] **Desktop has no CI.** `.github/workflows/mobile-ci.yml` is scoped `paths: ['mobile/**']`, so
       nothing runs `flutter analyze` or `flutter test` on a desktop change — the README sequence at
-      `desktop/README.md:118` is manual and unenforced. This change touches ~10 files across domain,
-      data, application, presentation, native and i18n. The existing 18 Ollama tests will catch the
-      rename, but only if someone runs them. Consider a `desktop/**` job mirroring the mobile one
-      (`flutter pub get` → `dart run slang` → `flutter analyze` → `flutter test`).
+      `desktop/README.md:118` is manual and unenforced. This change touched ~11 files across domain,
+      data, application, presentation, native and i18n. Consider a `desktop/**` job mirroring the
+      mobile one (`flutter pub get` → `dart run slang` → `flutter analyze` → `flutter test`).
+      Note the mobile job uses `--fatal-infos`; a desktop job at that bar would currently fail on
+      the 4 pre-existing issues listed by `flutter analyze`.
 - [ ] Related: `dart run slang` is manual and CI-unenforced, and the generated `translations_*.g.dart`
-      files ARE committed — so the JSON and the generated Dart can silently drift. Regenerating is
-      part of the i18n commit, not a follow-up.
+      files ARE committed — so the JSON and the generated Dart can silently drift.
+- [ ] **Repo-wide `dart format` drift**: `dart format --output=none --set-exit-if-changed lib test`
+      reports **90 files** as unformatted, almost all untouched by this change (a formatter-version
+      bump, most likely). I formatted only the files I edited rather than sweeping 85 unrelated
+      files into this diff. Worth one dedicated formatting commit so the README's
+      `--set-exit-if-changed` step can actually pass.

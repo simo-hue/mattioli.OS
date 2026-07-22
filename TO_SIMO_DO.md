@@ -136,18 +136,6 @@ is reframed as working-as-intended.
 
 ---
 
-## 2026-07-21 — Avatar fix: one action needed
-
-- [ ] **Re-select your profile image once, on either device.** The old code may already
-      have pushed a tombstone that deleted the picture from iCloud, so the copy in the zone
-      cannot be trusted. Re-picking republishes it and both devices converge.
-- [ ] Consider replacing `mobile/assets/images/default_avatar.png`. It is a BLACK image, so
-      whenever the real avatar cannot be loaded the failure looks identical to a rendering bug —
-      which is why this went misdiagnosed. A neutral grey silhouette would make a genuine
-      fallback readable as a fallback.
-
----
-
 ## 2026-07-21 — LM Studio launch parity: IMPLEMENTED, on-device QA pending
 
 The feature is built and green (`flutter analyze` clean, `flutter test` 512/512, `dart format`
@@ -236,50 +224,5 @@ empirical. None of them blocks the build; each is a one-line fix if it comes bac
       bump, most likely). I formatted only the files I edited rather than sweeping 85 unrelated
       files into this diff. Worth one dedicated formatting commit so the README's
       `--set-exit-if-changed` step can actually pass.
-
----
-
-## 2026-07-22 — iCloud sync `InvalidCipherTextException` (key split): fix + hardening
-
-### A. Ship the fix that already exists (highest priority — do this first)
-- [ ] **Rebuild + redeploy BOTH apps from current `main`.** The failing TestFlight binary predates
-      commit `f4e1431`, so it lacks the undecryptable-quarantine fix and *livelocks* (holds the
-      change token, re-downloads + re-fails the same 8 records every sync). A rebuild alone stops the
-      scary `Record apply failed` logs and the livelock, and brings in the key-split recovery UI.
-- [ ] Confirm you are testing the **actual release/TestFlight Mac build**, not a lingering local
-      `flutter run` (both share bundle id `com.simo.evolve`, so macOS may launch the wrong one). The
-      failing log fired the `kDebugMode`-only `[SecureStorage] DEBUG build` line ⇒ it was a **debug**
-      build. Optional sanity check on the Mac mini:
-      `for app in $(mdfind "kMDItemCFBundleIdentifier == 'com.simo.evolve'"); do find "$app" -name kernel_blob.bin >/dev/null 2>&1 && echo "DEBUG: $app" || echo "release: $app"; done`
-      (`kernel_blob.bin` present = a debug/JIT build).
-
-### B. Reconverge the CURRENT split (iPhone holds the real data)
-- [ ] Do **NOT** run "Delete all private data" or "Reset sync from this device" **on the Mac** — both
-      call `keys.deleteAll()` (a *synchronizable* Keychain delete) and/or `deleteZone()`, which would
-      destroy the iPhone's real data/key. Mac-side, only `resetLockedDatabase` (local-only) is safe.
-- [ ] On the Mac mini, clear the mixed debug/release state (safe — real data is on the iPhone +
-      iCloud; does NOT touch the Keychain key or the zone): `rm -rf ~/Library/Containers/com.simo.evolve`
-- [ ] On the **iPhone**, open the key-split card and tap **"Reset sync from this device."** Then let
-      the clean, release-signed Mac adopt the new key via iCloud Keychain and re-pull.
-- [ ] Verify: the Mac's sync status returns to "Up to date", goals/profiles/categories appear, and
-      `undecryptableCount` drops to 0 on both devices.
-
-### C. Build + verify the new native code (the race-hardening — I could not compile it here)
-- [ ] **Build both apps in Xcode / `flutter build` on the Mac mini.** I added a new native method
-      `tryClaimFirstMint` (+ `claimSentinel`, a `zoneHasRecords` sentinel-exclusion, and a dispatch
-      `case`) to **`desktop/macos/Runner/AppDelegate.swift`** and **`mobile/ios/Runner/AppDelegate.swift`**.
-      These were written blind (no Xcode here) — confirm they **compile** on both platforms.
-- [ ] The Dart guard is **fail-open**: until this native method is built into both apps, behaviour is
-      byte-identical to today (no regression). The empty-zone race only closes once BOTH apps ship the
-      native method. Nothing breaks if only one platform has it yet.
-- [ ] On-device smoke test (optional but ideal): enable sync fresh on two devices; confirm exactly one
-      mints a key and the other shows the "waiting for iCloud Keychain" state rather than splitting.
-
-### D. Longer-term (not blocking)
-- [ ] Root-fix the **macOS `kSecAttrAccessGroup` inertness** only behind a read-heal migration — the
-      `MigratingSyncSecretStore` legacy group-less tier is load-bearing and must not be removed until
-      Mac writes are genuinely group-scoped (see the removal precondition in that file).
-- [ ] Consider whether a real macOS **TestFlight** build should even carry the debug plaintext-key
-      escape hatch reachable — it can't (it's `kDebugMode`-gated), but confirm your archive is Release.
 
 ---

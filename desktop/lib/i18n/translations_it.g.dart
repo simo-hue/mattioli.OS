@@ -867,7 +867,7 @@ class _Translations$ai$it extends Translations$ai$en {
 	@override String get macroGoals => 'Macro obiettivi';
 	@override late final _Translations$ai$openRouter$it openRouter = _Translations$ai$openRouter$it._(_root);
 	@override late final _Translations$ai$apiKey$it apiKey = _Translations$ai$apiKey$it._(_root);
-	@override late final _Translations$ai$suggestions$it suggestions = _Translations$ai$suggestions$it._(_root);
+	@override late final _Translations$ai$coachPrompts$it coachPrompts = _Translations$ai$coachPrompts$it._(_root);
 	@override late final _Translations$ai$local$it local = _Translations$ai$local$it._(_root);
 	@override late final _Translations$ai$standard$it standard = _Translations$ai$standard$it._(_root);
 	@override late final _Translations$ai$consent$it consent = _Translations$ai$consent$it._(_root);
@@ -1607,32 +1607,23 @@ class _Translations$ai$apiKey$it extends Translations$ai$apiKey$en {
 	@override String get setupAction => 'Collega account';
 }
 
-// Path: ai.suggestions
-class _Translations$ai$suggestions$it extends Translations$ai$suggestions$en {
-	_Translations$ai$suggestions$it._(TranslationsIt root) : this._root = root, super.internal(root);
+// Path: ai.coachPrompts
+class _Translations$ai$coachPrompts$it extends Translations$ai$coachPrompts$en {
+	_Translations$ai$coachPrompts$it._(TranslationsIt root) : this._root = root, super.internal(root);
 
 	final TranslationsIt _root; // ignore: unused_field
 
 	// Translations
-	@override String get morningBoost => '🔥 Dammi la carica per iniziare!';
-	@override String get avoidDistractions => '🧠 Come evitare le distrazioni?';
-	@override String get lowEnergy => '⚡ Ho un calo di energia, cosa faccio?';
-	@override String get stayFocused => '💪 Un consiglio per rimanere focalizzato';
-	@override String get prepareTomorrow => '🛌 Come prepararsi per un domani produttivo?';
-	@override String get disciplineReflection => '📝 Riflessione sulla disciplina di oggi';
-	@override String get analyzeActiveGoals => '🎯 Analizza i miei obiettivi attivi';
-	@override String get planMacroGoals => '🗺️ Come pianificare i miei macro obiettivi?';
-	@override String get goalObstacles => '🛑 Quali ostacoli bloccano i miei obiettivi?';
-	@override String get reachMilestones => '📈 Un consiglio per raggiungere i miei traguardi';
-	@override String get consistencyStatus => '📈 Come sta andando la mia costanza?';
-	@override String get weeklyStats => '📊 Le mie statistiche settimanali';
-	@override String get planDay => '🌅 Pianifica la mia giornata';
-	@override String get raiseBar => '🚀 Come posso alzare l’asticella?';
-	@override String get recoverProcrastination => '🤕 Come recuperare se ho procrastinato?';
-	@override String get connectHabitsGoals => '🔗 Come legare le abitudini agli obiettivi?';
-	@override String get reviewGoalsHabits => '📊 Review di obiettivi e abitudini';
-	@override String get disciplineAdvice => '🔥 Consiglio sulla disciplina';
-	@override String get createNewHabit => '💡 Come creare una nuova abitudine?';
+	@override late final _Translations$ai$coachPrompts$diagnoseWeakestHabit$it diagnoseWeakestHabit = _Translations$ai$coachPrompts$diagnoseWeakestHabit$it._(_root);
+	@override late final _Translations$ai$coachPrompts$goalOnTrack$it goalOnTrack = _Translations$ai$coachPrompts$goalOnTrack$it._(_root);
+	@override late final _Translations$ai$coachPrompts$weeklyReviewDown$it weeklyReviewDown = _Translations$ai$coachPrompts$weeklyReviewDown$it._(_root);
+	@override late final _Translations$ai$coachPrompts$weeklyReviewUp$it weeklyReviewUp = _Translations$ai$coachPrompts$weeklyReviewUp$it._(_root);
+	@override late final _Translations$ai$coachPrompts$protectStreak$it protectStreak = _Translations$ai$coachPrompts$protectStreak$it._(_root);
+	@override late final _Translations$ai$coachPrompts$alignHabitsToGoal$it alignHabitsToGoal = _Translations$ai$coachPrompts$alignHabitsToGoal$it._(_root);
+	@override late final _Translations$ai$coachPrompts$designHabitForGoal$it designHabitForGoal = _Translations$ai$coachPrompts$designHabitForGoal$it._(_root);
+	@override late final _Translations$ai$coachPrompts$raiseTheBar$it raiseTheBar = _Translations$ai$coachPrompts$raiseTheBar$it._(_root);
+	@override late final _Translations$ai$coachPrompts$firstStep$it firstStep = _Translations$ai$coachPrompts$firstStep$it._(_root);
+	@override late final _Translations$ai$coachPrompts$whatCanYouHelp$it whatCanYouHelp = _Translations$ai$coachPrompts$whatCanYouHelp$it._(_root);
 }
 
 // Path: ai.local
@@ -1713,6 +1704,116 @@ class _Translations$settingsPage$languageOptions$it extends Translations$setting
 	@override String get spanish => 'Spagnolo';
 	@override String get german => 'Tedesco';
 	@override String get arabic => 'العربية';
+}
+
+// Path: ai.coachPrompts.diagnoseWeakestHabit
+class _Translations$ai$coachPrompts$diagnoseWeakestHabit$it extends Translations$ai$coachPrompts$diagnoseWeakestHabit$en {
+	_Translations$ai$coachPrompts$diagnoseWeakestHabit$it._(TranslationsIt root) : this._root = root, super.internal(root);
+
+	final TranslationsIt _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '🩺 Sistema la mia abitudine più debole';
+	@override String payload({required Object habit, required Object done, required Object scheduled}) => '\'${habit}\' è la mia abitudine più debole questa settimana — ${done}/${scheduled} giorni completati. Qual è il motivo più probabile per cui la salto, e due correzioni concrete che posso applicare questa settimana?';
+}
+
+// Path: ai.coachPrompts.goalOnTrack
+class _Translations$ai$coachPrompts$goalOnTrack$it extends Translations$ai$coachPrompts$goalOnTrack$en {
+	_Translations$ai$coachPrompts$goalOnTrack$it._(TranslationsIt root) : this._root = root, super.internal(root);
+
+	final TranslationsIt _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '🎯 Sono in linea?';
+	@override String payload({required Object goal}) => 'Sii sincero sul mio obiettivo \'${goal}\': sono sulla buona strada per raggiungerlo, e qual è l\'unica cosa da cambiare per migliorare di più le mie probabilità?';
+}
+
+// Path: ai.coachPrompts.weeklyReviewDown
+class _Translations$ai$coachPrompts$weeklyReviewDown$it extends Translations$ai$coachPrompts$weeklyReviewDown$en {
+	_Translations$ai$coachPrompts$weeklyReviewDown$it._(TranslationsIt root) : this._root = root, super.internal(root);
+
+	final TranslationsIt _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '📉 Analizza la mia settimana';
+	@override String payload({required Object thisPct, required Object lastPct}) => 'La mia costanza è scesa al ${thisPct}% questa settimana dal ${lastPct}% della scorsa. Qual è la causa più probabile e l\'unica cosa da cambiare la prossima settimana?';
+}
+
+// Path: ai.coachPrompts.weeklyReviewUp
+class _Translations$ai$coachPrompts$weeklyReviewUp$it extends Translations$ai$coachPrompts$weeklyReviewUp$en {
+	_Translations$ai$coachPrompts$weeklyReviewUp$it._(TranslationsIt root) : this._root = root, super.internal(root);
+
+	final TranslationsIt _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '📊 Analizza la mia settimana';
+	@override String payload({required Object thisPct, required Object lastPct}) => 'La mia costanza è al ${thisPct}% questa settimana contro il ${lastPct}% della scorsa. Cosa sta funzionando e qual è l\'unica cosa su cui spingere di più la prossima settimana?';
+}
+
+// Path: ai.coachPrompts.protectStreak
+class _Translations$ai$coachPrompts$protectStreak$it extends Translations$ai$coachPrompts$protectStreak$en {
+	_Translations$ai$coachPrompts$protectStreak$it._(TranslationsIt root) : this._root = root, super.internal(root);
+
+	final TranslationsIt _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '🛡️ Proteggi la mia serie';
+	@override String payload({required Object habit, required Object days}) => 'La mia serie attiva più lunga è \'${habit}\' a ${days} giorni. Qual è il rischio più grande di interromperla e come la proteggo questa settimana?';
+}
+
+// Path: ai.coachPrompts.alignHabitsToGoal
+class _Translations$ai$coachPrompts$alignHabitsToGoal$it extends Translations$ai$coachPrompts$alignHabitsToGoal$en {
+	_Translations$ai$coachPrompts$alignHabitsToGoal$it._(TranslationsIt root) : this._root = root, super.internal(root);
+
+	final TranslationsIt _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '🔗 Quali abitudini servono ai miei obiettivi?';
+	@override String payload({required Object goal}) => 'Guardando le mie abitudini rispetto all\'obiettivo \'${goal}\', quali lo fanno davvero avanzare e quali sono solo rumore? Sii specifico e indica un\'abitudine che potrebbe mancarmi.';
+}
+
+// Path: ai.coachPrompts.designHabitForGoal
+class _Translations$ai$coachPrompts$designHabitForGoal$it extends Translations$ai$coachPrompts$designHabitForGoal$en {
+	_Translations$ai$coachPrompts$designHabitForGoal$it._(TranslationsIt root) : this._root = root, super.internal(root);
+
+	final TranslationsIt _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '💡 Trasforma un obiettivo in abitudine';
+	@override String payload({required Object goal}) => 'Voglio raggiungere il mio obiettivo \'${goal}\'. Quale singola abitudine quotidiana farebbe la differenza maggiore? Dammi un\'abitudine concreta da iniziare domani.';
+}
+
+// Path: ai.coachPrompts.raiseTheBar
+class _Translations$ai$coachPrompts$raiseTheBar$it extends Translations$ai$coachPrompts$raiseTheBar$en {
+	_Translations$ai$coachPrompts$raiseTheBar$it._(TranslationsIt root) : this._root = root, super.internal(root);
+
+	final TranslationsIt _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '🚀 Alza l\'asticella';
+	@override String get payload => 'Sto rispettando tutte le mie abitudini e i miei obiettivi sono in linea. Dove rischio di adagiarmi e qual è un modo per alzare l\'asticella senza esaurirmi?';
+}
+
+// Path: ai.coachPrompts.firstStep
+class _Translations$ai$coachPrompts$firstStep$it extends Translations$ai$coachPrompts$firstStep$en {
+	_Translations$ai$coachPrompts$firstStep$it._(TranslationsIt root) : this._root = root, super.internal(root);
+
+	final TranslationsIt _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '🌱 Da dove comincio?';
+	@override String get payload => 'Sto appena iniziando e non ho ancora impostato obiettivi o abitudini. Suggeriscimi un primo obiettivo realistico e una piccola abitudine quotidiana per raggiungerlo, e spiega perché questa coppia funziona.';
+}
+
+// Path: ai.coachPrompts.whatCanYouHelp
+class _Translations$ai$coachPrompts$whatCanYouHelp$it extends Translations$ai$coachPrompts$whatCanYouHelp$en {
+	_Translations$ai$coachPrompts$whatCanYouHelp$it._(TranslationsIt root) : this._root = root, super.internal(root);
+
+	final TranslationsIt _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '💬 Con cosa puoi aiutarmi?';
+	@override String get payload => 'In base alle mie abitudini e ai miei obiettivi in questa app, dammi tre esempi concreti di come puoi aiutarmi — non consigli generici, ma cose legate ai miei dati reali.';
 }
 
 /// The flat map containing all translations for locale <it>.
@@ -2356,25 +2457,26 @@ extension on TranslationsIt {
 			'ai.apiKey.setupTitle' => 'Collega il tuo account OpenRouter',
 			'ai.apiKey.setupBody' => 'Questo motore funziona con il tuo account OpenRouter. Collegalo per iniziare a chattare — oppure passa a Evolve AI, incluso in Pro.',
 			'ai.apiKey.setupAction' => 'Collega account',
-			'ai.suggestions.morningBoost' => '🔥 Dammi la carica per iniziare!',
-			'ai.suggestions.avoidDistractions' => '🧠 Come evitare le distrazioni?',
-			'ai.suggestions.lowEnergy' => '⚡ Ho un calo di energia, cosa faccio?',
-			'ai.suggestions.stayFocused' => '💪 Un consiglio per rimanere focalizzato',
-			'ai.suggestions.prepareTomorrow' => '🛌 Come prepararsi per un domani produttivo?',
-			'ai.suggestions.disciplineReflection' => '📝 Riflessione sulla disciplina di oggi',
-			'ai.suggestions.analyzeActiveGoals' => '🎯 Analizza i miei obiettivi attivi',
-			'ai.suggestions.planMacroGoals' => '🗺️ Come pianificare i miei macro obiettivi?',
-			'ai.suggestions.goalObstacles' => '🛑 Quali ostacoli bloccano i miei obiettivi?',
-			'ai.suggestions.reachMilestones' => '📈 Un consiglio per raggiungere i miei traguardi',
-			'ai.suggestions.consistencyStatus' => '📈 Come sta andando la mia costanza?',
-			'ai.suggestions.weeklyStats' => '📊 Le mie statistiche settimanali',
-			'ai.suggestions.planDay' => '🌅 Pianifica la mia giornata',
-			'ai.suggestions.raiseBar' => '🚀 Come posso alzare l’asticella?',
-			'ai.suggestions.recoverProcrastination' => '🤕 Come recuperare se ho procrastinato?',
-			'ai.suggestions.connectHabitsGoals' => '🔗 Come legare le abitudini agli obiettivi?',
-			'ai.suggestions.reviewGoalsHabits' => '📊 Review di obiettivi e abitudini',
-			'ai.suggestions.disciplineAdvice' => '🔥 Consiglio sulla disciplina',
-			'ai.suggestions.createNewHabit' => '💡 Come creare una nuova abitudine?',
+			'ai.coachPrompts.diagnoseWeakestHabit.label' => '🩺 Sistema la mia abitudine più debole',
+			'ai.coachPrompts.diagnoseWeakestHabit.payload' => ({required Object habit, required Object done, required Object scheduled}) => '\'${habit}\' è la mia abitudine più debole questa settimana — ${done}/${scheduled} giorni completati. Qual è il motivo più probabile per cui la salto, e due correzioni concrete che posso applicare questa settimana?',
+			'ai.coachPrompts.goalOnTrack.label' => '🎯 Sono in linea?',
+			'ai.coachPrompts.goalOnTrack.payload' => ({required Object goal}) => 'Sii sincero sul mio obiettivo \'${goal}\': sono sulla buona strada per raggiungerlo, e qual è l\'unica cosa da cambiare per migliorare di più le mie probabilità?',
+			'ai.coachPrompts.weeklyReviewDown.label' => '📉 Analizza la mia settimana',
+			'ai.coachPrompts.weeklyReviewDown.payload' => ({required Object thisPct, required Object lastPct}) => 'La mia costanza è scesa al ${thisPct}% questa settimana dal ${lastPct}% della scorsa. Qual è la causa più probabile e l\'unica cosa da cambiare la prossima settimana?',
+			'ai.coachPrompts.weeklyReviewUp.label' => '📊 Analizza la mia settimana',
+			'ai.coachPrompts.weeklyReviewUp.payload' => ({required Object thisPct, required Object lastPct}) => 'La mia costanza è al ${thisPct}% questa settimana contro il ${lastPct}% della scorsa. Cosa sta funzionando e qual è l\'unica cosa su cui spingere di più la prossima settimana?',
+			'ai.coachPrompts.protectStreak.label' => '🛡️ Proteggi la mia serie',
+			'ai.coachPrompts.protectStreak.payload' => ({required Object habit, required Object days}) => 'La mia serie attiva più lunga è \'${habit}\' a ${days} giorni. Qual è il rischio più grande di interromperla e come la proteggo questa settimana?',
+			'ai.coachPrompts.alignHabitsToGoal.label' => '🔗 Quali abitudini servono ai miei obiettivi?',
+			'ai.coachPrompts.alignHabitsToGoal.payload' => ({required Object goal}) => 'Guardando le mie abitudini rispetto all\'obiettivo \'${goal}\', quali lo fanno davvero avanzare e quali sono solo rumore? Sii specifico e indica un\'abitudine che potrebbe mancarmi.',
+			'ai.coachPrompts.designHabitForGoal.label' => '💡 Trasforma un obiettivo in abitudine',
+			'ai.coachPrompts.designHabitForGoal.payload' => ({required Object goal}) => 'Voglio raggiungere il mio obiettivo \'${goal}\'. Quale singola abitudine quotidiana farebbe la differenza maggiore? Dammi un\'abitudine concreta da iniziare domani.',
+			'ai.coachPrompts.raiseTheBar.label' => '🚀 Alza l\'asticella',
+			'ai.coachPrompts.raiseTheBar.payload' => 'Sto rispettando tutte le mie abitudini e i miei obiettivi sono in linea. Dove rischio di adagiarmi e qual è un modo per alzare l\'asticella senza esaurirmi?',
+			'ai.coachPrompts.firstStep.label' => '🌱 Da dove comincio?',
+			'ai.coachPrompts.firstStep.payload' => 'Sto appena iniziando e non ho ancora impostato obiettivi o abitudini. Suggeriscimi un primo obiettivo realistico e una piccola abitudine quotidiana per raggiungerlo, e spiega perché questa coppia funziona.',
+			'ai.coachPrompts.whatCanYouHelp.label' => '💬 Con cosa puoi aiutarmi?',
+			'ai.coachPrompts.whatCanYouHelp.payload' => 'In base alle mie abitudini e ai miei obiettivi in questa app, dammi tre esempi concreti di come puoi aiutarmi — non consigli generici, ma cose legate ai miei dati reali.',
 			'ai.local.notReachable' => ({required Object url}) => '❌ Server AI locale non raggiungibile su ${url}. Assicurati che Ollama o LM Studio sia in esecuzione.',
 			'ai.local.modelMissing' => '⚠️ Scegli prima un modello locale — apri il selettore in alto.',
 			'ai.local.requestFailed' => ({required Object code}) => '❌ Errore del modello locale (codice: ${code}).',
@@ -2748,9 +2850,9 @@ extension on TranslationsIt {
 			'coachSettings.backendLocal' => 'Locale · privato',
 			'coachSettings.cloudDesc' => 'Collega il tuo account OpenRouter e paghi direttamente il provider. Gratis — nessun abbonamento richiesto. Il contesto che condividi viene inviato al provider.',
 			'coachSettings.localDesc' => 'Il tuo modello tramite Ollama, LM Studio o qualsiasi server compatibile con OpenAI. Nulla lascia questo dispositivo.',
-			'coachSettings.presetLabel' => 'Server',
 			_ => null,
 		} ?? switch (path) {
+			'coachSettings.presetLabel' => 'Server',
 			'coachSettings.presetOllama' => 'Ollama',
 			'coachSettings.presetLmStudio' => 'LM Studio',
 			'coachSettings.presetCustom' => 'Personalizzato…',

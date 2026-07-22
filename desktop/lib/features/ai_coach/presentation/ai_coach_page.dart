@@ -34,80 +34,11 @@ import '../domain/chat_message.dart';
 import '../domain/coach_backend.dart';
 import '../domain/coach_consent.dart';
 import '../domain/coach_chat_logic.dart';
+import '../domain/coach_prompts.dart';
 import '../domain/local_server_target.dart';
 import 'coach_model_chip.dart';
 import 'coach_settings_dialog.dart';
 import 'start_local_server_button.dart';
-
-/// Pure prompt-suggestion selection (time of day + which context switches are
-/// on), extracted for testing. Returns up to four unique suggestions, chosen
-/// deterministically by [messageCount] so they stay stable within a state.
-List<String> buildAiSuggestions({
-  required int hour,
-  required bool shareGoals,
-  required bool shareHabits,
-  required bool hasActiveGoals,
-  required int todayDone,
-  required int todayTotal,
-  required int messageCount,
-}) {
-  final pool = <String>[];
-  if (hour >= 5 && hour < 12) {
-    pool.addAll([
-      t.ai.suggestions.morningBoost,
-      t.ai.suggestions.avoidDistractions,
-    ]);
-  } else if (hour >= 12 && hour < 18) {
-    pool.addAll([t.ai.suggestions.lowEnergy, t.ai.suggestions.stayFocused]);
-  } else {
-    pool.addAll([
-      t.ai.suggestions.prepareTomorrow,
-      t.ai.suggestions.disciplineReflection,
-    ]);
-  }
-
-  if (shareGoals && !shareHabits) {
-    if (hasActiveGoals) pool.add(t.ai.suggestions.analyzeActiveGoals);
-    pool.addAll([
-      t.ai.suggestions.planMacroGoals,
-      t.ai.suggestions.goalObstacles,
-      t.ai.suggestions.reachMilestones,
-    ]);
-  } else if (!shareGoals && shareHabits) {
-    pool.addAll([
-      t.ai.suggestions.consistencyStatus,
-      t.ai.suggestions.weeklyStats,
-      t.ai.suggestions.planDay,
-    ]);
-    if (todayTotal > 0) {
-      final pct = todayDone / todayTotal * 100;
-      if (pct == 100) {
-        pool.add(t.ai.suggestions.raiseBar);
-      } else if (pct < 30 && hour > 14) {
-        pool.add(t.ai.suggestions.recoverProcrastination);
-      }
-    }
-  } else if (shareGoals && shareHabits) {
-    if (hasActiveGoals) pool.add(t.ai.suggestions.analyzeActiveGoals);
-    pool.addAll([
-      t.ai.suggestions.consistencyStatus,
-      t.ai.suggestions.connectHabitsGoals,
-      t.ai.suggestions.reviewGoalsHabits,
-    ]);
-  } else {
-    pool.addAll([
-      t.ai.suggestions.disciplineAdvice,
-      t.ai.suggestions.createNewHabit,
-      t.ai.suggestions.avoidDistractions,
-    ]);
-  }
-
-  final unique = pool.toSet().toList();
-  if (unique.isEmpty) return const [];
-  final count = unique.length < 4 ? unique.length : 4;
-  final offset = messageCount % unique.length;
-  return [for (var i = 0; i < count; i++) unique[(offset + i) % unique.length]];
-}
 
 class AiCoachPage extends ConsumerStatefulWidget {
   const AiCoachPage({super.key});
@@ -513,35 +444,81 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
     return trimmed.split(' ').first;
   }
 
-  /// Time- and context-aware prompt suggestions (mirrors mobile's
-  /// `_getDynamicSuggestions`). Reads live state, then delegates the selection
-  /// to the pure, testable [buildAiSuggestions].
-  List<String> _dynamicSuggestions() {
+  /// Live facts for the coach-prompt selector: the weakest habit so far this
+  /// week, the week's momentum, the best streak, plus goal/empty state —
+  /// respecting the share toggles so a hidden dimension never leaks into a chip.
+  /// Delegates selection to the pure, testable [buildCoachPrompts].
+  CoachPromptFacts _coachFacts() {
     final now = DateTime.now();
     final snapshot = ref.read(dashboardControllerProvider);
-    final hasActiveGoals = snapshot.goals.any(
-      (g) => g.state == GoalState.active,
-    );
-    final activeToday = snapshot.habits
-        .where((h) => h.isScheduledOn(now))
+    final activeGoals = snapshot.goals
+        .where((g) => g.state == GoalState.active)
         .toList();
-    final todayDone = activeToday
-        .where((h) => snapshot.habitStatusFor(h.id, now) == 'done')
-        .length;
-    return buildAiSuggestions(
-      hour: now.hour,
-      shareGoals: _shareGoals,
+    final habits = snapshot.habits;
+    final monday = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(Duration(days: now.weekday - 1));
+
+    // Single pass: the weakest scheduled habit (lowest completion so far this
+    // week, with at least one miss) and the longest current streak.
+    ({String title, int done, int scheduled})? weakest;
+    var weakestRate = 2.0;
+    var bestDays = 0;
+    String? bestTitle;
+    for (final h in habits) {
+      var done = 0;
+      var scheduled = 0;
+      for (var i = 0; i < now.weekday; i++) {
+        final day = monday.add(Duration(days: i));
+        if (!h.isScheduledOn(day)) continue;
+        scheduled++;
+        if (snapshot.habitStatusFor(h.id, day) == 'done') done++;
+      }
+      if (scheduled > 0 && done < scheduled && done / scheduled < weakestRate) {
+        weakest = (title: h.title, done: done, scheduled: scheduled);
+        weakestRate = done / scheduled;
+      }
+      if (h.streak > bestDays) {
+        bestDays = h.streak;
+        bestTitle = h.title;
+      }
+    }
+
+    final thisPct = (snapshot.currentWeekCompletionRate * 100).round();
+    final lastPct = (snapshot.previousWeekCompletionRate * 100).round();
+    final hasHistory = habits.isNotEmpty && (thisPct > 0 || lastPct > 0);
+    final allGreen =
+        habits.isNotEmpty && snapshot.currentWeekCompletionRate >= 0.999;
+
+    return CoachPromptFacts(
       shareHabits: _shareHabits,
-      hasActiveGoals: hasActiveGoals,
-      todayDone: todayDone,
-      todayTotal: activeToday.length,
-      messageCount: _messages.length,
+      shareGoals: _shareGoals,
+      weakestHabit: _shareHabits ? weakest : null,
+      momentum: (_shareHabits && hasHistory)
+          ? (thisPct: thisPct, lastPct: lastPct)
+          : null,
+      bestStreak: (_shareHabits && bestDays >= 7 && bestTitle != null)
+          ? (title: bestTitle, days: bestDays)
+          : null,
+      topGoalTitle: (_shareGoals && activeGoals.isNotEmpty)
+          ? activeGoals.first.title
+          : null,
+      habitCount: _shareHabits ? habits.length : 0,
+      activeGoalCount: _shareGoals ? activeGoals.length : 0,
+      allGreen: _shareHabits && allGreen,
+      isEmpty: activeGoals.isEmpty && habits.isEmpty,
+      rotation: _messages.length,
     );
   }
 
-  void _onSuggestionTap(String suggestion) {
+  /// Up to four data-personalized starter prompts for the current state.
+  List<CoachPrompt> _coachPrompts() => buildCoachPrompts(_coachFacts());
+
+  void _onSuggestionTap(String payload) {
     if (_isTyping) return;
-    _controller.text = suggestion;
+    _controller.text = payload;
     _sendMessage();
   }
 
@@ -822,7 +799,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                         child: Builder(
                           builder: (context) {
                             if (_isTyping) return const SizedBox.shrink();
-                            final suggestions = _dynamicSuggestions();
+                            final suggestions = _coachPrompts();
                             if (suggestions.isEmpty) {
                               return const SizedBox.shrink();
                             }
@@ -839,10 +816,11 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                                     10,
                                   ),
                                   children: [
-                                    for (final s in suggestions) ...[
+                                    for (final p in suggestions) ...[
                                       _SuggestionChip(
-                                        label: s,
-                                        onTap: () => _onSuggestionTap(s),
+                                        label: p.label,
+                                        onTap: () =>
+                                            _onSuggestionTap(p.payload),
                                       ),
                                       const SizedBox(width: 8),
                                     ],

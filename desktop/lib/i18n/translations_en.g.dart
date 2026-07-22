@@ -1982,7 +1982,7 @@ class Translations$ai$en {
 
 	late final Translations$ai$openRouter$en openRouter = Translations$ai$openRouter$en.internal(_root);
 	late final Translations$ai$apiKey$en apiKey = Translations$ai$apiKey$en.internal(_root);
-	late final Translations$ai$suggestions$en suggestions = Translations$ai$suggestions$en.internal(_root);
+	late final Translations$ai$coachPrompts$en coachPrompts = Translations$ai$coachPrompts$en.internal(_root);
 	late final Translations$ai$local$en local = Translations$ai$local$en.internal(_root);
 	late final Translations$ai$standard$en standard = Translations$ai$standard$en.internal(_root);
 	late final Translations$ai$consent$en consent = Translations$ai$consent$en.internal(_root);
@@ -3791,70 +3791,23 @@ class Translations$ai$apiKey$en {
 	String get setupAction => 'Connect account';
 }
 
-// Path: ai.suggestions
-class Translations$ai$suggestions$en {
-	Translations$ai$suggestions$en.internal(this._root);
+// Path: ai.coachPrompts
+class Translations$ai$coachPrompts$en {
+	Translations$ai$coachPrompts$en.internal(this._root);
 
 	final Translations _root; // ignore: unused_field
 
 	// Translations
-
-	/// en: '🔥 Give me a boost to get started!'
-	String get morningBoost => '🔥 Give me a boost to get started!';
-
-	/// en: '🧠 How can I avoid distractions?'
-	String get avoidDistractions => '🧠 How can I avoid distractions?';
-
-	/// en: '⚡ My energy is dropping. What should I do?'
-	String get lowEnergy => '⚡ My energy is dropping. What should I do?';
-
-	/// en: '💪 Give me one tip to stay focused'
-	String get stayFocused => '💪 Give me one tip to stay focused';
-
-	/// en: '🛌 How can I prepare for a productive tomorrow?'
-	String get prepareTomorrow => '🛌 How can I prepare for a productive tomorrow?';
-
-	/// en: '📝 Reflect on today’s discipline'
-	String get disciplineReflection => '📝 Reflect on today’s discipline';
-
-	/// en: '🎯 Analyze my active goals'
-	String get analyzeActiveGoals => '🎯 Analyze my active goals';
-
-	/// en: '🗺️ How should I plan my macro goals?'
-	String get planMacroGoals => '🗺️ How should I plan my macro goals?';
-
-	/// en: '🛑 What obstacles are blocking my goals?'
-	String get goalObstacles => '🛑 What obstacles are blocking my goals?';
-
-	/// en: '📈 Give me one tip to reach my milestones'
-	String get reachMilestones => '📈 Give me one tip to reach my milestones';
-
-	/// en: '📈 How is my consistency going?'
-	String get consistencyStatus => '📈 How is my consistency going?';
-
-	/// en: '📊 My weekly stats'
-	String get weeklyStats => '📊 My weekly stats';
-
-	/// en: '🌅 Plan my day'
-	String get planDay => '🌅 Plan my day';
-
-	/// en: '🚀 How can I raise the bar?'
-	String get raiseBar => '🚀 How can I raise the bar?';
-
-	/// en: '🤕 How can I recover after procrastinating?'
-	String get recoverProcrastination => '🤕 How can I recover after procrastinating?';
-
-	/// en: '🔗 How can I connect habits to goals?'
-	String get connectHabitsGoals => '🔗 How can I connect habits to goals?';
-
-	/// en: '📊 Review my goals and habits'
-	String get reviewGoalsHabits => '📊 Review my goals and habits';
-
-	/// en: '🔥 Discipline advice'
-	String get disciplineAdvice => '🔥 Discipline advice';
-
-	/// en: '💡 How can I create a new habit?'
-	String get createNewHabit => '💡 How can I create a new habit?';
+	late final Translations$ai$coachPrompts$diagnoseWeakestHabit$en diagnoseWeakestHabit = Translations$ai$coachPrompts$diagnoseWeakestHabit$en.internal(_root);
+	late final Translations$ai$coachPrompts$goalOnTrack$en goalOnTrack = Translations$ai$coachPrompts$goalOnTrack$en.internal(_root);
+	late final Translations$ai$coachPrompts$weeklyReviewDown$en weeklyReviewDown = Translations$ai$coachPrompts$weeklyReviewDown$en.internal(_root);
+	late final Translations$ai$coachPrompts$weeklyReviewUp$en weeklyReviewUp = Translations$ai$coachPrompts$weeklyReviewUp$en.internal(_root);
+	late final Translations$ai$coachPrompts$protectStreak$en protectStreak = Translations$ai$coachPrompts$protectStreak$en.internal(_root);
+	late final Translations$ai$coachPrompts$alignHabitsToGoal$en alignHabitsToGoal = Translations$ai$coachPrompts$alignHabitsToGoal$en.internal(_root);
+	late final Translations$ai$coachPrompts$designHabitForGoal$en designHabitForGoal = Translations$ai$coachPrompts$designHabitForGoal$en.internal(_root);
+	late final Translations$ai$coachPrompts$raiseTheBar$en raiseTheBar = Translations$ai$coachPrompts$raiseTheBar$en.internal(_root);
+	late final Translations$ai$coachPrompts$firstStep$en firstStep = Translations$ai$coachPrompts$firstStep$en.internal(_root);
+	late final Translations$ai$coachPrompts$whatCanYouHelp$en whatCanYouHelp = Translations$ai$coachPrompts$whatCanYouHelp$en.internal(_root);
 }
 
 // Path: ai.local
@@ -4005,6 +3958,156 @@ class Translations$settingsPage$languageOptions$en {
 
 	/// en: 'Arabic'
 	String get arabic => 'Arabic';
+}
+
+// Path: ai.coachPrompts.diagnoseWeakestHabit
+class Translations$ai$coachPrompts$diagnoseWeakestHabit$en {
+	Translations$ai$coachPrompts$diagnoseWeakestHabit$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: '🩺 Fix my weakest habit'
+	String get label => '🩺 Fix my weakest habit';
+
+	/// en: ''{habit}' is my weakest habit this week — {done}/{scheduled} days done. What's the most likely reason I keep missing it, and two specific fixes I can apply this week?'
+	String payload({required Object habit, required Object done, required Object scheduled}) => '\'${habit}\' is my weakest habit this week — ${done}/${scheduled} days done. What\'s the most likely reason I keep missing it, and two specific fixes I can apply this week?';
+}
+
+// Path: ai.coachPrompts.goalOnTrack
+class Translations$ai$coachPrompts$goalOnTrack$en {
+	Translations$ai$coachPrompts$goalOnTrack$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: '🎯 Am I on track?'
+	String get label => '🎯 Am I on track?';
+
+	/// en: 'Be honest about my goal '{goal}': am I on track to reach it, and what's the one change that would most improve my odds?'
+	String payload({required Object goal}) => 'Be honest about my goal \'${goal}\': am I on track to reach it, and what\'s the one change that would most improve my odds?';
+}
+
+// Path: ai.coachPrompts.weeklyReviewDown
+class Translations$ai$coachPrompts$weeklyReviewDown$en {
+	Translations$ai$coachPrompts$weeklyReviewDown$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: '📉 Review my week'
+	String get label => '📉 Review my week';
+
+	/// en: 'My habit consistency dropped to {thisPct}% this week from {lastPct}% last week. What's the most likely cause, and the one change I should make next week?'
+	String payload({required Object thisPct, required Object lastPct}) => 'My habit consistency dropped to ${thisPct}% this week from ${lastPct}% last week. What\'s the most likely cause, and the one change I should make next week?';
+}
+
+// Path: ai.coachPrompts.weeklyReviewUp
+class Translations$ai$coachPrompts$weeklyReviewUp$en {
+	Translations$ai$coachPrompts$weeklyReviewUp$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: '📊 Review my week'
+	String get label => '📊 Review my week';
+
+	/// en: 'My habit consistency is {thisPct}% this week vs {lastPct}% last week. What's working, and the one thing I should push further next week?'
+	String payload({required Object thisPct, required Object lastPct}) => 'My habit consistency is ${thisPct}% this week vs ${lastPct}% last week. What\'s working, and the one thing I should push further next week?';
+}
+
+// Path: ai.coachPrompts.protectStreak
+class Translations$ai$coachPrompts$protectStreak$en {
+	Translations$ai$coachPrompts$protectStreak$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: '🛡️ Protect my streak'
+	String get label => '🛡️ Protect my streak';
+
+	/// en: 'My longest active streak is '{habit}' at {days} days. What's the biggest risk of breaking it, and how do I protect it this week?'
+	String payload({required Object habit, required Object days}) => 'My longest active streak is \'${habit}\' at ${days} days. What\'s the biggest risk of breaking it, and how do I protect it this week?';
+}
+
+// Path: ai.coachPrompts.alignHabitsToGoal
+class Translations$ai$coachPrompts$alignHabitsToGoal$en {
+	Translations$ai$coachPrompts$alignHabitsToGoal$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: '🔗 Which habits serve my goals?'
+	String get label => '🔗 Which habits serve my goals?';
+
+	/// en: 'Looking at my habits against my goal '{goal}', which ones actually move it forward and which are just noise? Be specific, and name one habit I might be missing.'
+	String payload({required Object goal}) => 'Looking at my habits against my goal \'${goal}\', which ones actually move it forward and which are just noise? Be specific, and name one habit I might be missing.';
+}
+
+// Path: ai.coachPrompts.designHabitForGoal
+class Translations$ai$coachPrompts$designHabitForGoal$en {
+	Translations$ai$coachPrompts$designHabitForGoal$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: '💡 Turn a goal into a habit'
+	String get label => '💡 Turn a goal into a habit';
+
+	/// en: 'I want to reach my goal '{goal}'. What single daily habit would move the needle most? Give me one concrete habit I could start tomorrow.'
+	String payload({required Object goal}) => 'I want to reach my goal \'${goal}\'. What single daily habit would move the needle most? Give me one concrete habit I could start tomorrow.';
+}
+
+// Path: ai.coachPrompts.raiseTheBar
+class Translations$ai$coachPrompts$raiseTheBar$en {
+	Translations$ai$coachPrompts$raiseTheBar$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: '🚀 Raise the bar'
+	String get label => '🚀 Raise the bar';
+
+	/// en: 'I'm hitting all my habits and my goals are on track. Where might I be getting complacent, and what's one way to raise the bar without burning out?'
+	String get payload => 'I\'m hitting all my habits and my goals are on track. Where might I be getting complacent, and what\'s one way to raise the bar without burning out?';
+}
+
+// Path: ai.coachPrompts.firstStep
+class Translations$ai$coachPrompts$firstStep$en {
+	Translations$ai$coachPrompts$firstStep$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: '🌱 Where do I start?'
+	String get label => '🌱 Where do I start?';
+
+	/// en: 'I'm just getting started and haven't set up goals or habits yet. Suggest one realistic first goal and one small daily habit to build toward it, and explain why that pairing works.'
+	String get payload => 'I\'m just getting started and haven\'t set up goals or habits yet. Suggest one realistic first goal and one small daily habit to build toward it, and explain why that pairing works.';
+}
+
+// Path: ai.coachPrompts.whatCanYouHelp
+class Translations$ai$coachPrompts$whatCanYouHelp$en {
+	Translations$ai$coachPrompts$whatCanYouHelp$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: '💬 What can you help with?'
+	String get label => '💬 What can you help with?';
+
+	/// en: 'Based on my habits and goals in this app, give me three specific examples of how you can help me — not generic advice, but things tied to my actual data.'
+	String get payload => 'Based on my habits and goals in this app, give me three specific examples of how you can help me — not generic advice, but things tied to my actual data.';
 }
 
 /// The flat map containing all translations for locale <en>.
@@ -4648,25 +4751,26 @@ extension on Translations {
 			'ai.apiKey.setupTitle' => 'Connect your OpenRouter account',
 			'ai.apiKey.setupBody' => 'This engine runs on your own OpenRouter account. Connect it to start chatting — or switch to Evolve AI, included with Pro.',
 			'ai.apiKey.setupAction' => 'Connect account',
-			'ai.suggestions.morningBoost' => '🔥 Give me a boost to get started!',
-			'ai.suggestions.avoidDistractions' => '🧠 How can I avoid distractions?',
-			'ai.suggestions.lowEnergy' => '⚡ My energy is dropping. What should I do?',
-			'ai.suggestions.stayFocused' => '💪 Give me one tip to stay focused',
-			'ai.suggestions.prepareTomorrow' => '🛌 How can I prepare for a productive tomorrow?',
-			'ai.suggestions.disciplineReflection' => '📝 Reflect on today’s discipline',
-			'ai.suggestions.analyzeActiveGoals' => '🎯 Analyze my active goals',
-			'ai.suggestions.planMacroGoals' => '🗺️ How should I plan my macro goals?',
-			'ai.suggestions.goalObstacles' => '🛑 What obstacles are blocking my goals?',
-			'ai.suggestions.reachMilestones' => '📈 Give me one tip to reach my milestones',
-			'ai.suggestions.consistencyStatus' => '📈 How is my consistency going?',
-			'ai.suggestions.weeklyStats' => '📊 My weekly stats',
-			'ai.suggestions.planDay' => '🌅 Plan my day',
-			'ai.suggestions.raiseBar' => '🚀 How can I raise the bar?',
-			'ai.suggestions.recoverProcrastination' => '🤕 How can I recover after procrastinating?',
-			'ai.suggestions.connectHabitsGoals' => '🔗 How can I connect habits to goals?',
-			'ai.suggestions.reviewGoalsHabits' => '📊 Review my goals and habits',
-			'ai.suggestions.disciplineAdvice' => '🔥 Discipline advice',
-			'ai.suggestions.createNewHabit' => '💡 How can I create a new habit?',
+			'ai.coachPrompts.diagnoseWeakestHabit.label' => '🩺 Fix my weakest habit',
+			'ai.coachPrompts.diagnoseWeakestHabit.payload' => ({required Object habit, required Object done, required Object scheduled}) => '\'${habit}\' is my weakest habit this week — ${done}/${scheduled} days done. What\'s the most likely reason I keep missing it, and two specific fixes I can apply this week?',
+			'ai.coachPrompts.goalOnTrack.label' => '🎯 Am I on track?',
+			'ai.coachPrompts.goalOnTrack.payload' => ({required Object goal}) => 'Be honest about my goal \'${goal}\': am I on track to reach it, and what\'s the one change that would most improve my odds?',
+			'ai.coachPrompts.weeklyReviewDown.label' => '📉 Review my week',
+			'ai.coachPrompts.weeklyReviewDown.payload' => ({required Object thisPct, required Object lastPct}) => 'My habit consistency dropped to ${thisPct}% this week from ${lastPct}% last week. What\'s the most likely cause, and the one change I should make next week?',
+			'ai.coachPrompts.weeklyReviewUp.label' => '📊 Review my week',
+			'ai.coachPrompts.weeklyReviewUp.payload' => ({required Object thisPct, required Object lastPct}) => 'My habit consistency is ${thisPct}% this week vs ${lastPct}% last week. What\'s working, and the one thing I should push further next week?',
+			'ai.coachPrompts.protectStreak.label' => '🛡️ Protect my streak',
+			'ai.coachPrompts.protectStreak.payload' => ({required Object habit, required Object days}) => 'My longest active streak is \'${habit}\' at ${days} days. What\'s the biggest risk of breaking it, and how do I protect it this week?',
+			'ai.coachPrompts.alignHabitsToGoal.label' => '🔗 Which habits serve my goals?',
+			'ai.coachPrompts.alignHabitsToGoal.payload' => ({required Object goal}) => 'Looking at my habits against my goal \'${goal}\', which ones actually move it forward and which are just noise? Be specific, and name one habit I might be missing.',
+			'ai.coachPrompts.designHabitForGoal.label' => '💡 Turn a goal into a habit',
+			'ai.coachPrompts.designHabitForGoal.payload' => ({required Object goal}) => 'I want to reach my goal \'${goal}\'. What single daily habit would move the needle most? Give me one concrete habit I could start tomorrow.',
+			'ai.coachPrompts.raiseTheBar.label' => '🚀 Raise the bar',
+			'ai.coachPrompts.raiseTheBar.payload' => 'I\'m hitting all my habits and my goals are on track. Where might I be getting complacent, and what\'s one way to raise the bar without burning out?',
+			'ai.coachPrompts.firstStep.label' => '🌱 Where do I start?',
+			'ai.coachPrompts.firstStep.payload' => 'I\'m just getting started and haven\'t set up goals or habits yet. Suggest one realistic first goal and one small daily habit to build toward it, and explain why that pairing works.',
+			'ai.coachPrompts.whatCanYouHelp.label' => '💬 What can you help with?',
+			'ai.coachPrompts.whatCanYouHelp.payload' => 'Based on my habits and goals in this app, give me three specific examples of how you can help me — not generic advice, but things tied to my actual data.',
 			'ai.local.notReachable' => ({required Object url}) => '❌ Local AI server not reachable at ${url}. Make sure Ollama or LM Studio is running.',
 			'ai.local.modelMissing' => '⚠️ Choose a local model first — open the model picker at the top.',
 			'ai.local.requestFailed' => ({required Object code}) => '❌ Local model error (code: ${code}).',
@@ -5040,9 +5144,9 @@ extension on Translations {
 			'coachSettings.backendLocal' => 'Local · private',
 			'coachSettings.cloudDesc' => 'Connect your own OpenRouter account and pay the provider directly. Free — no subscription needed. The context you share is sent to the provider.',
 			'coachSettings.localDesc' => 'Your own model via Ollama, LM Studio or any OpenAI-compatible server. Nothing leaves this device.',
-			'coachSettings.presetLabel' => 'Server',
 			_ => null,
 		} ?? switch (path) {
+			'coachSettings.presetLabel' => 'Server',
 			'coachSettings.presetOllama' => 'Ollama',
 			'coachSettings.presetLmStudio' => 'LM Studio',
 			'coachSettings.presetCustom' => 'Custom…',

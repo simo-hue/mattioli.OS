@@ -691,26 +691,47 @@
       "setupBody": "Questo motore funziona con il tuo account OpenRouter. Collegalo per iniziare a chattare — oppure passa a Evolve AI, incluso in Pro.",
       "setupAction": "Collega account"
     },
-    "suggestions": {
-      "morningBoost": "🔥 Dammi la carica per iniziare!",
-      "avoidDistractions": "🧠 Come evitare le distrazioni?",
-      "lowEnergy": "⚡ Ho un calo di energia, cosa faccio?",
-      "stayFocused": "💪 Un consiglio per rimanere focalizzato",
-      "prepareTomorrow": "🛌 Come prepararsi per un domani produttivo?",
-      "disciplineReflection": "📝 Riflessione sulla disciplina di oggi",
-      "analyzeActiveGoals": "🎯 Analizza i miei obiettivi attivi",
-      "planMacroGoals": "🗺️ Come pianificare i miei macro obiettivi?",
-      "goalObstacles": "🛑 Quali ostacoli bloccano i miei obiettivi?",
-      "reachMilestones": "📈 Un consiglio per raggiungere i miei traguardi",
-      "consistencyStatus": "📈 Come sta andando la mia costanza?",
-      "weeklyStats": "📊 Le mie statistiche settimanali",
-      "planDay": "🌅 Pianifica la mia giornata",
-      "raiseBar": "🚀 Come posso alzare l’asticella?",
-      "recoverProcrastination": "🤕 Come recuperare se ho procrastinato?",
-      "connectHabitsGoals": "🔗 Come legare le abitudini agli obiettivi?",
-      "reviewGoalsHabits": "📊 Review di obiettivi e abitudini",
-      "disciplineAdvice": "🔥 Consiglio sulla disciplina",
-      "createNewHabit": "💡 Come creare una nuova abitudine?"
+    "coachPrompts": {
+      "diagnoseWeakestHabit": {
+        "label": "🩺 Sistema la mia abitudine più debole",
+        "payload": "'{habit}' è la mia abitudine più debole questa settimana — {done}/{scheduled} giorni completati. Qual è il motivo più probabile per cui la salto, e due correzioni concrete che posso applicare questa settimana?"
+      },
+      "goalOnTrack": {
+        "label": "🎯 Sono in linea?",
+        "payload": "Sii sincero sul mio obiettivo '{goal}': sono sulla buona strada per raggiungerlo, e qual è l'unica cosa da cambiare per migliorare di più le mie probabilità?"
+      },
+      "weeklyReviewDown": {
+        "label": "📉 Analizza la mia settimana",
+        "payload": "La mia costanza è scesa al {thisPct}% questa settimana dal {lastPct}% della scorsa. Qual è la causa più probabile e l'unica cosa da cambiare la prossima settimana?"
+      },
+      "weeklyReviewUp": {
+        "label": "📊 Analizza la mia settimana",
+        "payload": "La mia costanza è al {thisPct}% questa settimana contro il {lastPct}% della scorsa. Cosa sta funzionando e qual è l'unica cosa su cui spingere di più la prossima settimana?"
+      },
+      "protectStreak": {
+        "label": "🛡️ Proteggi la mia serie",
+        "payload": "La mia serie attiva più lunga è '{habit}' a {days} giorni. Qual è il rischio più grande di interromperla e come la proteggo questa settimana?"
+      },
+      "alignHabitsToGoal": {
+        "label": "🔗 Quali abitudini servono ai miei obiettivi?",
+        "payload": "Guardando le mie abitudini rispetto all'obiettivo '{goal}', quali lo fanno davvero avanzare e quali sono solo rumore? Sii specifico e indica un'abitudine che potrebbe mancarmi."
+      },
+      "designHabitForGoal": {
+        "label": "💡 Trasforma un obiettivo in abitudine",
+        "payload": "Voglio raggiungere il mio obiettivo '{goal}'. Quale singola abitudine quotidiana farebbe la differenza maggiore? Dammi un'abitudine concreta da iniziare domani."
+      },
+      "raiseTheBar": {
+        "label": "🚀 Alza l'asticella",
+        "payload": "Sto rispettando tutte le mie abitudini e i miei obiettivi sono in linea. Dove rischio di adagiarmi e qual è un modo per alzare l'asticella senza esaurirmi?"
+      },
+      "firstStep": {
+        "label": "🌱 Da dove comincio?",
+        "payload": "Sto appena iniziando e non ho ancora impostato obiettivi o abitudini. Suggeriscimi un primo obiettivo realistico e una piccola abitudine quotidiana per raggiungerlo, e spiega perché questa coppia funziona."
+      },
+      "whatCanYouHelp": {
+        "label": "💬 Con cosa puoi aiutarmi?",
+        "payload": "In base alle mie abitudini e ai miei obiettivi in questa app, dammi tre esempi concreti di come puoi aiutarmi — non consigli generici, ma cose legate ai miei dati reali."
+      }
     },
     "local": {
       "notReachable": "❌ Server AI locale non raggiungibile su {url}. Assicurati che Ollama o LM Studio sia in esecuzione.",

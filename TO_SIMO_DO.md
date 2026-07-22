@@ -1,7 +1,6 @@
 # TO_SIMO_DO.md
 - [ ] Widget for iPhone & MacOS
 - [ ] Organize better the selection of the LLM in the AI coach
-- [ ] in the AI coach the suggested prompt are not useful at all and I want you to change the recommendations ( pre-prompt ) in something useful that the user can really benefit from the answer.
 - [ ] settings in desktop implementation is really weird and not intuitive as it is in the mobile app
 - [ ] what happens if I modify manually an automatic habits?
 - [ ] Different habits & goals types, not only checkboxes like status,progress bar
@@ -237,3 +236,19 @@ empirical. None of them blocks the build; each is a one-line fix if it comes bac
       bump, most likely). I formatted only the files I edited rather than sweeping 85 unrelated
       files into this diff. Worth one dedicated formatting commit so the README's
       `--set-exit-if-changed` step can actually pass.
+
+## AI Coach data-personalized prompts (2026-07-22)
+Code + tests are green headless; these need you / a device:
+- [x] **de/es/ar reviewed & corrected** against the app's own terminology (independent pass):
+      Spanish meta→objetivo (+ gender agreement), German two collocation fixes, Arabic
+      التزام→اتساق for "consistency". A final *human* native-speaker glance is optional/non-blocking.
+      If you do edit any `ai.coachPrompts` string, keep placeholders `{habit} {done} {scheduled}
+      {goal} {thisPct} {lastPct} {days}` verbatim and re-run `dart run slang` from each app root.
+- [ ] **RTL check (Arabic)**: the chip labels lead with an emoji (`🩺`, `🎯`, …). Confirm they
+      render sensibly right-to-left on device.
+- [ ] **On-device tap-through** on both clients, in each data state, confirming the sent message
+      carries real numbers and the coach's answer is genuinely actionable:
+      new user (→ 🌱 Where do I start? / 💬 What can you help with?),
+      mid-week with a missed habit (→ 🩺 Fix my weakest habit with the right name + n/m),
+      a slipping vs improving week (→ 📉/📊 Review my week with this/last %),
+      a ≥7-day streak (→ 🛡️ Protect my streak), and an all-caught-up week (→ 🚀 Raise the bar).

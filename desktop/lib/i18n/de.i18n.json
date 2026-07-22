@@ -691,26 +691,47 @@
       "setupBody": "Diese Engine läuft über dein eigenes OpenRouter-Konto. Verbinde es, um zu chatten — oder wechsle zu Evolve AI, in Pro enthalten.",
       "setupAction": "Konto verbinden"
     },
-    "suggestions": {
-      "morningBoost": "🔥 Gib mir einen Startimpuls!",
-      "avoidDistractions": "🧠 Wie kann ich Ablenkungen vermeiden?",
-      "lowEnergy": "⚡ Meine Energie sinkt. Was soll ich tun?",
-      "stayFocused": "💪 Gib mir einen Tipp, um fokussiert zu bleiben",
-      "prepareTomorrow": "🛌 Wie bereite ich mich auf einen produktiven morgigen Tag vor?",
-      "disciplineReflection": "📝 Reflektiere meine Disziplin heute",
-      "analyzeActiveGoals": "🎯 Analysiere meine aktiven Ziele",
-      "planMacroGoals": "🗺️ Wie sollte ich meine Makroziele planen?",
-      "goalObstacles": "🛑 Welche Hindernisse blockieren meine Ziele?",
-      "reachMilestones": "📈 Gib mir einen Tipp, um meine Meilensteine zu erreichen",
-      "consistencyStatus": "📈 Wie läuft meine Konstanz?",
-      "weeklyStats": "📊 Meine Wochenstatistiken",
-      "planDay": "🌅 Plane meinen Tag",
-      "raiseBar": "🚀 Wie kann ich das Niveau erhöhen?",
-      "recoverProcrastination": "🤕 Wie erhole ich mich nach Prokrastination?",
-      "connectHabitsGoals": "🔗 Wie kann ich Gewohnheiten mit Zielen verbinden?",
-      "reviewGoalsHabits": "📊 Überprüfe meine Ziele und Gewohnheiten",
-      "disciplineAdvice": "🔥 Disziplin-Tipp",
-      "createNewHabit": "💡 Wie kann ich eine neue Gewohnheit aufbauen?"
+    "coachPrompts": {
+      "diagnoseWeakestHabit": {
+        "label": "🩺 Meine schwächste Gewohnheit fixen",
+        "payload": "'{habit}' ist diese Woche meine schwächste Gewohnheit — {done}/{scheduled} Tage geschafft. Was ist der wahrscheinlichste Grund, warum ich sie auslasse, und zwei konkrete Lösungen für diese Woche?"
+      },
+      "goalOnTrack": {
+        "label": "🎯 Bin ich auf Kurs?",
+        "payload": "Sei ehrlich, was mein Ziel '{goal}' angeht: Bin ich auf Kurs, es zu erreichen, und welche eine Änderung würde meine Chancen am meisten verbessern?"
+      },
+      "weeklyReviewDown": {
+        "label": "📉 Meine Woche auswerten",
+        "payload": "Meine Konstanz ist diese Woche auf {thisPct}% gefallen, von {lastPct}% in der Vorwoche. Was ist die wahrscheinlichste Ursache und die eine Änderung für nächste Woche?"
+      },
+      "weeklyReviewUp": {
+        "label": "📊 Meine Woche auswerten",
+        "payload": "Meine Konstanz liegt diese Woche bei {thisPct}% gegenüber {lastPct}% in der Vorwoche. Was funktioniert, und was ist die eine Sache, die ich nächste Woche stärker vorantreiben sollte?"
+      },
+      "protectStreak": {
+        "label": "🛡️ Meine Serie schützen",
+        "payload": "Meine längste aktive Serie ist '{habit}' mit {days} Tagen. Was ist das größte Risiko, sie zu brechen, und wie schütze ich sie diese Woche?"
+      },
+      "alignHabitsToGoal": {
+        "label": "🔗 Welche Gewohnheiten dienen meinen Zielen?",
+        "payload": "Wenn ich meine Gewohnheiten mit meinem Ziel '{goal}' vergleiche: Welche bringen es wirklich voran und welche sind nur Ballast? Sei konkret und nenne eine Gewohnheit, die mir fehlen könnte."
+      },
+      "designHabitForGoal": {
+        "label": "💡 Ein Ziel in eine Gewohnheit verwandeln",
+        "payload": "Ich will mein Ziel '{goal}' erreichen. Welche einzelne tägliche Gewohnheit hätte die größte Wirkung? Gib mir eine konkrete Gewohnheit, die ich morgen anfangen kann."
+      },
+      "raiseTheBar": {
+        "label": "🚀 Die Latte höher legen",
+        "payload": "Ich schaffe alle meine Gewohnheiten und meine Ziele sind auf Kurs. Wo werde ich vielleicht nachlässig, und wie lege ich die Latte höher, ohne auszubrennen?"
+      },
+      "firstStep": {
+        "label": "🌱 Wo fange ich an?",
+        "payload": "Ich fange gerade erst an und habe noch keine Ziele oder Gewohnheiten eingerichtet. Schlage mir ein realistisches erstes Ziel und eine kleine tägliche Gewohnheit dafür vor und erkläre, warum diese Kombination funktioniert."
+      },
+      "whatCanYouHelp": {
+        "label": "💬 Womit kannst du helfen?",
+        "payload": "Gib mir auf Basis meiner Gewohnheiten und Ziele in dieser App drei konkrete Beispiele, wie du mir helfen kannst — keine allgemeinen Ratschläge, sondern Dinge, die mit meinen echten Daten zu tun haben."
+      }
     },
     "local": {
       "notReachable": "❌ Lokaler KI-Server unter {url} nicht erreichbar. Stelle sicher, dass Ollama oder LM Studio läuft.",

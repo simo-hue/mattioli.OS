@@ -691,26 +691,47 @@
       "setupBody": "Diese Engine läuft über dein eigenes OpenRouter-Konto. Verbinde es, um zu chatten — oder wechsle zu Evolve AI, in Pro enthalten.",
       "setupAction": "Konto verbinden"
     },
-    "suggestions": {
-      "morningBoost": "🔥 Gib mir einen Startimpuls!",
-      "avoidDistractions": "🧠 Wie kann ich Ablenkungen vermeiden?",
-      "lowEnergy": "⚡ Meine Energie sinkt. Was soll ich tun?",
-      "stayFocused": "💪 Gib mir einen Tipp, um fokussiert zu bleiben",
-      "prepareTomorrow": "🛌 Wie bereite ich mich auf einen produktiven morgigen Tag vor?",
-      "disciplineReflection": "📝 Reflektiere meine Disziplin heute",
-      "analyzeActiveGoals": "🎯 Analysiere meine aktiven Ziele",
-      "planMacroGoals": "🗺️ Wie sollte ich meine Makroziele planen?",
-      "goalObstacles": "🛑 Welche Hindernisse blockieren meine Ziele?",
-      "reachMilestones": "📈 Gib mir einen Tipp, um meine Meilensteine zu erreichen",
-      "consistencyStatus": "📈 Wie läuft meine Konstanz?",
-      "weeklyStats": "📊 Meine Wochenstatistiken",
-      "planDay": "🌅 Plane meinen Tag",
-      "raiseBar": "🚀 Wie kann ich das Niveau erhöhen?",
-      "recoverProcrastination": "🤕 Wie erhole ich mich nach Prokrastination?",
-      "connectHabitsGoals": "🔗 Wie kann ich Gewohnheiten mit Zielen verbinden?",
-      "reviewGoalsHabits": "📊 Überprüfe meine Ziele und Gewohnheiten",
-      "disciplineAdvice": "🔥 Disziplin-Tipp",
-      "createNewHabit": "💡 Wie kann ich eine neue Gewohnheit aufbauen?"
+    "coachPrompts": {
+      "diagnoseWeakestHabit": {
+        "label": "🩺 Meine schwächste Gewohnheit fixen",
+        "payload": "'{habit}' ist diese Woche meine schwächste Gewohnheit — {done}/{scheduled} Tage geschafft. Was ist der wahrscheinlichste Grund, warum ich sie auslasse, und zwei konkrete Lösungen für diese Woche?"
+      },
+      "goalOnTrack": {
+        "label": "🎯 Bin ich auf Kurs?",
+        "payload": "Sei ehrlich, was mein Ziel '{goal}' angeht: Bin ich auf Kurs, es zu erreichen, und welche eine Änderung würde meine Chancen am meisten verbessern?"
+      },
+      "weeklyReviewDown": {
+        "label": "📉 Meine Woche auswerten",
+        "payload": "Meine Konstanz ist diese Woche auf {thisPct}% gefallen, von {lastPct}% in der Vorwoche. Was ist die wahrscheinlichste Ursache und die eine Änderung für nächste Woche?"
+      },
+      "weeklyReviewUp": {
+        "label": "📊 Meine Woche auswerten",
+        "payload": "Meine Konstanz liegt diese Woche bei {thisPct}% gegenüber {lastPct}% in der Vorwoche. Was funktioniert, und was ist die eine Sache, die ich nächste Woche stärker vorantreiben sollte?"
+      },
+      "protectStreak": {
+        "label": "🛡️ Meine Serie schützen",
+        "payload": "Meine längste aktive Serie ist '{habit}' mit {days} Tagen. Was ist das größte Risiko, sie zu brechen, und wie schütze ich sie diese Woche?"
+      },
+      "alignHabitsToGoal": {
+        "label": "🔗 Welche Gewohnheiten dienen meinen Zielen?",
+        "payload": "Wenn ich meine Gewohnheiten mit meinem Ziel '{goal}' vergleiche: Welche bringen es wirklich voran und welche sind nur Ballast? Sei konkret und nenne eine Gewohnheit, die mir fehlen könnte."
+      },
+      "designHabitForGoal": {
+        "label": "💡 Ein Ziel in eine Gewohnheit verwandeln",
+        "payload": "Ich will mein Ziel '{goal}' erreichen. Welche einzelne tägliche Gewohnheit hätte die größte Wirkung? Gib mir eine konkrete Gewohnheit, die ich morgen anfangen kann."
+      },
+      "raiseTheBar": {
+        "label": "🚀 Die Latte höher legen",
+        "payload": "Ich schaffe alle meine Gewohnheiten und meine Ziele sind auf Kurs. Wo werde ich vielleicht nachlässig, und wie lege ich die Latte höher, ohne auszubrennen?"
+      },
+      "firstStep": {
+        "label": "🌱 Wo fange ich an?",
+        "payload": "Ich fange gerade erst an und habe noch keine Ziele oder Gewohnheiten eingerichtet. Schlage mir ein realistisches erstes Ziel und eine kleine tägliche Gewohnheit dafür vor und erkläre, warum diese Kombination funktioniert."
+      },
+      "whatCanYouHelp": {
+        "label": "💬 Womit kannst du helfen?",
+        "payload": "Gib mir auf Basis meiner Gewohnheiten und Ziele in dieser App drei konkrete Beispiele, wie du mir helfen kannst — keine allgemeinen Ratschläge, sondern Dinge, die mit meinen echten Daten zu tun haben."
+      }
     },
     "local": {
       "notReachable": "❌ Lokaler KI-Server unter {url} nicht erreichbar. Stelle sicher, dass Ollama oder LM Studio läuft.",
@@ -718,7 +739,9 @@
       "requestFailed": "❌ Fehler des lokalen Modells (Code: {code}).",
       "streamError": "❌ Verbindung zum lokalen Modell fehlgeschlagen.",
       "timeout": "❌ Das lokale Modell braucht zu lange — es wird möglicherweise noch geladen. Versuche es erneut.",
-      "modelNotFound": "❌ Dieses Modell ist auf dem Server nicht verfügbar. Öffne die Modellauswahl, um eines zu wählen oder zu laden."
+      "modelNotFound": "❌ Dieses Modell ist auf dem Server nicht verfügbar. Öffne die Modellauswahl, um eines zu wählen oder zu laden.",
+      "authRequired": "❌ {app} verweigert die Verbindung — es erfordert ein API-Token. Deaktiviere die Authentifizierung in den Servereinstellungen oder richte Evolve auf einen Server, der keines verlangt.",
+      "stillLoading": "Das Modell wird noch geladen — ein Kaltstart kann eine Weile dauern."
     },
     "standard": {
       "sessionExpired": "⚠️ Deine Sitzung ist abgelaufen. Melde dich erneut an, um Evolve AI weiter zu nutzen.",
@@ -1126,9 +1149,7 @@
     "presetLmStudio": "LM Studio",
     "presetCustom": "Benutzerdefiniert…",
     "baseUrlLabel": "Basis-URL",
-    "baseUrlHint": "http://localhost:11434/v1",
     "modelLabel": "Modell",
-    "modelHint": "z. B. llama3.1:8b",
     "refreshModels": "Modelle aktualisieren",
     "discovering": "Suche nach Modellen…",
     "noModelsFound": "Keine Modelle gefunden — gib unten manuell eine Modell-ID ein.",
@@ -1145,8 +1166,8 @@
     "systemPromptReset": "Zurücksetzen",
     "temperatureLabel": "Temperatur",
     "save": "Fertig",
-    "detectedTitle": "Lokales Modell erkannt",
-    "detectedBody": "Auf diesem Mac läuft ein lokaler KI-Server. Den Coach zu 100 % privat ausführen?",
+    "detectedTitle": "{app} erkannt",
+    "detectedBody": "{app} läuft auf diesem Mac. Den Coach zu 100 % privat ausführen?",
     "detectedAction": "Lokal verwenden",
     "detectedDismiss": "Jetzt nicht",
     "activeCloud": "Cloud · {model}",
@@ -1164,17 +1185,23 @@
     "temperatureRaise": "Temperatur erhöhen",
     "sendMessage": "Senden",
     "stopResponse": "Stopp",
-    "startOllama": "Ollama starten",
-    "getOllama": "Ollama installieren",
-    "startingOllama": "Ollama wird gestartet…",
-    "ollamaOfflineTitle": "Ollama läuft nicht",
-    "ollamaOfflineBody": "Starte deinen lokalen Server, um privat zu chatten — ganz ohne Terminal.",
-    "ollamaNotInstalledTitle": "Ollama ist nicht installiert",
-    "ollamaNotInstalledBody": "Installiere die kostenlose Ollama-App und drücke dann Start.",
+    "startLocalServer": "{app} starten",
+    "getLocalServer": "{app} installieren",
+    "startingLocalServer": "{app} wird gestartet…",
+    "localServerOfflineTitle": "{app} läuft nicht",
+    "localServerOfflineBody": "Starte deinen lokalen Server, um privat zu chatten — ganz ohne Terminal.",
+    "localServerNotInstalledTitle": "{app} ist nicht installiert",
+    "localServerNotInstalledBody": "Installiere die kostenlose {app}-App und drücke dann Start.",
+    "localServerStartingBody": "Das kann ein paar Sekunden dauern…",
+    "localServerStartFailed": "{app} konnte nicht gestartet werden — versuche, es aus dem Programme-Ordner zu öffnen.",
+    "localServerDownloadFailed": "Browser konnte nicht geöffnet werden — besuche {url}",
     "ollamaStartTimeout": "Dauert länger als erwartet — prüfe das Ollama-Symbol in der Menüleiste (der erste Start braucht evtl. eine Freigabe).",
-    "ollamaStartingBody": "Das kann ein paar Sekunden dauern…",
-    "ollamaStartFailed": "Ollama konnte nicht gestartet werden — versuche, es aus dem Programme-Ordner zu öffnen.",
-    "ollamaDownloadFailed": "Browser konnte nicht geöffnet werden — besuche ollama.com/download",
+    "ollamaServerOffTitle": "Ollama läuft, antwortet aber nicht",
+    "ollamaServerOffBody": "Ollama ist geöffnet, antwortet aber nicht auf seinem Port. Beende es über die Menüleiste und drücke dann erneut Start.",
+    "lmStudioStartTimeout": "Dauert länger als erwartet — öffne LM Studio und prüfe, ob der Start abgeschlossen ist.",
+    "lmStudioServerOffTitle": "Der Server von LM Studio läuft nicht",
+    "lmStudioServerOffBody": "LM Studio ist geöffnet, aber sein lokaler Server ist aus. Schalte ihn über Developer → Start Server ein oder aktiviere Settings → Run the LLM server on login.",
+    "lmStudioNoModelsJit": "LM Studio listet keine Modelle auf. Es listet nur geladene Modelle, wenn Just-In-Time-Laden aus ist — lade ein Modell in LM Studio oder aktiviere Developer → Server Settings → Just In Time Model Loading.",
     "backendStandard": "Evolve AI",
     "standardDesc": "In Evolve Pro enthalten. Wir betreiben ein kostenloses Google-Modell (Gemma) für dich — keine Schlüssel, keine Einrichtung. Deine Nachrichten gehen an Googles kostenlose Stufe, die sie zur Verbesserung ihrer Dienste verwenden kann.",
     "activeStandard": "Evolve AI · {model}",

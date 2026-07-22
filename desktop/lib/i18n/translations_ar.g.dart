@@ -867,7 +867,7 @@ class _Translations$ai$ar extends Translations$ai$en {
 	@override String get macroGoals => 'الأهداف الكبرى';
 	@override late final _Translations$ai$openRouter$ar openRouter = _Translations$ai$openRouter$ar._(_root);
 	@override late final _Translations$ai$apiKey$ar apiKey = _Translations$ai$apiKey$ar._(_root);
-	@override late final _Translations$ai$suggestions$ar suggestions = _Translations$ai$suggestions$ar._(_root);
+	@override late final _Translations$ai$coachPrompts$ar coachPrompts = _Translations$ai$coachPrompts$ar._(_root);
 	@override late final _Translations$ai$local$ar local = _Translations$ai$local$ar._(_root);
 	@override late final _Translations$ai$standard$ar standard = _Translations$ai$standard$ar._(_root);
 	@override late final _Translations$ai$consent$ar consent = _Translations$ai$consent$ar._(_root);
@@ -1342,9 +1342,7 @@ class _Translations$coachSettings$ar extends Translations$coachSettings$en {
 	@override String get presetLmStudio => 'LM Studio';
 	@override String get presetCustom => 'مخصّص…';
 	@override String get baseUrlLabel => 'عنوان URL الأساسي';
-	@override String get baseUrlHint => 'http://localhost:11434/v1';
 	@override String get modelLabel => 'النموذج';
-	@override String get modelHint => 'مثال: llama3.1:8b';
 	@override String get refreshModels => 'تحديث النماذج';
 	@override String get discovering => 'جارٍ البحث عن النماذج…';
 	@override String get noModelsFound => 'لم يُعثَر على نماذج — اكتب معرّف نموذج يدويًا أدناه.';
@@ -1361,8 +1359,8 @@ class _Translations$coachSettings$ar extends Translations$coachSettings$en {
 	@override String get systemPromptReset => 'إعادة تعيين';
 	@override String get temperatureLabel => 'درجة الحرارة';
 	@override String get save => 'تم';
-	@override String get detectedTitle => 'تم اكتشاف نموذج محلي';
-	@override String get detectedBody => 'يعمل خادم ذكاء اصطناعي محلي على هذا الـ Mac. هل تريد تشغيل المدرّب بخصوصية كاملة؟';
+	@override String detectedTitle({required Object app}) => 'تم اكتشاف ${app}';
+	@override String detectedBody({required Object app}) => 'يعمل ${app} على هذا الـ Mac. هل تريد تشغيل المدرّب بخصوصية 100%؟';
 	@override String get detectedAction => 'استخدام المحلي';
 	@override String get detectedDismiss => 'ليس الآن';
 	@override String activeCloud({required Object model}) => 'السحابة · ${model}';
@@ -1380,17 +1378,23 @@ class _Translations$coachSettings$ar extends Translations$coachSettings$en {
 	@override String get temperatureRaise => 'رفع درجة الحرارة';
 	@override String get sendMessage => 'إرسال';
 	@override String get stopResponse => 'إيقاف';
-	@override String get startOllama => 'تشغيل Ollama';
-	@override String get getOllama => 'الحصول على Ollama';
-	@override String get startingOllama => 'جارٍ تشغيل Ollama…';
-	@override String get ollamaOfflineTitle => 'Ollama غير مُشغّل';
-	@override String get ollamaOfflineBody => 'شغّل خادمك المحلي للدردشة بخصوصية — دون الحاجة إلى الطرفية.';
-	@override String get ollamaNotInstalledTitle => 'Ollama غير مُثبَّت';
-	@override String get ollamaNotInstalledBody => 'ثبّت تطبيق Ollama المجاني ثم اضغط تشغيل.';
+	@override String startLocalServer({required Object app}) => 'تشغيل ${app}';
+	@override String getLocalServer({required Object app}) => 'الحصول على ${app}';
+	@override String startingLocalServer({required Object app}) => 'جارٍ تشغيل ${app}…';
+	@override String localServerOfflineTitle({required Object app}) => '${app} غير مُشغّل';
+	@override String get localServerOfflineBody => 'شغّل خادمك المحلي للدردشة بخصوصية — دون الحاجة إلى الطرفية.';
+	@override String localServerNotInstalledTitle({required Object app}) => '${app} غير مُثبَّت';
+	@override String localServerNotInstalledBody({required Object app}) => 'ثبّت تطبيق ${app} المجاني ثم اضغط تشغيل.';
+	@override String get localServerStartingBody => 'قد يستغرق ذلك بضع ثوانٍ…';
+	@override String localServerStartFailed({required Object app}) => 'تعذّر تشغيل ${app} — جرّب فتحه من مجلد التطبيقات.';
+	@override String localServerDownloadFailed({required Object url}) => 'تعذّر فتح المتصفح — تفضّل بزيارة ${url}';
 	@override String get ollamaStartTimeout => 'يستغرق وقتًا أطول من المتوقع — تحقّق من أيقونة Ollama في شريط القوائم (قد يتطلب التشغيل الأول موافقة).';
-	@override String get ollamaStartingBody => 'قد يستغرق ذلك بضع ثوانٍ…';
-	@override String get ollamaStartFailed => 'تعذّر تشغيل Ollama — جرّب فتحه من مجلد التطبيقات.';
-	@override String get ollamaDownloadFailed => 'تعذّر فتح المتصفح — تفضّل بزيارة ollama.com/download';
+	@override String get ollamaServerOffTitle => 'Ollama يعمل لكنه لا يقدّم الخدمة';
+	@override String get ollamaServerOffBody => 'Ollama مفتوح لكنه لا يستجيب على منفذه. أغلقه من شريط القوائم ثم اضغط تشغيل مرة أخرى.';
+	@override String get lmStudioStartTimeout => 'يستغرق وقتًا أطول من المتوقع — افتح LM Studio وتأكّد من اكتمال تشغيله.';
+	@override String get lmStudioServerOffTitle => 'خادم LM Studio غير مُشغّل';
+	@override String get lmStudioServerOffBody => 'LM Studio مفتوح، لكن خادمه المحلي مُطفأ. شغّله من Developer → Start Server، أو فعّل الخيار Settings → Run the LLM server on login.';
+	@override String get lmStudioNoModelsJit => 'لا يعرض LM Studio أي نماذج. فهو لا يعرض سوى النماذج المحمَّلة عندما يكون تحميل Just-In-Time مُعطَّلًا — حمّل نموذجًا في LM Studio، أو فعّل Developer → Server Settings → Just In Time Model Loading.';
 	@override String get backendStandard => 'Evolve AI';
 	@override String get standardDesc => 'مُضمَّن في Evolve Pro. نشغّل لك نموذجًا مجانيًا من Google (Gemma) — بلا مفاتيح وبلا إعداد. تذهب رسائلك إلى الطبقة المجانية من Google، التي قد تستخدمها لتحسين خدماتها.';
 	@override String activeStandard({required Object model}) => 'Evolve AI · ${model}';
@@ -1603,32 +1607,23 @@ class _Translations$ai$apiKey$ar extends Translations$ai$apiKey$en {
 	@override String get setupAction => 'ربط الحساب';
 }
 
-// Path: ai.suggestions
-class _Translations$ai$suggestions$ar extends Translations$ai$suggestions$en {
-	_Translations$ai$suggestions$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+// Path: ai.coachPrompts
+class _Translations$ai$coachPrompts$ar extends Translations$ai$coachPrompts$en {
+	_Translations$ai$coachPrompts$ar._(TranslationsAr root) : this._root = root, super.internal(root);
 
 	final TranslationsAr _root; // ignore: unused_field
 
 	// Translations
-	@override String get morningBoost => '🔥 امنحني دفعة للبدء!';
-	@override String get avoidDistractions => '🧠 كيف أتجنّب المشتّتات؟';
-	@override String get lowEnergy => '⚡ طاقتي تتراجع. ماذا أفعل؟';
-	@override String get stayFocused => '💪 امنحني نصيحة واحدة للبقاء مركّزاً';
-	@override String get prepareTomorrow => '🛌 كيف أستعد ليوم غدٍ منتج؟';
-	@override String get disciplineReflection => '📝 تأمّل في انضباط اليوم';
-	@override String get analyzeActiveGoals => '🎯 حلّل أهدافي النشطة';
-	@override String get planMacroGoals => '🗺️ كيف أخطّط لأهدافي الكبرى؟';
-	@override String get goalObstacles => '🛑 ما العقبات التي تعيق أهدافي؟';
-	@override String get reachMilestones => '📈 امنحني نصيحة واحدة لبلوغ مراحل إنجازي';
-	@override String get consistencyStatus => '📈 كيف هو مستوى مواظبتي؟';
-	@override String get weeklyStats => '📊 إحصاءاتي الأسبوعية';
-	@override String get planDay => '🌅 خطّط ليومي';
-	@override String get raiseBar => '🚀 كيف أرفع مستوى طموحي؟';
-	@override String get recoverProcrastination => '🤕 كيف أتعافى بعد التسويف؟';
-	@override String get connectHabitsGoals => '🔗 كيف أربط العادات بالأهداف؟';
-	@override String get reviewGoalsHabits => '📊 راجع أهدافي وعاداتي';
-	@override String get disciplineAdvice => '🔥 نصيحة عن الانضباط';
-	@override String get createNewHabit => '💡 كيف أنشئ عادة جديدة؟';
+	@override late final _Translations$ai$coachPrompts$diagnoseWeakestHabit$ar diagnoseWeakestHabit = _Translations$ai$coachPrompts$diagnoseWeakestHabit$ar._(_root);
+	@override late final _Translations$ai$coachPrompts$goalOnTrack$ar goalOnTrack = _Translations$ai$coachPrompts$goalOnTrack$ar._(_root);
+	@override late final _Translations$ai$coachPrompts$weeklyReviewDown$ar weeklyReviewDown = _Translations$ai$coachPrompts$weeklyReviewDown$ar._(_root);
+	@override late final _Translations$ai$coachPrompts$weeklyReviewUp$ar weeklyReviewUp = _Translations$ai$coachPrompts$weeklyReviewUp$ar._(_root);
+	@override late final _Translations$ai$coachPrompts$protectStreak$ar protectStreak = _Translations$ai$coachPrompts$protectStreak$ar._(_root);
+	@override late final _Translations$ai$coachPrompts$alignHabitsToGoal$ar alignHabitsToGoal = _Translations$ai$coachPrompts$alignHabitsToGoal$ar._(_root);
+	@override late final _Translations$ai$coachPrompts$designHabitForGoal$ar designHabitForGoal = _Translations$ai$coachPrompts$designHabitForGoal$ar._(_root);
+	@override late final _Translations$ai$coachPrompts$raiseTheBar$ar raiseTheBar = _Translations$ai$coachPrompts$raiseTheBar$ar._(_root);
+	@override late final _Translations$ai$coachPrompts$firstStep$ar firstStep = _Translations$ai$coachPrompts$firstStep$ar._(_root);
+	@override late final _Translations$ai$coachPrompts$whatCanYouHelp$ar whatCanYouHelp = _Translations$ai$coachPrompts$whatCanYouHelp$ar._(_root);
 }
 
 // Path: ai.local
@@ -1644,6 +1639,8 @@ class _Translations$ai$local$ar extends Translations$ai$local$en {
 	@override String get streamError => '❌ فشل الاتصال بالنموذج المحلي.';
 	@override String get timeout => '❌ النموذج المحلي يستغرق وقتًا طويلًا — قد يكون ما زال قيد التحميل. حاول مرة أخرى.';
 	@override String get modelNotFound => '❌ هذا النموذج غير متوفر على الخادم. افتح مُحدِّد النماذج لاختيار نموذج أو تحميله.';
+	@override String authRequired({required Object app}) => '❌ يرفض ${app} الاتصال — فهو يتطلب رمز API. عطّل المصادقة في إعدادات خادمه، أو وجّه Evolve إلى خادم لا يتطلب ذلك.';
+	@override String get stillLoading => 'ما زال تحميل النموذج جاريًا — قد يستغرق التشغيل البارد بعض الوقت.';
 }
 
 // Path: ai.standard
@@ -1707,6 +1704,116 @@ class _Translations$settingsPage$languageOptions$ar extends Translations$setting
 	@override String get spanish => 'الإسبانية';
 	@override String get german => 'الألمانية';
 	@override String get arabic => 'العربية';
+}
+
+// Path: ai.coachPrompts.diagnoseWeakestHabit
+class _Translations$ai$coachPrompts$diagnoseWeakestHabit$ar extends Translations$ai$coachPrompts$diagnoseWeakestHabit$en {
+	_Translations$ai$coachPrompts$diagnoseWeakestHabit$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '🩺 عالج أضعف عاداتي';
+	@override String payload({required Object habit, required Object done, required Object scheduled}) => '\'${habit}\' هي أضعف عاداتي هذا الأسبوع — ${done}/${scheduled} أيام مُنجزة. ما السبب الأرجح لتفويتي لها، وما حلّان محدّدان يمكنني تطبيقهما هذا الأسبوع؟';
+}
+
+// Path: ai.coachPrompts.goalOnTrack
+class _Translations$ai$coachPrompts$goalOnTrack$ar extends Translations$ai$coachPrompts$goalOnTrack$en {
+	_Translations$ai$coachPrompts$goalOnTrack$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '🎯 هل أنا على المسار الصحيح؟';
+	@override String payload({required Object goal}) => 'كن صادقًا بشأن هدفي \'${goal}\': هل أنا على المسار الصحيح لتحقيقه، وما التغيير الوحيد الذي سيحسّن فرصي أكثر من غيره؟';
+}
+
+// Path: ai.coachPrompts.weeklyReviewDown
+class _Translations$ai$coachPrompts$weeklyReviewDown$ar extends Translations$ai$coachPrompts$weeklyReviewDown$en {
+	_Translations$ai$coachPrompts$weeklyReviewDown$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '📉 حلّل أسبوعي';
+	@override String payload({required Object thisPct, required Object lastPct}) => 'انخفض اتساق عاداتي إلى ${thisPct}% هذا الأسبوع من ${lastPct}% الأسبوع الماضي. ما السبب الأرجح، وما التغيير الوحيد الذي ينبغي أن أجريه الأسبوع القادم؟';
+}
+
+// Path: ai.coachPrompts.weeklyReviewUp
+class _Translations$ai$coachPrompts$weeklyReviewUp$ar extends Translations$ai$coachPrompts$weeklyReviewUp$en {
+	_Translations$ai$coachPrompts$weeklyReviewUp$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '📊 حلّل أسبوعي';
+	@override String payload({required Object thisPct, required Object lastPct}) => 'اتساق عاداتي ${thisPct}% هذا الأسبوع مقابل ${lastPct}% الأسبوع الماضي. ما الذي ينجح، وما الشيء الوحيد الذي ينبغي أن أدفعه أكثر الأسبوع القادم؟';
+}
+
+// Path: ai.coachPrompts.protectStreak
+class _Translations$ai$coachPrompts$protectStreak$ar extends Translations$ai$coachPrompts$protectStreak$en {
+	_Translations$ai$coachPrompts$protectStreak$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '🛡️ احمِ سلسلتي';
+	@override String payload({required Object habit, required Object days}) => 'أطول سلسلة نشطة لديّ هي \'${habit}\' عند ${days} يومًا. ما أكبر خطر يهدّد استمرارها، وكيف أحميها هذا الأسبوع؟';
+}
+
+// Path: ai.coachPrompts.alignHabitsToGoal
+class _Translations$ai$coachPrompts$alignHabitsToGoal$ar extends Translations$ai$coachPrompts$alignHabitsToGoal$en {
+	_Translations$ai$coachPrompts$alignHabitsToGoal$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '🔗 أي العادات تخدم أهدافي؟';
+	@override String payload({required Object goal}) => 'بالنظر إلى عاداتي مقابل هدفي \'${goal}\'، أيّها يدفعه فعلًا إلى الأمام وأيّها مجرد تشتيت؟ كن محدّدًا واذكر عادة قد تنقصني.';
+}
+
+// Path: ai.coachPrompts.designHabitForGoal
+class _Translations$ai$coachPrompts$designHabitForGoal$ar extends Translations$ai$coachPrompts$designHabitForGoal$en {
+	_Translations$ai$coachPrompts$designHabitForGoal$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '💡 حوّل هدفًا إلى عادة';
+	@override String payload({required Object goal}) => 'أريد تحقيق هدفي \'${goal}\'. ما العادة اليومية الواحدة التي ستُحدث أكبر فرق؟ أعطني عادة محدّدة يمكنني البدء بها غدًا.';
+}
+
+// Path: ai.coachPrompts.raiseTheBar
+class _Translations$ai$coachPrompts$raiseTheBar$ar extends Translations$ai$coachPrompts$raiseTheBar$en {
+	_Translations$ai$coachPrompts$raiseTheBar$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '🚀 ارفع المستوى';
+	@override String get payload => 'أنا ملتزم بكل عاداتي وأهدافي على المسار الصحيح. أين قد أتراخى، وما وسيلة لرفع المستوى دون أن أُنهك؟';
+}
+
+// Path: ai.coachPrompts.firstStep
+class _Translations$ai$coachPrompts$firstStep$ar extends Translations$ai$coachPrompts$firstStep$en {
+	_Translations$ai$coachPrompts$firstStep$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '🌱 من أين أبدأ؟';
+	@override String get payload => 'أنا في البداية ولم أُعدّ بعد أهدافًا أو عادات. اقترح عليّ هدفًا أول واقعيًا وعادة يومية صغيرة للوصول إليه، واشرح لماذا يعمل هذا الاقتران.';
+}
+
+// Path: ai.coachPrompts.whatCanYouHelp
+class _Translations$ai$coachPrompts$whatCanYouHelp$ar extends Translations$ai$coachPrompts$whatCanYouHelp$en {
+	_Translations$ai$coachPrompts$whatCanYouHelp$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '💬 بماذا يمكنك مساعدتي؟';
+	@override String get payload => 'بناءً على عاداتي وأهدافي في هذا التطبيق، أعطني ثلاثة أمثلة محدّدة على كيفية مساعدتك لي — لا نصائح عامة، بل أمور مرتبطة ببياناتي الفعلية.';
 }
 
 /// The flat map containing all translations for locale <ar>.
@@ -2350,31 +2457,34 @@ extension on TranslationsAr {
 			'ai.apiKey.setupTitle' => 'اربط حساب OpenRouter الخاص بك',
 			'ai.apiKey.setupBody' => 'يعمل هذا المحرّك عبر حساب OpenRouter الخاص بك. اربطه لبدء المحادثة — أو انتقل إلى Evolve AI المُضمَّن في Pro.',
 			'ai.apiKey.setupAction' => 'ربط الحساب',
-			'ai.suggestions.morningBoost' => '🔥 امنحني دفعة للبدء!',
-			'ai.suggestions.avoidDistractions' => '🧠 كيف أتجنّب المشتّتات؟',
-			'ai.suggestions.lowEnergy' => '⚡ طاقتي تتراجع. ماذا أفعل؟',
-			'ai.suggestions.stayFocused' => '💪 امنحني نصيحة واحدة للبقاء مركّزاً',
-			'ai.suggestions.prepareTomorrow' => '🛌 كيف أستعد ليوم غدٍ منتج؟',
-			'ai.suggestions.disciplineReflection' => '📝 تأمّل في انضباط اليوم',
-			'ai.suggestions.analyzeActiveGoals' => '🎯 حلّل أهدافي النشطة',
-			'ai.suggestions.planMacroGoals' => '🗺️ كيف أخطّط لأهدافي الكبرى؟',
-			'ai.suggestions.goalObstacles' => '🛑 ما العقبات التي تعيق أهدافي؟',
-			'ai.suggestions.reachMilestones' => '📈 امنحني نصيحة واحدة لبلوغ مراحل إنجازي',
-			'ai.suggestions.consistencyStatus' => '📈 كيف هو مستوى مواظبتي؟',
-			'ai.suggestions.weeklyStats' => '📊 إحصاءاتي الأسبوعية',
-			'ai.suggestions.planDay' => '🌅 خطّط ليومي',
-			'ai.suggestions.raiseBar' => '🚀 كيف أرفع مستوى طموحي؟',
-			'ai.suggestions.recoverProcrastination' => '🤕 كيف أتعافى بعد التسويف؟',
-			'ai.suggestions.connectHabitsGoals' => '🔗 كيف أربط العادات بالأهداف؟',
-			'ai.suggestions.reviewGoalsHabits' => '📊 راجع أهدافي وعاداتي',
-			'ai.suggestions.disciplineAdvice' => '🔥 نصيحة عن الانضباط',
-			'ai.suggestions.createNewHabit' => '💡 كيف أنشئ عادة جديدة؟',
+			'ai.coachPrompts.diagnoseWeakestHabit.label' => '🩺 عالج أضعف عاداتي',
+			'ai.coachPrompts.diagnoseWeakestHabit.payload' => ({required Object habit, required Object done, required Object scheduled}) => '\'${habit}\' هي أضعف عاداتي هذا الأسبوع — ${done}/${scheduled} أيام مُنجزة. ما السبب الأرجح لتفويتي لها، وما حلّان محدّدان يمكنني تطبيقهما هذا الأسبوع؟',
+			'ai.coachPrompts.goalOnTrack.label' => '🎯 هل أنا على المسار الصحيح؟',
+			'ai.coachPrompts.goalOnTrack.payload' => ({required Object goal}) => 'كن صادقًا بشأن هدفي \'${goal}\': هل أنا على المسار الصحيح لتحقيقه، وما التغيير الوحيد الذي سيحسّن فرصي أكثر من غيره؟',
+			'ai.coachPrompts.weeklyReviewDown.label' => '📉 حلّل أسبوعي',
+			'ai.coachPrompts.weeklyReviewDown.payload' => ({required Object thisPct, required Object lastPct}) => 'انخفض اتساق عاداتي إلى ${thisPct}% هذا الأسبوع من ${lastPct}% الأسبوع الماضي. ما السبب الأرجح، وما التغيير الوحيد الذي ينبغي أن أجريه الأسبوع القادم؟',
+			'ai.coachPrompts.weeklyReviewUp.label' => '📊 حلّل أسبوعي',
+			'ai.coachPrompts.weeklyReviewUp.payload' => ({required Object thisPct, required Object lastPct}) => 'اتساق عاداتي ${thisPct}% هذا الأسبوع مقابل ${lastPct}% الأسبوع الماضي. ما الذي ينجح، وما الشيء الوحيد الذي ينبغي أن أدفعه أكثر الأسبوع القادم؟',
+			'ai.coachPrompts.protectStreak.label' => '🛡️ احمِ سلسلتي',
+			'ai.coachPrompts.protectStreak.payload' => ({required Object habit, required Object days}) => 'أطول سلسلة نشطة لديّ هي \'${habit}\' عند ${days} يومًا. ما أكبر خطر يهدّد استمرارها، وكيف أحميها هذا الأسبوع؟',
+			'ai.coachPrompts.alignHabitsToGoal.label' => '🔗 أي العادات تخدم أهدافي؟',
+			'ai.coachPrompts.alignHabitsToGoal.payload' => ({required Object goal}) => 'بالنظر إلى عاداتي مقابل هدفي \'${goal}\'، أيّها يدفعه فعلًا إلى الأمام وأيّها مجرد تشتيت؟ كن محدّدًا واذكر عادة قد تنقصني.',
+			'ai.coachPrompts.designHabitForGoal.label' => '💡 حوّل هدفًا إلى عادة',
+			'ai.coachPrompts.designHabitForGoal.payload' => ({required Object goal}) => 'أريد تحقيق هدفي \'${goal}\'. ما العادة اليومية الواحدة التي ستُحدث أكبر فرق؟ أعطني عادة محدّدة يمكنني البدء بها غدًا.',
+			'ai.coachPrompts.raiseTheBar.label' => '🚀 ارفع المستوى',
+			'ai.coachPrompts.raiseTheBar.payload' => 'أنا ملتزم بكل عاداتي وأهدافي على المسار الصحيح. أين قد أتراخى، وما وسيلة لرفع المستوى دون أن أُنهك؟',
+			'ai.coachPrompts.firstStep.label' => '🌱 من أين أبدأ؟',
+			'ai.coachPrompts.firstStep.payload' => 'أنا في البداية ولم أُعدّ بعد أهدافًا أو عادات. اقترح عليّ هدفًا أول واقعيًا وعادة يومية صغيرة للوصول إليه، واشرح لماذا يعمل هذا الاقتران.',
+			'ai.coachPrompts.whatCanYouHelp.label' => '💬 بماذا يمكنك مساعدتي؟',
+			'ai.coachPrompts.whatCanYouHelp.payload' => 'بناءً على عاداتي وأهدافي في هذا التطبيق، أعطني ثلاثة أمثلة محدّدة على كيفية مساعدتك لي — لا نصائح عامة، بل أمور مرتبطة ببياناتي الفعلية.',
 			'ai.local.notReachable' => ({required Object url}) => '❌ تعذّر الوصول إلى خادم الذكاء الاصطناعي المحلي على ${url}. تأكّد من تشغيل Ollama أو LM Studio.',
 			'ai.local.modelMissing' => '⚠️ اختر نموذجًا محليًا أولًا — افتح مُحدِّد النماذج في الأعلى.',
 			'ai.local.requestFailed' => ({required Object code}) => '❌ خطأ في النموذج المحلي (الرمز: ${code}).',
 			'ai.local.streamError' => '❌ فشل الاتصال بالنموذج المحلي.',
 			'ai.local.timeout' => '❌ النموذج المحلي يستغرق وقتًا طويلًا — قد يكون ما زال قيد التحميل. حاول مرة أخرى.',
 			'ai.local.modelNotFound' => '❌ هذا النموذج غير متوفر على الخادم. افتح مُحدِّد النماذج لاختيار نموذج أو تحميله.',
+			'ai.local.authRequired' => ({required Object app}) => '❌ يرفض ${app} الاتصال — فهو يتطلب رمز API. عطّل المصادقة في إعدادات خادمه، أو وجّه Evolve إلى خادم لا يتطلب ذلك.',
+			'ai.local.stillLoading' => 'ما زال تحميل النموذج جاريًا — قد يستغرق التشغيل البارد بعض الوقت.',
 			'ai.standard.sessionExpired' => '⚠️ انتهت صلاحية جلستك. سجّل الدخول مجددًا لمتابعة استخدام Evolve AI.',
 			'ai.standard.needsPro' => '⚠️ Evolve AI جزء من Evolve Pro. اشترك من الإعدادات — أو بدّل المحرّك إلى حساب OpenRouter الخاص بك، وهو مجاني.',
 			'ai.standard.rateLimited' => '⚠️ لقد بلغت حد الاستخدام العادل لـ Evolve AI في الوقت الحالي. حاول لاحقًا أو بدّل المحرّك إلى حساب OpenRouter الخاص بك.',
@@ -2740,16 +2850,14 @@ extension on TranslationsAr {
 			'coachSettings.backendLocal' => 'محلي · خاص',
 			'coachSettings.cloudDesc' => 'اربط حساب OpenRouter الخاص بك وادفع للمزوّد مباشرةً. مجاني — لا يتطلب اشتراكًا. يُرسَل السياق الذي تشاركه إلى المزوّد.',
 			'coachSettings.localDesc' => 'نموذجك الخاص عبر Ollama أو LM Studio أو أي خادم متوافق مع OpenAI. لا شيء يغادر هذا الجهاز.',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.presetLabel' => 'الخادم',
 			'coachSettings.presetOllama' => 'Ollama',
 			'coachSettings.presetLmStudio' => 'LM Studio',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.presetCustom' => 'مخصّص…',
 			'coachSettings.baseUrlLabel' => 'عنوان URL الأساسي',
-			'coachSettings.baseUrlHint' => 'http://localhost:11434/v1',
 			'coachSettings.modelLabel' => 'النموذج',
-			'coachSettings.modelHint' => 'مثال: llama3.1:8b',
 			'coachSettings.refreshModels' => 'تحديث النماذج',
 			'coachSettings.discovering' => 'جارٍ البحث عن النماذج…',
 			'coachSettings.noModelsFound' => 'لم يُعثَر على نماذج — اكتب معرّف نموذج يدويًا أدناه.',
@@ -2766,8 +2874,8 @@ extension on TranslationsAr {
 			'coachSettings.systemPromptReset' => 'إعادة تعيين',
 			'coachSettings.temperatureLabel' => 'درجة الحرارة',
 			'coachSettings.save' => 'تم',
-			'coachSettings.detectedTitle' => 'تم اكتشاف نموذج محلي',
-			'coachSettings.detectedBody' => 'يعمل خادم ذكاء اصطناعي محلي على هذا الـ Mac. هل تريد تشغيل المدرّب بخصوصية كاملة؟',
+			'coachSettings.detectedTitle' => ({required Object app}) => 'تم اكتشاف ${app}',
+			'coachSettings.detectedBody' => ({required Object app}) => 'يعمل ${app} على هذا الـ Mac. هل تريد تشغيل المدرّب بخصوصية 100%؟',
 			'coachSettings.detectedAction' => 'استخدام المحلي',
 			'coachSettings.detectedDismiss' => 'ليس الآن',
 			'coachSettings.activeCloud' => ({required Object model}) => 'السحابة · ${model}',
@@ -2785,17 +2893,23 @@ extension on TranslationsAr {
 			'coachSettings.temperatureRaise' => 'رفع درجة الحرارة',
 			'coachSettings.sendMessage' => 'إرسال',
 			'coachSettings.stopResponse' => 'إيقاف',
-			'coachSettings.startOllama' => 'تشغيل Ollama',
-			'coachSettings.getOllama' => 'الحصول على Ollama',
-			'coachSettings.startingOllama' => 'جارٍ تشغيل Ollama…',
-			'coachSettings.ollamaOfflineTitle' => 'Ollama غير مُشغّل',
-			'coachSettings.ollamaOfflineBody' => 'شغّل خادمك المحلي للدردشة بخصوصية — دون الحاجة إلى الطرفية.',
-			'coachSettings.ollamaNotInstalledTitle' => 'Ollama غير مُثبَّت',
-			'coachSettings.ollamaNotInstalledBody' => 'ثبّت تطبيق Ollama المجاني ثم اضغط تشغيل.',
+			'coachSettings.startLocalServer' => ({required Object app}) => 'تشغيل ${app}',
+			'coachSettings.getLocalServer' => ({required Object app}) => 'الحصول على ${app}',
+			'coachSettings.startingLocalServer' => ({required Object app}) => 'جارٍ تشغيل ${app}…',
+			'coachSettings.localServerOfflineTitle' => ({required Object app}) => '${app} غير مُشغّل',
+			'coachSettings.localServerOfflineBody' => 'شغّل خادمك المحلي للدردشة بخصوصية — دون الحاجة إلى الطرفية.',
+			'coachSettings.localServerNotInstalledTitle' => ({required Object app}) => '${app} غير مُثبَّت',
+			'coachSettings.localServerNotInstalledBody' => ({required Object app}) => 'ثبّت تطبيق ${app} المجاني ثم اضغط تشغيل.',
+			'coachSettings.localServerStartingBody' => 'قد يستغرق ذلك بضع ثوانٍ…',
+			'coachSettings.localServerStartFailed' => ({required Object app}) => 'تعذّر تشغيل ${app} — جرّب فتحه من مجلد التطبيقات.',
+			'coachSettings.localServerDownloadFailed' => ({required Object url}) => 'تعذّر فتح المتصفح — تفضّل بزيارة ${url}',
 			'coachSettings.ollamaStartTimeout' => 'يستغرق وقتًا أطول من المتوقع — تحقّق من أيقونة Ollama في شريط القوائم (قد يتطلب التشغيل الأول موافقة).',
-			'coachSettings.ollamaStartingBody' => 'قد يستغرق ذلك بضع ثوانٍ…',
-			'coachSettings.ollamaStartFailed' => 'تعذّر تشغيل Ollama — جرّب فتحه من مجلد التطبيقات.',
-			'coachSettings.ollamaDownloadFailed' => 'تعذّر فتح المتصفح — تفضّل بزيارة ollama.com/download',
+			'coachSettings.ollamaServerOffTitle' => 'Ollama يعمل لكنه لا يقدّم الخدمة',
+			'coachSettings.ollamaServerOffBody' => 'Ollama مفتوح لكنه لا يستجيب على منفذه. أغلقه من شريط القوائم ثم اضغط تشغيل مرة أخرى.',
+			'coachSettings.lmStudioStartTimeout' => 'يستغرق وقتًا أطول من المتوقع — افتح LM Studio وتأكّد من اكتمال تشغيله.',
+			'coachSettings.lmStudioServerOffTitle' => 'خادم LM Studio غير مُشغّل',
+			'coachSettings.lmStudioServerOffBody' => 'LM Studio مفتوح، لكن خادمه المحلي مُطفأ. شغّله من Developer → Start Server، أو فعّل الخيار Settings → Run the LLM server on login.',
+			'coachSettings.lmStudioNoModelsJit' => 'لا يعرض LM Studio أي نماذج. فهو لا يعرض سوى النماذج المحمَّلة عندما يكون تحميل Just-In-Time مُعطَّلًا — حمّل نموذجًا في LM Studio، أو فعّل Developer → Server Settings → Just In Time Model Loading.',
 			'coachSettings.backendStandard' => 'Evolve AI',
 			'coachSettings.standardDesc' => 'مُضمَّن في Evolve Pro. نشغّل لك نموذجًا مجانيًا من Google (Gemma) — بلا مفاتيح وبلا إعداد. تذهب رسائلك إلى الطبقة المجانية من Google، التي قد تستخدمها لتحسين خدماتها.',
 			'coachSettings.activeStandard' => ({required Object model}) => 'Evolve AI · ${model}',

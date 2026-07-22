@@ -867,7 +867,7 @@ class _Translations$ai$es extends Translations$ai$en {
 	@override String get macroGoals => 'Macroobjetivos';
 	@override late final _Translations$ai$openRouter$es openRouter = _Translations$ai$openRouter$es._(_root);
 	@override late final _Translations$ai$apiKey$es apiKey = _Translations$ai$apiKey$es._(_root);
-	@override late final _Translations$ai$suggestions$es suggestions = _Translations$ai$suggestions$es._(_root);
+	@override late final _Translations$ai$coachPrompts$es coachPrompts = _Translations$ai$coachPrompts$es._(_root);
 	@override late final _Translations$ai$local$es local = _Translations$ai$local$es._(_root);
 	@override late final _Translations$ai$standard$es standard = _Translations$ai$standard$es._(_root);
 	@override late final _Translations$ai$consent$es consent = _Translations$ai$consent$es._(_root);
@@ -1342,9 +1342,7 @@ class _Translations$coachSettings$es extends Translations$coachSettings$en {
 	@override String get presetLmStudio => 'LM Studio';
 	@override String get presetCustom => 'Personalizado…';
 	@override String get baseUrlLabel => 'URL base';
-	@override String get baseUrlHint => 'http://localhost:11434/v1';
 	@override String get modelLabel => 'Modelo';
-	@override String get modelHint => 'p. ej. llama3.1:8b';
 	@override String get refreshModels => 'Actualizar modelos';
 	@override String get discovering => 'Buscando modelos…';
 	@override String get noModelsFound => 'No se encontraron modelos — escribe un id de modelo manualmente abajo.';
@@ -1361,8 +1359,8 @@ class _Translations$coachSettings$es extends Translations$coachSettings$en {
 	@override String get systemPromptReset => 'Restablecer';
 	@override String get temperatureLabel => 'Temperatura';
 	@override String get save => 'Listo';
-	@override String get detectedTitle => 'Modelo local detectado';
-	@override String get detectedBody => 'Hay un servidor de IA local ejecutándose en este Mac. ¿Ejecutar el coach de forma 100 % privada?';
+	@override String detectedTitle({required Object app}) => '${app} detectado';
+	@override String detectedBody({required Object app}) => '${app} se está ejecutando en este Mac. ¿Ejecutar el coach de forma 100 % privada?';
 	@override String get detectedAction => 'Usar local';
 	@override String get detectedDismiss => 'Ahora no';
 	@override String activeCloud({required Object model}) => 'Nube · ${model}';
@@ -1380,17 +1378,23 @@ class _Translations$coachSettings$es extends Translations$coachSettings$en {
 	@override String get temperatureRaise => 'Subir la temperatura';
 	@override String get sendMessage => 'Enviar';
 	@override String get stopResponse => 'Detener';
-	@override String get startOllama => 'Iniciar Ollama';
-	@override String get getOllama => 'Obtener Ollama';
-	@override String get startingOllama => 'Iniciando Ollama…';
-	@override String get ollamaOfflineTitle => 'Ollama no está en ejecución';
-	@override String get ollamaOfflineBody => 'Inicia tu servidor local para chatear en privado — sin terminal.';
-	@override String get ollamaNotInstalledTitle => 'Ollama no está instalado';
-	@override String get ollamaNotInstalledBody => 'Instala la app gratuita de Ollama y luego pulsa Iniciar.';
+	@override String startLocalServer({required Object app}) => 'Iniciar ${app}';
+	@override String getLocalServer({required Object app}) => 'Obtener ${app}';
+	@override String startingLocalServer({required Object app}) => 'Iniciando ${app}…';
+	@override String localServerOfflineTitle({required Object app}) => '${app} no está en ejecución';
+	@override String get localServerOfflineBody => 'Inicia tu servidor local para chatear en privado — sin terminal.';
+	@override String localServerNotInstalledTitle({required Object app}) => '${app} no está instalado';
+	@override String localServerNotInstalledBody({required Object app}) => 'Instala la app gratuita de ${app} y luego pulsa Iniciar.';
+	@override String get localServerStartingBody => 'Esto puede tardar unos segundos…';
+	@override String localServerStartFailed({required Object app}) => 'No se pudo iniciar ${app} — prueba a abrirlo desde la carpeta Aplicaciones.';
+	@override String localServerDownloadFailed({required Object url}) => 'No se pudo abrir el navegador — visita ${url}';
 	@override String get ollamaStartTimeout => 'Está tardando más de lo esperado — revisa el icono de Ollama en la barra de menús (el primer inicio puede requerir aprobación).';
-	@override String get ollamaStartingBody => 'Esto puede tardar unos segundos…';
-	@override String get ollamaStartFailed => 'No se pudo iniciar Ollama — prueba a abrirlo desde la carpeta Aplicaciones.';
-	@override String get ollamaDownloadFailed => 'No se pudo abrir el navegador — visita ollama.com/download';
+	@override String get ollamaServerOffTitle => 'Ollama está en ejecución pero no atiende peticiones';
+	@override String get ollamaServerOffBody => 'Ollama está abierto, pero no responde en su puerto. Ciérralo desde la barra de menús y luego pulsa Iniciar de nuevo.';
+	@override String get lmStudioStartTimeout => 'Está tardando más de lo esperado — abre LM Studio y comprueba que haya terminado de iniciarse.';
+	@override String get lmStudioServerOffTitle => 'El servidor de LM Studio no está en ejecución';
+	@override String get lmStudioServerOffBody => 'LM Studio está abierto, pero su servidor local está apagado. Actívalo con Developer → Start Server, o marca Settings → Run the LLM server on login.';
+	@override String get lmStudioNoModelsJit => 'LM Studio no está mostrando ningún modelo. Solo muestra los modelos cargados cuando la carga Just-In-Time está desactivada — carga un modelo en LM Studio o activa Developer → Server Settings → Just In Time Model Loading.';
 	@override String get backendStandard => 'Evolve AI';
 	@override String get standardDesc => 'Incluido en Evolve Pro. Ejecutamos por ti un modelo gratuito de Google (Gemma): sin claves, sin configuración. Tus mensajes van al plan gratuito de Google, que puede usarlos para mejorar sus servicios.';
 	@override String activeStandard({required Object model}) => 'Evolve AI · ${model}';
@@ -1603,32 +1607,23 @@ class _Translations$ai$apiKey$es extends Translations$ai$apiKey$en {
 	@override String get setupAction => 'Conectar cuenta';
 }
 
-// Path: ai.suggestions
-class _Translations$ai$suggestions$es extends Translations$ai$suggestions$en {
-	_Translations$ai$suggestions$es._(TranslationsEs root) : this._root = root, super.internal(root);
+// Path: ai.coachPrompts
+class _Translations$ai$coachPrompts$es extends Translations$ai$coachPrompts$en {
+	_Translations$ai$coachPrompts$es._(TranslationsEs root) : this._root = root, super.internal(root);
 
 	final TranslationsEs _root; // ignore: unused_field
 
 	// Translations
-	@override String get morningBoost => '🔥 ¡Dame un empujón para empezar!';
-	@override String get avoidDistractions => '🧠 ¿Cómo puedo evitar distracciones?';
-	@override String get lowEnergy => '⚡ Mi energía está bajando. ¿Qué debo hacer?';
-	@override String get stayFocused => '💪 Dame un consejo para mantener el enfoque';
-	@override String get prepareTomorrow => '🛌 ¿Cómo puedo prepararme para un mañana productivo?';
-	@override String get disciplineReflection => '📝 Reflexiona sobre la disciplina de hoy';
-	@override String get analyzeActiveGoals => '🎯 Analiza mis objetivos activos';
-	@override String get planMacroGoals => '🗺️ ¿Cómo debería planificar mis macroobjetivos?';
-	@override String get goalObstacles => '🛑 ¿Qué obstáculos bloquean mis objetivos?';
-	@override String get reachMilestones => '📈 Dame un consejo para alcanzar mis hitos';
-	@override String get consistencyStatus => '📈 ¿Cómo va mi constancia?';
-	@override String get weeklyStats => '📊 Mis estadísticas semanales';
-	@override String get planDay => '🌅 Planifica mi día';
-	@override String get raiseBar => '🚀 ¿Cómo puedo subir el nivel?';
-	@override String get recoverProcrastination => '🤕 ¿Cómo puedo recuperarme después de procrastinar?';
-	@override String get connectHabitsGoals => '🔗 ¿Cómo puedo conectar hábitos y objetivos?';
-	@override String get reviewGoalsHabits => '📊 Revisa mis objetivos y hábitos';
-	@override String get disciplineAdvice => '🔥 Consejo de disciplina';
-	@override String get createNewHabit => '💡 ¿Cómo puedo crear un nuevo hábito?';
+	@override late final _Translations$ai$coachPrompts$diagnoseWeakestHabit$es diagnoseWeakestHabit = _Translations$ai$coachPrompts$diagnoseWeakestHabit$es._(_root);
+	@override late final _Translations$ai$coachPrompts$goalOnTrack$es goalOnTrack = _Translations$ai$coachPrompts$goalOnTrack$es._(_root);
+	@override late final _Translations$ai$coachPrompts$weeklyReviewDown$es weeklyReviewDown = _Translations$ai$coachPrompts$weeklyReviewDown$es._(_root);
+	@override late final _Translations$ai$coachPrompts$weeklyReviewUp$es weeklyReviewUp = _Translations$ai$coachPrompts$weeklyReviewUp$es._(_root);
+	@override late final _Translations$ai$coachPrompts$protectStreak$es protectStreak = _Translations$ai$coachPrompts$protectStreak$es._(_root);
+	@override late final _Translations$ai$coachPrompts$alignHabitsToGoal$es alignHabitsToGoal = _Translations$ai$coachPrompts$alignHabitsToGoal$es._(_root);
+	@override late final _Translations$ai$coachPrompts$designHabitForGoal$es designHabitForGoal = _Translations$ai$coachPrompts$designHabitForGoal$es._(_root);
+	@override late final _Translations$ai$coachPrompts$raiseTheBar$es raiseTheBar = _Translations$ai$coachPrompts$raiseTheBar$es._(_root);
+	@override late final _Translations$ai$coachPrompts$firstStep$es firstStep = _Translations$ai$coachPrompts$firstStep$es._(_root);
+	@override late final _Translations$ai$coachPrompts$whatCanYouHelp$es whatCanYouHelp = _Translations$ai$coachPrompts$whatCanYouHelp$es._(_root);
 }
 
 // Path: ai.local
@@ -1644,6 +1639,8 @@ class _Translations$ai$local$es extends Translations$ai$local$en {
 	@override String get streamError => '❌ Error de conexión con el modelo local.';
 	@override String get timeout => '❌ El modelo local está tardando demasiado — puede que aún se esté cargando. Inténtalo de nuevo.';
 	@override String get modelNotFound => '❌ Ese modelo no está disponible en el servidor. Abre el selector para elegir o cargar uno.';
+	@override String authRequired({required Object app}) => '❌ ${app} está rechazando la conexión — requiere un token de API. Desactiva la autenticación en los ajustes de su servidor o apunta Evolve a un servidor que no lo requiera.';
+	@override String get stillLoading => 'El modelo aún se está cargando — un arranque en frío puede tardar un poco.';
 }
 
 // Path: ai.standard
@@ -1707,6 +1704,116 @@ class _Translations$settingsPage$languageOptions$es extends Translations$setting
 	@override String get spanish => 'Español';
 	@override String get german => 'Alemán';
 	@override String get arabic => 'Árabe';
+}
+
+// Path: ai.coachPrompts.diagnoseWeakestHabit
+class _Translations$ai$coachPrompts$diagnoseWeakestHabit$es extends Translations$ai$coachPrompts$diagnoseWeakestHabit$en {
+	_Translations$ai$coachPrompts$diagnoseWeakestHabit$es._(TranslationsEs root) : this._root = root, super.internal(root);
+
+	final TranslationsEs _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '🩺 Arregla mi hábito más débil';
+	@override String payload({required Object habit, required Object done, required Object scheduled}) => '\'${habit}\' es mi hábito más débil esta semana — ${done}/${scheduled} días cumplidos. ¿Cuál es la razón más probable por la que me lo salto y dos soluciones concretas que pueda aplicar esta semana?';
+}
+
+// Path: ai.coachPrompts.goalOnTrack
+class _Translations$ai$coachPrompts$goalOnTrack$es extends Translations$ai$coachPrompts$goalOnTrack$en {
+	_Translations$ai$coachPrompts$goalOnTrack$es._(TranslationsEs root) : this._root = root, super.internal(root);
+
+	final TranslationsEs _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '🎯 ¿Voy por buen camino?';
+	@override String payload({required Object goal}) => 'Sé sincero sobre mi objetivo \'${goal}\': ¿voy por buen camino para lograrlo y cuál es el único cambio que más mejoraría mis probabilidades?';
+}
+
+// Path: ai.coachPrompts.weeklyReviewDown
+class _Translations$ai$coachPrompts$weeklyReviewDown$es extends Translations$ai$coachPrompts$weeklyReviewDown$en {
+	_Translations$ai$coachPrompts$weeklyReviewDown$es._(TranslationsEs root) : this._root = root, super.internal(root);
+
+	final TranslationsEs _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '📉 Analiza mi semana';
+	@override String payload({required Object thisPct, required Object lastPct}) => 'Mi constancia bajó al ${thisPct}% esta semana desde el ${lastPct}% de la anterior. ¿Cuál es la causa más probable y el único cambio que debería hacer la próxima semana?';
+}
+
+// Path: ai.coachPrompts.weeklyReviewUp
+class _Translations$ai$coachPrompts$weeklyReviewUp$es extends Translations$ai$coachPrompts$weeklyReviewUp$en {
+	_Translations$ai$coachPrompts$weeklyReviewUp$es._(TranslationsEs root) : this._root = root, super.internal(root);
+
+	final TranslationsEs _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '📊 Analiza mi semana';
+	@override String payload({required Object thisPct, required Object lastPct}) => 'Mi constancia está en el ${thisPct}% esta semana frente al ${lastPct}% de la anterior. ¿Qué está funcionando y qué es lo único que debería impulsar más la próxima semana?';
+}
+
+// Path: ai.coachPrompts.protectStreak
+class _Translations$ai$coachPrompts$protectStreak$es extends Translations$ai$coachPrompts$protectStreak$en {
+	_Translations$ai$coachPrompts$protectStreak$es._(TranslationsEs root) : this._root = root, super.internal(root);
+
+	final TranslationsEs _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '🛡️ Protege mi racha';
+	@override String payload({required Object habit, required Object days}) => 'Mi racha activa más larga es \'${habit}\' con ${days} días. ¿Cuál es el mayor riesgo de romperla y cómo la protejo esta semana?';
+}
+
+// Path: ai.coachPrompts.alignHabitsToGoal
+class _Translations$ai$coachPrompts$alignHabitsToGoal$es extends Translations$ai$coachPrompts$alignHabitsToGoal$en {
+	_Translations$ai$coachPrompts$alignHabitsToGoal$es._(TranslationsEs root) : this._root = root, super.internal(root);
+
+	final TranslationsEs _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '🔗 ¿Qué hábitos sirven a mis objetivos?';
+	@override String payload({required Object goal}) => 'Mirando mis hábitos frente a mi objetivo \'${goal}\', ¿cuáles lo hacen avanzar de verdad y cuáles son solo ruido? Sé específico e indica un hábito que quizá me falte.';
+}
+
+// Path: ai.coachPrompts.designHabitForGoal
+class _Translations$ai$coachPrompts$designHabitForGoal$es extends Translations$ai$coachPrompts$designHabitForGoal$en {
+	_Translations$ai$coachPrompts$designHabitForGoal$es._(TranslationsEs root) : this._root = root, super.internal(root);
+
+	final TranslationsEs _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '💡 Convierte un objetivo en hábito';
+	@override String payload({required Object goal}) => 'Quiero alcanzar mi objetivo \'${goal}\'. ¿Qué único hábito diario marcaría la mayor diferencia? Dame un hábito concreto que pueda empezar mañana.';
+}
+
+// Path: ai.coachPrompts.raiseTheBar
+class _Translations$ai$coachPrompts$raiseTheBar$es extends Translations$ai$coachPrompts$raiseTheBar$en {
+	_Translations$ai$coachPrompts$raiseTheBar$es._(TranslationsEs root) : this._root = root, super.internal(root);
+
+	final TranslationsEs _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '🚀 Sube el listón';
+	@override String get payload => 'Estoy cumpliendo todos mis hábitos y mis objetivos van por buen camino. ¿Dónde podría estar acomodándome y cuál es una forma de subir el listón sin quemarme?';
+}
+
+// Path: ai.coachPrompts.firstStep
+class _Translations$ai$coachPrompts$firstStep$es extends Translations$ai$coachPrompts$firstStep$en {
+	_Translations$ai$coachPrompts$firstStep$es._(TranslationsEs root) : this._root = root, super.internal(root);
+
+	final TranslationsEs _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '🌱 ¿Por dónde empiezo?';
+	@override String get payload => 'Estoy empezando y aún no he configurado objetivos ni hábitos. Sugiéreme un primer objetivo realista y un pequeño hábito diario para lograrlo, y explica por qué esa combinación funciona.';
+}
+
+// Path: ai.coachPrompts.whatCanYouHelp
+class _Translations$ai$coachPrompts$whatCanYouHelp$es extends Translations$ai$coachPrompts$whatCanYouHelp$en {
+	_Translations$ai$coachPrompts$whatCanYouHelp$es._(TranslationsEs root) : this._root = root, super.internal(root);
+
+	final TranslationsEs _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => '💬 ¿En qué puedes ayudarme?';
+	@override String get payload => 'Según mis hábitos y objetivos en esta app, dame tres ejemplos concretos de cómo puedes ayudarme — no consejos genéricos, sino cosas ligadas a mis datos reales.';
 }
 
 /// The flat map containing all translations for locale <es>.
@@ -2350,31 +2457,34 @@ extension on TranslationsEs {
 			'ai.apiKey.setupTitle' => 'Conecta tu cuenta de OpenRouter',
 			'ai.apiKey.setupBody' => 'Este motor funciona con tu propia cuenta de OpenRouter. Conéctala para empezar a chatear o cambia a Evolve AI, incluido en Pro.',
 			'ai.apiKey.setupAction' => 'Conectar cuenta',
-			'ai.suggestions.morningBoost' => '🔥 ¡Dame un empujón para empezar!',
-			'ai.suggestions.avoidDistractions' => '🧠 ¿Cómo puedo evitar distracciones?',
-			'ai.suggestions.lowEnergy' => '⚡ Mi energía está bajando. ¿Qué debo hacer?',
-			'ai.suggestions.stayFocused' => '💪 Dame un consejo para mantener el enfoque',
-			'ai.suggestions.prepareTomorrow' => '🛌 ¿Cómo puedo prepararme para un mañana productivo?',
-			'ai.suggestions.disciplineReflection' => '📝 Reflexiona sobre la disciplina de hoy',
-			'ai.suggestions.analyzeActiveGoals' => '🎯 Analiza mis objetivos activos',
-			'ai.suggestions.planMacroGoals' => '🗺️ ¿Cómo debería planificar mis macroobjetivos?',
-			'ai.suggestions.goalObstacles' => '🛑 ¿Qué obstáculos bloquean mis objetivos?',
-			'ai.suggestions.reachMilestones' => '📈 Dame un consejo para alcanzar mis hitos',
-			'ai.suggestions.consistencyStatus' => '📈 ¿Cómo va mi constancia?',
-			'ai.suggestions.weeklyStats' => '📊 Mis estadísticas semanales',
-			'ai.suggestions.planDay' => '🌅 Planifica mi día',
-			'ai.suggestions.raiseBar' => '🚀 ¿Cómo puedo subir el nivel?',
-			'ai.suggestions.recoverProcrastination' => '🤕 ¿Cómo puedo recuperarme después de procrastinar?',
-			'ai.suggestions.connectHabitsGoals' => '🔗 ¿Cómo puedo conectar hábitos y objetivos?',
-			'ai.suggestions.reviewGoalsHabits' => '📊 Revisa mis objetivos y hábitos',
-			'ai.suggestions.disciplineAdvice' => '🔥 Consejo de disciplina',
-			'ai.suggestions.createNewHabit' => '💡 ¿Cómo puedo crear un nuevo hábito?',
+			'ai.coachPrompts.diagnoseWeakestHabit.label' => '🩺 Arregla mi hábito más débil',
+			'ai.coachPrompts.diagnoseWeakestHabit.payload' => ({required Object habit, required Object done, required Object scheduled}) => '\'${habit}\' es mi hábito más débil esta semana — ${done}/${scheduled} días cumplidos. ¿Cuál es la razón más probable por la que me lo salto y dos soluciones concretas que pueda aplicar esta semana?',
+			'ai.coachPrompts.goalOnTrack.label' => '🎯 ¿Voy por buen camino?',
+			'ai.coachPrompts.goalOnTrack.payload' => ({required Object goal}) => 'Sé sincero sobre mi objetivo \'${goal}\': ¿voy por buen camino para lograrlo y cuál es el único cambio que más mejoraría mis probabilidades?',
+			'ai.coachPrompts.weeklyReviewDown.label' => '📉 Analiza mi semana',
+			'ai.coachPrompts.weeklyReviewDown.payload' => ({required Object thisPct, required Object lastPct}) => 'Mi constancia bajó al ${thisPct}% esta semana desde el ${lastPct}% de la anterior. ¿Cuál es la causa más probable y el único cambio que debería hacer la próxima semana?',
+			'ai.coachPrompts.weeklyReviewUp.label' => '📊 Analiza mi semana',
+			'ai.coachPrompts.weeklyReviewUp.payload' => ({required Object thisPct, required Object lastPct}) => 'Mi constancia está en el ${thisPct}% esta semana frente al ${lastPct}% de la anterior. ¿Qué está funcionando y qué es lo único que debería impulsar más la próxima semana?',
+			'ai.coachPrompts.protectStreak.label' => '🛡️ Protege mi racha',
+			'ai.coachPrompts.protectStreak.payload' => ({required Object habit, required Object days}) => 'Mi racha activa más larga es \'${habit}\' con ${days} días. ¿Cuál es el mayor riesgo de romperla y cómo la protejo esta semana?',
+			'ai.coachPrompts.alignHabitsToGoal.label' => '🔗 ¿Qué hábitos sirven a mis objetivos?',
+			'ai.coachPrompts.alignHabitsToGoal.payload' => ({required Object goal}) => 'Mirando mis hábitos frente a mi objetivo \'${goal}\', ¿cuáles lo hacen avanzar de verdad y cuáles son solo ruido? Sé específico e indica un hábito que quizá me falte.',
+			'ai.coachPrompts.designHabitForGoal.label' => '💡 Convierte un objetivo en hábito',
+			'ai.coachPrompts.designHabitForGoal.payload' => ({required Object goal}) => 'Quiero alcanzar mi objetivo \'${goal}\'. ¿Qué único hábito diario marcaría la mayor diferencia? Dame un hábito concreto que pueda empezar mañana.',
+			'ai.coachPrompts.raiseTheBar.label' => '🚀 Sube el listón',
+			'ai.coachPrompts.raiseTheBar.payload' => 'Estoy cumpliendo todos mis hábitos y mis objetivos van por buen camino. ¿Dónde podría estar acomodándome y cuál es una forma de subir el listón sin quemarme?',
+			'ai.coachPrompts.firstStep.label' => '🌱 ¿Por dónde empiezo?',
+			'ai.coachPrompts.firstStep.payload' => 'Estoy empezando y aún no he configurado objetivos ni hábitos. Sugiéreme un primer objetivo realista y un pequeño hábito diario para lograrlo, y explica por qué esa combinación funciona.',
+			'ai.coachPrompts.whatCanYouHelp.label' => '💬 ¿En qué puedes ayudarme?',
+			'ai.coachPrompts.whatCanYouHelp.payload' => 'Según mis hábitos y objetivos en esta app, dame tres ejemplos concretos de cómo puedes ayudarme — no consejos genéricos, sino cosas ligadas a mis datos reales.',
 			'ai.local.notReachable' => ({required Object url}) => '❌ No se puede acceder al servidor de IA local en ${url}. Asegúrate de que Ollama o LM Studio esté en ejecución.',
 			'ai.local.modelMissing' => '⚠️ Elige primero un modelo local — abre el selector de modelos arriba.',
 			'ai.local.requestFailed' => ({required Object code}) => '❌ Error del modelo local (código: ${code}).',
 			'ai.local.streamError' => '❌ Error de conexión con el modelo local.',
 			'ai.local.timeout' => '❌ El modelo local está tardando demasiado — puede que aún se esté cargando. Inténtalo de nuevo.',
 			'ai.local.modelNotFound' => '❌ Ese modelo no está disponible en el servidor. Abre el selector para elegir o cargar uno.',
+			'ai.local.authRequired' => ({required Object app}) => '❌ ${app} está rechazando la conexión — requiere un token de API. Desactiva la autenticación en los ajustes de su servidor o apunta Evolve a un servidor que no lo requiera.',
+			'ai.local.stillLoading' => 'El modelo aún se está cargando — un arranque en frío puede tardar un poco.',
 			'ai.standard.sessionExpired' => '⚠️ Tu sesión ha caducado. Inicia sesión de nuevo para seguir usando Evolve AI.',
 			'ai.standard.needsPro' => '⚠️ Evolve AI forma parte de Evolve Pro. Suscríbete en Ajustes o cambia el motor a tu propia cuenta de OpenRouter, que es gratis.',
 			'ai.standard.rateLimited' => '⚠️ Has alcanzado el límite de uso razonable de Evolve AI por ahora. Inténtalo más tarde o cambia el motor a tu propia cuenta de OpenRouter.',
@@ -2740,16 +2850,14 @@ extension on TranslationsEs {
 			'coachSettings.backendLocal' => 'Local · privado',
 			'coachSettings.cloudDesc' => 'Conecta tu propia cuenta de OpenRouter y paga directamente al proveedor. Gratis: no necesitas suscripción. El contexto que compartes se envía al proveedor.',
 			'coachSettings.localDesc' => 'Tu propio modelo vía Ollama, LM Studio o cualquier servidor compatible con OpenAI. Nada sale de este dispositivo.',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.presetLabel' => 'Servidor',
 			'coachSettings.presetOllama' => 'Ollama',
 			'coachSettings.presetLmStudio' => 'LM Studio',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.presetCustom' => 'Personalizado…',
 			'coachSettings.baseUrlLabel' => 'URL base',
-			'coachSettings.baseUrlHint' => 'http://localhost:11434/v1',
 			'coachSettings.modelLabel' => 'Modelo',
-			'coachSettings.modelHint' => 'p. ej. llama3.1:8b',
 			'coachSettings.refreshModels' => 'Actualizar modelos',
 			'coachSettings.discovering' => 'Buscando modelos…',
 			'coachSettings.noModelsFound' => 'No se encontraron modelos — escribe un id de modelo manualmente abajo.',
@@ -2766,8 +2874,8 @@ extension on TranslationsEs {
 			'coachSettings.systemPromptReset' => 'Restablecer',
 			'coachSettings.temperatureLabel' => 'Temperatura',
 			'coachSettings.save' => 'Listo',
-			'coachSettings.detectedTitle' => 'Modelo local detectado',
-			'coachSettings.detectedBody' => 'Hay un servidor de IA local ejecutándose en este Mac. ¿Ejecutar el coach de forma 100 % privada?',
+			'coachSettings.detectedTitle' => ({required Object app}) => '${app} detectado',
+			'coachSettings.detectedBody' => ({required Object app}) => '${app} se está ejecutando en este Mac. ¿Ejecutar el coach de forma 100 % privada?',
 			'coachSettings.detectedAction' => 'Usar local',
 			'coachSettings.detectedDismiss' => 'Ahora no',
 			'coachSettings.activeCloud' => ({required Object model}) => 'Nube · ${model}',
@@ -2785,17 +2893,23 @@ extension on TranslationsEs {
 			'coachSettings.temperatureRaise' => 'Subir la temperatura',
 			'coachSettings.sendMessage' => 'Enviar',
 			'coachSettings.stopResponse' => 'Detener',
-			'coachSettings.startOllama' => 'Iniciar Ollama',
-			'coachSettings.getOllama' => 'Obtener Ollama',
-			'coachSettings.startingOllama' => 'Iniciando Ollama…',
-			'coachSettings.ollamaOfflineTitle' => 'Ollama no está en ejecución',
-			'coachSettings.ollamaOfflineBody' => 'Inicia tu servidor local para chatear en privado — sin terminal.',
-			'coachSettings.ollamaNotInstalledTitle' => 'Ollama no está instalado',
-			'coachSettings.ollamaNotInstalledBody' => 'Instala la app gratuita de Ollama y luego pulsa Iniciar.',
+			'coachSettings.startLocalServer' => ({required Object app}) => 'Iniciar ${app}',
+			'coachSettings.getLocalServer' => ({required Object app}) => 'Obtener ${app}',
+			'coachSettings.startingLocalServer' => ({required Object app}) => 'Iniciando ${app}…',
+			'coachSettings.localServerOfflineTitle' => ({required Object app}) => '${app} no está en ejecución',
+			'coachSettings.localServerOfflineBody' => 'Inicia tu servidor local para chatear en privado — sin terminal.',
+			'coachSettings.localServerNotInstalledTitle' => ({required Object app}) => '${app} no está instalado',
+			'coachSettings.localServerNotInstalledBody' => ({required Object app}) => 'Instala la app gratuita de ${app} y luego pulsa Iniciar.',
+			'coachSettings.localServerStartingBody' => 'Esto puede tardar unos segundos…',
+			'coachSettings.localServerStartFailed' => ({required Object app}) => 'No se pudo iniciar ${app} — prueba a abrirlo desde la carpeta Aplicaciones.',
+			'coachSettings.localServerDownloadFailed' => ({required Object url}) => 'No se pudo abrir el navegador — visita ${url}',
 			'coachSettings.ollamaStartTimeout' => 'Está tardando más de lo esperado — revisa el icono de Ollama en la barra de menús (el primer inicio puede requerir aprobación).',
-			'coachSettings.ollamaStartingBody' => 'Esto puede tardar unos segundos…',
-			'coachSettings.ollamaStartFailed' => 'No se pudo iniciar Ollama — prueba a abrirlo desde la carpeta Aplicaciones.',
-			'coachSettings.ollamaDownloadFailed' => 'No se pudo abrir el navegador — visita ollama.com/download',
+			'coachSettings.ollamaServerOffTitle' => 'Ollama está en ejecución pero no atiende peticiones',
+			'coachSettings.ollamaServerOffBody' => 'Ollama está abierto, pero no responde en su puerto. Ciérralo desde la barra de menús y luego pulsa Iniciar de nuevo.',
+			'coachSettings.lmStudioStartTimeout' => 'Está tardando más de lo esperado — abre LM Studio y comprueba que haya terminado de iniciarse.',
+			'coachSettings.lmStudioServerOffTitle' => 'El servidor de LM Studio no está en ejecución',
+			'coachSettings.lmStudioServerOffBody' => 'LM Studio está abierto, pero su servidor local está apagado. Actívalo con Developer → Start Server, o marca Settings → Run the LLM server on login.',
+			'coachSettings.lmStudioNoModelsJit' => 'LM Studio no está mostrando ningún modelo. Solo muestra los modelos cargados cuando la carga Just-In-Time está desactivada — carga un modelo en LM Studio o activa Developer → Server Settings → Just In Time Model Loading.',
 			'coachSettings.backendStandard' => 'Evolve AI',
 			'coachSettings.standardDesc' => 'Incluido en Evolve Pro. Ejecutamos por ti un modelo gratuito de Google (Gemma): sin claves, sin configuración. Tus mensajes van al plan gratuito de Google, que puede usarlos para mejorar sus servicios.',
 			'coachSettings.activeStandard' => ({required Object model}) => 'Evolve AI · ${model}',

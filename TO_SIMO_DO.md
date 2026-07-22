@@ -1,10 +1,9 @@
 # TO_SIMO_DO.md
 - [ ] Widget for iPhone & MacOS
+- [ ] Organize better the selection of the LLM in the AI coach
 - [ ] settings in desktop implementation is really weird and not intuitive as it is in the mobile app
 - [ ] what happens if I modify manually an automatic habits?
 - [ ] Different habits & goals types, not only checkboxes like status,progress bar
-- [ ] For the desktop implementation what has been done with ollama is outstanding and I want to replicate the same thing also with LMStudio so the major local LLM providers are supported
-
 ## prompt
 
 /grill-me we are working inside the flutter implementations on both desktop and mobile versions. What I was thinking about was to Add the "mixture" of habits to make it one ( for example 10 mins of workout OR 10000 steps ). Could exclusive ( OR ) or inclusive ( AND ). What do you think? How we can implement it in the most professional and user friendly way?
@@ -45,6 +44,40 @@ flutter build macos --release --dart-define-from-file=.env
 ```bash
 flutter build ipa --release
 ```
+
+---
+
+## 2026-07-21 — iCloud sync Tier A: native verification needed (Mac mini, Xcode)
+
+The Swift changes below are the only part of this pass I could not execute. **There is no Xcode
+on the dev machine**, so nothing native was built or run.
+
+**What I could verify:** both bridges typecheck cleanly against the real CloudKit framework
+(`swiftc -typecheck`, Swift 6.3, macOS SDK, Command Line Tools). That confirms the API surface
+is right — `CKError.retryAfterSeconds` exists and is `Double?`, `.requestRateLimited` /
+`.serviceUnavailable` / `.zoneBusy` are valid codes, `qualityOfService` is settable on every
+operation type used. It does **not** confirm any runtime behaviour.
+
+**What I could NOT verify — and what only the Mac mini can settle:**
+
+- [ ] **Both apps still build and launch.** `flutter build macos --release` and
+      `flutter build ipa --release`. The bridges are `Runner`-target members, so a compile error
+      here surfaces only in Xcode.
+- [ ] **A throttled push actually recovers.** The retry path has never run. The realistic way to
+      hit it is a large first push: enable sync on a device with a full dataset and watch the log
+      for `[CloudKit] saveRecords throttled by iCloud — retrying in Ns (attempt K of 4)`.
+      If you never see that line, the path is simply untested — not proven good.
+- [ ] **The retry does not double-apply anything.** After any retry, run the diagnostics report on
+      both devices and confirm the per-table counts still match.
+- [ ] **`qualityOfService` did not make sync feel slower.** Every operation is now `.utility`
+      except `zoneHasRecords`, which is `.userInitiated` because it blocks the enable the user is
+      watching. If enable or first sync feels sluggish, that trade is the thing to revisit.
+
+Note both `AppDelegate.swift` files were patched from one script precisely so they stay
+line-for-line ports of each other; every line changed is byte-identical between them. If you edit
+one by hand, mirror it.
+
+---
 
 ## 2026-07-21 — iCloud sync Tier C: residual items (none block the release)
 
@@ -115,20 +148,28 @@ is reframed as working-as-intended.
 
 ---
 
-## 2026-07-21 — LM Studio launch parity: empirical checks needed (design agreed, NOT implemented)
+## 2026-07-21 — LM Studio launch parity: IMPLEMENTED, on-device QA pending
 
-Design for LM Studio parity with the Ollama launch flow is settled (see
-`desktop/DOCUMENTATION.md`). Three facts it depends on could NOT be verified here — **neither
-LM Studio nor Ollama is installed on this Mac**. Two are error-path constants that are safe to
-correct later; the first is a build-time input and should be closed BEFORE implementation.
+The feature is built and green (`flutter analyze` clean, `flutter test` 512/512, `dart format`
+clean on every touched file, AppKit surface `swiftc -typecheck`'d). See `desktop/DOCUMENTATION.md`
+for the design and the implementation record.
 
-### Blocking — do this first
-- [ ] **Confirm the LM Studio bundle id on a live install.** The design uses
+**What could NOT be verified here**: the full macOS build (no Xcode on this Mac) and every runtime
+behaviour — **neither LM Studio nor Ollama is installed on this machine**. Three facts remain
+empirical. None of them blocks the build; each is a one-line fix if it comes back different.
+
+### Do this first (cheapest, and the only one that could break the happy path)
+- [ ] **Confirm the LM Studio bundle id on a live install.** The code uses
       `ai.elementlabs.lmstudio`, triangulated from the Homebrew cask's `uninstall quit:` stanza,
       the `brew` API JSON, and an independent Info.plist scrape of v0.2.6 — three independent
-      sources, but none of them this machine. Wrong id ⇒ Start never works AND the new
-      `localAppRunning` check always reports false, so the "server isn't enabled" diagnosis
-      silently degrades to a generic launch failure.
+      sources, but none of them this machine. A wrong id degrades rather than breaks: the
+      `/Applications/LM Studio.app` path fallback still resolves a default install, so Start works
+      — but `localAppRunning` matches by bundle id ONLY, so the "your server isn't enabled"
+      diagnosis would silently fall back to the generic timeout message.
+      **If it differs, change one line**: `bundleIds` in
+      `desktop/lib/features/ai_coach/domain/local_server_target.dart` (and the assertion in
+      `desktop/test/local_server_target_test.dart`). That constant is in Dart precisely so it is
+      one testable line and not a Swift constant no test can reach.
       ```bash
       osascript -e 'id of app "LM Studio"'
       # belt and braces:
@@ -162,13 +203,44 @@ correct later; the first is a build-time input and should be closed BEFORE imple
       curl -i -H 'Authorization: Bearer local' http://localhost:1234/v1/models
       ```
 
+### On-device QA checklist (macOS, once LM Studio is installed)
+- [ ] Settings → AI Coach → engine **Local** → preset **LM Studio**: the status pill, the
+      **Start LM Studio** button, and the base-URL placeholder (`http://localhost:1234/v1`) all
+      appear and name LM Studio, not Ollama.
+- [ ] With LM Studio installed but **never started**: press Start, wait out the poll (~60s), and
+      confirm you get *"LM Studio is open, but its local server is off…"* — NOT a generic failure.
+      Then flip Developer → Start Server and confirm the banner **clears itself within ~3s** without
+      touching Evolve.
+- [ ] With LM Studio **not** installed: the button reads **Get LM Studio** and opens
+      `https://lmstudio.ai/download`.
+- [ ] With **Just-In-Time loading off** and no model loaded: the model picker shows the JIT
+      explanation naming the toggle, not the generic "type a model id manually".
+- [ ] Send a message to a **large, cold** model: the typing dots gain *"Still loading the model…"*
+      after ~15s instead of sitting silent, and the reply lands rather than timing out.
+- [ ] Ollama regression pass: Start / Get / Starting / offline banner / model discovery all behave
+      exactly as before. This is the part most worth a careful look — it was working and I renamed
+      through it.
+
 ### Process gap worth its own piece of work
 - [ ] **Desktop has no CI.** `.github/workflows/mobile-ci.yml` is scoped `paths: ['mobile/**']`, so
       nothing runs `flutter analyze` or `flutter test` on a desktop change — the README sequence at
-      `desktop/README.md:118` is manual and unenforced. This change touches ~10 files across domain,
-      data, application, presentation, native and i18n. The existing 18 Ollama tests will catch the
-      rename, but only if someone runs them. Consider a `desktop/**` job mirroring the mobile one
-      (`flutter pub get` → `dart run slang` → `flutter analyze` → `flutter test`).
+      `desktop/README.md:118` is manual and unenforced. This change touched ~11 files across domain,
+      data, application, presentation, native and i18n. Consider a `desktop/**` job mirroring the
+      mobile one (`flutter pub get` → `dart run slang` → `flutter analyze` → `flutter test`).
+      Note the mobile job uses `--fatal-infos`; a desktop job at that bar would currently fail on
+      the 4 pre-existing issues listed by `flutter analyze`.
 - [ ] Related: `dart run slang` is manual and CI-unenforced, and the generated `translations_*.g.dart`
-      files ARE committed — so the JSON and the generated Dart can silently drift. Regenerating is
-      part of the i18n commit, not a follow-up.
+      files ARE committed — so the JSON and the generated Dart can silently drift.
+- [ ] **Repo-wide `dart format` drift**: `dart format --output=none --set-exit-if-changed lib test`
+      reports **90 files** as unformatted, almost all untouched by this change (a formatter-version
+      bump, most likely). I formatted only the files I edited rather than sweeping 85 unrelated
+      files into this diff. Worth one dedicated formatting commit so the README's
+      `--set-exit-if-changed` step can actually pass.
+
+---
+
+ Consider that we are working on the Flutter macOS and iOS implementation, particularly when I do the test flight with my apps, so I try it on a real device. I receive this sync error here in the macOS app logs and I want you to analyze it to understand what's the error and how we can fix it.  Here is the error: """=== App Logs Export === Exported: 2026-07-22T11:52:59.442944 Total entries: 19  [2026-07-22 11:52:32.655] [INFO] [CloudKit] Sync finished   Extras: {pushed: 1, applied: 1, skipped: 8}  [2026-07-22 11:52:32.161] [ERROR] [CloudKit] Record apply failed   Error: Instance of 'InvalidCipherTextException'   Extras: {recordName: goal_category_settings:3a1338a9-d273-457d-a9ee-5b50951e94a9, tableName: goal_category_settings}   Stack Trace:     #0      BaseAEADBlockCipher.validateMac (package:pointycastle/src/impl/base_aead_block_cipher.dart:69:7)     #1      GCMBlockCipher.doFinal (package:pointycastle/block/modes/gcm.dart:208:5)     #2      BaseAEADBlockCipher.process (package:pointycastle/src/impl/base_aead_block_cipher.dart:124:12)     #3      SyncCrypto.decryptBytes (package:evolve_sync/src/sync_crypto.dart:77:39)     #4      SyncCrypto.decryptString (package:evolve_sync/src/sync_crypto.dart:84:19)     #5      SyncCrypto.decryptJson (package:evolve_sync/src/sync_crypto.dart:90:18)     #6      SyncEngine._applyRemote (package:evolve_sync/src/sync_engine.dart:440:28)     <asynchronous suspension>     #7      SyncEngine._pull (package:evolve_sync/src/sync_engine.dart:338:15)     <asynchronous suspension>     #8      SyncEngine.syncNow (package:evolve_sync/src/sync_engine.dart:179:18)     <asynchronous suspension>  [2026-07-22 11:52:32.159] [ERROR] [CloudKit] Record apply failed   Error: Instance of 'InvalidCipherTextException'   Extras: {recordName: goals:b9cc9622-1956-4cfa-af46-3fdbb8a90abe, tableName: goals}   Stack Trace:     #0      BaseAEADBlockCipher.validateMac (package:pointycastle/src/impl/base_aead_block_cipher.dart:69:7)     #1      GCMBlockCipher.doFinal (package:pointycastle/block/modes/gcm.dart:208:5)     #2      BaseAEADBlockCipher.process (package:pointycastle/src/impl/base_aead_block_cipher.dart:124:12)     #3      SyncCrypto.decryptBytes (package:evolve_sync/src/sync_crypto.dart:77:39)     #4      SyncCrypto.decryptString (package:evolve_sync/src/sync_crypto.dart:84:19)     #5      SyncCrypto.decryptJson (package:evolve_sync/src/sync_crypto.dart:90:18)     #6      SyncEngine._applyRemote (package:evolve_sync/src/sync_engine.dart:440:28)     <asynchronous suspension>     #7      SyncEngine._pull (package:evolve_sync/src/sync_engine.dart:338:15)     <asynchronous suspension>     #8      SyncEngine.syncNow (package:evolve_sync/src/sync_engine.dart:179:18)     <asynchronous suspension>  [2026-07-22 11:52:32.157] [ERROR] [CloudKit] Record apply failed   Error: Instance of 'InvalidCipherTextException'   Extras: {recordName: goal_category_settings:4ace3e3a-4cb7-481d-9f37-601347340833, tableName: goal_category_settings}   Stack Trace:     #0      BaseAEADBlockCipher.validateMac (package:pointycastle/src/impl/base_aead_block_cipher.dart:69:7)     #1      GCMBlockCipher.doFinal (package:pointycastle/block/modes/gcm.dart:208:5)     #2      BaseAEADBlockCipher.process (package:pointycastle/src/impl/base_aead_block_cipher.dart:124:12)     #3      SyncCrypto.decryptBytes (package:evolve_sync/src/sync_crypto.dart:77:39)     #4      SyncCrypto.decryptString (package:evolve_sync/src/sync_crypto.dart:84:19)     #5      SyncCrypto.decryptJson (package:evolve_sync/src/sync_crypto.dart:90:18)     #6      SyncEngine._applyRemote (package:evolve_sync/src/sync_engine.dart:440:28)     <asynchronous suspension>     #7      SyncEngine._pull (package:evolve_sync/src/sync_engine.dart:338:15)     <asynchronous suspension>     #8      SyncEngine.syncNow (package:evolve_sync/src/sync_engine.dart:179:18)     <asynchronous suspension>  [2026-07-22 11:52:32.155] [ERROR] [CloudKit] Record apply failed   Error: Instance of 'InvalidCipherTextException'   Extras: {recordName: goal_category_settings:a177d459-c623-49cc-b3fc-17060684e11f, tableName: goal_category_settings}   Stack Trace:     #0      BaseAEADBlockCipher.validateMac (package:pointycastle/src/impl/base_aead_block_cipher.dart:69:7)     #1      GCMBlockCipher.doFinal (package:pointycastle/block/modes/gcm.dart:208:5)     #2      BaseAEADBlockCipher.process (package:pointycastle/src/impl/base_aead_block_cipher.dart:124:12)     #3      SyncCrypto.decryptBytes (package:evolve_sync/src/sync_crypto.dart:77:39)     #4      SyncCrypto.decryptString (package:evolve_sync/src/sync_crypto.dart:84:19)     #5      SyncCrypto.decryptJson (package:evolve_sync/src/sync_crypto.dart:90:18)     #6      SyncEngine._applyRemote (package:evolve_sync/src/sync_engine.dart:440:28)     <asynchronous suspension>     #7      SyncEngine._pull (package:evolve_sync/src/sync_engine.dart:338:15)     <asynchronous suspension>     #8      SyncEngine.syncNow (package:evolve_sync/src/sync_engine.dart:179:18)     <asynchronous suspension>  [2026-07-22 11:52:32.152] [ERROR] [CloudKit] Record apply failed   Error: Instance of 'InvalidCipherTextException'   Extras: {recordName: profiles:b71ff909-b9d0-49ac-83ef-4507b40de3f0, tableName: profiles}   Stack Trace:     #0      BaseAEADBlockCipher.validateMac (package:pointycastle/src/impl/base_aead_block_cipher.dart:69:7)     #1      GCMBlockCipher.doFinal (package:pointycastle/block/modes/gcm.dart:208:5)     #2      BaseAEADBlockCipher.process (package:pointycastle/src/impl/base_aead_block_cipher.dart:124:12)     #3      SyncCrypto.decryptBytes (package:evolve_sync/src/sync_crypto.dart:77:39)     #4      SyncCrypto.decryptString (package:evolve_sync/src/sync_crypto.dart:84:19)     #5      SyncCrypto.decryptJson (package:evolve_sync/src/sync_crypto.dart:90:18)     #6      SyncEngine._applyRemote (package:evolve_sync/src/sync_engine.dart:440:28)     <asynchronous suspension>     #7      SyncEngine._pull (package:evolve_sync/src/sync_engine.dart:338:15)     <asynchronous suspension>     #8      SyncEngine.syncNow (package:evolve_sync/src/sync_engine.dart:179:18)     <asynchronous suspension>  [2026-07-22 11:52:32.147] [ERROR] [CloudKit] Record apply failed   Error: Instance of 'InvalidCipherTextException'   Extras: {recordName: profiles:c21dc05e-aa6d-4eed-a9e7-bbc344e8f56e, tableName: profiles}   Stack Trace:     #0      BaseAEADBlockCipher.validateMac (package:pointycastle/src/impl/base_aead_block_cipher.dart:69:7)     #1      GCMBlockCipher.doFinal (package:pointycastle/block/modes/gcm.dart:208:5)     #2      BaseAEADBlockCipher.process (package:pointycastle/src/impl/base_aead_block_cipher.dart:124:12)     #3      SyncCrypto.decryptBytes (package:evolve_sync/src/sync_crypto.dart:77:39)     #4      SyncCrypto.decryptString (package:evolve_sync/src/sync_crypto.dart:84:19)     #5      SyncCrypto.decryptJson (package:evolve_sync/src/sync_crypto.dart:90:18)     #6      SyncEngine._applyRemote (package:evolve_sync/src/sync_engine.dart:440:28)     <asynchronous suspension>     #7      SyncEngine._pull (package:evolve_sync/src/sync_engine.dart:338:15)     <asynchronous suspension>     #8      SyncEngine.syncNow (package:evolve_sync/src/sync_engine.dart:179:18)     <asynchronous suspension>  [2026-07-22 11:52:30.767] [INFO] [CloudKit] Sync starting...  [2026-07-22 11:52:22.449] [INFO] [CloudKit] Sync enabled successfully  [2026-07-22 11:52:21.835] [ERROR] [CloudKit] Record apply failed   Error: Instance of 'InvalidCipherTextException'   Extras: {recordName: goal_category_settings:3a1338a9-d273-457d-a9ee-5b50951e94a9, tableName: goal_category_settings}   Stack Trace:     #0      BaseAEADBlockCipher.validateMac (package:pointycastle/src/impl/base_aead_block_cipher.dart:69:7)     #1      GCMBlockCipher.doFinal (package:pointycastle/block/modes/gcm.dart:208:5)     #2      BaseAEADBlockCipher.process (package:pointycastle/src/impl/base_aead_block_cipher.dart:124:12)     #3      SyncCrypto.decryptBytes (package:evolve_sync/src/sync_crypto.dart:77:39)     #4      SyncCrypto.decryptString (package:evolve_sync/src/sync_crypto.dart:84:19)     #5      SyncCrypto.decryptJson (package:evolve_sync/src/sync_crypto.dart:90:18)     #6      SyncEngine._applyRemote (package:evolve_sync/src/sync_engine.dart:440:28)     <asynchronous suspension>     #7      SyncEngine._pull (package:evolve_sync/src/sync_engine.dart:338:15)     <asynchronous suspension>     #8      SyncEngine.syncNow (package:evolve_sync/src/sync_engine.dart:179:18)     <asynchronous suspension>  [2026-07-22 11:52:21.833] [ERROR] [CloudKit] Record apply failed   Error: Instance of 'InvalidCipherTextException'   Extras: {recordName: goals:b9cc9622-1956-4cfa-af46-3fdbb8a90abe, tableName: goals}   Stack Trace:     #0      BaseAEADBlockCipher.validateMac (package:pointycastle/src/impl/base_aead_block_cipher.dart:69:7)     #1      GCMBlockCipher.doFinal (package:pointycastle/block/modes/gcm.dart:208:5)     #2      BaseAEADBlockCipher.process (package:pointycastle/src/impl/base_aead_block_cipher.dart:124:12)     #3      SyncCrypto.decryptBytes (package:evolve_sync/src/sync_crypto.dart:77:39)     #4      SyncCrypto.decryptString (package:evolve_sync/src/sync_crypto.dart:84:19)     #5      SyncCrypto.decryptJson (package:evolve_sync/src/sync_crypto.dart:90:18)     #6      SyncEngine._applyRemote (package:evolve_sync/src/sync_engine.dart:440:28)     <asynchronous suspension>     #7      SyncEngine._pull (package:evolve_sync/src/sync_engine.dart:338:15)     <asynchronous suspension>     #8      SyncEngine.syncNow (package:evolve_sync/src/sync_engine.dart:179:18)     <asynchronous suspension>  [2026-07-22 11:52:21.830] [ERROR] [CloudKit] Record apply failed   Error: Instance of 'InvalidCipherTextException'   Extras: {recordName: goal_category_settings:4ace3e3a-4cb7-481d-9f37-601347340833, tableName: goal_category_settings}   Stack Trace:     #0      BaseAEADBlockCipher.validateMac (package:pointycastle/src/impl/base_aead_block_cipher.dart:69:7)     #1      GCMBlockCipher.doFinal (package:pointycastle/block/modes/gcm.dart:208:5)     #2      BaseAEADBlockCipher.process (package:pointycastle/src/impl/base_aead_block_cipher.dart:124:12)     #3      SyncCrypto.decryptBytes (package:evolve_sync/src/sync_crypto.dart:77:39)     #4      SyncCrypto.decryptString (package:evolve_sync/src/sync_crypto.dart:84:19)     #5      SyncCrypto.decryptJson (package:evolve_sync/src/sync_crypto.dart:90:18)     #6      SyncEngine._applyRemote (package:evolve_sync/src/sync_engine.dart:440:28)     <asynchronous suspension>     #7      SyncEngine._pull (package:evolve_sync/src/sync_engine.dart:338:15)     <asynchronous suspension>     #8      SyncEngine.syncNow (package:evolve_sync/src/sync_engine.dart:179:18)     <asynchronous suspension>  [2026-07-22 11:52:21.827] [ERROR] [CloudKit] Record apply failed   Error: Instance of 'InvalidCipherTextException'   Extras: {recordName: goal_category_settings:a177d459-c623-49cc-b3fc-17060684e11f, tableName: goal_category_settings}   Stack Trace:     #0      BaseAEADBlockCipher.validateMac (package:pointycastle/src/impl/base_aead_block_cipher.dart:69:7)     #1      GCMBlockCipher.doFinal (package:pointycastle/block/modes/gcm.dart:208:5)     #2      BaseAEADBlockCipher.process (package:pointycastle/src/impl/base_aead_block_cipher.dart:124:12)     #3      SyncCrypto.decryptBytes (package:evolve_sync/src/sync_crypto.dart:77:39)     #4      SyncCrypto.decryptString (package:evolve_sync/src/sync_crypto.dart:84:19)     #5      SyncCrypto.decryptJson (package:evolve_sync/src/sync_crypto.dart:90:18)     #6      SyncEngine._applyRemote (package:evolve_sync/src/sync_engine.dart:440:28)     <asynchronous suspension>     #7      SyncEngine._pull (package:evolve_sync/src/sync_engine.dart:338:15)     <asynchronous suspension>     #8      SyncEngine.syncNow (package:evolve_sync/src/sync_engine.dart:179:18)     <asynchronous suspension>  [2026-07-22 11:52:21.825] [ERROR] [CloudKit] Record apply failed   Error: Instance of 'InvalidCipherTextException'   Extras: {recordName: profiles:b71ff909-b9d0-49ac-83ef-4507b40de3f0, tableName: profiles}   Stack Trace:     #0      BaseAEADBlockCipher.validateMac (package:pointycastle/src/impl/base_aead_block_cipher.dart:69:7)     #1      GCMBlockCipher.doFinal (package:pointycastle/block/modes/gcm.dart:208:5)     #2      BaseAEADBlockCipher.process (package:pointycastle/src/impl/base_aead_block_cipher.dart:124:12)     #3      SyncCrypto.decryptBytes (package:evolve_sync/src/sync_crypto.dart:77:39)     #4      SyncCrypto.decryptString (package:evolve_sync/src/sync_crypto.dart:84:19)     #5      SyncCrypto.decryptJson (package:evolve_sync/src/sync_crypto.dart:90:18)     #6      SyncEngine._applyRemote (package:evolve_sync/src/sync_engine.dart:440:28)     <asynchronous suspension>     #7      SyncEngine._pull (package:evolve_sync/src/sync_engine.dart:338:15)     <asynchronous suspension>     #8      SyncEngine.syncNow (package:evolve_sync/src/sync_engine.dart:179:18)     <asynchronous suspension>  [2026-07-22 11:52:21.820] [ERROR] [CloudKit] Record apply failed   Error: Instance of 'InvalidCipherTextException'   Extras: {recordName: profiles:c21dc05e-aa6d-4eed-a9e7-bbc344e8f56e, tableName: profiles}   Stack Trace:     #0      BaseAEADBlockCipher.validateMac (package:pointycastle/src/impl/base_aead_block_cipher.dart:69:7)     #1      GCMBlockCipher.doFinal (package:pointycastle/block/modes/gcm.dart:208:5)     #2      BaseAEADBlockCipher.process (package:pointycastle/src/impl/base_aead_block_cipher.dart:124:12)     #3      SyncCrypto.decryptBytes (package:evolve_sync/src/sync_crypto.dart:77:39)     #4      SyncCrypto.decryptString (package:evolve_sync/src/sync_crypto.dart:84:19)     #5      SyncCrypto.decryptJson (package:evolve_sync/src/sync_crypto.dart:90:18)     #6      SyncEngine._applyRemote (package:evolve_sync/src/sync_engine.dart:440:28)     <asynchronous suspension>     #7      SyncEngine._pull (package:evolve_sync/src/sync_engine.dart:338:15)     <asynchronous suspension>     #8      SyncEngine.syncNow (package:evolve_sync/src/sync_engine.dart:179:18)     <asynchronous suspension>  [2026-07-22 11:52:19.576] [INFO] [CloudKit] Enabling sync...  [2026-07-22 11:52:19.571] [WARN] [PrivateRecovery] locked Private DB — stashing the local cache and re-pulling from iCloud (its data is safe in CloudKit)  [2026-07-22 11:52:19.542] [ERROR] [CloudKit] Sync failed   Error: Private database key unavailable while the database file exists; refusing to regenerate it so the data stays recoverable.   Stack Trace:     #0      DesktopPrivateDb._encryptionKey (package:evolve_desktop/core/desktop_private_db.dart:1570:7)     <asynchronous suspension>     #1      DesktopPrivateDb._open (package:evolve_desktop/core/desktop_private_db.dart:1394:17)     <asynchronous suspension>     #2      DesktopPrivateDb.database.<anonymous closure> (package:evolve_desktop/core/desktop_private_db.dart:144:46)     <asynchronous suspension>     #3      DesktopPrivateDb.syncStore (package:evolve_desktop/core/desktop_private_db.dart:128:62)     <asynchronous suspension>     #4      CloudKitPrivateSyncService._syncNow (package:evolve_sync/src/cloudkit_private_sync_service.dart:194:21)     <asynchronous suspension>     #5      CloudKitPrivateSyncService._runExclusive.<anonymous closure> (package:evolve_sync/src/cloudkit_private_sync_service.dart:90:28)     <asynchronous suspension>  [2026-07-22 11:52:19.531] [WARN] [SecureStorage] DEBUG build: Private-mode device-local secrets (the SQLCipher DB key + owner id) are read/written from a PLAINTEXT dev file instead of the Keychain, so a local `flutter run` keeps the same encrypted DB across restarts. This escape hatch is compiled out of release builds (gated on kDebugMode).""".
+
+
+
+Consider that here you don't have the full xcode but I'll do whatever need on my mac mini, so you have only to focus on the real code implementation and eventually fix.

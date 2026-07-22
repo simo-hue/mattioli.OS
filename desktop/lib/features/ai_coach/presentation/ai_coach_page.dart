@@ -29,85 +29,16 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../application/coach_consent_controller.dart';
 import '../application/coach_controllers.dart';
-import '../application/ollama_start_controller.dart';
+import '../application/local_server_start_controller.dart';
 import '../domain/chat_message.dart';
 import '../domain/coach_backend.dart';
 import '../domain/coach_consent.dart';
 import '../domain/coach_chat_logic.dart';
-import '../domain/coach_config.dart';
+import '../domain/coach_prompts.dart';
+import '../domain/local_server_target.dart';
 import 'coach_model_chip.dart';
 import 'coach_settings_dialog.dart';
-import 'start_ollama_button.dart';
-
-/// Pure prompt-suggestion selection (time of day + which context switches are
-/// on), extracted for testing. Returns up to four unique suggestions, chosen
-/// deterministically by [messageCount] so they stay stable within a state.
-List<String> buildAiSuggestions({
-  required int hour,
-  required bool shareGoals,
-  required bool shareHabits,
-  required bool hasActiveGoals,
-  required int todayDone,
-  required int todayTotal,
-  required int messageCount,
-}) {
-  final pool = <String>[];
-  if (hour >= 5 && hour < 12) {
-    pool.addAll([
-      t.ai.suggestions.morningBoost,
-      t.ai.suggestions.avoidDistractions,
-    ]);
-  } else if (hour >= 12 && hour < 18) {
-    pool.addAll([t.ai.suggestions.lowEnergy, t.ai.suggestions.stayFocused]);
-  } else {
-    pool.addAll([
-      t.ai.suggestions.prepareTomorrow,
-      t.ai.suggestions.disciplineReflection,
-    ]);
-  }
-
-  if (shareGoals && !shareHabits) {
-    if (hasActiveGoals) pool.add(t.ai.suggestions.analyzeActiveGoals);
-    pool.addAll([
-      t.ai.suggestions.planMacroGoals,
-      t.ai.suggestions.goalObstacles,
-      t.ai.suggestions.reachMilestones,
-    ]);
-  } else if (!shareGoals && shareHabits) {
-    pool.addAll([
-      t.ai.suggestions.consistencyStatus,
-      t.ai.suggestions.weeklyStats,
-      t.ai.suggestions.planDay,
-    ]);
-    if (todayTotal > 0) {
-      final pct = todayDone / todayTotal * 100;
-      if (pct == 100) {
-        pool.add(t.ai.suggestions.raiseBar);
-      } else if (pct < 30 && hour > 14) {
-        pool.add(t.ai.suggestions.recoverProcrastination);
-      }
-    }
-  } else if (shareGoals && shareHabits) {
-    if (hasActiveGoals) pool.add(t.ai.suggestions.analyzeActiveGoals);
-    pool.addAll([
-      t.ai.suggestions.consistencyStatus,
-      t.ai.suggestions.connectHabitsGoals,
-      t.ai.suggestions.reviewGoalsHabits,
-    ]);
-  } else {
-    pool.addAll([
-      t.ai.suggestions.disciplineAdvice,
-      t.ai.suggestions.createNewHabit,
-      t.ai.suggestions.avoidDistractions,
-    ]);
-  }
-
-  final unique = pool.toSet().toList();
-  if (unique.isEmpty) return const [];
-  final count = unique.length < 4 ? unique.length : 4;
-  final offset = messageCount % unique.length;
-  return [for (var i = 0; i < count; i++) unique[(offset + i) % unique.length]];
-}
+import 'start_local_server_button.dart';
 
 class AiCoachPage extends ConsumerStatefulWidget {
   const AiCoachPage({super.key});
@@ -513,35 +444,81 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
     return trimmed.split(' ').first;
   }
 
-  /// Time- and context-aware prompt suggestions (mirrors mobile's
-  /// `_getDynamicSuggestions`). Reads live state, then delegates the selection
-  /// to the pure, testable [buildAiSuggestions].
-  List<String> _dynamicSuggestions() {
+  /// Live facts for the coach-prompt selector: the weakest habit so far this
+  /// week, the week's momentum, the best streak, plus goal/empty state —
+  /// respecting the share toggles so a hidden dimension never leaks into a chip.
+  /// Delegates selection to the pure, testable [buildCoachPrompts].
+  CoachPromptFacts _coachFacts() {
     final now = DateTime.now();
     final snapshot = ref.read(dashboardControllerProvider);
-    final hasActiveGoals = snapshot.goals.any(
-      (g) => g.state == GoalState.active,
-    );
-    final activeToday = snapshot.habits
-        .where((h) => h.isScheduledOn(now))
+    final activeGoals = snapshot.goals
+        .where((g) => g.state == GoalState.active)
         .toList();
-    final todayDone = activeToday
-        .where((h) => snapshot.habitStatusFor(h.id, now) == 'done')
-        .length;
-    return buildAiSuggestions(
-      hour: now.hour,
-      shareGoals: _shareGoals,
+    final habits = snapshot.habits;
+    final monday = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(Duration(days: now.weekday - 1));
+
+    // Single pass: the weakest scheduled habit (lowest completion so far this
+    // week, with at least one miss) and the longest current streak.
+    ({String title, int done, int scheduled})? weakest;
+    var weakestRate = 2.0;
+    var bestDays = 0;
+    String? bestTitle;
+    for (final h in habits) {
+      var done = 0;
+      var scheduled = 0;
+      for (var i = 0; i < now.weekday; i++) {
+        final day = monday.add(Duration(days: i));
+        if (!h.isScheduledOn(day)) continue;
+        scheduled++;
+        if (snapshot.habitStatusFor(h.id, day) == 'done') done++;
+      }
+      if (scheduled > 0 && done < scheduled && done / scheduled < weakestRate) {
+        weakest = (title: h.title, done: done, scheduled: scheduled);
+        weakestRate = done / scheduled;
+      }
+      if (h.streak > bestDays) {
+        bestDays = h.streak;
+        bestTitle = h.title;
+      }
+    }
+
+    final thisPct = (snapshot.currentWeekCompletionRate * 100).round();
+    final lastPct = (snapshot.previousWeekCompletionRate * 100).round();
+    final hasHistory = habits.isNotEmpty && (thisPct > 0 || lastPct > 0);
+    final allGreen =
+        habits.isNotEmpty && snapshot.currentWeekCompletionRate >= 0.999;
+
+    return CoachPromptFacts(
       shareHabits: _shareHabits,
-      hasActiveGoals: hasActiveGoals,
-      todayDone: todayDone,
-      todayTotal: activeToday.length,
-      messageCount: _messages.length,
+      shareGoals: _shareGoals,
+      weakestHabit: _shareHabits ? weakest : null,
+      momentum: (_shareHabits && hasHistory)
+          ? (thisPct: thisPct, lastPct: lastPct)
+          : null,
+      bestStreak: (_shareHabits && bestDays >= 7 && bestTitle != null)
+          ? (title: bestTitle, days: bestDays)
+          : null,
+      topGoalTitle: (_shareGoals && activeGoals.isNotEmpty)
+          ? activeGoals.first.title
+          : null,
+      habitCount: _shareHabits ? habits.length : 0,
+      activeGoalCount: _shareGoals ? activeGoals.length : 0,
+      allGreen: _shareHabits && allGreen,
+      isEmpty: activeGoals.isEmpty && habits.isEmpty,
+      rotation: _messages.length,
     );
   }
 
-  void _onSuggestionTap(String suggestion) {
+  /// Up to four data-personalized starter prompts for the current state.
+  List<CoachPrompt> _coachPrompts() => buildCoachPrompts(_coachFacts());
+
+  void _onSuggestionTap(String payload) {
     if (_isTyping) return;
-    _controller.text = suggestion;
+    _controller.text = payload;
     _sendMessage();
   }
 
@@ -822,7 +799,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                         child: Builder(
                           builder: (context) {
                             if (_isTyping) return const SizedBox.shrink();
-                            final suggestions = _dynamicSuggestions();
+                            final suggestions = _coachPrompts();
                             if (suggestions.isEmpty) {
                               return const SizedBox.shrink();
                             }
@@ -839,10 +816,11 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                                     10,
                                   ),
                                   children: [
-                                    for (final s in suggestions) ...[
+                                    for (final p in suggestions) ...[
                                       _SuggestionChip(
-                                        label: s,
-                                        onTap: () => _onSuggestionTap(s),
+                                        label: p.label,
+                                        onTap: () =>
+                                            _onSuggestionTap(p.payload),
                                       ),
                                       const SizedBox(width: 8),
                                     ],
@@ -1188,7 +1166,7 @@ class _MessageBubbleState extends State<_MessageBubble> {
 
     final Widget bubbleChild;
     if (isWaiting) {
-      bubbleChild = const _TypingDots();
+      bubbleChild = const _WaitingIndicator();
     } else if (isUser) {
       bubbleChild = Text(
         message.text,
@@ -1354,17 +1332,13 @@ class _AssistantMarkdown extends StatelessWidget {
     return MarkdownBody(
       data: displayText,
       selectable: true,
-      extensionSet: md.ExtensionSet(
-        md.ExtensionSet.gitHubFlavored.blockSyntaxes,
-        [
-          md.EmojiSyntax(),
-          ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes,
-          _CursorSyntax(),
-        ],
-      ),
-      builders: {
-        'cursor': _CursorBuilder(),
-      },
+      extensionSet:
+          md.ExtensionSet(md.ExtensionSet.gitHubFlavored.blockSyntaxes, [
+            md.EmojiSyntax(),
+            ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes,
+            _CursorSyntax(),
+          ]),
+      builders: {'cursor': _CursorBuilder()},
       onTapLink: (linkText, href, title) => _openLink(context, href),
       styleSheet: MarkdownStyleSheet(
         p: TextStyle(color: colors.foreground, fontSize: 14, height: 1.45),
@@ -1461,6 +1435,73 @@ class _StreamingCaretState extends State<_StreamingCaret>
 
 /// Animated three-dot "thinking" indicator shown in the assistant bubble while
 /// awaiting the first token. Respects Reduce Motion (renders steady dots).
+/// The "waiting for the first token" state: typing dots, plus — on a local
+/// backend only, after a grace period — a line explaining the silence.
+///
+/// Raising the local first-token budget without this would be a bad trade: it
+/// converts a wrong error into three minutes of undifferentiated silence, and a
+/// user who waits 45s with no feedback concludes the app is broken and kills it
+/// before the longer timeout ever gets to help. The silence is real and
+/// unavoidable — `interChunkTimeout` only starts applying after the first token,
+/// and the stream deliberately ignores keep-alives — so the honest fix is to say
+/// what is happening.
+///
+/// Local only: a cold model load is a local phenomenon. The cloud and Standard
+/// backends answer from a warm, always-resident model, so the same message there
+/// would be an excuse rather than an explanation.
+class _WaitingIndicator extends ConsumerStatefulWidget {
+  const _WaitingIndicator();
+
+  @override
+  ConsumerState<_WaitingIndicator> createState() => _WaitingIndicatorState();
+}
+
+class _WaitingIndicatorState extends ConsumerState<_WaitingIndicator> {
+  /// Long enough that a warm local model never shows it, short enough that a
+  /// cold load doesn't feel like a hang.
+  static const _slowAfter = Duration(seconds: 15);
+
+  Timer? _timer;
+  bool _slow = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer(_slowAfter, () {
+      if (mounted) setState(() => _slow = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isLocal =
+        ref.watch(effectiveCoachBackendProvider) == CoachBackendKind.local;
+    if (!_slow || !isLocal) return const _TypingDots();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const _TypingDots(),
+        const SizedBox(height: 8),
+        Text(
+          t.ai.local.stillLoading,
+          style: TextStyle(
+            color: context.evolveColors.muted,
+            fontSize: 11.5,
+            height: 1.35,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _TypingDots extends StatefulWidget {
   const _TypingDots();
 
@@ -1771,6 +1812,12 @@ class _LocalDetectedBanner extends ConsumerWidget {
     if (backend == CoachBackendKind.local) return const SizedBox.shrink();
     final detected = ref.watch(coachLocalDetectionProvider).asData?.value;
     if (detected == null) return const SizedBox.shrink();
+    // Name what we found. The switch this banner performs is otherwise silent
+    // AND arbitrary: detection walks `kLocalProbePorts` in order, so a user
+    // running both Ollama and LM Studio gets moved onto Ollama purely by array
+    // position. Saying which one turns an invisible coin-flip into a statement
+    // the user can disagree with.
+    final detectedTarget = LocalServerTarget.forBaseUrl(detected);
 
     final colors = context.evolveColors;
     return Padding(
@@ -1796,7 +1843,9 @@ class _LocalDetectedBanner extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    t.coachSettings.detectedTitle,
+                    t.coachSettings.detectedTitle(
+                      app: detectedTarget.displayName,
+                    ),
                     style: TextStyle(
                       color: colors.foreground,
                       fontSize: 13.5,
@@ -1805,7 +1854,9 @@ class _LocalDetectedBanner extends ConsumerWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    t.coachSettings.detectedBody,
+                    t.coachSettings.detectedBody(
+                      app: detectedTarget.displayName,
+                    ),
                     style: TextStyle(
                       color: colors.muted,
                       fontSize: 12,
@@ -1839,10 +1890,10 @@ class _LocalDetectedBanner extends ConsumerWidget {
   }
 }
 
-/// Shown when the coach is on the local Ollama backend but the server is down:
-/// offers a one-tap "Start Ollama" (or "Get Ollama" if it isn't installed),
-/// with a soft hint if a launch takes too long. Hides itself the moment the
-/// server becomes reachable.
+/// Shown when the coach is on a launchable local backend but the server is
+/// down: offers a one-tap "Start {app}" (or "Get {app}" if it isn't installed),
+/// with a product-specific hint if a launch takes too long or the app comes up
+/// without its server. Hides itself the moment the server becomes reachable.
 class _LocalOfflineBanner extends ConsumerStatefulWidget {
   const _LocalOfflineBanner();
 
@@ -1858,23 +1909,26 @@ class _LocalOfflineBannerState extends ConsumerState<_LocalOfflineBanner> {
   void initState() {
     super.initState();
     // While the coach page is open, re-probe the local server (and install
-    // state) every few seconds so the banner self-heals when Ollama comes up
-    // out-of-band or is installed mid-session. Cheap and idle unless we're on
-    // the local Ollama backend AND not already connected.
+    // state) every few seconds so the banner self-heals when the server comes
+    // up out-of-band or the app is installed mid-session. Cheap and idle unless
+    // we're on a launchable local backend AND not already connected.
+    //
+    // This is what makes the LM Studio "your server is off" state pleasant
+    // rather than a dead end: the user flips Developer → Start Server in
+    // LM Studio and the banner clears itself within ~3s, without them having to
+    // come back and press anything here.
     _timer = Timer.periodic(const Duration(seconds: 3), (_) {
       final config = ref.read(coachConfigProvider);
       if (config.backend != CoachBackendKind.local) return;
-      if (LocalServerPreset.match(config.localBaseUrl) !=
-          LocalServerPreset.ollama) {
-        return;
-      }
+      final target = LocalServerTarget.forBaseUrl(config.localBaseUrl);
+      if (!target.canLaunch) return;
       final reachable = ref
           .read(coachLocalReachableProvider(config.localBaseUrl))
           .asData
           ?.value;
       if (reachable == true) return; // already connected — nothing to heal
       ref.invalidate(coachLocalReachableProvider(config.localBaseUrl));
-      ref.invalidate(ollamaInstalledProvider);
+      ref.invalidate(localAppInstalledProvider(target.preset));
     });
   }
 
@@ -1887,13 +1941,17 @@ class _LocalOfflineBannerState extends ConsumerState<_LocalOfflineBanner> {
   @override
   Widget build(BuildContext context) {
     final config = ref.watch(coachConfigProvider);
-    // Gate on backend/preset BEFORE touching the reachability probe, so cloud
-    // (or a non-Ollama local server) never triggers a localhost probe here.
+    // Gate on backend/target BEFORE touching the reachability probe, so cloud
+    // (or a hand-typed custom server, which we can't launch) never triggers a
+    // localhost probe here.
     if (config.backend != CoachBackendKind.local) {
       return const SizedBox.shrink();
     }
-    final preset = LocalServerPreset.match(config.localBaseUrl);
-    if (preset != LocalServerPreset.ollama) return const SizedBox.shrink();
+    final target = LocalServerTarget.forBaseUrl(config.localBaseUrl);
+    if (!target.canLaunch) return const SizedBox.shrink();
+    if (!ref.watch(localLauncherSupportedProvider)) {
+      return const SizedBox.shrink();
+    }
     // Don't render until reachability resolves (avoids a flash on open).
     final reachable = ref
         .watch(coachLocalReachableProvider(config.localBaseUrl))
@@ -1901,30 +1959,49 @@ class _LocalOfflineBannerState extends ConsumerState<_LocalOfflineBanner> {
         ?.value;
     if (reachable == null || reachable) return const SizedBox.shrink();
 
-    final status = ref.watch(ollamaStartControllerProvider);
-    final installed = ref.watch(ollamaInstalledProvider).asData?.value ?? true;
+    final status = ref.watch(localServerStartControllerProvider);
+    final installed =
+        ref.watch(localAppInstalledProvider(target.preset)).asData?.value ??
+        true;
 
     final colors = context.evolveColors;
+    final app = target.displayName;
     final (title, body) = switch ((installed, status)) {
       (false, _) => (
-        t.coachSettings.ollamaNotInstalledTitle,
-        t.coachSettings.ollamaNotInstalledBody,
+        t.coachSettings.localServerNotInstalledTitle(app: app),
+        t.coachSettings.localServerNotInstalledBody(app: app),
       ),
-      (true, OllamaStartStatus.starting) => (
-        t.coachSettings.startingOllama,
-        t.coachSettings.ollamaStartingBody,
+      (true, LocalServerStartStatus.starting) => (
+        t.coachSettings.startingLocalServer(app: app),
+        t.coachSettings.localServerStartingBody,
       ),
-      (true, OllamaStartStatus.timedOut) => (
-        t.coachSettings.ollamaOfflineTitle,
-        t.coachSettings.ollamaStartTimeout,
+      // The app is up but its port stayed shut. For LM Studio that is the
+      // ordinary first-run state (the HTTP server is an opt-in toggle) and NOT
+      // an error; for Ollama it means the daemon is wedged and relaunching
+      // won't help. Different facts, different copy.
+      (true, LocalServerStartStatus.serverNotEnabled) =>
+        target.serverIsOptIn
+            ? (
+                t.coachSettings.lmStudioServerOffTitle,
+                t.coachSettings.lmStudioServerOffBody,
+              )
+            : (
+                t.coachSettings.ollamaServerOffTitle,
+                t.coachSettings.ollamaServerOffBody,
+              ),
+      (true, LocalServerStartStatus.timedOut) => (
+        t.coachSettings.localServerOfflineTitle(app: app),
+        target.serverIsOptIn
+            ? t.coachSettings.lmStudioStartTimeout
+            : t.coachSettings.ollamaStartTimeout,
       ),
-      (true, OllamaStartStatus.failed) => (
-        t.coachSettings.ollamaOfflineTitle,
-        t.coachSettings.ollamaStartFailed,
+      (true, LocalServerStartStatus.failed) => (
+        t.coachSettings.localServerOfflineTitle(app: app),
+        t.coachSettings.localServerStartFailed(app: app),
       ),
       _ => (
-        t.coachSettings.ollamaOfflineTitle,
-        t.coachSettings.ollamaOfflineBody,
+        t.coachSettings.localServerOfflineTitle(app: app),
+        t.coachSettings.localServerOfflineBody,
       ),
     };
 
@@ -1972,7 +2049,7 @@ class _LocalOfflineBannerState extends ConsumerState<_LocalOfflineBanner> {
               ),
             ),
             const SizedBox(width: 12),
-            const StartOllamaButton(),
+            StartLocalServerButton(target: target),
           ],
         ),
       ),

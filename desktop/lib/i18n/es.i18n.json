@@ -691,26 +691,47 @@
       "setupBody": "Este motor funciona con tu propia cuenta de OpenRouter. Conéctala para empezar a chatear o cambia a Evolve AI, incluido en Pro.",
       "setupAction": "Conectar cuenta"
     },
-    "suggestions": {
-      "morningBoost": "🔥 ¡Dame un empujón para empezar!",
-      "avoidDistractions": "🧠 ¿Cómo puedo evitar distracciones?",
-      "lowEnergy": "⚡ Mi energía está bajando. ¿Qué debo hacer?",
-      "stayFocused": "💪 Dame un consejo para mantener el enfoque",
-      "prepareTomorrow": "🛌 ¿Cómo puedo prepararme para un mañana productivo?",
-      "disciplineReflection": "📝 Reflexiona sobre la disciplina de hoy",
-      "analyzeActiveGoals": "🎯 Analiza mis objetivos activos",
-      "planMacroGoals": "🗺️ ¿Cómo debería planificar mis macroobjetivos?",
-      "goalObstacles": "🛑 ¿Qué obstáculos bloquean mis objetivos?",
-      "reachMilestones": "📈 Dame un consejo para alcanzar mis hitos",
-      "consistencyStatus": "📈 ¿Cómo va mi constancia?",
-      "weeklyStats": "📊 Mis estadísticas semanales",
-      "planDay": "🌅 Planifica mi día",
-      "raiseBar": "🚀 ¿Cómo puedo subir el nivel?",
-      "recoverProcrastination": "🤕 ¿Cómo puedo recuperarme después de procrastinar?",
-      "connectHabitsGoals": "🔗 ¿Cómo puedo conectar hábitos y objetivos?",
-      "reviewGoalsHabits": "📊 Revisa mis objetivos y hábitos",
-      "disciplineAdvice": "🔥 Consejo de disciplina",
-      "createNewHabit": "💡 ¿Cómo puedo crear un nuevo hábito?"
+    "coachPrompts": {
+      "diagnoseWeakestHabit": {
+        "label": "🩺 Arregla mi hábito más débil",
+        "payload": "'{habit}' es mi hábito más débil esta semana — {done}/{scheduled} días cumplidos. ¿Cuál es la razón más probable por la que me lo salto y dos soluciones concretas que pueda aplicar esta semana?"
+      },
+      "goalOnTrack": {
+        "label": "🎯 ¿Voy por buen camino?",
+        "payload": "Sé sincero sobre mi objetivo '{goal}': ¿voy por buen camino para lograrlo y cuál es el único cambio que más mejoraría mis probabilidades?"
+      },
+      "weeklyReviewDown": {
+        "label": "📉 Analiza mi semana",
+        "payload": "Mi constancia bajó al {thisPct}% esta semana desde el {lastPct}% de la anterior. ¿Cuál es la causa más probable y el único cambio que debería hacer la próxima semana?"
+      },
+      "weeklyReviewUp": {
+        "label": "📊 Analiza mi semana",
+        "payload": "Mi constancia está en el {thisPct}% esta semana frente al {lastPct}% de la anterior. ¿Qué está funcionando y qué es lo único que debería impulsar más la próxima semana?"
+      },
+      "protectStreak": {
+        "label": "🛡️ Protege mi racha",
+        "payload": "Mi racha activa más larga es '{habit}' con {days} días. ¿Cuál es el mayor riesgo de romperla y cómo la protejo esta semana?"
+      },
+      "alignHabitsToGoal": {
+        "label": "🔗 ¿Qué hábitos sirven a mis objetivos?",
+        "payload": "Mirando mis hábitos frente a mi objetivo '{goal}', ¿cuáles lo hacen avanzar de verdad y cuáles son solo ruido? Sé específico e indica un hábito que quizá me falte."
+      },
+      "designHabitForGoal": {
+        "label": "💡 Convierte un objetivo en hábito",
+        "payload": "Quiero alcanzar mi objetivo '{goal}'. ¿Qué único hábito diario marcaría la mayor diferencia? Dame un hábito concreto que pueda empezar mañana."
+      },
+      "raiseTheBar": {
+        "label": "🚀 Sube el listón",
+        "payload": "Estoy cumpliendo todos mis hábitos y mis objetivos van por buen camino. ¿Dónde podría estar acomodándome y cuál es una forma de subir el listón sin quemarme?"
+      },
+      "firstStep": {
+        "label": "🌱 ¿Por dónde empiezo?",
+        "payload": "Estoy empezando y aún no he configurado objetivos ni hábitos. Sugiéreme un primer objetivo realista y un pequeño hábito diario para lograrlo, y explica por qué esa combinación funciona."
+      },
+      "whatCanYouHelp": {
+        "label": "💬 ¿En qué puedes ayudarme?",
+        "payload": "Según mis hábitos y objetivos en esta app, dame tres ejemplos concretos de cómo puedes ayudarme — no consejos genéricos, sino cosas ligadas a mis datos reales."
+      }
     },
     "local": {
       "notReachable": "❌ No se puede acceder al servidor de IA local en {url}. Asegúrate de que Ollama o LM Studio esté en ejecución.",
@@ -718,7 +739,9 @@
       "requestFailed": "❌ Error del modelo local (código: {code}).",
       "streamError": "❌ Error de conexión con el modelo local.",
       "timeout": "❌ El modelo local está tardando demasiado — puede que aún se esté cargando. Inténtalo de nuevo.",
-      "modelNotFound": "❌ Ese modelo no está disponible en el servidor. Abre el selector para elegir o cargar uno."
+      "modelNotFound": "❌ Ese modelo no está disponible en el servidor. Abre el selector para elegir o cargar uno.",
+      "authRequired": "❌ {app} está rechazando la conexión — requiere un token de API. Desactiva la autenticación en los ajustes de su servidor o apunta Evolve a un servidor que no lo requiera.",
+      "stillLoading": "El modelo aún se está cargando — un arranque en frío puede tardar un poco."
     },
     "standard": {
       "sessionExpired": "⚠️ Tu sesión ha caducado. Inicia sesión de nuevo para seguir usando Evolve AI.",
@@ -1126,9 +1149,7 @@
     "presetLmStudio": "LM Studio",
     "presetCustom": "Personalizado…",
     "baseUrlLabel": "URL base",
-    "baseUrlHint": "http://localhost:11434/v1",
     "modelLabel": "Modelo",
-    "modelHint": "p. ej. llama3.1:8b",
     "refreshModels": "Actualizar modelos",
     "discovering": "Buscando modelos…",
     "noModelsFound": "No se encontraron modelos — escribe un id de modelo manualmente abajo.",
@@ -1145,8 +1166,8 @@
     "systemPromptReset": "Restablecer",
     "temperatureLabel": "Temperatura",
     "save": "Listo",
-    "detectedTitle": "Modelo local detectado",
-    "detectedBody": "Hay un servidor de IA local ejecutándose en este Mac. ¿Ejecutar el coach de forma 100 % privada?",
+    "detectedTitle": "{app} detectado",
+    "detectedBody": "{app} se está ejecutando en este Mac. ¿Ejecutar el coach de forma 100 % privada?",
     "detectedAction": "Usar local",
     "detectedDismiss": "Ahora no",
     "activeCloud": "Nube · {model}",
@@ -1164,17 +1185,23 @@
     "temperatureRaise": "Subir la temperatura",
     "sendMessage": "Enviar",
     "stopResponse": "Detener",
-    "startOllama": "Iniciar Ollama",
-    "getOllama": "Obtener Ollama",
-    "startingOllama": "Iniciando Ollama…",
-    "ollamaOfflineTitle": "Ollama no está en ejecución",
-    "ollamaOfflineBody": "Inicia tu servidor local para chatear en privado — sin terminal.",
-    "ollamaNotInstalledTitle": "Ollama no está instalado",
-    "ollamaNotInstalledBody": "Instala la app gratuita de Ollama y luego pulsa Iniciar.",
+    "startLocalServer": "Iniciar {app}",
+    "getLocalServer": "Obtener {app}",
+    "startingLocalServer": "Iniciando {app}…",
+    "localServerOfflineTitle": "{app} no está en ejecución",
+    "localServerOfflineBody": "Inicia tu servidor local para chatear en privado — sin terminal.",
+    "localServerNotInstalledTitle": "{app} no está instalado",
+    "localServerNotInstalledBody": "Instala la app gratuita de {app} y luego pulsa Iniciar.",
+    "localServerStartingBody": "Esto puede tardar unos segundos…",
+    "localServerStartFailed": "No se pudo iniciar {app} — prueba a abrirlo desde la carpeta Aplicaciones.",
+    "localServerDownloadFailed": "No se pudo abrir el navegador — visita {url}",
     "ollamaStartTimeout": "Está tardando más de lo esperado — revisa el icono de Ollama en la barra de menús (el primer inicio puede requerir aprobación).",
-    "ollamaStartingBody": "Esto puede tardar unos segundos…",
-    "ollamaStartFailed": "No se pudo iniciar Ollama — prueba a abrirlo desde la carpeta Aplicaciones.",
-    "ollamaDownloadFailed": "No se pudo abrir el navegador — visita ollama.com/download",
+    "ollamaServerOffTitle": "Ollama está en ejecución pero no atiende peticiones",
+    "ollamaServerOffBody": "Ollama está abierto, pero no responde en su puerto. Ciérralo desde la barra de menús y luego pulsa Iniciar de nuevo.",
+    "lmStudioStartTimeout": "Está tardando más de lo esperado — abre LM Studio y comprueba que haya terminado de iniciarse.",
+    "lmStudioServerOffTitle": "El servidor de LM Studio no está en ejecución",
+    "lmStudioServerOffBody": "LM Studio está abierto, pero su servidor local está apagado. Actívalo con Developer → Start Server, o marca Settings → Run the LLM server on login.",
+    "lmStudioNoModelsJit": "LM Studio no está mostrando ningún modelo. Solo muestra los modelos cargados cuando la carga Just-In-Time está desactivada — carga un modelo en LM Studio o activa Developer → Server Settings → Just In Time Model Loading.",
     "backendStandard": "Evolve AI",
     "standardDesc": "Incluido en Evolve Pro. Ejecutamos por ti un modelo gratuito de Google (Gemma): sin claves, sin configuración. Tus mensajes van al plan gratuito de Google, que puede usarlos para mejorar sus servicios.",
     "activeStandard": "Evolve AI · {model}",

@@ -691,26 +691,47 @@
       "setupBody": "يعمل هذا المحرّك عبر حساب OpenRouter الخاص بك. اربطه لبدء المحادثة — أو انتقل إلى Evolve AI المُضمَّن في Pro.",
       "setupAction": "ربط الحساب"
     },
-    "suggestions": {
-      "morningBoost": "🔥 امنحني دفعة للبدء!",
-      "avoidDistractions": "🧠 كيف أتجنّب المشتّتات؟",
-      "lowEnergy": "⚡ طاقتي تتراجع. ماذا أفعل؟",
-      "stayFocused": "💪 امنحني نصيحة واحدة للبقاء مركّزاً",
-      "prepareTomorrow": "🛌 كيف أستعد ليوم غدٍ منتج؟",
-      "disciplineReflection": "📝 تأمّل في انضباط اليوم",
-      "analyzeActiveGoals": "🎯 حلّل أهدافي النشطة",
-      "planMacroGoals": "🗺️ كيف أخطّط لأهدافي الكبرى؟",
-      "goalObstacles": "🛑 ما العقبات التي تعيق أهدافي؟",
-      "reachMilestones": "📈 امنحني نصيحة واحدة لبلوغ مراحل إنجازي",
-      "consistencyStatus": "📈 كيف هو مستوى مواظبتي؟",
-      "weeklyStats": "📊 إحصاءاتي الأسبوعية",
-      "planDay": "🌅 خطّط ليومي",
-      "raiseBar": "🚀 كيف أرفع مستوى طموحي؟",
-      "recoverProcrastination": "🤕 كيف أتعافى بعد التسويف؟",
-      "connectHabitsGoals": "🔗 كيف أربط العادات بالأهداف؟",
-      "reviewGoalsHabits": "📊 راجع أهدافي وعاداتي",
-      "disciplineAdvice": "🔥 نصيحة عن الانضباط",
-      "createNewHabit": "💡 كيف أنشئ عادة جديدة؟"
+    "coachPrompts": {
+      "diagnoseWeakestHabit": {
+        "label": "🩺 عالج أضعف عاداتي",
+        "payload": "'{habit}' هي أضعف عاداتي هذا الأسبوع — {done}/{scheduled} أيام مُنجزة. ما السبب الأرجح لتفويتي لها، وما حلّان محدّدان يمكنني تطبيقهما هذا الأسبوع؟"
+      },
+      "goalOnTrack": {
+        "label": "🎯 هل أنا على المسار الصحيح؟",
+        "payload": "كن صادقًا بشأن هدفي '{goal}': هل أنا على المسار الصحيح لتحقيقه، وما التغيير الوحيد الذي سيحسّن فرصي أكثر من غيره؟"
+      },
+      "weeklyReviewDown": {
+        "label": "📉 حلّل أسبوعي",
+        "payload": "انخفض اتساق عاداتي إلى {thisPct}% هذا الأسبوع من {lastPct}% الأسبوع الماضي. ما السبب الأرجح، وما التغيير الوحيد الذي ينبغي أن أجريه الأسبوع القادم؟"
+      },
+      "weeklyReviewUp": {
+        "label": "📊 حلّل أسبوعي",
+        "payload": "اتساق عاداتي {thisPct}% هذا الأسبوع مقابل {lastPct}% الأسبوع الماضي. ما الذي ينجح، وما الشيء الوحيد الذي ينبغي أن أدفعه أكثر الأسبوع القادم؟"
+      },
+      "protectStreak": {
+        "label": "🛡️ احمِ سلسلتي",
+        "payload": "أطول سلسلة نشطة لديّ هي '{habit}' عند {days} يومًا. ما أكبر خطر يهدّد استمرارها، وكيف أحميها هذا الأسبوع؟"
+      },
+      "alignHabitsToGoal": {
+        "label": "🔗 أي العادات تخدم أهدافي؟",
+        "payload": "بالنظر إلى عاداتي مقابل هدفي '{goal}'، أيّها يدفعه فعلًا إلى الأمام وأيّها مجرد تشتيت؟ كن محدّدًا واذكر عادة قد تنقصني."
+      },
+      "designHabitForGoal": {
+        "label": "💡 حوّل هدفًا إلى عادة",
+        "payload": "أريد تحقيق هدفي '{goal}'. ما العادة اليومية الواحدة التي ستُحدث أكبر فرق؟ أعطني عادة محدّدة يمكنني البدء بها غدًا."
+      },
+      "raiseTheBar": {
+        "label": "🚀 ارفع المستوى",
+        "payload": "أنا ملتزم بكل عاداتي وأهدافي على المسار الصحيح. أين قد أتراخى، وما وسيلة لرفع المستوى دون أن أُنهك؟"
+      },
+      "firstStep": {
+        "label": "🌱 من أين أبدأ؟",
+        "payload": "أنا في البداية ولم أُعدّ بعد أهدافًا أو عادات. اقترح عليّ هدفًا أول واقعيًا وعادة يومية صغيرة للوصول إليه، واشرح لماذا يعمل هذا الاقتران."
+      },
+      "whatCanYouHelp": {
+        "label": "💬 بماذا يمكنك مساعدتي؟",
+        "payload": "بناءً على عاداتي وأهدافي في هذا التطبيق، أعطني ثلاثة أمثلة محدّدة على كيفية مساعدتك لي — لا نصائح عامة، بل أمور مرتبطة ببياناتي الفعلية."
+      }
     },
     "local": {
       "notReachable": "❌ تعذّر الوصول إلى خادم الذكاء الاصطناعي المحلي على {url}. تأكّد من تشغيل Ollama أو LM Studio.",
@@ -718,7 +739,9 @@
       "requestFailed": "❌ خطأ في النموذج المحلي (الرمز: {code}).",
       "streamError": "❌ فشل الاتصال بالنموذج المحلي.",
       "timeout": "❌ النموذج المحلي يستغرق وقتًا طويلًا — قد يكون ما زال قيد التحميل. حاول مرة أخرى.",
-      "modelNotFound": "❌ هذا النموذج غير متوفر على الخادم. افتح مُحدِّد النماذج لاختيار نموذج أو تحميله."
+      "modelNotFound": "❌ هذا النموذج غير متوفر على الخادم. افتح مُحدِّد النماذج لاختيار نموذج أو تحميله.",
+      "authRequired": "❌ يرفض {app} الاتصال — فهو يتطلب رمز API. عطّل المصادقة في إعدادات خادمه، أو وجّه Evolve إلى خادم لا يتطلب ذلك.",
+      "stillLoading": "ما زال تحميل النموذج جاريًا — قد يستغرق التشغيل البارد بعض الوقت."
     },
     "standard": {
       "sessionExpired": "⚠️ انتهت صلاحية جلستك. سجّل الدخول مجددًا لمتابعة استخدام Evolve AI.",
@@ -1126,9 +1149,7 @@
     "presetLmStudio": "LM Studio",
     "presetCustom": "مخصّص…",
     "baseUrlLabel": "عنوان URL الأساسي",
-    "baseUrlHint": "http://localhost:11434/v1",
     "modelLabel": "النموذج",
-    "modelHint": "مثال: llama3.1:8b",
     "refreshModels": "تحديث النماذج",
     "discovering": "جارٍ البحث عن النماذج…",
     "noModelsFound": "لم يُعثَر على نماذج — اكتب معرّف نموذج يدويًا أدناه.",
@@ -1145,8 +1166,8 @@
     "systemPromptReset": "إعادة تعيين",
     "temperatureLabel": "درجة الحرارة",
     "save": "تم",
-    "detectedTitle": "تم اكتشاف نموذج محلي",
-    "detectedBody": "يعمل خادم ذكاء اصطناعي محلي على هذا الـ Mac. هل تريد تشغيل المدرّب بخصوصية كاملة؟",
+    "detectedTitle": "تم اكتشاف {app}",
+    "detectedBody": "يعمل {app} على هذا الـ Mac. هل تريد تشغيل المدرّب بخصوصية 100%؟",
     "detectedAction": "استخدام المحلي",
     "detectedDismiss": "ليس الآن",
     "activeCloud": "السحابة · {model}",
@@ -1164,17 +1185,23 @@
     "temperatureRaise": "رفع درجة الحرارة",
     "sendMessage": "إرسال",
     "stopResponse": "إيقاف",
-    "startOllama": "تشغيل Ollama",
-    "getOllama": "الحصول على Ollama",
-    "startingOllama": "جارٍ تشغيل Ollama…",
-    "ollamaOfflineTitle": "Ollama غير مُشغّل",
-    "ollamaOfflineBody": "شغّل خادمك المحلي للدردشة بخصوصية — دون الحاجة إلى الطرفية.",
-    "ollamaNotInstalledTitle": "Ollama غير مُثبَّت",
-    "ollamaNotInstalledBody": "ثبّت تطبيق Ollama المجاني ثم اضغط تشغيل.",
+    "startLocalServer": "تشغيل {app}",
+    "getLocalServer": "الحصول على {app}",
+    "startingLocalServer": "جارٍ تشغيل {app}…",
+    "localServerOfflineTitle": "{app} غير مُشغّل",
+    "localServerOfflineBody": "شغّل خادمك المحلي للدردشة بخصوصية — دون الحاجة إلى الطرفية.",
+    "localServerNotInstalledTitle": "{app} غير مُثبَّت",
+    "localServerNotInstalledBody": "ثبّت تطبيق {app} المجاني ثم اضغط تشغيل.",
+    "localServerStartingBody": "قد يستغرق ذلك بضع ثوانٍ…",
+    "localServerStartFailed": "تعذّر تشغيل {app} — جرّب فتحه من مجلد التطبيقات.",
+    "localServerDownloadFailed": "تعذّر فتح المتصفح — تفضّل بزيارة {url}",
     "ollamaStartTimeout": "يستغرق وقتًا أطول من المتوقع — تحقّق من أيقونة Ollama في شريط القوائم (قد يتطلب التشغيل الأول موافقة).",
-    "ollamaStartingBody": "قد يستغرق ذلك بضع ثوانٍ…",
-    "ollamaStartFailed": "تعذّر تشغيل Ollama — جرّب فتحه من مجلد التطبيقات.",
-    "ollamaDownloadFailed": "تعذّر فتح المتصفح — تفضّل بزيارة ollama.com/download",
+    "ollamaServerOffTitle": "Ollama يعمل لكنه لا يقدّم الخدمة",
+    "ollamaServerOffBody": "Ollama مفتوح لكنه لا يستجيب على منفذه. أغلقه من شريط القوائم ثم اضغط تشغيل مرة أخرى.",
+    "lmStudioStartTimeout": "يستغرق وقتًا أطول من المتوقع — افتح LM Studio وتأكّد من اكتمال تشغيله.",
+    "lmStudioServerOffTitle": "خادم LM Studio غير مُشغّل",
+    "lmStudioServerOffBody": "LM Studio مفتوح، لكن خادمه المحلي مُطفأ. شغّله من Developer → Start Server، أو فعّل الخيار Settings → Run the LLM server on login.",
+    "lmStudioNoModelsJit": "لا يعرض LM Studio أي نماذج. فهو لا يعرض سوى النماذج المحمَّلة عندما يكون تحميل Just-In-Time مُعطَّلًا — حمّل نموذجًا في LM Studio، أو فعّل Developer → Server Settings → Just In Time Model Loading.",
     "backendStandard": "Evolve AI",
     "standardDesc": "مُضمَّن في Evolve Pro. نشغّل لك نموذجًا مجانيًا من Google (Gemma) — بلا مفاتيح وبلا إعداد. تذهب رسائلك إلى الطبقة المجانية من Google، التي قد تستخدمها لتحسين خدماتها.",
     "activeStandard": "Evolve AI · {model}",

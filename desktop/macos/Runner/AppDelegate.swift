@@ -731,24 +731,22 @@ enum CloudKitSyncBridge {
 
 /// Native half of the "start the local LLM server from inside the app" feature
 /// (`evolve/local_llm`). The app is sandboxed, so it CANNOT spawn `ollama serve`
-/// or any shell/binary — but it CAN ask LaunchServices (via NSWorkspace) to
-/// launch the already-installed Ollama desktop app, which in turn starts the
-/// `ollama serve` daemon on localhost:11434. No new entitlement is needed:
-/// launching another app is LaunchServices-mediated and sandbox-legal.
+/// or `lms server start` or any shell/binary — but it CAN ask LaunchServices
+/// (via NSWorkspace) to launch an already-installed local-LLM desktop app, which
+/// in turn brings up its HTTP server. No new entitlement is needed: launching
+/// another app is LaunchServices-mediated and sandbox-legal.
+///
+/// **This bridge is deliberately product-agnostic.** Bundle identifiers and
+/// install paths arrive as call arguments from `LocalServerTarget` on the Dart
+/// side rather than being hardcoded here. That is not just tidiness: a constant
+/// in this file is unreachable from every Flutter test, so the Ollama ids that
+/// used to live here were both unverified AND unverifiable. In Dart they are
+/// ordinary data a unit test can assert on, and adding a third provider needs no
+/// Swift edit at all.
 ///
 /// Kept in this file (already a Runner target member) so it builds without
 /// editing the Xcode project — same convention as the bridges above.
 enum LocalLlmBridge {
-  /// Candidate bundle identifiers for the Ollama macOS app, most-likely first.
-  /// The exact id must be confirmed on-device (`osascript -e 'id of app "Ollama"'`);
-  /// the `/Applications/Ollama.app` path is a last-resort fallback.
-  private static let ollamaBundleIds = [
-    "com.electron.ollama",
-    "ai.ollama.app",
-    "com.ollama.ollama",
-    "com.ollama.app",
-  ]
-
   static func register(_ messenger: FlutterBinaryMessenger) {
     let channel = FlutterMethodChannel(
       name: "evolve/local_llm",
@@ -756,39 +754,91 @@ enum LocalLlmBridge {
     )
     channel.setMethodCallHandler { call, result in
       switch call.method {
-      case "ollamaInstalled":
-        result(ollamaAppURL() != nil)
-      case "launchOllama":
-        launchOllama(result)
+      case "localAppInstalled":
+        guard let target = Target(call.arguments) else {
+          result(false)
+          return
+        }
+        result(appURL(target) != nil)
+      case "localAppRunning":
+        guard let target = Target(call.arguments) else {
+          result(false)
+          return
+        }
+        result(isRunning(target))
+      case "launchLocalApp":
+        guard let target = Target(call.arguments) else {
+          result("notInstalled")
+          return
+        }
+        launch(target, result)
       default:
         result(FlutterMethodNotImplemented)
       }
     }
   }
 
-  /// Resolves the installed Ollama app's URL via LaunchServices (sandbox-safe),
-  /// falling back to the conventional install path. Returns nil when not found.
-  private static func ollamaAppURL() -> URL? {
+  /// The Dart-supplied identity of one local-LLM product.
+  private struct Target {
+    let bundleIds: [String]
+    let appPath: String
+
+    init?(_ arguments: Any?) {
+      guard let map = arguments as? [String: Any],
+            let bundleIds = map["bundleIds"] as? [String]
+      else { return nil }
+      self.bundleIds = bundleIds
+      self.appPath = (map["appPath"] as? String) ?? ""
+    }
+  }
+
+  /// Resolves an installed app's URL via LaunchServices (sandbox-safe), falling
+  /// back to the conventional install path. Returns nil when not found.
+  ///
+  /// The path fallback is what keeps an unconfirmed bundle identifier a soft
+  /// failure: a default install still resolves even if every id misses.
+  private static func appURL(_ target: Target) -> URL? {
     let workspace = NSWorkspace.shared
-    for identifier in ollamaBundleIds {
+    for identifier in target.bundleIds {
       if let url = workspace.urlForApplication(withBundleIdentifier: identifier) {
         return url
       }
     }
-    let conventionalPath = "/Applications/Ollama.app"
-    if FileManager.default.fileExists(atPath: conventionalPath) {
-      return URL(fileURLWithPath: conventionalPath)
+    if !target.appPath.isEmpty,
+       FileManager.default.fileExists(atPath: target.appPath) {
+      return URL(fileURLWithPath: target.appPath)
     }
     return nil
   }
 
-  private static func launchOllama(_ result: @escaping FlutterResult) {
-    guard let url = ollamaAppURL() else {
+  /// Whether the app is currently RUNNING, as opposed to merely installed.
+  ///
+  /// This is what lets Dart tell two very different timeouts apart: "the app
+  /// never came up" versus "the app is open but its server is off" — the
+  /// ordinary first-run state for LM Studio, whose HTTP server is a separate
+  /// toggle. Without it, that user would be told the launch failed while
+  /// LM Studio sits visibly open on their screen.
+  ///
+  /// Matched by bundle id only. An app resolved purely by the path fallback
+  /// reports false here, which degrades to the generic timeout message rather
+  /// than to a wrong diagnosis.
+  private static func isRunning(_ target: Target) -> Bool {
+    for identifier in target.bundleIds {
+      if !NSRunningApplication
+        .runningApplications(withBundleIdentifier: identifier).isEmpty {
+        return true
+      }
+    }
+    return false
+  }
+
+  private static func launch(_ target: Target, _ result: @escaping FlutterResult) {
+    guard let url = appURL(target) else {
       result("notInstalled")
       return
     }
     let configuration = NSWorkspace.OpenConfiguration()
-    // Start the daemon in the background without stealing focus from Evolve.
+    // Start the server in the background without stealing focus from Evolve.
     configuration.activates = false
     NSWorkspace.shared.openApplication(at: url, configuration: configuration) { _, error in
       DispatchQueue.main.async {

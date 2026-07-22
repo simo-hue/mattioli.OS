@@ -6,6 +6,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../core/coach_consent.dart';
 import '../../core/coach_endpoint.dart';
+import '../../core/coach_prompts.dart';
+import '../../core/streak_utils.dart';
 import '../../core/openrouter_service.dart';
 import '../../core/app_logger.dart';
 import '../../core/data_mode.dart';
@@ -367,7 +369,9 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     final todayKey = _todayKey();
     final todayLogs = habitLogs[todayKey] ?? {};
     final todayDone = todayLogs.values.where((s) => s == 'done').length;
-    final todayTotal = habits.where((h) => h.isScheduledOn(DateTime.now())).length;
+    final todayTotal = habits
+        .where((h) => h.isScheduledOn(DateTime.now()))
+        .length;
 
     final goalsList = activeGoals.isNotEmpty
         ? activeGoals.map((g) => '  • ${g.title}').join('\n')
@@ -399,101 +403,112 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     );
   }
 
-  List<String> _getDynamicSuggestions() {
+  /// Live facts for the coach-prompt selector: the weakest habit so far this
+  /// week, the week's momentum, the best streak, plus goal/empty state —
+  /// respecting the share toggles so a hidden dimension never leaks into a chip.
+  /// Mirrors the desktop computation; selection is delegated to the pure,
+  /// testable [buildCoachPrompts].
+  CoachPromptFacts _coachFacts() {
     final now = DateTime.now();
-    final hour = now.hour;
-    final List<String> pool = [];
-
-    // 1. Suggerimenti basati sull'orario (Generici)
-    if (hour >= 5 && hour < 12) {
-      pool.addAll([
-        context.t.ai.suggestions.morningBoost,
-        context.t.ai.suggestions.avoidDistractions,
-      ]);
-    } else if (hour >= 12 && hour < 18) {
-      pool.addAll([
-        context.t.ai.suggestions.lowEnergy,
-        context.t.ai.suggestions.stayFocused,
-      ]);
-    } else {
-      pool.addAll([
-        context.t.ai.suggestions.prepareTomorrow,
-        context.t.ai.suggestions.disciplineReflection,
-      ]);
-    }
-
-    final goals = ref.read(macroGoalsProvider).goals;
     final habits = ref.read(goalsProvider);
-    final habitLogs = ref.read(habitLogsProvider);
-
-    final activeGoals = goals
+    final activeGoals = ref
+        .read(macroGoalsProvider)
+        .goals
         .where((g) => g.status == GoalStatus.active)
         .toList();
-    final todayKey = _todayKey();
-    final todayLogs = habitLogs[todayKey] ?? {};
-    final todayDone = todayLogs.values.where((s) => s == 'done').length;
-    final todayTotal = habits.where((h) => h.isScheduledOn(DateTime.now())).length;
+    final logs = ref.read(habitLogsProvider);
 
-    // 2. Suggerimenti specifici in base agli switch attivi
-    if (_shareGoals && !_shareHabits) {
-      // SOLO OBIETTIVI
-      if (activeGoals.isNotEmpty) {
-        pool.add(context.t.ai.suggestions.analyzeActiveGoals);
+    String key(DateTime d) =>
+        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    final monday = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(Duration(days: now.weekday - 1));
+
+    // Single pass: the weakest scheduled habit (lowest completion so far this
+    // week, with at least one miss) and the longest current streak.
+    ({String title, int done, int scheduled})? weakest;
+    var weakestRate = 2.0;
+    var bestDays = 0;
+    String? bestTitle;
+    for (final h in habits) {
+      var done = 0;
+      var scheduled = 0;
+      for (var i = 0; i < now.weekday; i++) {
+        final day = monday.add(Duration(days: i));
+        if (!h.isScheduledOn(day)) continue;
+        scheduled++;
+        if (logs[key(day)]?[h.id] == 'done') done++;
       }
-      pool.addAll([
-        context.t.ai.suggestions.planMacroGoals,
-        context.t.ai.suggestions.goalObstacles,
-        context.t.ai.suggestions.reachMilestones,
-      ]);
-    } else if (!_shareGoals && _shareHabits) {
-      // SOLO ABITUDINI
-      pool.addAll([
-        context.t.ai.suggestions.consistencyStatus,
-        context.t.ai.suggestions.weeklyStats,
-        context.t.ai.suggestions.planDay,
-      ]);
+      if (scheduled > 0 && done < scheduled && done / scheduled < weakestRate) {
+        weakest = (title: h.title, done: done, scheduled: scheduled);
+        weakestRate = done / scheduled;
+      }
+      final streak = computeStreak(
+        habitId: h.id,
+        date: now,
+        logs: logs,
+        startDate: h.startDate,
+        frequencyDays: h.frequencyDays,
+      );
+      if (streak > bestDays) {
+        bestDays = streak;
+        bestTitle = h.title;
+      }
+    }
 
-      if (todayTotal > 0) {
-        final pct = (todayDone / todayTotal) * 100;
-        if (pct == 100) {
-          pool.add(context.t.ai.suggestions.raiseBar);
-        } else if (pct < 30 && hour > 14) {
-          pool.add(context.t.ai.suggestions.recoverProcrastination);
+    // Full-week completion rate over all 7 days (mirrors the desktop snapshot
+    // getter) so this-vs-last-week momentum is measured identically.
+    double weekRate(DateTime anchor) {
+      final mon = DateTime(
+        anchor.year,
+        anchor.month,
+        anchor.day,
+      ).subtract(Duration(days: anchor.weekday - 1));
+      var d = 0;
+      var tot = 0;
+      for (var i = 0; i < 7; i++) {
+        final date = mon.add(Duration(days: i));
+        for (final h in habits) {
+          if (!h.isScheduledOn(date)) continue;
+          tot++;
+          if (logs[key(date)]?[h.id] == 'done') d++;
         }
       }
-    } else if (_shareGoals && _shareHabits) {
-      // ENTRAMBI
-      if (activeGoals.isNotEmpty) {
-        pool.add(context.t.ai.suggestions.analyzeActiveGoals);
-      }
-      pool.addAll([
-        context.t.ai.suggestions.consistencyStatus,
-        context.t.ai.suggestions.connectHabitsGoals,
-        context.t.ai.suggestions.reviewGoalsHabits,
-      ]);
-    } else {
-      // NESSUNO (Fallback - Anche se l'utente non può inviare messaggi in questo stato, i suggerimenti mostrano l'errore)
-      pool.addAll([
-        context.t.ai.suggestions.disciplineAdvice,
-        context.t.ai.suggestions.createNewHabit,
-        context.t.ai.suggestions.avoidDistractions,
-      ]);
+      return tot == 0 ? 0 : d / tot;
     }
 
-    // Rimuovi duplicati (se presenti)
+    final thisRate = weekRate(now);
+    final thisPct = (thisRate * 100).round();
+    final lastPct = (weekRate(now.subtract(const Duration(days: 7))) * 100)
+        .round();
+    final hasHistory = habits.isNotEmpty && (thisPct > 0 || lastPct > 0);
+    final allGreen = habits.isNotEmpty && thisRate >= 0.999;
 
-    // Remove duplicates
-    final uniquePool = pool.toSet().toList();
-
-    // Deterministic selection based on message count to be stable per state
-    final offset = _messages.length % uniquePool.length;
-    final List<String> selected = [];
-    for (int i = 0; i < 4; i++) {
-      selected.add(uniquePool[(offset + i) % uniquePool.length]);
-    }
-
-    return selected;
+    return CoachPromptFacts(
+      shareHabits: _shareHabits,
+      shareGoals: _shareGoals,
+      weakestHabit: _shareHabits ? weakest : null,
+      momentum: (_shareHabits && hasHistory)
+          ? (thisPct: thisPct, lastPct: lastPct)
+          : null,
+      bestStreak: (_shareHabits && bestDays >= 7 && bestTitle != null)
+          ? (title: bestTitle, days: bestDays)
+          : null,
+      topGoalTitle: (_shareGoals && activeGoals.isNotEmpty)
+          ? activeGoals.first.title
+          : null,
+      habitCount: _shareHabits ? habits.length : 0,
+      activeGoalCount: _shareGoals ? activeGoals.length : 0,
+      allGreen: _shareHabits && allGreen,
+      isEmpty: activeGoals.isEmpty && habits.isEmpty,
+      rotation: _messages.length,
+    );
   }
+
+  /// Up to four data-personalized starter prompts for the current state.
+  List<CoachPrompt> _coachPrompts() => buildCoachPrompts(_coachFacts());
 
   String _todayKey() {
     final now = DateTime.now();
@@ -602,7 +617,8 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     // way there is nothing to authenticate with, so offer setup rather than a
     // composer whose every send would fail.
     final endpointState = ref.watch(coachEndpointProvider);
-    final needsSetup = !endpointState.isLoading && endpointState.asData?.value == null;
+    final needsSetup =
+        !endpointState.isLoading && endpointState.asData?.value == null;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -726,10 +742,17 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                     return _buildTypingIndicator(colors);
                   }
                   final message = _messages[index];
-                  final isStreaming = !message.isUser && index == _messages.length - 1 && _responseSub != null;
+                  final isStreaming =
+                      !message.isUser &&
+                      index == _messages.length - 1 &&
+                      _responseSub != null;
                   return _FadeInSlide(
                     key: ValueKey(message.timestamp.millisecondsSinceEpoch),
-                    child: _buildMessageBubble(message, colors, isStreaming: isStreaming),
+                    child: _buildMessageBubble(
+                      message,
+                      colors,
+                      isStreaming: isStreaming,
+                    ),
                   );
                 },
               ),
@@ -844,8 +867,8 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: _getDynamicSuggestions()
-                            .map((text) => _buildSuggestedPrompt(text, colors))
+                        children: _coachPrompts()
+                            .map((p) => _buildSuggestedPrompt(p, colors))
                             .toList(),
                       ),
                     ],
@@ -926,23 +949,18 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     );
   }
 
-  Widget _buildSuggestedPrompt(String text, AppColorsExtension colors) {
+  Widget _buildSuggestedPrompt(CoachPrompt prompt, AppColorsExtension colors) {
     return GestureDetector(
       onTap: () {
         ref.hapticLight();
 
-        // Rimuovi l'emoji iniziale se presente (tutto ciò che precede il primo spazio)
-        String cleanText = text;
-        final int firstSpace = text.indexOf(' ');
-        if (firstSpace != -1) {
-          cleanText = text.substring(firstSpace + 1);
-        }
-
+        // The chip shows [prompt.label] (with its emoji) but sends the engineered
+        // [prompt.payload] — real numbers + a request for an actionable answer.
         if (!_shareHabits && !_shareGoals) {
           setState(() {
             _messages.add(
               ChatMessage(
-                text: cleanText,
+                text: prompt.payload,
                 isUser: true,
                 timestamp: DateTime.now(),
               ),
@@ -968,7 +986,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
           });
           return;
         }
-        _sendMessage(cleanText);
+        _sendMessage(prompt.payload);
       },
 
       child: Container(
@@ -979,7 +997,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
           border: Border.all(color: colors.borderHover),
         ),
         child: Text(
-          text,
+          prompt.label,
           style: TextStyle(
             color: colors.foreground,
             fontSize: 13,
@@ -990,7 +1008,11 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     );
   }
 
-  Widget _buildMessageBubble(ChatMessage message, AppColorsExtension colors, {bool isStreaming = false}) {
+  Widget _buildMessageBubble(
+    ChatMessage message,
+    AppColorsExtension colors, {
+    bool isStreaming = false,
+  }) {
     final isUser = message.isUser;
     final bubble = GestureDetector(
       onLongPress: () {
@@ -1031,9 +1053,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                   _CursorSyntax(),
                 ],
               ),
-              builders: {
-                'cursor': _CursorBuilder(),
-              },
+              builders: {'cursor': _CursorBuilder()},
               styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context))
                   .copyWith(
                     p: TextStyle(

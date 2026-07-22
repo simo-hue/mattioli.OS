@@ -1109,10 +1109,10 @@ heading ellipsizing. `flutter analyze` clean; `tour_flow_test` still passes.
   - *Details*: Updated the `_HabitRow` widget in the desktop `habits_page.dart` to correctly reflect "missed" habit states using a red cross (`LucideIcons.x`), bringing parity with the mobile app.
   - *Tech Notes*: `_HabitRow` now receives the `todayStatus` dynamically from `DashboardSnapshot.habitStatusFor`, which ensures the UI handles 'done' and 'missed' states correctly without altering the underlying data models and cache structure.
 
-- [2026-07-21]: **LM Studio launch parity — AGREED DESIGN (no code written yet)**
+- [2026-07-21]: **LM Studio launch parity — DESIGN (implemented; see the entry below)**
   - *Details*: Design settled for bringing LM Studio to parity with the Ollama launch flow in the
-    desktop AI coach. **Nothing is implemented**; this entry records the decisions so the work can
-    start from a fixed spec. Starting point: LM Studio was already half-supported — `LocalServerPreset.lmStudio`,
+    desktop AI coach. This entry records the decisions; the implementation record follows it.
+    Starting point: LM Studio was already half-supported — `LocalServerPreset.lmStudio`,
     port 1234 in `kLocalProbePorts`, model discovery, reachability pill, streaming and error mapping
     all work today because every backend shares one `OpenAiCompatibleClient`. The gap is only the
     launch-and-recover layer (native launcher, start controller, Start/Get button, start row,
@@ -1184,3 +1184,52 @@ heading ellipsizing. `flutter analyze` clean; `tour_flow_test` still passes.
     the Developer tab — `lmstudio://add_mcp` is the only documented action — so all guidance is
     text the user reads and acts on. Three facts remain empirically unverified and are tracked in
     `TO_SIMO_DO.md`; the bundle id is the only one that blocks implementation.
+
+- [2026-07-21]: **LM Studio launch parity — IMPLEMENTED (on-device QA pending)**
+  - *Details*: Built the design recorded in the entry above. LM Studio is now a first-class local
+    engine: it can be launched, diagnosed, and recovered from inside the app exactly as Ollama can.
+    The Ollama-specific launch slice was generalised into a preset-driven descriptor rather than
+    duplicated, so a third provider (Jan, llama.cpp) is now a Dart data change with no Swift edit.
+  - *Files*:
+    - NEW `lib/features/ai_coach/domain/local_server_target.dart` — the `LocalServerTarget`
+      descriptor (`displayName`, `bundleIds`, `appPath`, `downloadUrl`, `baseUrlHint`, `modelHint`,
+      `firstTokenTimeout`, `startPollAttempts`, `serverIsOptIn`) with `ollama`/`lmStudio`/`custom`
+      instances and a total `forPreset` / `forBaseUrl`.
+    - RENAMED `data/ollama_launcher.dart` → `data/local_app_launcher.dart`
+      (`OllamaLauncher`→`LocalAppLauncher`, `OllamaLaunchResult`→`LocalAppLaunchResult`), now
+      taking a target and gaining `isRunning`.
+    - RENAMED `application/ollama_start_controller.dart` →
+      `application/local_server_start_controller.dart` (`runOllamaStart`→`runLocalServerStart`,
+      `OllamaStartStatus`→`LocalServerStartStatus` + new `serverNotEnabled`,
+      `shouldOfferOllamaStart`→`shouldOfferLocalServerStart`,
+      `ollamaInstalledProvider`→`localAppInstalledProvider` (now a family keyed by preset), new
+      `localLauncherSupportedProvider` / `localAppRunningProvider` / `activeLocalServerTargetProvider`).
+    - RENAMED `presentation/start_ollama_button.dart` → `presentation/start_local_server_button.dart`
+      (`StartOllamaButton`→`StartLocalServerButton`, now takes a target).
+    - EDITED `data/local_coach_backend.dart` (factory ctor; per-target `firstTokenTimeout`; new
+      `unauthorized` message), `presentation/coach_settings_dialog.dart`
+      (`_OllamaStartRow`→`_LocalServerStartRow`, target-driven hints, JIT-aware empty-model copy),
+      `presentation/ai_coach_page.dart` (both banners generalised; new `_WaitingIndicator`).
+    - EDITED `macos/Runner/AppDelegate.swift` — `LocalLlmBridge` is now product-agnostic.
+  - *Tech Notes*: **No new dependencies. No new HTTP endpoints** — LM Studio is reached through the
+    same OpenAI-compatible surface as every other backend (`GET /v1/models`,
+    `POST /v1/chat/completions`); its native `/api/v0` and `/api/v1` are deliberately unused, so
+    `OpenAiCompatibleClient` still knows nothing about which product it is talking to.
+    **MethodChannel `evolve/local_llm` changed shape (breaking, both halves ship together):**
+    `ollamaInstalled`/`launchOllama` (no args) → `localAppInstalled`/`launchLocalApp`/`localAppRunning`,
+    each taking `{bundleIds: [String], appPath: String}`. Bundle ids moved OUT of Swift into Dart —
+    they are now unit-tested (`test/local_server_target_test.dart`), which they could never be
+    before. Constants: LM Studio bundle id `ai.elementlabs.lmstudio`, path
+    `/Applications/LM Studio.app`, download `https://lmstudio.ai/download`, base URL
+    `http://localhost:1234/v1`, first-token budget 180s (vs Ollama's 60s), start poll 40×1.5s
+    (vs 20×1.5s). **i18n**: 12 Ollama-hardcoded keys + `baseUrlHint`/`modelHint` removed; 17-key
+    parameterized block added; `detectedTitle`/`detectedBody` now take `{app}`; `ai.local` gained
+    `authRequired` + `stillLoading`. All 5 locales regenerated with `dart run slang` and verified
+    key-for-key identical (1147 leaves each). **Verified here**: `flutter analyze` clean (4 issues
+    remain, all pre-existing in untouched files), `flutter test` **512/512 pass** (37 new tests
+    across 4 files), `dart format` clean on every touched file, and the new AppKit surface
+    (`NSRunningApplication.runningApplications(withBundleIdentifier:)`, `NSWorkspace.OpenConfiguration`)
+    typechecks against the real framework via `swiftc -typecheck` (Swift 6.3.2). **NOT verified**:
+    the full macOS build (no Xcode on this machine) and every runtime behaviour — three empirical
+    checks remain in `TO_SIMO_DO.md`. Note `dart format` reports 90 files as unformatted repo-wide;
+    that drift is pre-existing and was deliberately NOT swept into this change.

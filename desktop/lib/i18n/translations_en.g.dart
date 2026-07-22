@@ -1982,7 +1982,7 @@ class Translations$ai$en {
 
 	late final Translations$ai$openRouter$en openRouter = Translations$ai$openRouter$en.internal(_root);
 	late final Translations$ai$apiKey$en apiKey = Translations$ai$apiKey$en.internal(_root);
-	late final Translations$ai$suggestions$en suggestions = Translations$ai$suggestions$en.internal(_root);
+	late final Translations$ai$coachPrompts$en coachPrompts = Translations$ai$coachPrompts$en.internal(_root);
 	late final Translations$ai$local$en local = Translations$ai$local$en.internal(_root);
 	late final Translations$ai$standard$en standard = Translations$ai$standard$en.internal(_root);
 	late final Translations$ai$consent$en consent = Translations$ai$consent$en.internal(_root);
@@ -3145,14 +3145,8 @@ class Translations$coachSettings$en {
 	/// en: 'Base URL'
 	String get baseUrlLabel => 'Base URL';
 
-	/// en: 'http://localhost:11434/v1'
-	String get baseUrlHint => 'http://localhost:11434/v1';
-
 	/// en: 'Model'
 	String get modelLabel => 'Model';
-
-	/// en: 'e.g. llama3.1:8b'
-	String get modelHint => 'e.g. llama3.1:8b';
 
 	/// en: 'Refresh models'
 	String get refreshModels => 'Refresh models';
@@ -3202,11 +3196,11 @@ class Translations$coachSettings$en {
 	/// en: 'Done'
 	String get save => 'Done';
 
-	/// en: 'Local model detected'
-	String get detectedTitle => 'Local model detected';
+	/// en: '{app} detected'
+	String detectedTitle({required Object app}) => '${app} detected';
 
-	/// en: 'A local AI server is running on this Mac. Run the coach 100% privately?'
-	String get detectedBody => 'A local AI server is running on this Mac. Run the coach 100% privately?';
+	/// en: '{app} is running on this Mac. Run the coach 100% privately?'
+	String detectedBody({required Object app}) => '${app} is running on this Mac. Run the coach 100% privately?';
 
 	/// en: 'Use local'
 	String get detectedAction => 'Use local';
@@ -3259,38 +3253,56 @@ class Translations$coachSettings$en {
 	/// en: 'Stop'
 	String get stopResponse => 'Stop';
 
-	/// en: 'Start Ollama'
-	String get startOllama => 'Start Ollama';
+	/// en: 'Start {app}'
+	String startLocalServer({required Object app}) => 'Start ${app}';
 
-	/// en: 'Get Ollama'
-	String get getOllama => 'Get Ollama';
+	/// en: 'Get {app}'
+	String getLocalServer({required Object app}) => 'Get ${app}';
 
-	/// en: 'Starting Ollama…'
-	String get startingOllama => 'Starting Ollama…';
+	/// en: 'Starting {app}…'
+	String startingLocalServer({required Object app}) => 'Starting ${app}…';
 
-	/// en: 'Ollama isn't running'
-	String get ollamaOfflineTitle => 'Ollama isn\'t running';
+	/// en: '{app} isn't running'
+	String localServerOfflineTitle({required Object app}) => '${app} isn\'t running';
 
 	/// en: 'Start your local server to chat privately — no terminal needed.'
-	String get ollamaOfflineBody => 'Start your local server to chat privately — no terminal needed.';
+	String get localServerOfflineBody => 'Start your local server to chat privately — no terminal needed.';
 
-	/// en: 'Ollama isn't installed'
-	String get ollamaNotInstalledTitle => 'Ollama isn\'t installed';
+	/// en: '{app} isn't installed'
+	String localServerNotInstalledTitle({required Object app}) => '${app} isn\'t installed';
 
-	/// en: 'Install the free Ollama app, then press Start.'
-	String get ollamaNotInstalledBody => 'Install the free Ollama app, then press Start.';
+	/// en: 'Install the free {app} app, then press Start.'
+	String localServerNotInstalledBody({required Object app}) => 'Install the free ${app} app, then press Start.';
+
+	/// en: 'This can take a few seconds…'
+	String get localServerStartingBody => 'This can take a few seconds…';
+
+	/// en: 'Couldn't start {app} — try opening it from your Applications folder.'
+	String localServerStartFailed({required Object app}) => 'Couldn\'t start ${app} — try opening it from your Applications folder.';
+
+	/// en: 'Couldn't open the browser — visit {url}'
+	String localServerDownloadFailed({required Object url}) => 'Couldn\'t open the browser — visit ${url}';
 
 	/// en: 'Taking longer than expected — check the Ollama icon in your menu bar (a first launch may need approval).'
 	String get ollamaStartTimeout => 'Taking longer than expected — check the Ollama icon in your menu bar (a first launch may need approval).';
 
-	/// en: 'This can take a few seconds…'
-	String get ollamaStartingBody => 'This can take a few seconds…';
+	/// en: 'Ollama is running but not serving'
+	String get ollamaServerOffTitle => 'Ollama is running but not serving';
 
-	/// en: 'Couldn't start Ollama — try opening it from your Applications folder.'
-	String get ollamaStartFailed => 'Couldn\'t start Ollama — try opening it from your Applications folder.';
+	/// en: 'Ollama is open but isn't answering on its port. Quit it from the menu bar, then press Start again.'
+	String get ollamaServerOffBody => 'Ollama is open but isn\'t answering on its port. Quit it from the menu bar, then press Start again.';
 
-	/// en: 'Couldn't open the browser — visit ollama.com/download'
-	String get ollamaDownloadFailed => 'Couldn\'t open the browser — visit ollama.com/download';
+	/// en: 'Taking longer than expected — open LM Studio and check it has finished starting.'
+	String get lmStudioStartTimeout => 'Taking longer than expected — open LM Studio and check it has finished starting.';
+
+	/// en: 'LM Studio's server isn't running'
+	String get lmStudioServerOffTitle => 'LM Studio\'s server isn\'t running';
+
+	/// en: 'LM Studio is open, but its local server is off. Turn it on with Developer → Start Server, or tick Settings → Run the LLM server on login.'
+	String get lmStudioServerOffBody => 'LM Studio is open, but its local server is off. Turn it on with Developer → Start Server, or tick Settings → Run the LLM server on login.';
+
+	/// en: 'LM Studio isn't listing any models. It only lists loaded models when Just-In-Time loading is off — load a model in LM Studio, or turn on Developer → Server Settings → Just In Time Model Loading.'
+	String get lmStudioNoModelsJit => 'LM Studio isn\'t listing any models. It only lists loaded models when Just-In-Time loading is off — load a model in LM Studio, or turn on Developer → Server Settings → Just In Time Model Loading.';
 
 	/// en: 'Evolve AI'
 	String get backendStandard => 'Evolve AI';
@@ -3779,70 +3791,23 @@ class Translations$ai$apiKey$en {
 	String get setupAction => 'Connect account';
 }
 
-// Path: ai.suggestions
-class Translations$ai$suggestions$en {
-	Translations$ai$suggestions$en.internal(this._root);
+// Path: ai.coachPrompts
+class Translations$ai$coachPrompts$en {
+	Translations$ai$coachPrompts$en.internal(this._root);
 
 	final Translations _root; // ignore: unused_field
 
 	// Translations
-
-	/// en: '🔥 Give me a boost to get started!'
-	String get morningBoost => '🔥 Give me a boost to get started!';
-
-	/// en: '🧠 How can I avoid distractions?'
-	String get avoidDistractions => '🧠 How can I avoid distractions?';
-
-	/// en: '⚡ My energy is dropping. What should I do?'
-	String get lowEnergy => '⚡ My energy is dropping. What should I do?';
-
-	/// en: '💪 Give me one tip to stay focused'
-	String get stayFocused => '💪 Give me one tip to stay focused';
-
-	/// en: '🛌 How can I prepare for a productive tomorrow?'
-	String get prepareTomorrow => '🛌 How can I prepare for a productive tomorrow?';
-
-	/// en: '📝 Reflect on today’s discipline'
-	String get disciplineReflection => '📝 Reflect on today’s discipline';
-
-	/// en: '🎯 Analyze my active goals'
-	String get analyzeActiveGoals => '🎯 Analyze my active goals';
-
-	/// en: '🗺️ How should I plan my macro goals?'
-	String get planMacroGoals => '🗺️ How should I plan my macro goals?';
-
-	/// en: '🛑 What obstacles are blocking my goals?'
-	String get goalObstacles => '🛑 What obstacles are blocking my goals?';
-
-	/// en: '📈 Give me one tip to reach my milestones'
-	String get reachMilestones => '📈 Give me one tip to reach my milestones';
-
-	/// en: '📈 How is my consistency going?'
-	String get consistencyStatus => '📈 How is my consistency going?';
-
-	/// en: '📊 My weekly stats'
-	String get weeklyStats => '📊 My weekly stats';
-
-	/// en: '🌅 Plan my day'
-	String get planDay => '🌅 Plan my day';
-
-	/// en: '🚀 How can I raise the bar?'
-	String get raiseBar => '🚀 How can I raise the bar?';
-
-	/// en: '🤕 How can I recover after procrastinating?'
-	String get recoverProcrastination => '🤕 How can I recover after procrastinating?';
-
-	/// en: '🔗 How can I connect habits to goals?'
-	String get connectHabitsGoals => '🔗 How can I connect habits to goals?';
-
-	/// en: '📊 Review my goals and habits'
-	String get reviewGoalsHabits => '📊 Review my goals and habits';
-
-	/// en: '🔥 Discipline advice'
-	String get disciplineAdvice => '🔥 Discipline advice';
-
-	/// en: '💡 How can I create a new habit?'
-	String get createNewHabit => '💡 How can I create a new habit?';
+	late final Translations$ai$coachPrompts$diagnoseWeakestHabit$en diagnoseWeakestHabit = Translations$ai$coachPrompts$diagnoseWeakestHabit$en.internal(_root);
+	late final Translations$ai$coachPrompts$goalOnTrack$en goalOnTrack = Translations$ai$coachPrompts$goalOnTrack$en.internal(_root);
+	late final Translations$ai$coachPrompts$weeklyReviewDown$en weeklyReviewDown = Translations$ai$coachPrompts$weeklyReviewDown$en.internal(_root);
+	late final Translations$ai$coachPrompts$weeklyReviewUp$en weeklyReviewUp = Translations$ai$coachPrompts$weeklyReviewUp$en.internal(_root);
+	late final Translations$ai$coachPrompts$protectStreak$en protectStreak = Translations$ai$coachPrompts$protectStreak$en.internal(_root);
+	late final Translations$ai$coachPrompts$alignHabitsToGoal$en alignHabitsToGoal = Translations$ai$coachPrompts$alignHabitsToGoal$en.internal(_root);
+	late final Translations$ai$coachPrompts$designHabitForGoal$en designHabitForGoal = Translations$ai$coachPrompts$designHabitForGoal$en.internal(_root);
+	late final Translations$ai$coachPrompts$raiseTheBar$en raiseTheBar = Translations$ai$coachPrompts$raiseTheBar$en.internal(_root);
+	late final Translations$ai$coachPrompts$firstStep$en firstStep = Translations$ai$coachPrompts$firstStep$en.internal(_root);
+	late final Translations$ai$coachPrompts$whatCanYouHelp$en whatCanYouHelp = Translations$ai$coachPrompts$whatCanYouHelp$en.internal(_root);
 }
 
 // Path: ai.local
@@ -3870,6 +3835,12 @@ class Translations$ai$local$en {
 
 	/// en: '❌ That model isn't available on the server. Open the model picker to choose or load one.'
 	String get modelNotFound => '❌ That model isn\'t available on the server. Open the model picker to choose or load one.';
+
+	/// en: '❌ {app} is refusing the connection — it requires an API token. Turn off authentication in its server settings, or point Evolve at a server that doesn't require one.'
+	String authRequired({required Object app}) => '❌ ${app} is refusing the connection — it requires an API token. Turn off authentication in its server settings, or point Evolve at a server that doesn\'t require one.';
+
+	/// en: 'Still loading the model — a cold start can take a while.'
+	String get stillLoading => 'Still loading the model — a cold start can take a while.';
 }
 
 // Path: ai.standard
@@ -3987,6 +3958,156 @@ class Translations$settingsPage$languageOptions$en {
 
 	/// en: 'Arabic'
 	String get arabic => 'Arabic';
+}
+
+// Path: ai.coachPrompts.diagnoseWeakestHabit
+class Translations$ai$coachPrompts$diagnoseWeakestHabit$en {
+	Translations$ai$coachPrompts$diagnoseWeakestHabit$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: '🩺 Fix my weakest habit'
+	String get label => '🩺 Fix my weakest habit';
+
+	/// en: ''{habit}' is my weakest habit this week — {done}/{scheduled} days done. What's the most likely reason I keep missing it, and two specific fixes I can apply this week?'
+	String payload({required Object habit, required Object done, required Object scheduled}) => '\'${habit}\' is my weakest habit this week — ${done}/${scheduled} days done. What\'s the most likely reason I keep missing it, and two specific fixes I can apply this week?';
+}
+
+// Path: ai.coachPrompts.goalOnTrack
+class Translations$ai$coachPrompts$goalOnTrack$en {
+	Translations$ai$coachPrompts$goalOnTrack$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: '🎯 Am I on track?'
+	String get label => '🎯 Am I on track?';
+
+	/// en: 'Be honest about my goal '{goal}': am I on track to reach it, and what's the one change that would most improve my odds?'
+	String payload({required Object goal}) => 'Be honest about my goal \'${goal}\': am I on track to reach it, and what\'s the one change that would most improve my odds?';
+}
+
+// Path: ai.coachPrompts.weeklyReviewDown
+class Translations$ai$coachPrompts$weeklyReviewDown$en {
+	Translations$ai$coachPrompts$weeklyReviewDown$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: '📉 Review my week'
+	String get label => '📉 Review my week';
+
+	/// en: 'My habit consistency dropped to {thisPct}% this week from {lastPct}% last week. What's the most likely cause, and the one change I should make next week?'
+	String payload({required Object thisPct, required Object lastPct}) => 'My habit consistency dropped to ${thisPct}% this week from ${lastPct}% last week. What\'s the most likely cause, and the one change I should make next week?';
+}
+
+// Path: ai.coachPrompts.weeklyReviewUp
+class Translations$ai$coachPrompts$weeklyReviewUp$en {
+	Translations$ai$coachPrompts$weeklyReviewUp$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: '📊 Review my week'
+	String get label => '📊 Review my week';
+
+	/// en: 'My habit consistency is {thisPct}% this week vs {lastPct}% last week. What's working, and the one thing I should push further next week?'
+	String payload({required Object thisPct, required Object lastPct}) => 'My habit consistency is ${thisPct}% this week vs ${lastPct}% last week. What\'s working, and the one thing I should push further next week?';
+}
+
+// Path: ai.coachPrompts.protectStreak
+class Translations$ai$coachPrompts$protectStreak$en {
+	Translations$ai$coachPrompts$protectStreak$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: '🛡️ Protect my streak'
+	String get label => '🛡️ Protect my streak';
+
+	/// en: 'My longest active streak is '{habit}' at {days} days. What's the biggest risk of breaking it, and how do I protect it this week?'
+	String payload({required Object habit, required Object days}) => 'My longest active streak is \'${habit}\' at ${days} days. What\'s the biggest risk of breaking it, and how do I protect it this week?';
+}
+
+// Path: ai.coachPrompts.alignHabitsToGoal
+class Translations$ai$coachPrompts$alignHabitsToGoal$en {
+	Translations$ai$coachPrompts$alignHabitsToGoal$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: '🔗 Which habits serve my goals?'
+	String get label => '🔗 Which habits serve my goals?';
+
+	/// en: 'Looking at my habits against my goal '{goal}', which ones actually move it forward and which are just noise? Be specific, and name one habit I might be missing.'
+	String payload({required Object goal}) => 'Looking at my habits against my goal \'${goal}\', which ones actually move it forward and which are just noise? Be specific, and name one habit I might be missing.';
+}
+
+// Path: ai.coachPrompts.designHabitForGoal
+class Translations$ai$coachPrompts$designHabitForGoal$en {
+	Translations$ai$coachPrompts$designHabitForGoal$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: '💡 Turn a goal into a habit'
+	String get label => '💡 Turn a goal into a habit';
+
+	/// en: 'I want to reach my goal '{goal}'. What single daily habit would move the needle most? Give me one concrete habit I could start tomorrow.'
+	String payload({required Object goal}) => 'I want to reach my goal \'${goal}\'. What single daily habit would move the needle most? Give me one concrete habit I could start tomorrow.';
+}
+
+// Path: ai.coachPrompts.raiseTheBar
+class Translations$ai$coachPrompts$raiseTheBar$en {
+	Translations$ai$coachPrompts$raiseTheBar$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: '🚀 Raise the bar'
+	String get label => '🚀 Raise the bar';
+
+	/// en: 'I'm hitting all my habits and my goals are on track. Where might I be getting complacent, and what's one way to raise the bar without burning out?'
+	String get payload => 'I\'m hitting all my habits and my goals are on track. Where might I be getting complacent, and what\'s one way to raise the bar without burning out?';
+}
+
+// Path: ai.coachPrompts.firstStep
+class Translations$ai$coachPrompts$firstStep$en {
+	Translations$ai$coachPrompts$firstStep$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: '🌱 Where do I start?'
+	String get label => '🌱 Where do I start?';
+
+	/// en: 'I'm just getting started and haven't set up goals or habits yet. Suggest one realistic first goal and one small daily habit to build toward it, and explain why that pairing works.'
+	String get payload => 'I\'m just getting started and haven\'t set up goals or habits yet. Suggest one realistic first goal and one small daily habit to build toward it, and explain why that pairing works.';
+}
+
+// Path: ai.coachPrompts.whatCanYouHelp
+class Translations$ai$coachPrompts$whatCanYouHelp$en {
+	Translations$ai$coachPrompts$whatCanYouHelp$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: '💬 What can you help with?'
+	String get label => '💬 What can you help with?';
+
+	/// en: 'Based on my habits and goals in this app, give me three specific examples of how you can help me — not generic advice, but things tied to my actual data.'
+	String get payload => 'Based on my habits and goals in this app, give me three specific examples of how you can help me — not generic advice, but things tied to my actual data.';
 }
 
 /// The flat map containing all translations for locale <en>.
@@ -4630,31 +4751,34 @@ extension on Translations {
 			'ai.apiKey.setupTitle' => 'Connect your OpenRouter account',
 			'ai.apiKey.setupBody' => 'This engine runs on your own OpenRouter account. Connect it to start chatting — or switch to Evolve AI, included with Pro.',
 			'ai.apiKey.setupAction' => 'Connect account',
-			'ai.suggestions.morningBoost' => '🔥 Give me a boost to get started!',
-			'ai.suggestions.avoidDistractions' => '🧠 How can I avoid distractions?',
-			'ai.suggestions.lowEnergy' => '⚡ My energy is dropping. What should I do?',
-			'ai.suggestions.stayFocused' => '💪 Give me one tip to stay focused',
-			'ai.suggestions.prepareTomorrow' => '🛌 How can I prepare for a productive tomorrow?',
-			'ai.suggestions.disciplineReflection' => '📝 Reflect on today’s discipline',
-			'ai.suggestions.analyzeActiveGoals' => '🎯 Analyze my active goals',
-			'ai.suggestions.planMacroGoals' => '🗺️ How should I plan my macro goals?',
-			'ai.suggestions.goalObstacles' => '🛑 What obstacles are blocking my goals?',
-			'ai.suggestions.reachMilestones' => '📈 Give me one tip to reach my milestones',
-			'ai.suggestions.consistencyStatus' => '📈 How is my consistency going?',
-			'ai.suggestions.weeklyStats' => '📊 My weekly stats',
-			'ai.suggestions.planDay' => '🌅 Plan my day',
-			'ai.suggestions.raiseBar' => '🚀 How can I raise the bar?',
-			'ai.suggestions.recoverProcrastination' => '🤕 How can I recover after procrastinating?',
-			'ai.suggestions.connectHabitsGoals' => '🔗 How can I connect habits to goals?',
-			'ai.suggestions.reviewGoalsHabits' => '📊 Review my goals and habits',
-			'ai.suggestions.disciplineAdvice' => '🔥 Discipline advice',
-			'ai.suggestions.createNewHabit' => '💡 How can I create a new habit?',
+			'ai.coachPrompts.diagnoseWeakestHabit.label' => '🩺 Fix my weakest habit',
+			'ai.coachPrompts.diagnoseWeakestHabit.payload' => ({required Object habit, required Object done, required Object scheduled}) => '\'${habit}\' is my weakest habit this week — ${done}/${scheduled} days done. What\'s the most likely reason I keep missing it, and two specific fixes I can apply this week?',
+			'ai.coachPrompts.goalOnTrack.label' => '🎯 Am I on track?',
+			'ai.coachPrompts.goalOnTrack.payload' => ({required Object goal}) => 'Be honest about my goal \'${goal}\': am I on track to reach it, and what\'s the one change that would most improve my odds?',
+			'ai.coachPrompts.weeklyReviewDown.label' => '📉 Review my week',
+			'ai.coachPrompts.weeklyReviewDown.payload' => ({required Object thisPct, required Object lastPct}) => 'My habit consistency dropped to ${thisPct}% this week from ${lastPct}% last week. What\'s the most likely cause, and the one change I should make next week?',
+			'ai.coachPrompts.weeklyReviewUp.label' => '📊 Review my week',
+			'ai.coachPrompts.weeklyReviewUp.payload' => ({required Object thisPct, required Object lastPct}) => 'My habit consistency is ${thisPct}% this week vs ${lastPct}% last week. What\'s working, and the one thing I should push further next week?',
+			'ai.coachPrompts.protectStreak.label' => '🛡️ Protect my streak',
+			'ai.coachPrompts.protectStreak.payload' => ({required Object habit, required Object days}) => 'My longest active streak is \'${habit}\' at ${days} days. What\'s the biggest risk of breaking it, and how do I protect it this week?',
+			'ai.coachPrompts.alignHabitsToGoal.label' => '🔗 Which habits serve my goals?',
+			'ai.coachPrompts.alignHabitsToGoal.payload' => ({required Object goal}) => 'Looking at my habits against my goal \'${goal}\', which ones actually move it forward and which are just noise? Be specific, and name one habit I might be missing.',
+			'ai.coachPrompts.designHabitForGoal.label' => '💡 Turn a goal into a habit',
+			'ai.coachPrompts.designHabitForGoal.payload' => ({required Object goal}) => 'I want to reach my goal \'${goal}\'. What single daily habit would move the needle most? Give me one concrete habit I could start tomorrow.',
+			'ai.coachPrompts.raiseTheBar.label' => '🚀 Raise the bar',
+			'ai.coachPrompts.raiseTheBar.payload' => 'I\'m hitting all my habits and my goals are on track. Where might I be getting complacent, and what\'s one way to raise the bar without burning out?',
+			'ai.coachPrompts.firstStep.label' => '🌱 Where do I start?',
+			'ai.coachPrompts.firstStep.payload' => 'I\'m just getting started and haven\'t set up goals or habits yet. Suggest one realistic first goal and one small daily habit to build toward it, and explain why that pairing works.',
+			'ai.coachPrompts.whatCanYouHelp.label' => '💬 What can you help with?',
+			'ai.coachPrompts.whatCanYouHelp.payload' => 'Based on my habits and goals in this app, give me three specific examples of how you can help me — not generic advice, but things tied to my actual data.',
 			'ai.local.notReachable' => ({required Object url}) => '❌ Local AI server not reachable at ${url}. Make sure Ollama or LM Studio is running.',
 			'ai.local.modelMissing' => '⚠️ Choose a local model first — open the model picker at the top.',
 			'ai.local.requestFailed' => ({required Object code}) => '❌ Local model error (code: ${code}).',
 			'ai.local.streamError' => '❌ Connection to the local model failed.',
 			'ai.local.timeout' => '❌ The local model is taking too long — it may still be loading. Try again.',
 			'ai.local.modelNotFound' => '❌ That model isn\'t available on the server. Open the model picker to choose or load one.',
+			'ai.local.authRequired' => ({required Object app}) => '❌ ${app} is refusing the connection — it requires an API token. Turn off authentication in its server settings, or point Evolve at a server that doesn\'t require one.',
+			'ai.local.stillLoading' => 'Still loading the model — a cold start can take a while.',
 			'ai.standard.sessionExpired' => '⚠️ Your session expired. Sign in again to keep using Evolve AI.',
 			'ai.standard.needsPro' => '⚠️ Evolve AI is part of Evolve Pro. Subscribe in Settings — or switch the engine to your own OpenRouter account, which is free.',
 			'ai.standard.rateLimited' => '⚠️ You\'ve reached the Evolve AI fair-use limit for now. Try again later, or switch the engine to your own OpenRouter account.',
@@ -5020,16 +5144,14 @@ extension on Translations {
 			'coachSettings.backendLocal' => 'Local · private',
 			'coachSettings.cloudDesc' => 'Connect your own OpenRouter account and pay the provider directly. Free — no subscription needed. The context you share is sent to the provider.',
 			'coachSettings.localDesc' => 'Your own model via Ollama, LM Studio or any OpenAI-compatible server. Nothing leaves this device.',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.presetLabel' => 'Server',
 			'coachSettings.presetOllama' => 'Ollama',
 			'coachSettings.presetLmStudio' => 'LM Studio',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.presetCustom' => 'Custom…',
 			'coachSettings.baseUrlLabel' => 'Base URL',
-			'coachSettings.baseUrlHint' => 'http://localhost:11434/v1',
 			'coachSettings.modelLabel' => 'Model',
-			'coachSettings.modelHint' => 'e.g. llama3.1:8b',
 			'coachSettings.refreshModels' => 'Refresh models',
 			'coachSettings.discovering' => 'Looking for models…',
 			'coachSettings.noModelsFound' => 'No models found — type a model id manually below.',
@@ -5046,8 +5168,8 @@ extension on Translations {
 			'coachSettings.systemPromptReset' => 'Reset',
 			'coachSettings.temperatureLabel' => 'Temperature',
 			'coachSettings.save' => 'Done',
-			'coachSettings.detectedTitle' => 'Local model detected',
-			'coachSettings.detectedBody' => 'A local AI server is running on this Mac. Run the coach 100% privately?',
+			'coachSettings.detectedTitle' => ({required Object app}) => '${app} detected',
+			'coachSettings.detectedBody' => ({required Object app}) => '${app} is running on this Mac. Run the coach 100% privately?',
 			'coachSettings.detectedAction' => 'Use local',
 			'coachSettings.detectedDismiss' => 'Not now',
 			'coachSettings.activeCloud' => ({required Object model}) => 'Cloud · ${model}',
@@ -5065,17 +5187,23 @@ extension on Translations {
 			'coachSettings.temperatureRaise' => 'Raise temperature',
 			'coachSettings.sendMessage' => 'Send',
 			'coachSettings.stopResponse' => 'Stop',
-			'coachSettings.startOllama' => 'Start Ollama',
-			'coachSettings.getOllama' => 'Get Ollama',
-			'coachSettings.startingOllama' => 'Starting Ollama…',
-			'coachSettings.ollamaOfflineTitle' => 'Ollama isn\'t running',
-			'coachSettings.ollamaOfflineBody' => 'Start your local server to chat privately — no terminal needed.',
-			'coachSettings.ollamaNotInstalledTitle' => 'Ollama isn\'t installed',
-			'coachSettings.ollamaNotInstalledBody' => 'Install the free Ollama app, then press Start.',
+			'coachSettings.startLocalServer' => ({required Object app}) => 'Start ${app}',
+			'coachSettings.getLocalServer' => ({required Object app}) => 'Get ${app}',
+			'coachSettings.startingLocalServer' => ({required Object app}) => 'Starting ${app}…',
+			'coachSettings.localServerOfflineTitle' => ({required Object app}) => '${app} isn\'t running',
+			'coachSettings.localServerOfflineBody' => 'Start your local server to chat privately — no terminal needed.',
+			'coachSettings.localServerNotInstalledTitle' => ({required Object app}) => '${app} isn\'t installed',
+			'coachSettings.localServerNotInstalledBody' => ({required Object app}) => 'Install the free ${app} app, then press Start.',
+			'coachSettings.localServerStartingBody' => 'This can take a few seconds…',
+			'coachSettings.localServerStartFailed' => ({required Object app}) => 'Couldn\'t start ${app} — try opening it from your Applications folder.',
+			'coachSettings.localServerDownloadFailed' => ({required Object url}) => 'Couldn\'t open the browser — visit ${url}',
 			'coachSettings.ollamaStartTimeout' => 'Taking longer than expected — check the Ollama icon in your menu bar (a first launch may need approval).',
-			'coachSettings.ollamaStartingBody' => 'This can take a few seconds…',
-			'coachSettings.ollamaStartFailed' => 'Couldn\'t start Ollama — try opening it from your Applications folder.',
-			'coachSettings.ollamaDownloadFailed' => 'Couldn\'t open the browser — visit ollama.com/download',
+			'coachSettings.ollamaServerOffTitle' => 'Ollama is running but not serving',
+			'coachSettings.ollamaServerOffBody' => 'Ollama is open but isn\'t answering on its port. Quit it from the menu bar, then press Start again.',
+			'coachSettings.lmStudioStartTimeout' => 'Taking longer than expected — open LM Studio and check it has finished starting.',
+			'coachSettings.lmStudioServerOffTitle' => 'LM Studio\'s server isn\'t running',
+			'coachSettings.lmStudioServerOffBody' => 'LM Studio is open, but its local server is off. Turn it on with Developer → Start Server, or tick Settings → Run the LLM server on login.',
+			'coachSettings.lmStudioNoModelsJit' => 'LM Studio isn\'t listing any models. It only lists loaded models when Just-In-Time loading is off — load a model in LM Studio, or turn on Developer → Server Settings → Just In Time Model Loading.',
 			'coachSettings.backendStandard' => 'Evolve AI',
 			'coachSettings.standardDesc' => 'Included with Evolve Pro. We run a free Google model (Gemma) for you — no keys, no setup. Your messages go to Google\'s free tier, which may use them to improve their services.',
 			'coachSettings.activeStandard' => ({required Object model}) => 'Evolve AI · ${model}',

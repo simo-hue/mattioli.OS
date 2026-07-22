@@ -692,26 +692,47 @@
     "connectionIssues": "Problemas de conexión con el coach. Vuelve a intentarlo más tarde.",
     "todayCompletion": "Estado de completitud de hoy",
     "streamingError": "❌ Error de streaming.",
-    "suggestions": {
-      "morningBoost": "🔥 ¡Dame un empujón para empezar!",
-      "avoidDistractions": "🧠 ¿Cómo puedo evitar distracciones?",
-      "lowEnergy": "⚡ Mi energía está bajando. ¿Qué debo hacer?",
-      "stayFocused": "💪 Dame un consejo para mantener el enfoque",
-      "prepareTomorrow": "🛌 ¿Cómo puedo prepararme para un mañana productivo?",
-      "disciplineReflection": "📝 Reflexiona sobre la disciplina de hoy",
-      "analyzeActiveGoals": "🎯 Analiza mis objetivos activos",
-      "planMacroGoals": "🗺️ ¿Cómo debería planificar mis macroobjetivos?",
-      "goalObstacles": "🛑 ¿Qué obstáculos bloquean mis objetivos?",
-      "reachMilestones": "📈 Dame un consejo para alcanzar mis hitos",
-      "consistencyStatus": "📈 ¿Cómo va mi constancia?",
-      "weeklyStats": "📊 Mis estadísticas semanales",
-      "planDay": "🌅 Planifica mi día",
-      "raiseBar": "🚀 ¿Cómo puedo subir el nivel?",
-      "recoverProcrastination": "🤕 ¿Cómo puedo recuperarme después de procrastinar?",
-      "connectHabitsGoals": "🔗 ¿Cómo puedo conectar hábitos y objetivos?",
-      "reviewGoalsHabits": "📊 Revisa mis objetivos y hábitos",
-      "disciplineAdvice": "🔥 Consejo de disciplina",
-      "createNewHabit": "💡 ¿Cómo puedo crear un nuevo hábito?"
+    "coachPrompts": {
+      "diagnoseWeakestHabit": {
+        "label": "🩺 Arregla mi hábito más débil",
+        "payload": "'{habit}' es mi hábito más débil esta semana — {done}/{scheduled} días cumplidos. ¿Cuál es la razón más probable por la que me lo salto y dos soluciones concretas que pueda aplicar esta semana?"
+      },
+      "goalOnTrack": {
+        "label": "🎯 ¿Voy por buen camino?",
+        "payload": "Sé sincero sobre mi objetivo '{goal}': ¿voy por buen camino para lograrlo y cuál es el único cambio que más mejoraría mis probabilidades?"
+      },
+      "weeklyReviewDown": {
+        "label": "📉 Analiza mi semana",
+        "payload": "Mi constancia bajó al {thisPct}% esta semana desde el {lastPct}% de la anterior. ¿Cuál es la causa más probable y el único cambio que debería hacer la próxima semana?"
+      },
+      "weeklyReviewUp": {
+        "label": "📊 Analiza mi semana",
+        "payload": "Mi constancia está en el {thisPct}% esta semana frente al {lastPct}% de la anterior. ¿Qué está funcionando y qué es lo único que debería impulsar más la próxima semana?"
+      },
+      "protectStreak": {
+        "label": "🛡️ Protege mi racha",
+        "payload": "Mi racha activa más larga es '{habit}' con {days} días. ¿Cuál es el mayor riesgo de romperla y cómo la protejo esta semana?"
+      },
+      "alignHabitsToGoal": {
+        "label": "🔗 ¿Qué hábitos sirven a mis objetivos?",
+        "payload": "Mirando mis hábitos frente a mi objetivo '{goal}', ¿cuáles lo hacen avanzar de verdad y cuáles son solo ruido? Sé específico e indica un hábito que quizá me falte."
+      },
+      "designHabitForGoal": {
+        "label": "💡 Convierte un objetivo en hábito",
+        "payload": "Quiero alcanzar mi objetivo '{goal}'. ¿Qué único hábito diario marcaría la mayor diferencia? Dame un hábito concreto que pueda empezar mañana."
+      },
+      "raiseTheBar": {
+        "label": "🚀 Sube el listón",
+        "payload": "Estoy cumpliendo todos mis hábitos y mis objetivos van por buen camino. ¿Dónde podría estar acomodándome y cuál es una forma de subir el listón sin quemarme?"
+      },
+      "firstStep": {
+        "label": "🌱 ¿Por dónde empiezo?",
+        "payload": "Estoy empezando y aún no he configurado objetivos ni hábitos. Sugiéreme un primer objetivo realista y un pequeño hábito diario para lograrlo, y explica por qué esa combinación funciona."
+      },
+      "whatCanYouHelp": {
+        "label": "💬 ¿En qué puedes ayudarme?",
+        "payload": "Según mis hábitos y objetivos en esta app, dame tres ejemplos concretos de cómo puedes ayudarme — no consejos genéricos, sino cosas ligadas a mis datos reales."
+      }
     },
     "accept": "Acepto",
     "openRouter": {

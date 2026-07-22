@@ -9,10 +9,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../application/coach_controllers.dart';
-import '../application/ollama_start_controller.dart';
+import '../application/local_server_start_controller.dart';
 import '../domain/coach_backend.dart';
 import '../domain/coach_config.dart';
-import 'start_ollama_button.dart';
+import '../domain/local_server_target.dart';
+import 'start_local_server_button.dart';
 
 /// Opens the reusable coach-engine configuration dialog (backend, local server,
 /// model discovery, system prompt, temperature). Used from both the chat header
@@ -245,9 +246,7 @@ class _StandardSection extends StatelessWidget {
       children: [
         Row(
           children: [
-            Expanded(
-              child: EvolveFieldLabel(t.coachSettings.standardSection),
-            ),
+            Expanded(child: EvolveFieldLabel(t.coachSettings.standardSection)),
             StatusPill(label: label, color: pillColor, icon: icon),
           ],
         ),
@@ -358,9 +357,7 @@ class _CloudApiKeySectionState extends ConsumerState<_CloudApiKeySection> {
           children: [
             Expanded(child: EvolveFieldLabel(t.ai.apiKey.fieldLabel)),
             StatusPill(
-              label: hasKey
-                  ? t.ai.apiKey.statusSet
-                  : t.ai.apiKey.statusMissing,
+              label: hasKey ? t.ai.apiKey.statusSet : t.ai.apiKey.statusMissing,
               color: hasKey ? EvolveColors.success : EvolveColors.amber,
               icon: hasKey ? LucideIcons.circleCheck : LucideIcons.keyRound,
             ),
@@ -493,6 +490,7 @@ class _LocalServerSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.evolveColors;
     final preset = LocalServerPreset.match(config.localBaseUrl);
+    final target = LocalServerTarget.forPreset(preset);
     final isRemote = !config.localIsPrivate;
 
     return Column(
@@ -534,7 +532,7 @@ class _LocalServerSection extends ConsumerWidget {
             _ReachabilityPill(baseUrl: config.localBaseUrl),
           ],
         ),
-        _OllamaStartRow(config: config, preset: preset),
+        _LocalServerStartRow(config: config, target: target),
         const SizedBox(height: 14),
         EvolveFieldLabel(t.coachSettings.baseUrlLabel),
         const SizedBox(height: 8),
@@ -542,7 +540,9 @@ class _LocalServerSection extends ConsumerWidget {
           controller: baseUrlController,
           focusNode: baseUrlFocus,
           style: TextStyle(color: colors.foreground, fontSize: 13),
-          decoration: InputDecoration(hintText: t.coachSettings.baseUrlHint),
+          // Placeholder follows the chosen product — an Ollama URL under the
+          // LM Studio preset would be a wrong example, not a neutral one.
+          decoration: InputDecoration(hintText: target.baseUrlHint),
           onSubmitted: (_) => onCommitBaseUrl(),
           onTapOutside: (_) {
             FocusManager.instance.primaryFocus?.unfocus();
@@ -556,6 +556,7 @@ class _LocalServerSection extends ConsumerWidget {
         const SizedBox(height: 16),
         _ModelPickerRow(
           config: config,
+          target: target,
           manualModelController: manualModelController,
         ),
       ],
@@ -563,13 +564,14 @@ class _LocalServerSection extends ConsumerWidget {
   }
 }
 
-/// In-dialog "Start Ollama" affordance — shown below the status pill only when
-/// the local Ollama server is unreachable, with a soft hint on timeout.
-class _OllamaStartRow extends ConsumerWidget {
-  const _OllamaStartRow({required this.config, required this.preset});
+/// In-dialog "Start {app}" affordance — shown below the status pill only when
+/// the configured local server is unreachable, with a soft hint on a failed or
+/// inconclusive launch.
+class _LocalServerStartRow extends ConsumerWidget {
+  const _LocalServerStartRow({required this.config, required this.target});
 
   final CoachConfig config;
-  final LocalServerPreset preset;
+  final LocalServerTarget target;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -578,16 +580,29 @@ class _OllamaStartRow extends ConsumerWidget {
         .asData
         ?.value;
     if (reachable == null) return const SizedBox.shrink();
-    if (!shouldOfferOllamaStart(
+    if (!shouldOfferLocalServerStart(
       backend: config.backend,
-      preset: preset,
+      target: target,
       reachable: reachable,
+      launcherSupported: ref.watch(localLauncherSupportedProvider),
     )) {
       return const SizedBox.shrink();
     }
-    final hint = switch (ref.watch(ollamaStartControllerProvider)) {
-      OllamaStartStatus.timedOut => t.coachSettings.ollamaStartTimeout,
-      OllamaStartStatus.failed => t.coachSettings.ollamaStartFailed,
+    // The timeout hint is per-product on purpose: "check the menu-bar icon" and
+    // "turn on Developer → Start Server" are different instructions, not one
+    // sentence with the app's name swapped in.
+    final hint = switch (ref.watch(localServerStartControllerProvider)) {
+      LocalServerStartStatus.timedOut =>
+        target.serverIsOptIn
+            ? t.coachSettings.lmStudioStartTimeout
+            : t.coachSettings.ollamaStartTimeout,
+      LocalServerStartStatus.serverNotEnabled =>
+        target.serverIsOptIn
+            ? t.coachSettings.lmStudioServerOffBody
+            : t.coachSettings.ollamaServerOffBody,
+      LocalServerStartStatus.failed => t.coachSettings.localServerStartFailed(
+        app: target.displayName,
+      ),
       _ => null,
     };
     return Padding(
@@ -595,7 +610,7 @@ class _OllamaStartRow extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const StartOllamaButton(),
+          StartLocalServerButton(target: target),
           if (hint != null) ...[
             const SizedBox(height: 8),
             Text(
@@ -653,10 +668,12 @@ class _ReachabilityPill extends ConsumerWidget {
 class _ModelPickerRow extends ConsumerWidget {
   const _ModelPickerRow({
     required this.config,
+    required this.target,
     required this.manualModelController,
   });
 
   final CoachConfig config;
+  final LocalServerTarget target;
   final TextEditingController manualModelController;
 
   @override
@@ -697,6 +714,7 @@ class _ModelPickerRow extends ConsumerWidget {
           error: (_, _) => _ManualModelField(
             controller: manualModelController,
             currentModel: config.localModel,
+            target: target,
           ),
           data: (list) {
             if (list.isEmpty) {
@@ -704,13 +722,23 @@ class _ModelPickerRow extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    t.coachSettings.noModelsFound,
+                    // An empty list means something specific on LM Studio, and
+                    // the generic "type one manually" is actively misleading
+                    // there: `GET /v1/models` lists only LOADED models when
+                    // Just-In-Time loading is off, and with JIT off a
+                    // hand-typed id won't be loaded either — so the user would
+                    // get "model not found" for a model sitting on their disk.
+                    // Name the toggle instead.
+                    target.serverIsOptIn
+                        ? t.coachSettings.lmStudioNoModelsJit
+                        : t.coachSettings.noModelsFound,
                     style: TextStyle(color: colors.muted, fontSize: 12.5),
                   ),
                   const SizedBox(height: 10),
                   _ManualModelField(
                     controller: manualModelController,
                     currentModel: config.localModel,
+                    target: target,
                   ),
                 ],
               );
@@ -727,7 +755,10 @@ class _ModelPickerRow extends ConsumerWidget {
               value: value,
               options: [
                 for (final model in options)
-                  EvolveSelectOption(value: model.id, label: model.displayLabel),
+                  EvolveSelectOption(
+                    value: model.id,
+                    label: model.displayLabel,
+                  ),
               ],
               onChanged: (id) =>
                   ref.read(coachConfigProvider.notifier).setLocalModel(id),
@@ -740,10 +771,19 @@ class _ModelPickerRow extends ConsumerWidget {
 }
 
 class _ManualModelField extends ConsumerWidget {
-  const _ManualModelField({required this.controller, required this.currentModel});
+  const _ManualModelField({
+    required this.controller,
+    required this.currentModel,
+    required this.target,
+  });
 
   final TextEditingController controller;
   final String? currentModel;
+
+  /// Supplies the example id. Ollama's `llama3.1:8b` and LM Studio's
+  /// publisher-prefixed repo ids look nothing alike, and this field is exactly
+  /// where a stuck user lands — so the wrong example is worse than none.
+  final LocalServerTarget target;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -766,7 +806,7 @@ class _ManualModelField extends ConsumerWidget {
                 controller: controller,
                 style: TextStyle(color: colors.foreground, fontSize: 13),
                 decoration: InputDecoration(
-                  hintText: currentModel ?? t.coachSettings.modelHint,
+                  hintText: currentModel ?? target.modelHint,
                 ),
                 onSubmitted: (_) => commit(),
                 // Commit on blur too, so an id typed then closed via Save / the
@@ -841,7 +881,9 @@ class _AdvancedSection extends ConsumerWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: EvolveFieldLabel(t.coachSettings.systemPromptLabel)),
+              Expanded(
+                child: EvolveFieldLabel(t.coachSettings.systemPromptLabel),
+              ),
               _ResetSystemPrompt(controller: systemPromptController),
             ],
           ),
@@ -850,7 +892,11 @@ class _AdvancedSection extends ConsumerWidget {
             controller: systemPromptController,
             minLines: 2,
             maxLines: 4,
-            style: TextStyle(color: colors.foreground, fontSize: 13, height: 1.4),
+            style: TextStyle(
+              color: colors.foreground,
+              fontSize: 13,
+              height: 1.4,
+            ),
             decoration: InputDecoration(
               hintText: t.coachSettings.systemPromptHint,
             ),
@@ -942,7 +988,11 @@ class _TemperatureRow extends ConsumerWidget {
 /// 30px bordered square icon button — a compact sibling of EvolveSquareIconButton
 /// used inside dialog rows.
 class _MiniIconButton extends StatelessWidget {
-  const _MiniIconButton({required this.icon, required this.onTap, this.tooltip});
+  const _MiniIconButton({
+    required this.icon,
+    required this.onTap,
+    this.tooltip,
+  });
 
   final IconData icon;
   final VoidCallback onTap;

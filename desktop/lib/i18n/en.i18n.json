@@ -691,26 +691,47 @@
       "setupBody": "This engine runs on your own OpenRouter account. Connect it to start chatting — or switch to Evolve AI, included with Pro.",
       "setupAction": "Connect account"
     },
-    "suggestions": {
-      "morningBoost": "🔥 Give me a boost to get started!",
-      "avoidDistractions": "🧠 How can I avoid distractions?",
-      "lowEnergy": "⚡ My energy is dropping. What should I do?",
-      "stayFocused": "💪 Give me one tip to stay focused",
-      "prepareTomorrow": "🛌 How can I prepare for a productive tomorrow?",
-      "disciplineReflection": "📝 Reflect on today’s discipline",
-      "analyzeActiveGoals": "🎯 Analyze my active goals",
-      "planMacroGoals": "🗺️ How should I plan my macro goals?",
-      "goalObstacles": "🛑 What obstacles are blocking my goals?",
-      "reachMilestones": "📈 Give me one tip to reach my milestones",
-      "consistencyStatus": "📈 How is my consistency going?",
-      "weeklyStats": "📊 My weekly stats",
-      "planDay": "🌅 Plan my day",
-      "raiseBar": "🚀 How can I raise the bar?",
-      "recoverProcrastination": "🤕 How can I recover after procrastinating?",
-      "connectHabitsGoals": "🔗 How can I connect habits to goals?",
-      "reviewGoalsHabits": "📊 Review my goals and habits",
-      "disciplineAdvice": "🔥 Discipline advice",
-      "createNewHabit": "💡 How can I create a new habit?"
+    "coachPrompts": {
+      "diagnoseWeakestHabit": {
+        "label": "🩺 Fix my weakest habit",
+        "payload": "'{habit}' is my weakest habit this week — {done}/{scheduled} days done. What's the most likely reason I keep missing it, and two specific fixes I can apply this week?"
+      },
+      "goalOnTrack": {
+        "label": "🎯 Am I on track?",
+        "payload": "Be honest about my goal '{goal}': am I on track to reach it, and what's the one change that would most improve my odds?"
+      },
+      "weeklyReviewDown": {
+        "label": "📉 Review my week",
+        "payload": "My habit consistency dropped to {thisPct}% this week from {lastPct}% last week. What's the most likely cause, and the one change I should make next week?"
+      },
+      "weeklyReviewUp": {
+        "label": "📊 Review my week",
+        "payload": "My habit consistency is {thisPct}% this week vs {lastPct}% last week. What's working, and the one thing I should push further next week?"
+      },
+      "protectStreak": {
+        "label": "🛡️ Protect my streak",
+        "payload": "My longest active streak is '{habit}' at {days} days. What's the biggest risk of breaking it, and how do I protect it this week?"
+      },
+      "alignHabitsToGoal": {
+        "label": "🔗 Which habits serve my goals?",
+        "payload": "Looking at my habits against my goal '{goal}', which ones actually move it forward and which are just noise? Be specific, and name one habit I might be missing."
+      },
+      "designHabitForGoal": {
+        "label": "💡 Turn a goal into a habit",
+        "payload": "I want to reach my goal '{goal}'. What single daily habit would move the needle most? Give me one concrete habit I could start tomorrow."
+      },
+      "raiseTheBar": {
+        "label": "🚀 Raise the bar",
+        "payload": "I'm hitting all my habits and my goals are on track. Where might I be getting complacent, and what's one way to raise the bar without burning out?"
+      },
+      "firstStep": {
+        "label": "🌱 Where do I start?",
+        "payload": "I'm just getting started and haven't set up goals or habits yet. Suggest one realistic first goal and one small daily habit to build toward it, and explain why that pairing works."
+      },
+      "whatCanYouHelp": {
+        "label": "💬 What can you help with?",
+        "payload": "Based on my habits and goals in this app, give me three specific examples of how you can help me — not generic advice, but things tied to my actual data."
+      }
     },
     "local": {
       "notReachable": "❌ Local AI server not reachable at {url}. Make sure Ollama or LM Studio is running.",
@@ -718,7 +739,9 @@
       "requestFailed": "❌ Local model error (code: {code}).",
       "streamError": "❌ Connection to the local model failed.",
       "timeout": "❌ The local model is taking too long — it may still be loading. Try again.",
-      "modelNotFound": "❌ That model isn't available on the server. Open the model picker to choose or load one."
+      "modelNotFound": "❌ That model isn't available on the server. Open the model picker to choose or load one.",
+      "authRequired": "❌ {app} is refusing the connection — it requires an API token. Turn off authentication in its server settings, or point Evolve at a server that doesn't require one.",
+      "stillLoading": "Still loading the model — a cold start can take a while."
     },
     "standard": {
       "sessionExpired": "⚠️ Your session expired. Sign in again to keep using Evolve AI.",
@@ -1126,9 +1149,7 @@
     "presetLmStudio": "LM Studio",
     "presetCustom": "Custom…",
     "baseUrlLabel": "Base URL",
-    "baseUrlHint": "http://localhost:11434/v1",
     "modelLabel": "Model",
-    "modelHint": "e.g. llama3.1:8b",
     "refreshModels": "Refresh models",
     "discovering": "Looking for models…",
     "noModelsFound": "No models found — type a model id manually below.",
@@ -1145,8 +1166,8 @@
     "systemPromptReset": "Reset",
     "temperatureLabel": "Temperature",
     "save": "Done",
-    "detectedTitle": "Local model detected",
-    "detectedBody": "A local AI server is running on this Mac. Run the coach 100% privately?",
+    "detectedTitle": "{app} detected",
+    "detectedBody": "{app} is running on this Mac. Run the coach 100% privately?",
     "detectedAction": "Use local",
     "detectedDismiss": "Not now",
     "activeCloud": "Cloud · {model}",
@@ -1164,17 +1185,23 @@
     "temperatureRaise": "Raise temperature",
     "sendMessage": "Send",
     "stopResponse": "Stop",
-    "startOllama": "Start Ollama",
-    "getOllama": "Get Ollama",
-    "startingOllama": "Starting Ollama…",
-    "ollamaOfflineTitle": "Ollama isn't running",
-    "ollamaOfflineBody": "Start your local server to chat privately — no terminal needed.",
-    "ollamaNotInstalledTitle": "Ollama isn't installed",
-    "ollamaNotInstalledBody": "Install the free Ollama app, then press Start.",
+    "startLocalServer": "Start {app}",
+    "getLocalServer": "Get {app}",
+    "startingLocalServer": "Starting {app}…",
+    "localServerOfflineTitle": "{app} isn't running",
+    "localServerOfflineBody": "Start your local server to chat privately — no terminal needed.",
+    "localServerNotInstalledTitle": "{app} isn't installed",
+    "localServerNotInstalledBody": "Install the free {app} app, then press Start.",
+    "localServerStartingBody": "This can take a few seconds…",
+    "localServerStartFailed": "Couldn't start {app} — try opening it from your Applications folder.",
+    "localServerDownloadFailed": "Couldn't open the browser — visit {url}",
     "ollamaStartTimeout": "Taking longer than expected — check the Ollama icon in your menu bar (a first launch may need approval).",
-    "ollamaStartingBody": "This can take a few seconds…",
-    "ollamaStartFailed": "Couldn't start Ollama — try opening it from your Applications folder.",
-    "ollamaDownloadFailed": "Couldn't open the browser — visit ollama.com/download",
+    "ollamaServerOffTitle": "Ollama is running but not serving",
+    "ollamaServerOffBody": "Ollama is open but isn't answering on its port. Quit it from the menu bar, then press Start again.",
+    "lmStudioStartTimeout": "Taking longer than expected — open LM Studio and check it has finished starting.",
+    "lmStudioServerOffTitle": "LM Studio's server isn't running",
+    "lmStudioServerOffBody": "LM Studio is open, but its local server is off. Turn it on with Developer → Start Server, or tick Settings → Run the LLM server on login.",
+    "lmStudioNoModelsJit": "LM Studio isn't listing any models. It only lists loaded models when Just-In-Time loading is off — load a model in LM Studio, or turn on Developer → Server Settings → Just In Time Model Loading.",
     "backendStandard": "Evolve AI",
     "standardDesc": "Included with Evolve Pro. We run a free Google model (Gemma) for you — no keys, no setup. Your messages go to Google's free tier, which may use them to improve their services.",
     "activeStandard": "Evolve AI · {model}",

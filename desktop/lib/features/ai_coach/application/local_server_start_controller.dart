@@ -135,12 +135,6 @@ final reachabilityProbeProvider = Provider<Future<bool> Function(String)>(
   (ref) => probeLocalReachable,
 );
 
-/// The target for the currently-configured local base URL.
-final activeLocalServerTargetProvider = Provider<LocalServerTarget>((ref) {
-  final baseUrl = ref.watch(coachConfigProvider.select((c) => c.localBaseUrl));
-  return LocalServerTarget.forBaseUrl(baseUrl);
-});
-
 /// Whether a given product's app is installed — drives Start vs "Get {app}".
 ///
 /// Keyed by preset so switching Ollama → LM Studio re-probes instead of

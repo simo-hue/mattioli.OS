@@ -1,11 +1,10 @@
 # TO_SIMO_DO.md
 - [ ] Widget for iPhone & MacOS
+- [ ] Organize better the selection of the LLM in the AI coach
+- [ ] in the AI coach the suggested prompt are not useful at all and I want you to change the recommendations ( pre-prompt ) in something useful that the user can really benefit from the answer.
 - [ ] settings in desktop implementation is really weird and not intuitive as it is in the mobile app
-- [x] ~~Protocol from desktop only the current habits not all ( the removed one should not be visible )~~ — implemented 2026-07-21 as an Active/All toggle (mirrors mobile's `statsHabitFilter`); see DOCUMENTATION.md. Needs on-device QA on the Mac mini.
 - [ ] what happens if I modify manually an automatic habits?
 - [ ] Different habits & goals types, not only checkboxes like status,progress bar
-- [ ] For the desktop implementation what has been done with ollama is outstanding and I want to replicate the same thing also with LMStudio so the major local LLM providers are supported
-
 ## prompt
 
 /grill-me we are working inside the flutter implementations on both desktop and mobile versions. What I was thinking about was to Add the "mixture" of habits to make it one ( for example 10 mins of workout OR 10000 steps ). Could exclusive ( OR ) or inclusive ( AND ). What do you think? How we can implement it in the most professional and user friendly way?
@@ -46,20 +45,6 @@ flutter build macos --release --dart-define-from-file=.env
 ```bash
 flutter build ipa --release
 ```
-
----
-
-### Still outstanding (not yet fixed)
-- [x] ~~`applyDelete` runs with foreign keys ON~~ — fixed in an earlier session.
-- [x] ~~`syncNow` still stamps `last_full_sync_at` and reports success even when every record
-      failed.~~ — fixed 2026-07-21 (Tier A1).
-- [ ] Mobile still has no launch sync and no periodic timer.
-- [x] ~~No retry/backoff or `qualityOfService` on any CloudKit operation.~~ — written 2026-07-21
-      (Tier A2/A3). **Compiles but has never been executed — see the checklist below.**
-- [x] ~~`quarantineRecord`'s ON CONFLICT branch does not apply the quarantine stamp.~~ — this
-      turned out NOT to be a defect (the doc comment specifies that behaviour deliberately, and
-      forcing `dirty = 0` there would drop pending local writes). The real bug was in its
-      counterpart, `clearUndecryptableParks`, and is now fixed. See DOCUMENTATION.md.
 
 ---
 

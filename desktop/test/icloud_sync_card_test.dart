@@ -325,4 +325,50 @@ void main() {
           reason: 'the fix must not be a blanket refusal to report success');
     });
   });
+
+  // The receiving side of a key split: records in iCloud were sealed with a
+  // different E2E key, so this device cannot read them. Mobile has covered this
+  // for a while; desktop's key-split card + status override had no test at all,
+  // so a settings_page refactor could silently drop the only Mac-side recovery
+  // affordance and reintroduce the invisible "data just missing" failure.
+  group('a key split surfaces the warning and the recovery action', () {
+    const split = PrivateSyncStatus(
+      isAvailable: true,
+      isEnabled: true,
+      account: CloudAccountStatus.available,
+      undecryptableCount: 3485,
+    );
+
+    testWidgets('the status line names the split instead of "Up to date"',
+        (tester) async {
+      await _pumpPrivacy(tester, _FakeSyncService(split));
+
+      expect(find.text(t.icloudSync.keySplitTitle), findsOneWidget);
+      expect(find.text(t.icloudSync.statusIdle), findsNothing,
+          reason: 'no amount of syncing makes an unreadable record readable');
+      expect(find.text(t.icloudSync.resetFromDevice), findsOneWidget,
+          reason: 'the reset-from-this-device recovery row must be offered');
+    });
+
+    testWidgets('the reset row runs resetSyncFromThisDevice after confirming',
+        (tester) async {
+      final fake = _FakeSyncService(split);
+      await _pumpPrivacy(tester, fake);
+
+      await tester.ensureVisible(find.text(t.icloudSync.resetFromDevice));
+      await tester.tap(find.text(t.icloudSync.resetFromDevice));
+      await tester.pumpAndSettle();
+
+      // Destructive: nothing runs until the user accepts the confirmation.
+      expect(find.textContaining('erases everything currently stored in iCloud'),
+          findsOneWidget);
+      expect(fake.resetCalls, 0);
+
+      await tester.tap(find.text(t.settingsPage.confirm));
+      await tester.pumpAndSettle();
+
+      expect(fake.resetCalls, 1,
+          reason: 'the iPhone-authoritative zone re-key must actually run');
+    });
+  });
 }

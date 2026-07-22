@@ -24,6 +24,19 @@ class FakeCloudKitBridge implements CloudKitBridge {
   int saveCalls = 0;
   bool zoneDeleted = false;
 
+  /// Set false to model a native build that predates [tryClaimFirstMint], so a
+  /// test can exercise the fail-open path (the method returns null and the
+  /// engine mints exactly as it did before the claim existed).
+  bool supportsFirstMintClaim = true;
+
+  int tryClaimFirstMintCalls = 0;
+
+  /// The owner id that won the singleton first-mint sentinel, or null when no
+  /// device has claimed it yet. Modelled as native state (NOT in [_zone]) so it
+  /// is naturally excluded from [zoneHasRecords] — a device that only wrote the
+  /// claim and then crashed before minting must still be able to re-mint.
+  String? keyMintClaimOwner;
+
   /// Record names the fake server rejects with a per-record error instead of
   /// saving, so a test can exercise a push that partially or wholly FAILS.
   ///
@@ -101,7 +114,33 @@ class FakeCloudKitBridge implements CloudKitBridge {
   Future<void> deleteZone() async {
     _zone.clear();
     _seq.clear();
+    // The first-mint sentinel lives IN the zone, so wiping the zone retires the
+    // claim too — a reset-from-this-device re-claims cleanly.
+    keyMintClaimOwner = null;
     zoneDeleted = true;
+  }
+
+  /// Server-side atomic create-if-absent of the singleton first-mint sentinel,
+  /// keyed on [ownerId]. Mirrors the native `.ifServerRecordUnchanged` save: the
+  /// first caller wins, a caller with the SAME owner wins again (idempotent), a
+  /// caller with a different owner loses. The sentinel is materialised as a real
+  /// zone record so it flows through [fetchChanges] exactly like the native one
+  /// — the engine's pull must SKIP it — while [zoneHasRecords] excludes it.
+  @override
+  Future<bool?> tryClaimFirstMint(String ownerId) async {
+    tryClaimFirstMintCalls++;
+    if (!supportsFirstMintClaim) return null; // models a pre-claim native build
+    final current = keyMintClaimOwner;
+    if (current != null) return current == ownerId;
+    keyMintClaimOwner = ownerId;
+    _zone[kKeyOwnerSentinelRecordName] = const CloudRecord(
+      recordName: kKeyOwnerSentinelRecordName,
+      tableName: kKeyOwnerSentinelRecordName,
+      updatedAtMs: 0,
+      deleted: false,
+    );
+    _seq[kKeyOwnerSentinelRecordName] = ++_counter;
+    return true;
   }
 
   int ensureSubscriptionCalls = 0;
@@ -118,6 +157,9 @@ class FakeCloudKitBridge implements CloudKitBridge {
   @override
   Future<bool> zoneHasRecords() async {
     zoneHasRecordsCalls++;
-    return _zone.isNotEmpty;
+    // The first-mint sentinel is bookkeeping, not data: it must not read as
+    // "the zone already has records", or a device that only claimed (then
+    // crashed before minting) could never re-mint. Mirrors the native filter.
+    return _zone.keys.any((k) => k != kKeyOwnerSentinelRecordName);
   }
 }

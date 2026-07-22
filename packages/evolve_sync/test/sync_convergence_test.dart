@@ -47,6 +47,10 @@ class _CappedCloud implements CloudKitBridge {
   Future<bool> zoneHasRecords() => inner.zoneHasRecords();
 
   @override
+  Future<bool?> tryClaimFirstMint(String ownerId) =>
+      inner.tryClaimFirstMint(ownerId);
+
+  @override
   Future<void> ensureSubscription() => inner.ensureSubscription();
 }
 
@@ -87,6 +91,10 @@ class _EditDuringPushCloud implements CloudKitBridge {
   // Delegates: the probe is orthogonal to what this wrapper simulates.
   @override
   Future<bool> zoneHasRecords() => inner.zoneHasRecords();
+
+  @override
+  Future<bool?> tryClaimFirstMint(String ownerId) =>
+      inner.tryClaimFirstMint(ownerId);
 
   @override
   Future<void> ensureSubscription() => inner.ensureSubscription();

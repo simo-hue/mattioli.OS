@@ -10,8 +10,6 @@
 //      populated  → the guard.
 //   2. a decrypt failure was classified as TRANSIENT, so it held the change
 //      token and rewound it on every sync, forever → the quarantine.
-import 'dart:typed_data';
-
 import 'package:evolve_sync/evolve_sync.dart';
 import 'package:evolve_sync/testing.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -164,6 +162,114 @@ void main() {
       expect(secrets.values[SyncKeyStore.keyKey], isNotNull);
       expect(bridge.zoneHasRecordsCalls, greaterThan(0),
           reason: 'the guard must actually consult the zone');
+    });
+  });
+
+  group('empty-zone first-mint race', () {
+    test('B defers on the claim ALONE, before any data exists', () async {
+      // The race the zoneHasRecords guard is blind to: device A has CLAIMED the
+      // empty zone but not yet uploaded anything, so zoneHasRecords is still
+      // false. Only the server-side atomic claim can stop B minting a rival key
+      // in this window — which is exactly the window that split a real user.
+      final bridge = FakeCloudKitBridge();
+
+      // A wins the claim first (modelled directly — this is A's enable() claim).
+      expect(await bridge.tryClaimFirstMint('owner-a'), isTrue);
+      expect(await bridge.zoneHasRecords(), isFalse,
+          reason: 'the sentinel alone is not "records" — the data guard is blind');
+
+      final b = await seedDevice('owner-b', macroGoals: 2);
+      final bSecrets = _FakeSecrets();
+      final bResult = await engineFor(b, bridge)
+          .enable(keys: SyncKeyStore(bSecrets), localOwner: 'owner-b');
+
+      expect(bResult.keyPending, isTrue,
+          reason: 'B must defer on the claim, before any data exists');
+      expect(bResult.ran, isFalse);
+      expect(bSecrets.values[SyncKeyStore.keyKey], isNull,
+          reason: 'the rival-key write is the unrecoverable act');
+    });
+
+    test('two devices racing to enable converge on exactly one key', () async {
+      final bridge = FakeCloudKitBridge();
+      // Separate keychains == the iCloud Keychain has propagated nothing yet.
+      final aSecrets = _FakeSecrets();
+      final bSecrets = _FakeSecrets();
+      final a = await seedDevice('owner-a', macroGoals: 2);
+      final b = await seedDevice('owner-b', macroGoals: 2);
+
+      final aResult = await engineFor(a, bridge)
+          .enable(keys: SyncKeyStore(aSecrets), localOwner: 'owner-a');
+      final bResult = await engineFor(b, bridge)
+          .enable(keys: SyncKeyStore(bSecrets), localOwner: 'owner-b');
+
+      expect(aResult.ran, isTrue, reason: 'the claim winner mints and uploads');
+      expect(aSecrets.values[SyncKeyStore.keyKey], isNotNull);
+      expect(bResult.ran, isFalse);
+      expect(bResult.keyPending, isTrue);
+      expect(bSecrets.values[SyncKeyStore.keyKey], isNull,
+          reason: 'exactly one E2E key may exist across the two devices');
+    });
+
+    test('the claim is idempotent — a crash before minting still re-mints',
+        () async {
+      // A device that WON the claim but died before persisting its key (readKey
+      // still null, zone still empty of data) must be able to re-mint on the
+      // next enable, never defer against its OWN sentinel forever.
+      final bridge = FakeCloudKitBridge();
+      await bridge.tryClaimFirstMint('owner-a'); // the prior, crashed attempt
+
+      final a = await seedDevice('owner-a', macroGoals: 1);
+      final secrets = _FakeSecrets();
+      final r = await engineFor(a, bridge)
+          .enable(keys: SyncKeyStore(secrets), localOwner: 'owner-a');
+
+      expect(r.ran, isTrue);
+      expect(r.keyPending, isFalse);
+      expect(secrets.values[SyncKeyStore.keyKey], isNotNull,
+          reason: 'the same owner re-claims and mints; it never dead-locks');
+    });
+
+    test('fail-open: with no native claim support a first device still mints',
+        () async {
+      // The guard must never REGRESS enable(): a bridge that predates the claim
+      // (a null answer) behaves exactly as before — the genuinely-first device
+      // mints on an empty zone.
+      final bridge = FakeCloudKitBridge()..supportsFirstMintClaim = false;
+      final a = await seedDevice('owner-a', macroGoals: 2);
+      final secrets = _FakeSecrets();
+
+      final r = await engineFor(a, bridge)
+          .enable(keys: SyncKeyStore(secrets), localOwner: 'owner-a');
+
+      expect(r.ran, isTrue);
+      expect(r.keyPending, isFalse);
+      expect(secrets.values[SyncKeyStore.keyKey], isNotNull);
+      expect(bridge.tryClaimFirstMintCalls, greaterThan(0),
+          reason: 'the guard consulted the claim, then fell open on the null');
+    });
+
+    test('the first-mint sentinel is skipped by a peer, never quarantined',
+        () async {
+      // The sentinel rides in the zone like any record; a device that pulls the
+      // zone must SKIP it, not park it as an unknown table.
+      final bridge = FakeCloudKitBridge();
+      final shared = _FakeSecrets();
+
+      final a = await seedDevice('owner-a', macroGoals: 3);
+      await engineFor(a, bridge)
+          .enable(keys: SyncKeyStore(shared), localOwner: 'owner-a');
+      expect(bridge.records.containsKey(kKeyOwnerSentinelRecordName), isTrue,
+          reason: 'the sentinel is really a record in the zone');
+
+      final b = await seedDevice('owner-b');
+      final r = await engineFor(b, bridge)
+          .enable(keys: SyncKeyStore(shared), localOwner: 'owner-b');
+
+      final diag = await b.diagnostics();
+      expect(diag.totalParked, 0, reason: 'the sentinel must not be quarantined');
+      expect(diag.localRowsByTable['long_term_goals'], 3);
+      expect(r.undecryptable, 0);
     });
   });
 

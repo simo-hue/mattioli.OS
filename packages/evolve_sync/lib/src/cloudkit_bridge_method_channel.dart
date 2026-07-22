@@ -106,6 +106,28 @@ class MethodChannelCloudKitBridge implements CloudKitBridge {
   }
 
   @override
+  Future<bool?> tryClaimFirstMint(String ownerId) async {
+    try {
+      // Native returns a real bool (won/lost) or, on an inconclusive error,
+      // null. Any failure here is treated as `null` so the guard is strictly
+      // fail-open — see [CloudKitBridge.tryClaimFirstMint]. Unlike
+      // [zoneHasRecords], this must NOT fail closed (return false): a false is
+      // "another device won, defer forever", which on a genuinely-first device
+      // whose native call merely errored would wedge enable() permanently. The
+      // safe inconclusive answer is null → fall back to the existing behaviour,
+      // which the untouched [zoneHasRecords] guard already protects.
+      return await channel.invokeMethod<bool>(
+        'tryClaimFirstMint',
+        {'ownerId': ownerId},
+      );
+    } on MissingPluginException {
+      return null; // no native support → mint as before
+    } on PlatformException {
+      return null; // inconclusive → don't change behaviour
+    }
+  }
+
+  @override
   Future<SaveOutcome> saveRecords(List<CloudRecord> records) async {
     final res = await channel.invokeMapMethod<String, dynamic>('saveRecords', {
       'records': [for (final r in records) _encodeRecord(r)],

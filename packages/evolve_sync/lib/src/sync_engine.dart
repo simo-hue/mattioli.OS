@@ -290,15 +290,39 @@ class SyncEngine {
     //
     // Ordered before ensureZone()/any write so a deferred enable touches
     // nothing at all.
-    if (!force &&
-        await keys.readKey() == null &&
-        await bridge.zoneHasRecords()) {
-      logger.info(
-        '[CloudKit] Sync enable deferred: the zone already holds records but '
-        'this device has no E2E key yet (waiting for iCloud Keychain). '
-        'Refusing to mint a second key.',
-      );
-      return const SyncResult(keyPending: true);
+    if (!force && await keys.readKey() == null) {
+      // No local key yet ⇒ we are about to MINT. Two guards decide whether that
+      // is safe; both only ever turn a mint into a defer, never the reverse.
+      if (await bridge.zoneHasRecords()) {
+        // Real records already exist under a key still in flight — minting would
+        // orphan every one of them, permanently, on every device. Defer and
+        // wait for the iCloud Keychain to deliver that key.
+        logger.info(
+          '[CloudKit] Sync enable deferred: the zone already holds records but '
+          'this device has no E2E key yet (waiting for iCloud Keychain). '
+          'Refusing to mint a second key.',
+        );
+        return const SyncResult(keyPending: true);
+      }
+      // The zone is empty of data — but the check above is a READ and cannot be
+      // atomic with the mint below, so two devices enabling on the same empty
+      // zone in one window both reach here and both mint (the empty-zone race
+      // that split a real user's key). Close it with a server-side atomic claim:
+      // only the device that creates the singleton owner sentinel may mint; the
+      // loser defers and adopts the winner's key via the iCloud Keychain.
+      //
+      // Fail-open: a null answer (no native support / inconclusive error) falls
+      // straight through to the mint, exactly as before this guard existed, so
+      // it can never regress — it only ADDS a defer on a definitive loss.
+      final wonClaim = await bridge.tryClaimFirstMint(localOwner);
+      if (wonClaim == false) {
+        logger.info(
+          '[CloudKit] Sync enable deferred: another device won the first-mint '
+          'claim on the empty zone (waiting for its key via iCloud Keychain). '
+          'Refusing to mint a second key.',
+        );
+        return const SyncResult(keyPending: true);
+      }
     }
 
     final k = await keys.getOrCreateKeyReporting();
@@ -662,6 +686,14 @@ class SyncEngine {
     var holdToken = false;
     final nowMs = clock().toUtc().millisecondsSinceEpoch;
     for (final rec in all) {
+      if (rec.recordName == kKeyOwnerSentinelRecordName) {
+        // The empty-zone first-mint arbitration sentinel (see
+        // [CloudKitBridge.tryClaimFirstMint]) is bookkeeping, never a data row.
+        // Skip it so it is neither applied nor quarantined as an unknown table;
+        // the change token still advances past it.
+        skipped++;
+        continue;
+      }
       // Compared against `nowMs + bound`, never as `updatedAtMs - nowMs`.
       // `updatedAtMs` is an arbitrary int64 off the wire, so the subtraction
       // wraps for a maximally-negative one and reports a huge POSITIVE skew —

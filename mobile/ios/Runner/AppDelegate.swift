@@ -152,6 +152,12 @@ enum CloudKitSyncBridge {
   static let zoneName = "PrivateZone"
   static let recordType = "PrivateRecord"
 
+  /// Reserved record name for the empty-zone first-mint arbitration sentinel
+  /// (see `tryClaimFirstMint`). Bookkeeping, never a data row: excluded from
+  /// `zoneHasRecords` and skipped by the Dart pull. MUST match
+  /// `kKeyOwnerSentinelRecordName` in `package:evolve_sync`'s cloudkit_bridge.dart.
+  static let keyOwnerSentinelName = "__evolve_key_owner__"
+
   /// Retained so a silent push can invoke BACK into Dart. It used to be a local
   /// `let`, which made the channel one-directional.
   private static var channel: FlutterMethodChannel?
@@ -239,6 +245,7 @@ enum CloudKitSyncBridge {
     case "deleteRecords": deleteRecords(args, result)
     case "deleteZone": deleteZone(result)
     case "zoneHasRecords": zoneHasRecords(result)
+    case "tryClaimFirstMint": tryClaimFirstMint(args, result)
     case "ensureSubscription": ensureSubscription(result)
     default: result(FlutterMethodNotImplemented)
     }
@@ -564,11 +571,18 @@ enum CloudKitSyncBridge {
     op.qualityOfService = .userInitiated
 
     var found = false
-    op.recordWasChangedBlock = { _, res in
+    op.recordWasChangedBlock = { recordID, res in
+      // The first-mint sentinel is bookkeeping, not data: a device that only
+      // claimed it (then crashed before minting) must still be able to re-mint,
+      // so it must NOT read as "the zone already holds records".
+      if recordID.recordName == keyOwnerSentinelName { return }
       if case .success = res { found = true }
     }
     // A tombstone is still evidence the zone has been written to.
-    op.recordWithIDWasDeletedBlock = { _, _ in found = true }
+    op.recordWithIDWasDeletedBlock = { recordID, _ in
+      if recordID.recordName == keyOwnerSentinelName { return }
+      found = true
+    }
     op.fetchRecordZoneChangesResultBlock = { res in
       main {
         switch res {
@@ -593,6 +607,113 @@ enum CloudKitSyncBridge {
           result(flutterError(error))
         }
       }
+    }
+    database.add(op)
+  }
+
+  // MARK: - First-mint claim (empty-zone race)
+
+  /// Atomically claim the right to mint the first E2E key for a genuinely-empty
+  /// zone. Ensures the zone exists, then conditionally creates the singleton
+  /// owner sentinel; the Dart engine calls this only when it is about to mint
+  /// and the zone holds no data. Returns true (won / already ours), false
+  /// (another owner won), or nil (inconclusive → the Dart side falls back to its
+  /// prior behaviour, so this is strictly fail-open). See the Dart
+  /// `CloudKitBridge.tryClaimFirstMint` contract.
+  private static func tryClaimFirstMint(
+    _ args: [String: Any]?,
+    _ result: @escaping FlutterResult,
+    attempt: Int = 0
+  ) {
+    guard let ownerId = args?["ownerId"] as? String else {
+      result(flutterBadArgs); return
+    }
+    // The sentinel lives in the custom zone, which a genuinely-first device does
+    // not have yet — ensure it before the conditional create.
+    let zone = CKRecordZone(zoneID: zoneID)
+    let zoneOp = CKModifyRecordZonesOperation(
+      recordZonesToSave: [zone], recordZoneIDsToDelete: nil
+    )
+    zoneOp.qualityOfService = .userInitiated
+    zoneOp.modifyRecordZonesResultBlock = { res in
+      switch res {
+      case .success:
+        claimSentinel(ownerId, result, attempt: attempt)
+      case .failure(let error):
+        if let delay = retryDelay(error, attempt: attempt) {
+          scheduleRetry("tryClaimFirstMint", after: delay, attempt: attempt) {
+            tryClaimFirstMint(args, result, attempt: attempt + 1)
+          }
+          return
+        }
+        // Inconclusive → fail OPEN (nil): the Dart caller reverts to its prior
+        // behaviour and the untouched zoneHasRecords guard still protects the
+        // populated-zone case. nil here can only ADD safety, never remove it.
+        main { result(nil) }
+      }
+    }
+    database.add(zoneOp)
+  }
+
+  private static func claimSentinel(
+    _ ownerId: String,
+    _ result: @escaping FlutterResult,
+    attempt: Int
+  ) {
+    let record = CKRecord(
+      recordType: recordType,
+      recordID: CKRecord.ID(recordName: keyOwnerSentinelName, zoneID: zoneID)
+    )
+    // Carry the same fields a decoded record needs on the Dart side (it skips
+    // the sentinel by name, but must still decode without a missing-key crash).
+    record["tableName"] = keyOwnerSentinelName as NSString
+    record["updatedAt"] = NSNumber(value: 0)
+    record["deleted"] = NSNumber(value: 0)
+    record["owner"] = ownerId as NSString
+
+    let op = CKModifyRecordsOperation(recordsToSave: [record], recordIDsToDelete: nil)
+    op.qualityOfService = .userInitiated
+    // A FRESH record (no server change tag) + .ifServerRecordUnchanged = an
+    // atomic create-if-absent: the server saves it only when no record with this
+    // ID exists, and returns .serverRecordChanged when one already does. That is
+    // the whole point — exactly one racing device can create the sentinel.
+    op.savePolicy = .ifServerRecordUnchanged
+
+    var won: Bool?
+    op.perRecordSaveBlock = { _, res in
+      switch res {
+      case .success:
+        won = true // this device created the sentinel
+      case .failure(let error):
+        if let ck = error as? CKError, ck.code == .serverRecordChanged {
+          // Someone already claimed. Idempotent for the SAME device: a crash
+          // between the claim and the mint must let THIS owner re-mint, not
+          // dead-lock. A missing/other owner → false (defer), never a re-mint.
+          let existingOwner = ck.serverRecord?["owner"] as? String
+          won = (existingOwner == ownerId)
+        } else {
+          won = nil // inconclusive → fail open
+        }
+      }
+    }
+    op.modifyRecordsResultBlock = { res in
+      if case .failure(let error) = res {
+        // A .partialFailure already ran perRecordSaveBlock (won is set); trust
+        // it. A retryable throttle is retried. Anything else is inconclusive.
+        if let ck = error as? CKError, ck.code == .partialFailure {
+          main { result(won) }
+          return
+        }
+        if let delay = retryDelay(error, attempt: attempt) {
+          scheduleRetry("tryClaimFirstMint", after: delay, attempt: attempt) {
+            claimSentinel(ownerId, result, attempt: attempt + 1)
+          }
+          return
+        }
+        main { result(nil) } // fail open
+        return
+      }
+      main { result(won) }
     }
     database.add(op)
   }

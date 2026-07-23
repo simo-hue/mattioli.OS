@@ -1,9 +1,12 @@
 // Which transport the AI Coach uses, and why the order of the checks matters.
 //
 // App Store Guideline 3.1.1 rejected the app because a user-supplied OpenRouter
-// key unlocked paid functionality. The fix is two transports: Standard (our Edge
-// Function, our key, unlocked by the IAP) and BYOK (the user's own key, free).
-// This file pins the routing between them.
+// key unlocked paid functionality. The fix is two transports that do NOT
+// overlap, split by data mode: account mode is Standard only (our Edge Function,
+// our key, unlocked by the IAP — a signed-in user cannot bring their own key,
+// and a non-pro one meets the paywall), and Private mode is BYOK only (the
+// user's own key, free, no account for our server to authenticate). This file
+// pins the routing between them.
 //
 // The sharp edge is private mode, for two independent reasons:
 //
@@ -57,10 +60,11 @@ void main() {
       }
     });
 
-    test('a free cloud user gets BYOK — the coach is not Pro-only any more', () {
-      // Guideline 3.1.1: the coach used to be Pro-only AND require your own key,
-      // so the key stacked on top of the purchase as a second unlock. Now
-      // nothing is unlocked by a key, because nothing is locked.
+    test('a free cloud user gets NOTHING — the account coach is Pro-only', () {
+      // In account mode the coach is the Pro-funded Standard proxy and nothing
+      // else: a signed-in user cannot bring their own key (BYOK lives in Private
+      // mode). So a non-pro cloud user — key stored or not — resolves to null and
+      // meets the paywall rather than a free BYOK path.
       expect(
         resolveCoachMode(
           isPrivate: false,
@@ -68,13 +72,15 @@ void main() {
           hasSession: true,
           hasKey: true,
         ),
-        CoachMode.byok,
+        isNull,
       );
     });
 
-    test('a Pro user mid-refresh falls back to BYOK rather than failing', () {
+    test('a Pro user mid-refresh resolves to null, not a BYOK fallback', () {
       // currentSession is null while the token refreshes. Standard picks up
-      // again on the next resolve; meanwhile a usable key should still work.
+      // again on the next resolve; account mode has no BYOK fallback, so the
+      // coach is briefly unconfigured rather than routed at the user's own key
+      // (which they may have from a prior Private-mode session).
       expect(
         resolveCoachMode(
           isPrivate: false,
@@ -82,7 +88,7 @@ void main() {
           hasSession: false,
           hasKey: true,
         ),
-        CoachMode.byok,
+        isNull,
       );
     });
 

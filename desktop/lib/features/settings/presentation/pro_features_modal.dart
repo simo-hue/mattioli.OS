@@ -1,5 +1,5 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
-import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
+import 'package:evolve_desktop/features/settings/presentation/settings_page.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:flutter/material.dart';
@@ -21,12 +21,12 @@ class ProFeature {
 /// The four Pro features, localized. Shared by the upsell modal and the paywall
 /// feature list so the pitch stays in sync.
 ///
-/// Ordered by what the subscription ACTUALLY unlocks. The coach led this list
-/// from when it was Pro-gated; it is not any more — bring-your-own-key is free,
-/// which is the Guideline 3.1.1 fix. Leading a paywall with a feature you can
-/// have for nothing is an inaccurate subscription description (Guideline 3.1.2,
-/// which this app is already rejected under), so the real gates go first and the
-/// coach goes last, saying what Pro genuinely buys for it: no setup.
+/// Ordered by what the subscription ACTUALLY unlocks. In account mode the AI
+/// Coach is Pro-gated (a signed-in user cannot bring their own key — that path
+/// lives in Private mode), so it is a genuine Pro unlock and an accurate paywall
+/// line (Guideline 3.1.2). The habit/stats gates still lead because they are the
+/// ones a free user meets first; the coach follows, saying what Pro buys it: no
+/// setup, no key.
 List<ProFeature> proFeatures() => [
   ProFeature(
     LucideIcons.infinity,
@@ -48,19 +48,21 @@ List<ProFeature> proFeatures() => [
 ];
 
 /// Opens the Pro upsell dialog. Called from every locked-feature gate; its CTA
-/// deep-links to Settings → Subscription (which renders the correct per-platform
-/// state — purchase on macOS, informative on Windows/Linux).
+/// opens the paywall dialog ([showPaywallDialog]) directly — the plans + purchase
+/// surface, which renders the correct per-platform state (purchase on macOS,
+/// informative on Windows/Linux).
 Future<void> showProFeaturesDialog(BuildContext context, WidgetRef ref) {
+  // `ref` is accepted for call-site symmetry with the many gates that invoke
+  // this; the dialog no longer needs it now that its CTA opens the paywall
+  // dialog directly.
   return showEvolveDialog<void>(
     context: context,
-    builder: (dialogContext) => _ProFeaturesDialog(ref: ref),
+    builder: (dialogContext) => const _ProFeaturesDialog(),
   );
 }
 
 class _ProFeaturesDialog extends StatelessWidget {
-  const _ProFeaturesDialog({required this.ref});
-
-  final WidgetRef ref;
+  const _ProFeaturesDialog();
 
   @override
   Widget build(BuildContext context) {
@@ -118,10 +120,7 @@ class _ProFeaturesDialog extends StatelessWidget {
                 ),
                 onPressed: () {
                   Navigator.of(context).pop();
-                  ref.read(subscriptionSettingsRequestProvider.notifier).request();
-                  ref
-                      .read(navigationControllerProvider.notifier)
-                      .select(DesktopSection.settings);
+                  showPaywallDialog(context);
                 },
                 child: Text(t.proModal.viewPlans),
               ),

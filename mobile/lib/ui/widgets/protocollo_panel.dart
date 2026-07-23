@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../core/data_mode.dart';
-import '../../core/openrouter_service.dart';
 import '../../providers/mood_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../screens/ai_chat_screen.dart';
@@ -87,15 +86,15 @@ class ProtocolloPanel extends ConsumerWidget {
             Expanded(
               flex: 2,
               child: Builder(builder: (context) {
-                // Gate: free cloud users without a BYOK key see the paywall.
-                // Private mode always passes (no paywall there — it has no
-                // account and BYOK is the only path). Pro users pass (Standard
-                // mode). Free users with a BYOK key pass (BYOK mode). Everyone
-                // else is a free cloud user whose every send would 403.
+                // Gate: in account mode the coach is Pro-only. Private mode
+                // always passes (no paywall there — it keeps no account, and
+                // BYOK is its free, self-served path). A signed-in user passes
+                // only with Pro (Standard mode); a signed-in non-pro user sees
+                // the paywall. Bring-your-own-key is no longer an account-mode
+                // escape — it lives in Private mode.
                 final isPrivate = ref.watch(activeDataModeProvider).isPrivate;
                 final isPro = ref.watch(settingsProvider).isPro;
-                final hasKey = ref.watch(openRouterApiKeyProvider).asData?.value != null;
-                final needsPaywall = !isPrivate && !isPro && !hasKey;
+                final needsPaywall = !isPrivate && !isPro;
 
                 return _ActionTile(
                   key: aiChatKey,

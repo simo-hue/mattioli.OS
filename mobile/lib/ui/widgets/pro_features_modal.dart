@@ -131,12 +131,12 @@ class _ProFeaturesModalState extends ConsumerState<ProFeaturesModal> {
           
           // Features List — ordered by what the subscription ACTUALLY unlocks.
           //
-          // The coach used to lead this list, from when it was Pro-gated. It is
-          // not any more: bring-your-own-key is free, which is the Guideline
-          // 3.1.1 fix. Leading a paywall with a feature you can have for nothing
-          // is an inaccurate subscription description — Guideline 3.1.2, which
-          // this app is already rejected under — so the real gates go first, and
-          // the coach goes last saying what Pro genuinely buys for it: no setup.
+          // In account mode the AI Coach is Pro-gated: a signed-in user cannot
+          // bring their own key (that path lives in Private mode), so the
+          // managed coach is a genuine Pro unlock and an accurate paywall line
+          // (Guideline 3.1.2). The habit/stats gates still lead because they are
+          // the ones a free user meets first; the coach follows, describing what
+          // Pro buys it — zero setup, no key.
           _buildFeatureItem(
             context: context,
             icon: LucideIcons.infinity,

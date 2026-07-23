@@ -1210,10 +1210,11 @@
     "standardStatusNeedsPro": "يتطلب Pro",
     "standardStatusNeedsSignIn": "يلزم تسجيل الدخول",
     "standardStatusUnavailable": "غير متاح",
-    "standardNeedsProNote": "Evolve AI جزء من Evolve Pro. اشترك لاستخدامه — أو اربط حساب OpenRouter الخاص بك، وهو مجاني.",
+    "standardNeedsProNote": "Evolve AI جزء من Evolve Pro. اشترك لفتحه.",
     "standardNeedsSignInNote": "سجّل الدخول لاستخدام Evolve AI. اشتراكك يفتحه على كل أجهزتك.",
     "standardUnavailableNote": "Evolve AI غير متاح في هذه النسخة. اربط حساب OpenRouter الخاص بك أو استخدم نموذجًا محليًا.",
-    "standardPrivateNote": "يحتاج Evolve AI إلى حساب Evolve، والوضع الخاص لا يحتفظ بحساب. اربط حساب OpenRouter الخاص بك أو استخدم نموذجًا محليًا — كلاهما يعمل هنا."
+    "standardPrivateNote": "يحتاج Evolve AI إلى حساب Evolve، والوضع الخاص لا يحتفظ بحساب. اربط حساب OpenRouter الخاص بك أو استخدم نموذجًا محليًا — كلاهما يعمل هنا.",
+    "accountModeNote": "تفضّل استخدام مفتاح OpenRouter الخاص بك أو نموذجًا محليًا؟ كلاهما متاح في الوضع الخاص."
   },
   "tour": {
     "back": "رجوع",

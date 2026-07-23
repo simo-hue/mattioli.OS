@@ -130,7 +130,12 @@ void main() {
     expect(cfg.localBaseUrl, 'http://192.168.1.9:11434/v1');
   });
 
-  test('activeCoachBackendProvider tracks the configured backend', () async {
+  test('activeCoachBackendProvider is Standard in account mode, whatever is '
+      'chosen', () async {
+    // Account mode is Standard-only: BYOK and Local are Private-mode features,
+    // so a persisted Cloud/Local choice is preserved but never serves here — the
+    // engine that actually answers is always the Pro-funded proxy. (Private
+    // mode's inverse is covered below.)
     final container = await _container();
     expect(
       container.read(activeCoachBackendProvider),
@@ -141,14 +146,14 @@ void main() {
         .setBackend(CoachBackendKind.cloud);
     expect(
       container.read(activeCoachBackendProvider),
-      isA<CloudCoachBackend>(),
+      isA<StandardCoachBackend>(),
     );
     await container
         .read(coachConfigProvider.notifier)
         .setBackend(CoachBackendKind.local);
     expect(
       container.read(activeCoachBackendProvider),
-      isA<LocalCoachBackend>(),
+      isA<StandardCoachBackend>(),
     );
   });
 
@@ -172,6 +177,25 @@ void main() {
       CoachBackendKind.cloud,
     );
     expect(container.read(activeCoachBackendProvider), isA<CloudCoachBackend>());
+  });
+
+  test('PRIVATE MODE keeps a stored Local choice as the Local engine', () async {
+    // The other half of the mode/backend split: Private mode is BYOK + Local
+    // only, and a Local choice must build the Local engine (not be rewritten the
+    // way a Standard choice is).
+    final container = ProviderContainer(
+      overrides: [
+        coachConfigProvider.overrideWith(_FixedConfigController.new),
+        activeDesktopDataModeProvider.overrideWith(
+          () => _FixedDataMode(DesktopDataMode.private),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+    await container
+        .read(coachConfigProvider.notifier)
+        .setBackend(CoachBackendKind.local);
+    expect(container.read(activeCoachBackendProvider), isA<LocalCoachBackend>());
   });
 }
 

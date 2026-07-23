@@ -8,6 +8,7 @@ import '../../core/theme.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/coach_consent.dart';
 import '../../core/coach_endpoint.dart';
+import '../../core/data_mode.dart';
 import '../../core/haptics.dart';
 import '../../core/openrouter_service.dart';
 import '../../core/rtl.dart';
@@ -37,6 +38,9 @@ class AppSettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
+    // Bring-your-own-key is a Private-mode path only. In account mode the coach
+    // is the Pro-funded Standard proxy, so the key entry is hidden there.
+    final isPrivate = ref.watch(activeDataModeProvider).isPrivate;
 
     final colors = context.appColors;
 
@@ -277,21 +281,52 @@ class AppSettingsScreen extends ConsumerWidget {
               // expects the same. Granting is one tap in a dialog, so taking it
               // back is one tap here.
               const _CoachConsentRow(),
-              _buildActionRow(
-                context: context,
-                icon: LucideIcons.keyRound,
-                title: context.t.ai.apiKey.rowTitle,
-                // Reports only whether a key exists — the key itself is never
-                // rendered back out of the Keychain.
-                trailingText:
-                    ref.watch(openRouterApiKeyProvider).asData?.value != null
-                    ? context.t.ai.apiKey.statusSet
-                    : context.t.ai.apiKey.statusMissing,
-                onTap: () {
-                  ref.hapticLight();
-                  _showApiKeySheet(context);
-                },
-              ),
+              // Key entry is Private-mode only: a signed-in user's coach is the
+              // Pro proxy, so there is no key to paste. In account mode we show
+              // where BYOK lives instead of a field that would do nothing.
+              if (isPrivate)
+                _buildActionRow(
+                  context: context,
+                  icon: LucideIcons.keyRound,
+                  title: context.t.ai.apiKey.rowTitle,
+                  // Reports only whether a key exists — the key itself is never
+                  // rendered back out of the Keychain.
+                  trailingText:
+                      ref.watch(openRouterApiKeyProvider).asData?.value != null
+                      ? context.t.ai.apiKey.statusSet
+                      : context.t.ai.apiKey.statusMissing,
+                  onTap: () {
+                    ref.hapticLight();
+                    _showApiKeySheet(context);
+                  },
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        LucideIcons.keyRound,
+                        size: 18,
+                        color: colors.mutedForeground,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          context.t.ai.apiKey.accountModeNote,
+                          style: GoogleFonts.inter(
+                            color: colors.mutedForeground,
+                            fontSize: 13,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
             ]),
             const SizedBox(height: 32),
             // Apple Health (Guideline 2.5.1). Unconditional and permanent: it

@@ -264,9 +264,21 @@ double clampTemperature(double value) => value.clamp(0.0, 2.0);
 
 /// The engine that can actually serve, given the engine the user picked.
 ///
-/// Only Private mode overrides the choice, and only for
-/// [CoachBackendKind.standard], which it cannot reach for two independent
-/// reasons — either sufficient on its own:
+/// The two data modes own disjoint backend sets, and this is where that is
+/// enforced — every gate (send path, setup banners, chip) reads THIS, not
+/// `config.backend`, so the rule holds everywhere at once.
+///
+/// **Account mode → Standard, always.** The account tier is the managed,
+/// Pro-funded coach and nothing else: bring-your-own-key and local models are
+/// Private-mode features by product decision, so a signed-in user's persisted
+/// choice of Cloud or Local resolves to Standard. Their choice is preserved (not
+/// rewritten) and takes effect again the moment they enter Private mode, so no
+/// one is forced to re-pick after switching modes. A non-pro account user still
+/// resolves to Standard; the proxy answers `needsPro` and the paywall does the
+/// rest.
+///
+/// **Private mode → never Standard.** It cannot reach the proxy, for two
+/// independent reasons, either sufficient on its own:
 ///
 ///  1. Private mode keeps no account. The Edge Function takes identity from the
 ///     caller's JWT and entitlement from `profiles.is_pro`; with neither, there
@@ -276,23 +288,28 @@ double clampTemperature(double value) => value.clamp(0.0, 2.0);
 ///     to null in `supabaseClientProvider` rather than throwing — but a request
 ///     built from it would still go out with no bearer and come back 401.
 ///
-/// Note that `desktopIsProProvider` reports **true** in Private mode
-/// unconditionally (desktop_subscription_controller.dart:68-71). So entitlement
-/// must never be read before the data mode: the `isPro` the client sees and the
-/// `profiles.is_pro` the proxy checks are different facts that share a name.
+/// So a persisted Standard choice resolves to [CoachBackendKind.cloud] there
+/// (keeping the user's own remote key working if they have one, and showing the
+/// "add your key" prompt otherwise); Local stays Local.
 ///
-/// Falling back to [CoachBackendKind.cloud] rather than [CoachBackendKind.local]
-/// keeps the user's own remote key working if they have one, and shows the
-/// "add your key" prompt if they don't — which is the honest end state for a
-/// mode that has no account to bill.
+/// This function deliberately never reads entitlement — the data mode alone
+/// decides the backend set — so the fact that `desktopIsProProvider` reports a
+/// placeholder **true** in Private mode (desktop_subscription_controller.dart:
+/// 68-71) can never mislead it.
 CoachBackendKind effectiveCoachBackend({
   required CoachBackendKind chosen,
   required bool isPrivate,
 }) {
-  if (isPrivate && chosen == CoachBackendKind.standard) {
-    return CoachBackendKind.cloud;
+  if (isPrivate) {
+    // No account here: Standard cannot authenticate, so it resolves to the
+    // user's own remote key. Cloud and Local are already reachable as-is.
+    return chosen == CoachBackendKind.standard
+        ? CoachBackendKind.cloud
+        : chosen;
   }
-  return chosen;
+  // Account mode is Standard-only. A stored Cloud/Local choice is preserved for
+  // when the user returns to Private mode, but does not serve here.
+  return CoachBackendKind.standard;
 }
 
 /// Why the Standard engine can or cannot answer right now.

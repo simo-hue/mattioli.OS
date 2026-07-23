@@ -16,8 +16,10 @@ import '../providers/settings_provider.dart';
 ///   unlocked by the Pro subscription. This is the shape Apple requires: the
 ///   IAP unlocks the feature, not a key the user pastes in.
 /// - **Connect your OpenRouter account** — the user's own key, straight to
-///   openrouter.ai. Free for everyone, and the ONLY option in Private mode,
-///   which has no account and therefore no way to reach our function.
+///   openrouter.ai. The free, self-served path in Private mode, which keeps no
+///   account and therefore no way to reach our function. It is Private mode
+///   ONLY: a signed-in user cannot bring their own key, because the account
+///   tier is the Pro-funded Standard proxy by design.
 ///
 /// Both speak the same wire format: the Edge Function reads `messages`, ignores
 /// the model, and pipes OpenRouter's SSE straight back, so it is OpenAI-
@@ -98,9 +100,11 @@ final coachSessionTokenProvider = Provider<Future<String?> Function()>(
 ///     THROWS. Reading the session before the data mode is not a 401, it is a
 ///     crash.
 ///
-/// Private mode can therefore only ever be BYOK. That is the mode's own logic
-/// rather than a limitation: it keeps no account, so there is nothing for our
-/// server to authenticate.
+/// Private mode can therefore only ever be BYOK, and account mode only ever
+/// Standard: the two tiers do not overlap. That is the mode's own logic rather
+/// than a limitation — Private mode keeps no account, so there is nothing for
+/// our server to authenticate; account mode is the managed, Pro-funded coach,
+/// so bringing your own key there is deliberately not offered.
 @visibleForTesting
 CoachMode? resolveCoachMode({
   required bool isPrivate,
@@ -108,10 +112,15 @@ CoachMode? resolveCoachMode({
   required bool hasSession,
   required bool hasKey,
 }) {
-  // A Pro user with no session is mid-sign-in or mid-refresh: fall through to
-  // BYOK rather than fail, and pick Standard up on the next resolve.
-  if (!isPrivate && isPro && hasSession) return CoachMode.standard;
-  if (hasKey) return CoachMode.byok;
+  // Private mode is BYOK-only: no account, nothing for our server to
+  // authenticate, so the user's own key is the one and only transport.
+  if (isPrivate) return hasKey ? CoachMode.byok : null;
+
+  // Account mode is Standard-only and Pro-gated: a signed-in user cannot bring
+  // their own key. A Pro user with no session yet is mid sign-in/refresh —
+  // return null and resolve to Standard on the next pass rather than falling
+  // back to a BYOK path that no longer exists in account mode.
+  if (isPro && hasSession) return CoachMode.standard;
   return null;
 }
 

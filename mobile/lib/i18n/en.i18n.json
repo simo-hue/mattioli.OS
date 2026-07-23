@@ -766,7 +766,8 @@
       "setupBody": "Two ways to run it: Evolve Pro includes the coach with no setup at all, or connect your own OpenRouter account for free. Both live in Settings.",
       "setupAction": "Open Settings",
       "descriptionProActive": "Evolve Pro already runs the coach for you, with no key needed. Connect your own OpenRouter account only if you would rather run it on yours.",
-      "setupBodyPrivate": "Private mode keeps no account, so the coach runs on your own OpenRouter account. Add a key in Settings to start chatting."
+      "setupBodyPrivate": "Private mode keeps no account, so the coach runs on your own OpenRouter account. Add a key in Settings to start chatting.",
+      "accountModeNote": "With an account, the AI Coach runs on Evolve Pro. To use your own OpenRouter key, switch to Private mode."
     },
     "prompts": {
       "defaultUserName": "user",

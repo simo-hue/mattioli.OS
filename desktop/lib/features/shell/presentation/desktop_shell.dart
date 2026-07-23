@@ -4,7 +4,6 @@ import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/features/ai_coach/application/coach_controllers.dart';
-import 'package:evolve_desktop/features/ai_coach/domain/coach_backend.dart';
 import 'package:evolve_desktop/features/ai_coach/presentation/ai_coach_page.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/auth/application/desktop_profile_controller.dart';
@@ -101,11 +100,10 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
     // collapse the page-switch animation so spotlight geometry settles at once.
     final tourActive = ref.watch(tourControllerProvider).active;
 
-    final isPrivate = ref.read(activeDesktopDataModeProvider).isPrivate;
-    final isPro = ref.read(desktopIsProProvider);
-    final hasKey = ref.read(coachApiKeyProvider).asData?.value?.isNotEmpty == true;
-    final kind = ref.read(effectiveCoachBackendProvider);
-    final needsPaywall = !isPrivate && !isPro && !hasKey && kind != CoachBackendKind.local;
+    // In account mode the coach is Pro-only; Private mode is free (BYOK/Local
+    // are its self-served paths). Watched via a provider so the gate reacts the
+    // instant entitlement or data mode changes mid-session.
+    final needsPaywall = ref.watch(coachNeedsPaywallProvider);
 
     return CallbackShortcuts(
       bindings: {
@@ -267,11 +265,10 @@ class _DesktopSidebar extends ConsumerWidget {
     final navigation = ref.read(navigationControllerProvider.notifier);
     final width = collapsed ? 76.0 : 232.0;
 
-    final isPrivate = ref.read(activeDesktopDataModeProvider).isPrivate;
-    final isPro = ref.read(desktopIsProProvider);
-    final hasKey = ref.read(coachApiKeyProvider).asData?.value?.isNotEmpty == true;
-    final kind = ref.read(effectiveCoachBackendProvider);
-    final needsPaywall = !isPrivate && !isPro && !hasKey && kind != CoachBackendKind.local;
+    // In account mode the coach is Pro-only; Private mode is free (BYOK/Local
+    // are its self-served paths). Watched via a provider so the gate reacts the
+    // instant entitlement or data mode changes mid-session.
+    final needsPaywall = ref.watch(coachNeedsPaywallProvider);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),

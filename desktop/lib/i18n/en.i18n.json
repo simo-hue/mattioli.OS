@@ -1210,10 +1210,11 @@
     "standardStatusNeedsPro": "Requires Pro",
     "standardStatusNeedsSignIn": "Sign in required",
     "standardStatusUnavailable": "Unavailable",
-    "standardNeedsProNote": "Evolve AI is part of Evolve Pro. Subscribe to use it — or connect your own OpenRouter account instead, which is free.",
+    "standardNeedsProNote": "Evolve AI is part of Evolve Pro. Subscribe to unlock it.",
     "standardNeedsSignInNote": "Sign in to use Evolve AI. Your subscription unlocks it on every device.",
     "standardUnavailableNote": "Evolve AI isn't available in this build. Connect your own OpenRouter account, or run a local model.",
-    "standardPrivateNote": "Evolve AI needs an Evolve account, and Private mode doesn't keep one. Connect your own OpenRouter account, or run a local model — both keep working here."
+    "standardPrivateNote": "Evolve AI needs an Evolve account, and Private mode doesn't keep one. Connect your own OpenRouter account, or run a local model — both keep working here.",
+    "accountModeNote": "Prefer your own OpenRouter key or a local model? Those are available in Private mode."
   },
   "tour": {
     "back": "Back",

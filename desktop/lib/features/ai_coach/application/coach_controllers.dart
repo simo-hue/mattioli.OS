@@ -202,6 +202,22 @@ final effectiveCoachBackendProvider = Provider<CoachBackendKind>((ref) {
   );
 });
 
+/// Whether opening the AI Coach must present the paywall instead.
+///
+/// The coach is Pro-only in account mode and free in Private mode, where BYOK
+/// and Local are the self-served paths. A `Provider` — rather than an inline
+/// `ref.read` in the shell — so the sidebar and the ⌘5 shortcut re-evaluate the
+/// instant the data mode flips or a RevenueCat entitlement update lands
+/// mid-session.
+///
+/// `desktopIsProProvider` is a placeholder `true` in Private mode, but the
+/// `isPrivate` short-circuit runs first, so the placeholder can never wrongly
+/// suppress the paywall.
+final coachNeedsPaywallProvider = Provider<bool>((ref) {
+  if (ref.watch(activeDesktopDataModeProvider).isPrivate) return false;
+  return !ref.watch(desktopIsProProvider);
+});
+
 /// The engine that answers the coach. Depends on the effective backend + local
 /// base URL (so an unrelated config edit — temperature, system prompt, model
 /// memory — doesn't needlessly rebuild it), on the BYOK key for cloud, and on

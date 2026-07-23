@@ -3646,10 +3646,41 @@ class _PlatformNote extends StatelessWidget {
   }
 }
 
+/// Opens the subscription purchase surface as a modal dialog — the SAME plans,
+/// pricing, purchase, restore and compliance the Settings → Subscription section
+/// renders, presented directly so a locked feature (e.g. the AI Coach) sends the
+/// user straight to plans instead of deep-linking through Settings. This is the
+/// desktop counterpart of the mobile SubscriptionScreen step of the paywall
+/// funnel; the feature pitch is omitted because the Pro-features dialog that
+/// opened this already made it.
+Future<void> showPaywallDialog(BuildContext context) {
+  return showEvolveDialog<void>(
+    context: context,
+    builder: (dialogContext) => EvolveDialog(
+      maxWidth: 560,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
+        child: const _SubscriptionSettings(
+          twoColumn: false,
+          showFeaturePitch: false,
+        ),
+      ),
+    ),
+  );
+}
+
 class _SubscriptionSettings extends ConsumerStatefulWidget {
-  const _SubscriptionSettings({required this.twoColumn});
+  const _SubscriptionSettings({
+    required this.twoColumn,
+    this.showFeaturePitch = true,
+  });
 
   final bool twoColumn;
+
+  /// When false, the upsell panel + feature list at the top are omitted — used by
+  /// [showPaywallDialog], where the preceding Pro-features dialog already pitched
+  /// them and repeating would be redundant.
+  final bool showFeaturePitch;
 
   @override
   ConsumerState<_SubscriptionSettings> createState() =>
@@ -3672,7 +3703,7 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
           subtitle: t.settingsPage.proSubtitle,
         ),
         const SizedBox(height: 20),
-        if (!subscription.isPro) ...[
+        if (!subscription.isPro && widget.showFeaturePitch) ...[
           EvolvePanel(
             padding: const EdgeInsets.all(20),
             radius: 20,

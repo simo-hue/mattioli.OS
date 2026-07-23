@@ -156,9 +156,17 @@ void main() {
       }
     });
 
-    test('outside private mode the user\'s choice is honoured verbatim', () {
+    test('outside private mode everything resolves to Standard (account is '
+        'Standard-only)', () {
+      // BYOK and Local are Private-mode features. A signed-in user's persisted
+      // choice is preserved for when they return to Private mode, but never
+      // serves in account mode, where the Pro-funded proxy is the only coach.
       for (final kind in CoachBackendKind.values) {
-        expect(effectiveCoachBackend(chosen: kind, isPrivate: false), kind);
+        expect(
+          effectiveCoachBackend(chosen: kind, isPrivate: false),
+          CoachBackendKind.standard,
+          reason: '${kind.name} must resolve to Standard in account mode',
+        );
       }
     });
   });

@@ -766,7 +766,8 @@
       "setupBody": "Dos formas de usarlo: Evolve Pro incluye el coach sin ninguna configuración, o conectas gratis tu propia cuenta de OpenRouter. Ambas están en Ajustes.",
       "setupAction": "Abrir ajustes",
       "descriptionProActive": "Evolve Pro ya ejecuta el coach por ti, sin necesidad de claves. Conecta tu cuenta de OpenRouter solo si prefieres usar la tuya.",
-      "setupBodyPrivate": "El modo Privado no guarda ninguna cuenta, así que el coach se ejecuta en tu cuenta de OpenRouter. Añade una clave en Ajustes para empezar a chatear."
+      "setupBodyPrivate": "El modo Privado no guarda ninguna cuenta, así que el coach se ejecuta en tu cuenta de OpenRouter. Añade una clave en Ajustes para empezar a chatear.",
+      "accountModeNote": "Con una cuenta, el AI Coach funciona con Evolve Pro. Para usar tu propia clave de OpenRouter, cambia al modo Privado."
     },
     "prompts": {
       "defaultUserName": "Usuario",

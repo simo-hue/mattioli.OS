@@ -1210,10 +1210,11 @@
     "standardStatusNeedsPro": "Requiere Pro",
     "standardStatusNeedsSignIn": "Inicia sesión",
     "standardStatusUnavailable": "No disponible",
-    "standardNeedsProNote": "Evolve AI forma parte de Evolve Pro. Suscríbete para usarlo o conecta tu propia cuenta de OpenRouter, que es gratis.",
+    "standardNeedsProNote": "Evolve AI forma parte de Evolve Pro. Suscríbete para desbloquearlo.",
     "standardNeedsSignInNote": "Inicia sesión para usar Evolve AI. Tu suscripción lo desbloquea en todos tus dispositivos.",
     "standardUnavailableNote": "Evolve AI no está disponible en esta versión. Conecta tu cuenta de OpenRouter o usa un modelo local.",
-    "standardPrivateNote": "Evolve AI necesita una cuenta de Evolve, y el modo Privado no guarda ninguna. Conecta tu cuenta de OpenRouter o usa un modelo local: aquí ambos siguen funcionando."
+    "standardPrivateNote": "Evolve AI necesita una cuenta de Evolve, y el modo Privado no guarda ninguna. Conecta tu cuenta de OpenRouter o usa un modelo local: aquí ambos siguen funcionando.",
+    "accountModeNote": "¿Prefieres tu propia clave de OpenRouter o un modelo local? Están disponibles en el modo Privado."
   },
   "tour": {
     "back": "Atrás",

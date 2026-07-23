@@ -14,16 +14,6 @@
 
 This was only a single idea of new type but I want you to propose me something even more useful and cooler. 
 
-## prompt to run 3
-/grill-me  The current desktop AI coach implementation is almost perfect: 
-
-* privacy mode: the user needs his own open router's API KEY;
-* standard mode ( user connected with supabase ) uses my API KEY so the user doesn't need to care about that. The thing that needs to be implemented is that the user must have the pro subscription to access to the AI Coach. And in addition to that I see that inside the desktop app the paywall is not implemented  ( or at least it seems as when the pop up came out and I clicked on the button to see the plans it has redirected me to the settings in the profile page ). successfully ( as the mobile, where is fully working and professional ).
-
-The mobile implementation is different ( and it's a problem ) as I want the implementations to be coherent as they are reppresenting the same app.
-
-The mobile has already the paywall configured perfectly but the problem is the fact that the AI coach is accessible even from non pro users and it's a problem I want you to fix.
-
 ---
 
 # TO DOUBLE CHECK:
@@ -283,3 +273,32 @@ empirical. None of them blocks the build; each is a one-line fix if it comes bac
       escape hatch reachable — it can't (it's `kDebugMode`-gated), but confirm your archive is Release.
 
 ---
+
+## AI Coach Pro-gating + desktop paywall (2026-07-22)
+
+### A. Blocking — verify the Mac can actually transact (I could not check this from code)
+- [ ] The desktop paywall's "Activate Evolve Pro" button calls RevenueCat macOS (`purchase`). Confirm the
+      **macOS subscription product is live in App Store Connect + RevenueCat** and the Mac app ships via the
+      **Mac App Store**. If it is NOT set up, the button compiles but FAILS at runtime — in that case tell me
+      and I'll switch the desktop paywall surface to "Subscribe on your iPhone → unlocks here automatically"
+      + a Restore button instead of an in-app purchase.
+- [ ] Product ids the code expects: `com.simo.evolve.pro.monthly` / `com.simo.evolve.pro.yearly`;
+      entitlement `Evolve Pro`. These are shared with mobile (same RevenueCat project), so if mobile sells
+      fine the entitlement side is already correct — only the macOS **StoreKit product availability** is the
+      open question.
+
+### B. On-device QA (no Xcode on this Mac, so I could not run either app)
+- [ ] Mobile: in **account mode**, a non-pro user tapping the AI Coach tile now gets the paywall funnel
+      (ProFeaturesModal → SubscriptionScreen); with a stored OpenRouter key they should STILL be blocked
+      (BYOK no longer works while signed in). In **Private mode** the coach stays free (BYOK).
+- [ ] Desktop: in **account mode**, non-pro → sidebar/⌘5 opens ProFeaturesModal; "View plans" now opens the
+      real **paywall dialog** (plans/prices/purchase/restore), NOT the old redirect to Settings→Profile.
+      Buy → success dialog → coach unlocks live. In **Private mode** the coach stays free (BYOK/Local).
+- [ ] Desktop coach Settings: in account mode the picker shows Standard only (+ a note pointing to Private
+      mode for BYOK/Local); in Private mode it shows Your-OpenRouter-account + Local.
+
+### C. Release-note / support heads-up (behaviour change for existing users)
+- [ ] Existing **signed-in** users who used the coach for free via their own OpenRouter key (or a local
+      server) will now meet the paywall in account mode. Their stored key / local-server config is
+      PRESERVED (nothing is deleted) and still works the moment they switch to Private mode. Worth a line in
+      the release notes so it doesn't read as a silent takeaway.

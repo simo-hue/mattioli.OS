@@ -3328,8 +3328,8 @@ class Translations$coachSettings$en {
 	/// en: 'Unavailable'
 	String get standardStatusUnavailable => 'Unavailable';
 
-	/// en: 'Evolve AI is part of Evolve Pro. Subscribe to use it — or connect your own OpenRouter account instead, which is free.'
-	String get standardNeedsProNote => 'Evolve AI is part of Evolve Pro. Subscribe to use it — or connect your own OpenRouter account instead, which is free.';
+	/// en: 'Evolve AI is part of Evolve Pro. Subscribe to unlock it.'
+	String get standardNeedsProNote => 'Evolve AI is part of Evolve Pro. Subscribe to unlock it.';
 
 	/// en: 'Sign in to use Evolve AI. Your subscription unlocks it on every device.'
 	String get standardNeedsSignInNote => 'Sign in to use Evolve AI. Your subscription unlocks it on every device.';
@@ -3339,6 +3339,9 @@ class Translations$coachSettings$en {
 
 	/// en: 'Evolve AI needs an Evolve account, and Private mode doesn't keep one. Connect your own OpenRouter account, or run a local model — both keep working here.'
 	String get standardPrivateNote => 'Evolve AI needs an Evolve account, and Private mode doesn\'t keep one. Connect your own OpenRouter account, or run a local model — both keep working here.';
+
+	/// en: 'Prefer your own OpenRouter key or a local model? Those are available in Private mode.'
+	String get accountModeNote => 'Prefer your own OpenRouter key or a local model? Those are available in Private mode.';
 }
 
 // Path: tour
@@ -5212,10 +5215,11 @@ extension on Translations {
 			'coachSettings.standardStatusNeedsPro' => 'Requires Pro',
 			'coachSettings.standardStatusNeedsSignIn' => 'Sign in required',
 			'coachSettings.standardStatusUnavailable' => 'Unavailable',
-			'coachSettings.standardNeedsProNote' => 'Evolve AI is part of Evolve Pro. Subscribe to use it — or connect your own OpenRouter account instead, which is free.',
+			'coachSettings.standardNeedsProNote' => 'Evolve AI is part of Evolve Pro. Subscribe to unlock it.',
 			'coachSettings.standardNeedsSignInNote' => 'Sign in to use Evolve AI. Your subscription unlocks it on every device.',
 			'coachSettings.standardUnavailableNote' => 'Evolve AI isn\'t available in this build. Connect your own OpenRouter account, or run a local model.',
 			'coachSettings.standardPrivateNote' => 'Evolve AI needs an Evolve account, and Private mode doesn\'t keep one. Connect your own OpenRouter account, or run a local model — both keep working here.',
+			'coachSettings.accountModeNote' => 'Prefer your own OpenRouter key or a local model? Those are available in Private mode.',
 			'tour.back' => 'Back',
 			'tour.next' => 'Next',
 			'tour.continueLabel' => 'Continue',

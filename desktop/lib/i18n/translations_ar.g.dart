@@ -1403,10 +1403,11 @@ class _Translations$coachSettings$ar extends Translations$coachSettings$en {
 	@override String get standardStatusNeedsPro => 'يتطلب Pro';
 	@override String get standardStatusNeedsSignIn => 'يلزم تسجيل الدخول';
 	@override String get standardStatusUnavailable => 'غير متاح';
-	@override String get standardNeedsProNote => 'Evolve AI جزء من Evolve Pro. اشترك لاستخدامه — أو اربط حساب OpenRouter الخاص بك، وهو مجاني.';
+	@override String get standardNeedsProNote => 'Evolve AI جزء من Evolve Pro. اشترك لفتحه.';
 	@override String get standardNeedsSignInNote => 'سجّل الدخول لاستخدام Evolve AI. اشتراكك يفتحه على كل أجهزتك.';
 	@override String get standardUnavailableNote => 'Evolve AI غير متاح في هذه النسخة. اربط حساب OpenRouter الخاص بك أو استخدم نموذجًا محليًا.';
 	@override String get standardPrivateNote => 'يحتاج Evolve AI إلى حساب Evolve، والوضع الخاص لا يحتفظ بحساب. اربط حساب OpenRouter الخاص بك أو استخدم نموذجًا محليًا — كلاهما يعمل هنا.';
+	@override String get accountModeNote => 'تفضّل استخدام مفتاح OpenRouter الخاص بك أو نموذجًا محليًا؟ كلاهما متاح في الوضع الخاص.';
 }
 
 // Path: tour
@@ -2918,10 +2919,11 @@ extension on TranslationsAr {
 			'coachSettings.standardStatusNeedsPro' => 'يتطلب Pro',
 			'coachSettings.standardStatusNeedsSignIn' => 'يلزم تسجيل الدخول',
 			'coachSettings.standardStatusUnavailable' => 'غير متاح',
-			'coachSettings.standardNeedsProNote' => 'Evolve AI جزء من Evolve Pro. اشترك لاستخدامه — أو اربط حساب OpenRouter الخاص بك، وهو مجاني.',
+			'coachSettings.standardNeedsProNote' => 'Evolve AI جزء من Evolve Pro. اشترك لفتحه.',
 			'coachSettings.standardNeedsSignInNote' => 'سجّل الدخول لاستخدام Evolve AI. اشتراكك يفتحه على كل أجهزتك.',
 			'coachSettings.standardUnavailableNote' => 'Evolve AI غير متاح في هذه النسخة. اربط حساب OpenRouter الخاص بك أو استخدم نموذجًا محليًا.',
 			'coachSettings.standardPrivateNote' => 'يحتاج Evolve AI إلى حساب Evolve، والوضع الخاص لا يحتفظ بحساب. اربط حساب OpenRouter الخاص بك أو استخدم نموذجًا محليًا — كلاهما يعمل هنا.',
+			'coachSettings.accountModeNote' => 'تفضّل استخدام مفتاح OpenRouter الخاص بك أو نموذجًا محليًا؟ كلاهما متاح في الوضع الخاص.',
 			'tour.back' => 'رجوع',
 			'tour.next' => 'التالي',
 			'tour.continueLabel' => 'متابعة',

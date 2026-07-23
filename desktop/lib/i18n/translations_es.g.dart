@@ -1403,10 +1403,11 @@ class _Translations$coachSettings$es extends Translations$coachSettings$en {
 	@override String get standardStatusNeedsPro => 'Requiere Pro';
 	@override String get standardStatusNeedsSignIn => 'Inicia sesión';
 	@override String get standardStatusUnavailable => 'No disponible';
-	@override String get standardNeedsProNote => 'Evolve AI forma parte de Evolve Pro. Suscríbete para usarlo o conecta tu propia cuenta de OpenRouter, que es gratis.';
+	@override String get standardNeedsProNote => 'Evolve AI forma parte de Evolve Pro. Suscríbete para desbloquearlo.';
 	@override String get standardNeedsSignInNote => 'Inicia sesión para usar Evolve AI. Tu suscripción lo desbloquea en todos tus dispositivos.';
 	@override String get standardUnavailableNote => 'Evolve AI no está disponible en esta versión. Conecta tu cuenta de OpenRouter o usa un modelo local.';
 	@override String get standardPrivateNote => 'Evolve AI necesita una cuenta de Evolve, y el modo Privado no guarda ninguna. Conecta tu cuenta de OpenRouter o usa un modelo local: aquí ambos siguen funcionando.';
+	@override String get accountModeNote => '¿Prefieres tu propia clave de OpenRouter o un modelo local? Están disponibles en el modo Privado.';
 }
 
 // Path: tour
@@ -2918,10 +2919,11 @@ extension on TranslationsEs {
 			'coachSettings.standardStatusNeedsPro' => 'Requiere Pro',
 			'coachSettings.standardStatusNeedsSignIn' => 'Inicia sesión',
 			'coachSettings.standardStatusUnavailable' => 'No disponible',
-			'coachSettings.standardNeedsProNote' => 'Evolve AI forma parte de Evolve Pro. Suscríbete para usarlo o conecta tu propia cuenta de OpenRouter, que es gratis.',
+			'coachSettings.standardNeedsProNote' => 'Evolve AI forma parte de Evolve Pro. Suscríbete para desbloquearlo.',
 			'coachSettings.standardNeedsSignInNote' => 'Inicia sesión para usar Evolve AI. Tu suscripción lo desbloquea en todos tus dispositivos.',
 			'coachSettings.standardUnavailableNote' => 'Evolve AI no está disponible en esta versión. Conecta tu cuenta de OpenRouter o usa un modelo local.',
 			'coachSettings.standardPrivateNote' => 'Evolve AI necesita una cuenta de Evolve, y el modo Privado no guarda ninguna. Conecta tu cuenta de OpenRouter o usa un modelo local: aquí ambos siguen funcionando.',
+			'coachSettings.accountModeNote' => '¿Prefieres tu propia clave de OpenRouter o un modelo local? Están disponibles en el modo Privado.',
 			'tour.back' => 'Atrás',
 			'tour.next' => 'Siguiente',
 			'tour.continueLabel' => 'Continuar',

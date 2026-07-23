@@ -119,17 +119,22 @@ class _CoachSettingsDialogState extends ConsumerState<CoachSettingsDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          EvolveSegmentedControl<CoachBackendKind>(
-            segments: {
-              if (offerStandard)
-                CoachBackendKind.standard: t.coachSettings.backendStandard,
-              CoachBackendKind.cloud: t.coachSettings.backendCloud,
-              CoachBackendKind.local: t.coachSettings.backendLocal,
-            },
-            selected: backend,
-            onSelected: _controller.setBackend,
-          ),
-          const SizedBox(height: 12),
+          // The backend picker is mode-scoped. In account mode the coach is
+          // Standard-only — bring-your-own-key and local models are Private-mode
+          // features — so there is nothing to pick, and the note below says where
+          // they live. In Private mode those two self-served engines are the only
+          // choices (Standard needs an account Private mode does not keep).
+          if (!offerStandard) ...[
+            EvolveSegmentedControl<CoachBackendKind>(
+              segments: {
+                CoachBackendKind.cloud: t.coachSettings.backendCloud,
+                CoachBackendKind.local: t.coachSettings.backendLocal,
+              },
+              selected: backend,
+              onSelected: _controller.setBackend,
+            ),
+            const SizedBox(height: 12),
+          ],
           Text(
             switch (backend) {
               CoachBackendKind.local => t.coachSettings.localDesc,
@@ -143,13 +148,19 @@ class _CoachSettingsDialogState extends ConsumerState<CoachSettingsDialog> {
               height: 1.45,
             ),
           ),
-          if (!offerStandard) ...[
-            const SizedBox(height: 12),
-            _WarningNote(text: t.coachSettings.standardPrivateNote),
-          ],
           if (backend == CoachBackendKind.standard) ...[
             const SizedBox(height: 18),
             _StandardSection(status: standardStatus),
+            const SizedBox(height: 12),
+            Text(
+              t.coachSettings.accountModeNote,
+              style: TextStyle(
+                color: colors.muted,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w500,
+                height: 1.45,
+              ),
+            ),
           ],
           if (backend == CoachBackendKind.cloud) ...[
             const SizedBox(height: 18),

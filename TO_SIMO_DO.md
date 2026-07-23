@@ -1,12 +1,8 @@
 # TO_SIMO_DO.md
 - [ ] Widget for iPhone & MacOS
-- [ ] Evolve pro da rimuovere il badge nelle statistiche quando c'è il selettore "globale" quindi tutti gli habit ma solamente quando viene selezionato un habit specifico
 - [ ] settings in desktop implementation is really weird and not intuitive as it is in the mobile app
 - [ ] what happens if I modify manually an automatic habits?
 - [ ] Different habits & goals types, not only checkboxes like status,progress bar
-## prompt
-
-/grill-me we are working inside the flutter implementations on both desktop and mobile versions. What I was thinking about was to Add the "mixture" of habits using logical conditions to make it one ( for example 10 mins of workout OR 10000 steps ). Could exclusive ( OR ) or inclusive ( AND ). What do you think? How we can implement it in the most professional and user friendly way?
 
 ## prompt
 
@@ -1242,3 +1238,13 @@ Observed 2026-07-23: the Mac logs `[APNs] Registration FAILED … OSStatus error
 
 ### D. Not fixing (agreed): the "no re-backfill" code path
 - Real App Store users only ever use Production and get a full `markAllDirty` push at first-enable, so they can't reach the stranded state; `resetSyncFromThisDevice` already covers the developer dev→prod case. No automatic empty-zone re-upload was added (would guard a developer-only scenario).
+
+---
+
+## Desktop Statistics — "Evolve Pro" badge only in per-habit scope (2026-07-23)
+
+### On-device QA (no Xcode on this Mac — I could not visually run the app)
+- [ ] Open **Statistics**. With the selector on **Global** ("Global" / all habits) the top-right
+      **"Evolve Pro"** amber pill is now **hidden**. Select a **specific habit** from the dropdown →
+      the badge **reappears**. Switch back to Global → it disappears again. (Verified headless:
+      `flutter analyze` 0 issues; full desktop suite 543 tests pass.)

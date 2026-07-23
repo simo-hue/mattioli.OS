@@ -2285,3 +2285,11 @@ All owner actions are itemized in **TO_SIMO_DO.md**.
 
 
 
+
+- [2026-07-23]: **Desktop Statistics — "Evolve Pro" badge scoped to per-habit view only**
+  - *Details*: In the Statistics page the habit-selector card (`_HabitSelectorCard`) rendered the amber `StatusPill('Evolve Pro')` **unconditionally**, so it showed even in the **Global** scope (all habits), where the stats are free. Per-habit statistics are the actual Pro feature (the selector already gates habit selection behind the paywall for free users — see the `showProFeaturesDialog` call in `_controlRow`), so the badge is only meaningful once a **specific habit** is selected. The pill is now **hidden in Global scope** and shown **only when a specific habit is selected**.
+  - *Tech Notes*:
+    - **`desktop/lib/features/statistics/presentation/statistics_page.dart`** — introduced a local `isHabitSelected = isHabitScope && selectedHabit != null` (reused for `currentValue`, same condition already used for the icon `tint`, so the badge is consistent with what the dropdown displays and never shows in the transient empty-habits edge case where the selector falls back to "Global"). Wrapped the trailing `SizedBox(width: 12)` + `StatusPill` in `if (isHabitSelected) ...[ … ]`.
+    - Purely presentational; no i18n, no new dependencies, no schema/RPC/state changes. No test asserted the badge's presence (the `Evolve Pro` test strings in the suite belong to the paywall modal / the standalone `EvolveProBadge` widget, both unaffected).
+    - Verified headless: `flutter analyze` on the file — **0 issues**; full desktop suite — **543 tests pass**.
+  - *Current Status*: Implemented and verified headless (no Xcode on this machine). Needs a glance on the Mac — see `TO_SIMO_DO.md`: confirm the badge is hidden on Global and reappears when a specific habit is selected.

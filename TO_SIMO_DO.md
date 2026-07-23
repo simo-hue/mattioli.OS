@@ -213,3 +213,418 @@ empirical. None of them blocks the build; each is a one-line fix if it comes bac
       server) will now meet the paywall in account mode. Their stored key / local-server config is
       PRESERVED (nothing is deleted) and still works the moment they switch to Private mode. Worth a line in
       the release notes so it doesn't read as a silent takeaway.
+
+---
+
+When I build the flutter mobile ios implementation I receive this warnings here from Xcode: Runner
+/Users/simo/Developer/mattioli.OS/mobile/ios/Runner/Assets.xcassets
+/Users/simo/Developer/mattioli.OS/mobile/ios/Runner/Assets.xcassets:./AppIcon.appiconset/(null)[2d][Icon-App-50x50@1x.png] The app icon set "AppIcon" has 6 unassigned children.
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Runner/AppDelegate.swift
+/Users/simo/Developer/mattioli.OS/mobile/ios/Runner/AppDelegate.swift:1059:50 'asleep' was deprecated in iOS 16.0: renamed to 'HKCategoryValueSleepAnalysis.asleepUnspecified'
+
+permission_handler_apple
+/Users/simo/.pub-cache/hosted/pub.dev/permission_handler_apple-9.4.7/ios/Classes/strategies/PhonePermissionStrategy.m
+/Users/simo/.pub-cache/hosted/pub.dev/permission_handler_apple-9.4.7/ios/Classes/strategies/PhonePermissionStrategy.m:39:30 'CTCarrier' is deprecated: first deprecated in iOS 16.0 - Deprecated with no replacement
+
+/Users/simo/.pub-cache/hosted/pub.dev/permission_handler_apple-9.4.7/ios/Classes/strategies/PhonePermissionStrategy.m:39:65 'serviceSubscriberCellularProviders' is deprecated: first deprecated in iOS 16.0 - Deprecated with no replacement
+
+/Users/simo/.pub-cache/hosted/pub.dev/permission_handler_apple-9.4.7/ios/Classes/strategies/PhonePermissionStrategy.m:41:7 'CTCarrier' is deprecated: first deprecated in iOS 16.0 - Deprecated with no replacement
+
+/Users/simo/.pub-cache/hosted/pub.dev/permission_handler_apple-9.4.7/ios/Classes/strategies/PhonePermissionStrategy.m:49:5 'CTCarrier' is deprecated: first deprecated in iOS 16.0 - Deprecated with no replacement
+
+/Users/simo/.pub-cache/hosted/pub.dev/permission_handler_apple-9.4.7/ios/Classes/strategies/PhonePermissionStrategy.m:49:35 'subscriberCellularProvider' is deprecated: first deprecated in iOS 12.0
+
+/Users/simo/.pub-cache/hosted/pub.dev/permission_handler_apple-9.4.7/ios/Classes/strategies/PhonePermissionStrategy.m:54:38 'CTCarrier' is deprecated: first deprecated in iOS 16.0 - Deprecated with no replacement
+
+/Users/simo/.pub-cache/hosted/pub.dev/permission_handler_apple-9.4.7/ios/Classes/strategies/PhonePermissionStrategy.m:56:28 'mobileNetworkCode' is deprecated: first deprecated in iOS 16.0 - Deprecated; returns '65535' at some point in the future
+
+SQLCipher
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:32344:25 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:32477:60 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:32642:18 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:37460:14 Implicit conversion loses integer precision: 'sqlite3_int64' (aka 'long long') to 'VList' (aka 'int')
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:39105:8 "gethostuuid() is disabled."
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:40424:14 Implicit conversion loses integer precision: 'ssize_t' (aka 'long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:42149:42 Implicit conversion loses integer precision: 'unsigned long long' to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:42291:11 Implicit conversion loses integer precision: 'ssize_t' (aka 'long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:42358:35 Implicit conversion loses integer precision: 'sqlite3_int64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:43874:33 Implicit conversion loses integer precision: 'off_t' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:45805:17 Implicit conversion loses integer precision: 'ssize_t' (aka 'long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:46122:11 Implicit conversion loses integer precision: 'unsigned long' to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:46130:11 Implicit conversion loses integer precision: 'unsigned long' to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:46423:19 Implicit conversion loses integer precision: 'ssize_t' (aka 'long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:46586:37 Implicit conversion loses integer precision: 'unsigned long' to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:46801:53 Implicit conversion loses integer precision: 'unsigned long' to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:56804:16 Implicit conversion loses integer precision: 'u64' (aka 'unsigned long long') to 'unsigned int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:59747:57 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'u32' (aka 'unsigned int')
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:59866:27 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'u32' (aka 'unsigned int')
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:60464:27 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:60480:52 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:60590:47 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:60697:60 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:60702:58 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:60954:26 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:61100:31 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'u32' (aka 'unsigned int')
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:61324:59 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:61329:56 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:61510:15 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:62095:24 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'u32' (aka 'unsigned int')
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:62472:69 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:62765:54 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:62863:59 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:63980:51 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:64315:52 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:65134:5 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:65137:12 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:65144:10 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:65874:39 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:66039:36 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:67681:40 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'u32' (aka 'unsigned int')
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:67685:19 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:73766:32 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:74475:43 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:77259:11 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:79729:16 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:81588:23 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:81622:18 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:83652:21 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:83955:18 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:85451:49 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:91135:22 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:91163:22 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:91371:12 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:93735:42 Implicit conversion loses integer precision: 'sqlite3_uint64' (aka 'unsigned long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:94571:19 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:95489:48 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'u32' (aka 'unsigned int')
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:95512:50 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'u32' (aka 'unsigned int')
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:98379:21 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:105031:28 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:105035:19 Implicit conversion loses integer precision: 'sqlite3_int64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:105312:25 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:105500:17 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:105501:28 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:106327:26 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:106331:33 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:106338:45 Implicit conversion loses integer precision: 'long' to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:106349:26 Implicit conversion loses integer precision: 'sqlite3_int64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:106503:19 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:106957:21 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:107834:17 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:107874:40 Implicit conversion loses integer precision: 'sqlite_int64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:107941:22 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:108155:10 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:108807:42 Implicit conversion loses integer precision: 'volatile size_t' (aka 'volatile unsigned long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:108811:38 Implicit conversion loses integer precision: 'unsigned long' to 'u32' (aka 'unsigned int')
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:108874:76 Implicit conversion loses integer precision: 'size_t' (aka 'unsigned long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:109187:31 A function declaration without a prototype is deprecated in all versions of C
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:109206:27 Implicit conversion loses integer precision: 'sqlite_uint64' (aka 'unsigned long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:109218:24 Implicit conversion loses integer precision: 'sqlite_uint64' (aka 'unsigned long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:109253:42 Implicit conversion loses integer precision: 'sqlite3_uint64' (aka 'unsigned long long') to 'u32' (aka 'unsigned int')
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:109262:23 Implicit conversion loses integer precision: 'sqlite3_uint64' (aka 'unsigned long long') to 'u32' (aka 'unsigned int')
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:109407:43 A function declaration without a prototype is deprecated in all versions of C
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:112020:27 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:112021:32 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:126835:18 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:133267:15 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:133533:20 Implicit conversion loses integer precision: 'sqlite3_int64' (aka 'long long') to 'u32' (aka 'unsigned int')
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:136702:24 Implicit conversion loses integer precision: 'sqlite3_int64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:136703:44 Implicit conversion loses integer precision: 'sqlite3_int64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:137240:31 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'u32' (aka 'unsigned int')
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:137316:11 Implicit conversion loses integer precision: 'long' to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:137553:39 Implicit conversion loses integer precision: 'long' to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:140384:75 Possible misuse of comma operator here
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:145464:36 Implicit conversion loses integer precision: 'u64' (aka 'unsigned long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:145505:34 Implicit conversion loses integer precision: 'u64' (aka 'unsigned long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:148747:28 Implicit conversion loses integer precision: 'const u64' (aka 'const unsigned long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:156879:29 Implicit conversion loses integer precision: 'u64' (aka 'unsigned long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:167352:19 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:167359:19 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:170732:43 Possible misuse of comma operator here
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:171415:14 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:172098:12 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:173015:25 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:173016:25 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:173024:25 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:173025:25 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:173369:10 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:176078:19 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:178457:28 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:180008:12 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:181286:61 Implicit conversion loses integer precision: 'sqlite3_uint64' (aka 'unsigned long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:184799:9 Code will never be executed
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:189305:19 Implicit conversion loses integer precision: 'sqlite3_int64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:189306:40 Implicit conversion loses integer precision: 'sqlite_int64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:189308:19 Implicit conversion loses integer precision: 'sqlite3_int64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:189309:40 Implicit conversion loses integer precision: 'sqlite_int64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:189313:19 Implicit conversion loses integer precision: 'sqlite3_int64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:196118:14 Implicit conversion loses integer precision: 'sqlite3_int64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:205220:56 Implicit conversion loses integer precision: 'sqlite3_int64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:206588:11 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:206737:27 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:207664:22 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:207998:24 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:209527:14 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:209675:11 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:209705:19 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:210283:37 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:210312:16 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:210312:20 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:211310:41 Implicit conversion loses integer precision: 'long' to 'u32' (aka 'unsigned int')
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:211561:25 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:211791:20 Implicit conversion loses integer precision: 'sqlite3_int64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:212868:29 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:214594:28 Implicit conversion loses integer precision: 'u64' (aka 'unsigned long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:215828:20 Implicit conversion loses integer precision: 'u64' (aka 'unsigned long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:216372:43 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'u32' (aka 'unsigned int')
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:218904:19 Implicit conversion loses integer precision: 'u64' (aka 'unsigned long long') to 'u32' (aka 'unsigned int')
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:221514:26 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:221515:28 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:221520:26 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:221521:28 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:221562:12 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:221563:12 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:222683:21 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:225578:20 Implicit conversion loses integer precision: 'sqlite3_int64' (aka 'long long') to 'u32' (aka 'unsigned int')
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:243437:9 Code will never be executed
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:245474:29 Implicit conversion loses integer precision: 'sqlite3_int64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:246517:23 Implicit conversion loses integer precision: 'long' to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:246529:23 Implicit conversion loses integer precision: 'long' to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:248558:18 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:249968:18 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:250922:10 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:251304:27 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:251986:23 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:251989:18 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:252060:28 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:252101:26 Implicit conversion loses integer precision: 'const i64' (aka 'const long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:252171:18 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:252211:50 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:252304:19 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:252333:17 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:252414:29 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:252687:19 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:252755:35 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:253562:18 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:253692:16 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:253692:46 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:253717:16 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:253814:32 Implicit conversion loses integer precision: 'long' to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:253934:30 Implicit conversion loses integer precision: 'long' to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:254061:14 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:254567:14 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:255042:38 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:255425:36 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:255519:17 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:255960:20 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:256625:18 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:256625:22 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:256626:18 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:256626:22 Implicit conversion loses integer precision: 'i64' (aka 'long long') to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:258075:22 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:258105:13 Ambiguous expansion of macro 'MAX'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:258612:53 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:260495:40 Implicit conversion loses integer precision: 'long' to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:265479:19 Implicit conversion loses integer precision: 'long' to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:265486:21 Implicit conversion loses integer precision: 'long' to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:265536:17 Implicit conversion loses integer precision: 'long' to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:265540:37 Implicit conversion loses integer precision: 'long' to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:266367:24 Implicit conversion loses integer precision: 'long' to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:266389:19 Implicit conversion loses integer precision: 'long' to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:266399:36 Implicit conversion loses integer precision: 'long' to 'int'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:268053:18 Ambiguous expansion of macro 'MIN'
+
+/Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:268127:20 Ambiguous expansion of macro 'MIN'

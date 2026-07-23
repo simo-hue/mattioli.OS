@@ -2239,7 +2239,8 @@ All owner actions are itemized in **TO_SIMO_DO.md**.
   - *Tech Notes*: `pubspec.yaml` version fields feed `CFBundleVersion` (`$(FLUTTER_BUILD_NUMBER)`) in `macos/Runner/Info.plist` and `ios/Runner/Info.plist`.
 
 - [2026-07-23]: **Bump Desktop & Mobile App Version Strings (1.1.5 / 1.1.4)**
-  - *Details*: Incremented application version strings in `desktop/pubspec.yaml` (`1.1.5+23`) and `mobile/pubspec.yaml` (`1.1.4+39`). Aligned `MARKETING_VERSION` in both `desktop/macos/Runner.xcodeproj/project.pbxproj` (`1.1.5`) and `mobile/ios/Runner.xcodeproj/project.pbxproj` (`1.1.4`).
-  - *Tech Notes*: Synchronized `pubspec.yaml` version names with Xcode `MARKETING_VERSION` configs.
+  - *Details*: Incremented application version strings in `desktop/pubspec.yaml` (`1.1.5+23`) and `mobile/pubspec.yaml` (`1.1.4+39`). Aligned `MARKETING_VERSION` in both `desktop/macos/Runner.xcodeproj/project.pbxproj` (`1.1.5`) and `mobile/ios/Runner.xcodeproj/project.pbxproj` (`1.1.4`). Fixed hardcoded `CFBundleShortVersionString` (`1.0` -> `$(FLUTTER_BUILD_NAME)`) in `desktop/macos/Runner/Info.plist`.
+  - *Tech Notes*: Ensures Xcode macOS archives read dynamic version name from Flutter build settings instead of hardcoded `1.0`.
+
 
 

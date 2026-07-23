@@ -4,12 +4,6 @@
 - [ ] what happens if I modify manually an automatic habits?
 - [ ] Different habits & goals types, not only checkboxes like status,progress bar
 
-## prompt
-
-/grill-me I was thinking about making some updates to the goals and habits. Right now in the flutter implementations, both desktop and mobile are only checkbox marked as pending, completed, failed. What I was thinking is to add a different type like habits or goals that aren't boolean but for example needs to be done more times. For example a push up daily habits that I want to do 20 push ups for four time a day and right now I have to create four different habit for each push up session, but what I would love to reach is to have the single "push up" habit that I can click on it and see the advancement of the habit to reach the 100% ( full completion ) only when I've completed all the steps.
-
-This was only a single idea of new type but I want you to propose me something even more useful and cooler. 
-
 ---
 
 # TO DOUBLE CHECK:
@@ -1248,3 +1242,50 @@ Observed 2026-07-23: the Mac logs `[APNs] Registration FAILED … OSStatus error
       **"Evolve Pro"** amber pill is now **hidden**. Select a **specific habit** from the dropdown →
       the badge **reappears**. Switch back to Global → it disappears again. (Verified headless:
       `flutter analyze` 0 issues; full desktop suite 543 tests pass.)
+
+---
+
+## Auto-verified habits — D10 forward-only rule-edit freezing (2026-07-23)
+
+Editing a verification rule (e.g. a step-goal threshold) previously re-derived the
+whole 7-day backfill window under the new value — silently rewriting recent
+history. This change adds `goals.verify_effective_from` (the day the current rule
+took effect) so reconcile never rewrites days before an edit. Nullable/additive;
+existing habits are unaffected until their rule is next edited.
+
+### Manual action required (Supabase)
+- [ ] **Apply the migration `migrations/20260723_add_goal_verify_effective_from.sql`
+      to the production Supabase database.** It is a single additive, nullable
+      `ALTER TABLE public.goals ADD COLUMN IF NOT EXISTS verify_effective_from date`
+      (+ a column comment). No RLS change, no data backfill, backwards-compatible —
+      account-mode clients that predate it keep working (the column reads NULL →
+      the client falls back to `start_date`). The SQLCipher/CloudKit side ships it
+      automatically as `PrivateDbSchema` **v7**.
+
+---
+
+## Compound verifiable habits — OR/AND (2026-07-23)
+
+Combine 2–3 HealthKit conditions into one auto-verified habit ("10k steps OR
+30 min exercise"). HealthKit-only for v1; the storage model is provider-general
+so cross-provider is later-additive. Verification stays iOS-only; desktop/web
+carry the data. **The feature ships DARK** behind
+`VerificationConfig.compoundVerificationEnabled = false`.
+
+### Manual actions
+- [ ] **Apply the Supabase migration `migrations/20260723_add_goal_verify_conditions.sql`**
+      to production — a single additive, nullable `ALTER TABLE public.goals ADD
+      COLUMN IF NOT EXISTS verify_conditions text` (+ comment). No RLS change,
+      backwards-compatible. `TEXT` (not jsonb) on purpose: the client stores the
+      same opaque JSON string on both backends; a jsonb column would double-encode
+      it via PostgREST. The SQLCipher/CloudKit side ships it as `PrivateDbSchema` **v8**.
+- [ ] **Native Arabic review** of the new `verification.compound.*` strings in
+      `mobile/lib/i18n/ar.i18n.json` (anyOfThese / allOfThese / anyHelper /
+      allHelper / addCondition / addSheetTitle / add) — machine MSA, same caveat
+      as the earlier verification copy.
+- [ ] **On-device QA, then flip the flag.** Set `compoundVerificationEnabled = true`
+      (needs `healthKitEnabled`, already on) and verify on a device: create a
+      "steps OR exercise" habit, confirm the Any/All toggle + "+ Add condition"
+      (Pro-gated) work, that a compound day resolves to a single done/missed, and
+      that editing a condition re-freezes history from today (D10). Desktop shows
+      the compound read-only (no editing of the rule there).

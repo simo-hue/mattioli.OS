@@ -1224,6 +1224,15 @@
     "couldNotVerifyTapToResolve": "تعذّر التحقق — اضغط للحل",
     "needsAppleWatch": "يتطلب Apple Watch للتحقق التلقائي",
     "grantHealthAccess": "متابعة",
+    "compound": {
+      "anyOfThese": "أيٌّ منها",
+      "allOfThese": "كلّها",
+      "anyHelper": "يُحتسب مكتملاً إذا تحقّق أيٌّ منها.",
+      "allHelper": "يُحتسب مكتملاً فقط إذا تحقّقت كلّها.",
+      "addCondition": "إضافة شرط",
+      "addSheetTitle": "إضافة شرط",
+      "add": "إضافة"
+    },
     "templates": {
       "steps": "الخطوات",
       "exerciseMinutes": "دقائق التمرين",

@@ -96,7 +96,14 @@ class PrivateDashboardRepository extends DashboardRepository {
       'end_date': habit.endDate?.toIso8601String(),
       'display_order': habit.displayOrder,
       'reminder_time': habit.reminderTime,
-      ...(habit.verificationRule?.toColumns() ?? VerificationRule.nullColumns),
+      ...verificationColumnsFor(
+        habit.verificationConditions,
+        habit.verificationJoin ?? VerificationJoin.or,
+      ),
+      'verify_effective_from':
+          habit.verificationRule != null && habit.verifyEffectiveFrom != null
+              ? habit.verifyEffectiveFrom!.toIso8601String().substring(0, 10)
+              : null,
       'created_at': now,
       'updated_at': now,
     });
@@ -122,7 +129,14 @@ class PrivateDashboardRepository extends DashboardRepository {
         'end_date': habit.endDate?.toIso8601String(),
         'display_order': habit.displayOrder,
         'reminder_time': habit.reminderTime,
-        ...(habit.verificationRule?.toColumns() ?? VerificationRule.nullColumns),
+        ...verificationColumnsFor(
+          habit.verificationConditions,
+          habit.verificationJoin ?? VerificationJoin.or,
+        ),
+        'verify_effective_from':
+            habit.verificationRule != null && habit.verifyEffectiveFrom != null
+                ? habit.verifyEffectiveFrom!.toIso8601String().substring(0, 10)
+                : null,
         'updated_at': _now(),
       },
       where: 'id = ?',
@@ -449,6 +463,12 @@ class PrivateDashboardRepository extends DashboardRepository {
         ? (jsonDecode(row['frequency_days'] as String) as List).cast<int>()
         : null;
 
+    // Read precedence (Q4): a compound habit's `verify_conditions` JSON wins;
+    // otherwise the flat `verify_*` columns describe a single rule (or a manual
+    // habit when both are absent).
+    final verification = readVerificationColumns(row);
+    final conditions = verification?.conditions ?? const <VerificationRule>[];
+
     return DashboardHabit(
       id: id,
       title: row['title'] as String,
@@ -475,7 +495,14 @@ class PrivateDashboardRepository extends DashboardRepository {
       endDate: DateTime.tryParse(row['end_date'] as String? ?? ''),
       displayOrder: row['display_order'] as int?,
       reminderTime: row['reminder_time'] as String?,
-      verificationRule: VerificationRule.fromColumns(row),
+      verificationRule: conditions.isEmpty ? null : conditions.first,
+      additionalConditions:
+          conditions.length > 1 ? conditions.sublist(1) : null,
+      verificationJoin: conditions.length > 1 ? verification!.op : null,
+      // Read the D10 anchor so a desktop edit round-trips it instead of wiping
+      // the forward-only boundary set on iOS.
+      verifyEffectiveFrom:
+          DateTime.tryParse(row['verify_effective_from'] as String? ?? ''),
       isActive: true,
     );
   }

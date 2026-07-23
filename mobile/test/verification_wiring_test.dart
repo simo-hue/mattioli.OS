@@ -10,6 +10,7 @@ void main() {
     VerificationRule? rule,
     List<int>? frequencyDays,
     DateTime? startDate,
+    DateTime? verifyEffectiveFrom,
   }) =>
       Goal(
         id: id,
@@ -18,6 +19,7 @@ void main() {
         startDate: startDate ?? DateTime(2026, 1, 1),
         frequencyDays: frequencyDays,
         verificationRule: rule,
+        verifyEffectiveFrom: verifyEffectiveFrom,
       );
 
   final steps = VerificationCatalog.steps.ruleWith(10000);
@@ -65,6 +67,75 @@ void main() {
       expect(v.rule, steps);
       expect(v.effectiveFrom, DateTime(2026, 6, 1));
       expect(v.activeWeekdays, {1, 3, 5});
+    });
+
+    group('effectiveFrom honors the D10 verifyEffectiveFrom anchor', () {
+      VerifiableGoal only(Goal g) => verifiableGoalsFrom(
+            [g],
+            healthKitEnabled: true,
+            screenTimeAppsEnabled: true,
+            screenTimeTotalEnabled: true,
+          ).single;
+
+      test('anchor after startDate wins → freezes days before the edit', () {
+        final v = only(goal('steps',
+            rule: steps,
+            startDate: DateTime(2026, 1, 1),
+            verifyEffectiveFrom: DateTime(2026, 6, 15)));
+        expect(v.effectiveFrom, DateTime(2026, 6, 15));
+      });
+
+      test('null anchor falls back to startDate (pre-D10 behavior)', () {
+        final v = only(goal('steps',
+            rule: steps, startDate: DateTime(2026, 6, 1)));
+        expect(v.effectiveFrom, DateTime(2026, 6, 1));
+      });
+
+      test('anchor before startDate is clamped up to startDate', () {
+        final v = only(goal('steps',
+            rule: steps,
+            startDate: DateTime(2026, 6, 1),
+            verifyEffectiveFrom: DateTime(2026, 1, 1)));
+        expect(v.effectiveFrom, DateTime(2026, 6, 1));
+      });
+    });
+
+    group('compound habits (Q1–Q5)', () {
+      final stepsRule = VerificationCatalog.steps.ruleWith(10000);
+      final exRule = VerificationCatalog.exerciseMinutes.ruleWith(30);
+      Goal compoundGoal(VerificationJoin op) => Goal(
+            id: 'gc',
+            title: 'gc',
+            color: const Color(0xFF3B82F6),
+            startDate: DateTime(2026, 1, 1),
+            verificationRule: stepsRule,
+            additionalConditions: [exRule],
+            verificationJoin: op,
+          );
+
+      List<VerifiableGoal> build(Goal g, {required bool compound, bool hk = true}) =>
+          verifiableGoalsFrom([g],
+              healthKitEnabled: hk,
+              screenTimeAppsEnabled: true,
+              screenTimeTotalEnabled: true,
+              compoundEnabled: compound);
+
+      test('builds a compound VerifiableGoal (conditions + operator) when on', () {
+        final v = build(compoundGoal(VerificationJoin.and), compound: true).single;
+        expect(v.isCompound, isTrue);
+        expect(v.conditions, [stepsRule, exRule]);
+        expect(v.join, VerificationJoin.and);
+      });
+
+      test('skips a compound goal when the compound flag is off', () {
+        expect(build(compoundGoal(VerificationJoin.or), compound: false), isEmpty);
+      });
+
+      test('skips a compound goal when HealthKit is off', () {
+        expect(
+            build(compoundGoal(VerificationJoin.or), compound: true, hk: false),
+            isEmpty);
+      });
     });
 
     test('null frequency_days → every day (empty weekday set)', () {

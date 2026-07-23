@@ -1224,6 +1224,15 @@
     "couldNotVerifyTapToResolve": "Impossibile verificare — tocca per risolvere",
     "needsAppleWatch": "Richiede un Apple Watch per la verifica automatica",
     "grantHealthAccess": "Continua",
+    "compound": {
+      "anyOfThese": "Una qualsiasi",
+      "allOfThese": "Tutte quante",
+      "anyHelper": "Conta come completato se ne rispetti almeno una.",
+      "allHelper": "Conta come completato solo se le rispetti tutte.",
+      "addCondition": "Aggiungi condizione",
+      "addSheetTitle": "Aggiungi una condizione",
+      "add": "Aggiungi"
+    },
     "templates": {
       "steps": "Passi",
       "exerciseMinutes": "Minuti di attività",

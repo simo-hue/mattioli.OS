@@ -219,6 +219,13 @@ class GoalsNotifier extends Notifier<List<Goal>> {
   /// Mode-A Screen Time selection blob). Failures already surface their own
   /// error modal + optimistic rollback here.
   Future<Goal?> addHabit(Goal habit) async {
+    // A new rule takes effect today (D10, forward-only): stamp the effective-from
+    // anchor centrally so reconcile can't retroactively verify pre-creation days.
+    habit = stampVerificationEffectiveFrom(
+      habit,
+      previous: null,
+      today: DateTime.now(),
+    );
     // Snapshot for optimistic rollback if persistence fails.
     final previousGoals = state;
     final newGoals = [...state, habit];
@@ -331,6 +338,15 @@ class GoalsNotifier extends Notifier<List<Goal>> {
   }
 
   Future<bool> updateHabit(Goal updatedHabit) async {
+    // Forward-only rule edits (D10): if the rule's verifiable content changed
+    // (or was just enabled), it takes effect today; otherwise the prior anchor
+    // is preserved so a title/colour/schedule edit never rewrites history.
+    final priorMatches = state.where((h) => h.id == updatedHabit.id);
+    updatedHabit = stampVerificationEffectiveFrom(
+      updatedHabit,
+      previous: priorMatches.isEmpty ? null : priorMatches.first,
+      today: DateTime.now(),
+    );
     // Snapshot for optimistic rollback if persistence fails.
     final previousGoals = state;
     final newGoals = state
@@ -368,6 +384,13 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       // path (private_local_database writes VerificationRule.nullColumns).
       if (updatedHabit.verificationRule == null) {
         payload.addAll(VerificationRule.nullColumns);
+        // Goal.toJson omits the verification columns when the rule is null; a
+        // Supabase UPDATE leaves omitted columns untouched, so clear them
+        // explicitly or a stale anchor / compound blob would linger and resurrect
+        // on sync. (A compound→single transition is safe without this: toJson
+        // then emits verify_conditions: null alongside the flat columns.)
+        payload['verify_effective_from'] = null;
+        payload['verify_conditions'] = null;
       }
       // Goal.toJson OMITS frequency_days when null (every-day), and an UPDATE
       // leaves omitted columns untouched — so clearing a restricted schedule to

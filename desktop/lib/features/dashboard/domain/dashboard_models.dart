@@ -26,6 +26,9 @@ class DashboardHabit {
     this.displayOrder,
     this.reminderTime,
     this.verificationRule,
+    this.verifyEffectiveFrom,
+    this.additionalConditions,
+    this.verificationJoin,
     this.isActive = true,
   });
 
@@ -47,7 +50,36 @@ class DashboardHabit {
   /// is carried through reads/writes so a desktop edit can't wipe a rule set on
   /// iOS, and so the UI can show a read-only "auto-verified" badge.
   final VerificationRule? verificationRule;
+
+  /// The day the current [verificationRule] took effect (D10). Carried through
+  /// reads/writes for the same reason as [verificationRule] — a desktop edit
+  /// must not drop it — even though macOS never runs reconcile itself.
+  final DateTime? verifyEffectiveFrom;
+
+  /// Extra conditions (2nd, 3rd) of a compound verifiable habit, joined by
+  /// [verificationJoin] (Q1–Q5). Null/empty ⇒ an ordinary single-rule habit
+  /// ([verificationRule] is the whole rule). When set, [verificationRule] is the
+  /// first condition. Persisted via the `verify_conditions` JSON column; the flat
+  /// `verify_*` columns are then null. macOS never verifies — carried through so
+  /// a desktop edit can't wipe a compound rule set on iOS.
+  final List<VerificationRule>? additionalConditions;
+
+  /// How a compound habit's conditions combine (Q1). Null for a single-rule or
+  /// manual habit.
+  final VerificationJoin? verificationJoin;
   final bool isActive;
+
+  /// All verification conditions in order — [verificationRule] (if any) followed
+  /// by [additionalConditions]. Empty for a manual habit, length 1 for a single
+  /// rule, 2..3 for a compound habit.
+  List<VerificationRule> get verificationConditions => [
+    ?verificationRule,
+    ...?additionalConditions,
+  ];
+
+  /// Whether this habit combines more than one verification condition (Q4/Q5).
+  bool get isCompoundVerified =>
+      additionalConditions != null && additionalConditions!.isNotEmpty;
 
   /// Whether the habit's active *range* covers [date] (start ≤ date ≤ end),
   /// ignoring the weekly schedule. Use [isScheduledOn] for day-view display.
@@ -95,6 +127,12 @@ class DashboardHabit {
     int? displayOrder,
     VerificationRule? verificationRule,
     bool clearVerificationRule = false,
+    DateTime? verifyEffectiveFrom,
+    bool clearVerifyEffectiveFrom = false,
+    List<VerificationRule>? additionalConditions,
+    bool clearAdditionalConditions = false,
+    VerificationJoin? verificationJoin,
+    bool clearVerificationJoin = false,
   }) {
     return DashboardHabit(
       id: id ?? this.id,
@@ -115,6 +153,15 @@ class DashboardHabit {
       verificationRule: clearVerificationRule
           ? null
           : (verificationRule ?? this.verificationRule),
+      verifyEffectiveFrom: clearVerifyEffectiveFrom
+          ? null
+          : (verifyEffectiveFrom ?? this.verifyEffectiveFrom),
+      additionalConditions: clearAdditionalConditions
+          ? null
+          : (additionalConditions ?? this.additionalConditions),
+      verificationJoin: clearVerificationJoin
+          ? null
+          : (verificationJoin ?? this.verificationJoin),
       isActive: isActive ?? this.isActive,
     );
   }
@@ -131,8 +178,19 @@ class DashboardHabit {
     if (displayOrder != null) 'display_order': displayOrder,
     if (reminderTime != null) 'reminder_time': reminderTime,
     // Only for verified goals — keeps manual-habit writes independent of whether
-    // the Supabase verify_* migration has been applied yet.
-    if (verificationRule != null) ...verificationRule!.toColumns(),
+    // the Supabase verify_* migration has been applied yet. Single rule → flat
+    // verify_* columns; compound → verify_conditions JSON with the flat columns
+    // nulled (Q4).
+    if (verificationRule != null)
+      ...verificationColumnsFor(
+        verificationConditions,
+        verificationJoin ?? VerificationJoin.or,
+      ),
+    // The rule's effective-from day (D10), date-only to match the Supabase
+    // `date` column. Carried even though macOS never reconciles.
+    if (verificationRule != null && verifyEffectiveFrom != null)
+      'verify_effective_from':
+          verifyEffectiveFrom!.toIso8601String().substring(0, 10),
   };
 
   factory DashboardHabit.fromRemoteJson(
@@ -141,6 +199,11 @@ class DashboardHabit {
     required HabitState state,
     required int streak,
   }) {
+    // Read precedence (Q4): a compound habit's `verify_conditions` JSON wins;
+    // otherwise the flat `verify_*` columns describe a single rule (or a manual
+    // habit when both are absent).
+    final verification = readVerificationColumns(json);
+    final conditions = verification?.conditions ?? const <VerificationRule>[];
     return DashboardHabit(
       id: json['id'] as String,
       title: json['title'] as String,
@@ -157,7 +220,12 @@ class DashboardHabit {
       endDate: DateTime.tryParse(json['end_date'] as String? ?? ''),
       displayOrder: json['display_order'] as int?,
       reminderTime: json['reminder_time'] as String?,
-      verificationRule: VerificationRule.fromColumns(json),
+      verificationRule: conditions.isEmpty ? null : conditions.first,
+      additionalConditions:
+          conditions.length > 1 ? conditions.sublist(1) : null,
+      verificationJoin: conditions.length > 1 ? verification!.op : null,
+      verifyEffectiveFrom:
+          DateTime.tryParse(json['verify_effective_from'] as String? ?? ''),
     );
   }
 }

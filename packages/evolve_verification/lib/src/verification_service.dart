@@ -28,13 +28,33 @@ class VerifiableGoal {
   /// a `pass`; reconcile treats it as "no signal" so it records couldn't-verify.
   final bool screenTimeSelectionMissing;
 
+  /// Extra conditions (2nd, 3rd) for a compound verifiable habit (Q1–Q5), joined
+  /// with [join]. Empty for an ordinary single-rule habit, in which case [rule]
+  /// is the whole rule and this class behaves exactly as before. For a compound
+  /// habit every condition is HealthKit (the v1 restriction, Q2), so the engine
+  /// can evaluate them all with a pull query and combine the verdicts.
+  final List<VerificationRule> additionalConditions;
+
+  /// How [conditions] combine when there is more than one (Q1). Meaningless for a
+  /// single-condition habit; [VerificationJoin.or] is the harmless default.
+  final VerificationJoin join;
+
   const VerifiableGoal({
     required this.goalId,
     required this.rule,
     required this.effectiveFrom,
     this.activeWeekdays = const {},
     this.screenTimeSelectionMissing = false,
+    this.additionalConditions = const [],
+    this.join = VerificationJoin.or,
   });
+
+  /// All conditions in evaluation order — the primary [rule] then any
+  /// [additionalConditions]. Length 1 for an ordinary habit.
+  List<VerificationRule> get conditions => [rule, ...additionalConditions];
+
+  /// Whether this habit combines more than one condition (Q4/Q5).
+  bool get isCompound => additionalConditions.isNotEmpty;
 }
 
 /// What the caller already has persisted for a goal-day, so reconcile stays
@@ -237,8 +257,75 @@ class VerificationService {
     }
   }
 
+  /// Combines the per-condition verdicts of a compound habit into one day
+  /// verdict (Q5). Every condition of a compound habit is HealthKit (`atLeast`),
+  /// so each per-condition verdict is one of {pass, pending, couldNotVerify,
+  /// fail} and the combination is a precedence ordering over outcomes — OR and
+  /// AND are duals:
+  ///
+  /// - **OR** (pass if ANY met): pass > pending > couldNotVerify > fail
+  /// - **AND** (pass if ALL met): fail > couldNotVerify > pending > pass
+  ///
+  /// So OR-past prefers `couldNotVerify` over `fail` (an unread condition might
+  /// have been met — a missing read is never a false failure), and AND-past lets
+  /// a hard `fail` short-circuit past a `couldNotVerify` (one definitely-missed
+  /// required condition dooms the conjunction). The measured value is dropped —
+  /// a compound day spans several metrics, so no single scalar represents it
+  /// (Q6). Reduces to the single verdict when there is one entry.
+  @visibleForTesting
+  static DayVerdict combineVerdicts(
+    List<DayVerdict> verdicts,
+    VerificationJoin op,
+  ) {
+    assert(verdicts.isNotEmpty, 'a compound habit always has conditions');
+    if (verdicts.length == 1) return verdicts.first;
+    final outcomes = verdicts.map((v) => v.outcome).toSet();
+    bool any(VerificationOutcome o) => outcomes.contains(o);
+    final VerificationOutcome outcome;
+    if (op == VerificationJoin.or) {
+      outcome = any(VerificationOutcome.pass)
+          ? VerificationOutcome.pass
+          : any(VerificationOutcome.pending)
+              ? VerificationOutcome.pending
+              : any(VerificationOutcome.couldNotVerify)
+                  ? VerificationOutcome.couldNotVerify
+                  : VerificationOutcome.fail;
+    } else {
+      outcome = any(VerificationOutcome.fail)
+          ? VerificationOutcome.fail
+          : any(VerificationOutcome.couldNotVerify)
+              ? VerificationOutcome.couldNotVerify
+              : any(VerificationOutcome.pending)
+                  ? VerificationOutcome.pending
+                  : VerificationOutcome.pass;
+    }
+    return DayVerdict(outcome);
+  }
+
   bool _isScheduled(VerifiableGoal goal, DateTime day) =>
       goal.activeWeekdays.isEmpty || goal.activeWeekdays.contains(day.weekday);
+
+  /// Pulls [rule]'s HealthKit quantity for [day] and turns it into a verdict.
+  /// Shared by the single-rule path and each condition of a compound habit.
+  Future<DayVerdict> _healthVerdict(
+    VerificationRule rule,
+    DateTime day,
+    bool isToday,
+  ) async {
+    final template = rule.template;
+    final typeIdentifier = template?.healthKitTypeIdentifier ?? rule.metricKey;
+    final aggregation = template?.aggregation ?? VerificationAggregation.sum;
+    final value = await health.dailyQuantity(
+      typeIdentifier: typeIdentifier,
+      aggregation: aggregation,
+      day: day,
+    );
+    return evaluateHealthDay(
+      rule: rule,
+      measuredValue: value,
+      isToday: isToday,
+    );
+  }
 
   /// Runs one foreground reconcile pass over [goals] and returns an applyable
   /// [ReconcilePlan] (D3/D6). Drains Screen Time signals once, then walks each
@@ -289,22 +376,18 @@ class VerificationService {
 
         final isToday = day == todayDate;
         final DayVerdict verdict;
-        if (goal.rule.isHealthKit) {
-          final template = goal.rule.template;
-          final typeIdentifier =
-              template?.healthKitTypeIdentifier ?? goal.rule.metricKey;
-          final aggregation =
-              template?.aggregation ?? VerificationAggregation.sum;
-          final value = await health.dailyQuantity(
-            typeIdentifier: typeIdentifier,
-            aggregation: aggregation,
-            day: day,
-          );
-          verdict = evaluateHealthDay(
-            rule: goal.rule,
-            measuredValue: value,
-            isToday: isToday,
-          );
+        if (goal.isCompound) {
+          // A compound habit's conditions are all HealthKit (Q2): pull each and
+          // combine per the operator (Q5). No Screen Time permanence applies —
+          // `goal.rule` (the first condition) is HealthKit, so the blockedFlip
+          // guard below is inert.
+          final perCondition = [
+            for (final cond in goal.conditions)
+              await _healthVerdict(cond, day, isToday),
+          ];
+          verdict = combineVerdicts(perCondition, goal.join);
+        } else if (goal.rule.isHealthKit) {
+          verdict = await _healthVerdict(goal.rule, day, isToday);
         } else {
           // A Mode-A goal with no resolvable selection isn't being monitored:
           // force "no signal" so a stale monitor's stayed-under can never pass

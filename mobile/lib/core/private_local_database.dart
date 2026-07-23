@@ -942,6 +942,11 @@ class PrivateLocalDatabase implements PrivateDataStore {
             'verify_comparator': g['verify_comparator'],
             'verify_threshold': g['verify_threshold'],
             'verify_unit': g['verify_unit'],
+            // The rule's effective-from anchor (D10) rides along so a restore
+            // preserves the forward-only edit boundary.
+            'verify_effective_from': g['verify_effective_from'],
+            // The compound conditions blob (Q4) round-trips too.
+            'verify_conditions': g['verify_conditions'],
           },
       ],
       'habitLogs': [
@@ -1926,6 +1931,8 @@ class PrivateLocalDatabase implements PrivateDataStore {
       'verify_comparator': row['verify_comparator'],
       'verify_threshold': row['verify_threshold'],
       'verify_unit': row['verify_unit'],
+      'verify_effective_from': row['verify_effective_from'],
+      'verify_conditions': row['verify_conditions'],
     };
     return Goal.fromJson(json);
   }
@@ -1944,11 +1951,19 @@ class PrivateLocalDatabase implements PrivateDataStore {
       'end_date': goal.endDate?.toIso8601String(),
       'display_order': goal.displayOrder,
       'reminder_time': goal.reminderTime,
-      // Always write the verify_* columns (null when manual): upsertGoal uses
-      // ConflictAlgorithm.replace, so an omitted column would be wiped to NULL
-      // on every edit. The SQLite columns exist after the evolve_sync v4
-      // migration (run automatically on open).
-      ...(goal.verificationRule?.toColumns() ?? VerificationRule.nullColumns),
+      // Always write ALL verification columns (null when absent): upsertGoal uses
+      // ConflictAlgorithm.replace, so an omitted column would be wiped to NULL on
+      // every edit. Single rule → flat verify_*, compound → verify_conditions
+      // with the flat columns nulled (Q4). Columns exist after the evolve_sync
+      // v4/v8 migrations (run automatically on open).
+      ...verificationColumnsFor(goal.verificationConditions,
+          goal.verificationJoin ?? VerificationJoin.or),
+      // Same reasoning: written explicitly (date-only) so replace can't wipe it.
+      // Null for a manual habit or a rule not yet stamped (v7 migration column).
+      'verify_effective_from':
+          goal.verificationRule != null && goal.verifyEffectiveFrom != null
+              ? goal.verifyEffectiveFrom!.toIso8601String().substring(0, 10)
+              : null,
     };
   }
 

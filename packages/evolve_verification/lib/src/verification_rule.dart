@@ -80,6 +80,56 @@ class VerificationRule {
     );
   }
 
+  /// Compact wire form for one condition inside the `goals.verify_conditions`
+  /// JSON (compound habits). Short keys, distinct from [toColumns]' column
+  /// names, so the two representations can't be confused.
+  Map<String, Object?> toWire() => {
+        'provider': provider.wireName,
+        'metric': metricKey,
+        'comparator': comparator.wireName,
+        'threshold': threshold,
+        'unit': unit.wireName,
+      };
+
+  /// Parses a [toWire] map back into a rule, or null if any field is missing or
+  /// invalid — a malformed condition must never half-activate verification.
+  static VerificationRule? fromWire(Object? raw) {
+    if (raw is! Map) return null;
+    final m = raw.cast<String, Object?>();
+    // Type-safe reads: a corrupted / foreign / newer-client blob may carry a
+    // wrong-typed field. A bad condition must degrade to null (the caller then
+    // rejects the whole set) — it must NEVER throw out of the decode path, which
+    // runs inside an eager goal-row map that a throw would take down entirely.
+    final providerRaw = m['provider'];
+    final metricRaw = m['metric'];
+    final comparatorRaw = m['comparator'];
+    final thresholdRaw = m['threshold'];
+    final unitRaw = m['unit'];
+    final provider = VerificationProvider.fromWire(
+        providerRaw is String ? providerRaw : null);
+    final metricKey = metricRaw is String ? metricRaw : null;
+    final comparator = VerificationComparator.fromWire(
+        comparatorRaw is String ? comparatorRaw : null);
+    final threshold = thresholdRaw is num ? thresholdRaw.toDouble() : null;
+    final unit =
+        VerificationUnit.fromWire(unitRaw is String ? unitRaw : null);
+    if (provider == null ||
+        metricKey == null ||
+        metricKey.isEmpty ||
+        comparator == null ||
+        threshold == null ||
+        unit == null) {
+      return null;
+    }
+    return VerificationRule(
+      provider: provider,
+      metricKey: metricKey,
+      comparator: comparator,
+      threshold: threshold,
+      unit: unit,
+    );
+  }
+
   VerificationRule copyWith({
     VerificationComparator? comparator,
     double? threshold,

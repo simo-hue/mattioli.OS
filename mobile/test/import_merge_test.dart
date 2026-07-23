@@ -205,6 +205,7 @@ void main() {
             'verify_comparator': 'gte',
             'verify_threshold': 10000,
             'verify_unit': 'count',
+            'verify_effective_from': '2026-06-15',
           },
         ],
       });
@@ -217,11 +218,45 @@ void main() {
       expect(row['verify_comparator'], 'gte');
       expect(row['verify_threshold'], 10000.0);
       expect(row['verify_unit'], 'count');
+      // The D10 forward-only anchor survives the backup round-trip.
+      expect(row['verify_effective_from'], '2026-06-15');
       // And it reconstructs into a VerificationRule (the model round-trips too).
       final rule = VerificationRule.fromColumns(row);
       expect(rule, isNotNull);
       expect(rule!.metricKey, 'steps');
       expect(rule.threshold, 10000.0);
+      await db.close();
+    });
+
+    test('round-trips a compound habit (verify_conditions)', () async {
+      final db = await openDb();
+      final steps = VerificationCatalog.steps.ruleWith(10000);
+      final exercise = VerificationCatalog.exerciseMinutes.ruleWith(30);
+      final blob = encodeVerifyConditions([steps, exercise], VerificationJoin.and);
+      final canonical = normalizeBackup({
+        'mode': 'private',
+        'habits': [
+          {
+            'id': 'gcompound',
+            'title': 'Move',
+            'color': '#3B82F6',
+            'start_date': '2026-01-01',
+            'updated_at': now,
+            // Compound on disk: flat verify_* columns null, conditions blob set.
+            'verify_conditions': blob,
+          },
+        ],
+      });
+      await merge(db, canonical);
+
+      final row = (await db
+              .query('goals', where: 'id = ?', whereArgs: ['gcompound']))
+          .single;
+      expect(row['verify_conditions'], blob);
+      expect(row['verify_provider'], isNull); // flat columns stay null
+      final decoded = decodeVerifyConditions(row['verify_conditions'])!;
+      expect(decoded.conditions, [steps, exercise]);
+      expect(decoded.op, VerificationJoin.and);
       await db.close();
     });
 

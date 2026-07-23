@@ -113,6 +113,8 @@ Map<String, dynamic> _normalizeWeb(Map<String, dynamic> raw) {
       'verify_comparator': g['verify_comparator'],
       'verify_threshold': g['verify_threshold'],
       'verify_unit': g['verify_unit'],
+      'verify_effective_from': g['verify_effective_from'],
+      'verify_conditions': g['verify_conditions'],
     });
   }
 
@@ -193,6 +195,8 @@ Map<String, dynamic> _normalizeNative(Map<String, dynamic> raw) {
       'verify_comparator': g['verify_comparator'],
       'verify_threshold': g['verify_threshold'],
       'verify_unit': g['verify_unit'],
+      'verify_effective_from': g['verify_effective_from'],
+      'verify_conditions': g['verify_conditions'],
     });
   }
 
@@ -511,6 +515,8 @@ ValidatedBackup validateCanonical(Map<String, dynamic> canonical) {
       'verify_comparator': _str(g['verify_comparator']),
       'verify_threshold': (g['verify_threshold'] as num?)?.toDouble(),
       'verify_unit': _str(g['verify_unit']),
+      'verify_effective_from': _str(g['verify_effective_from']),
+      'verify_conditions': _str(g['verify_conditions']),
     });
   }
 
@@ -954,6 +960,8 @@ Map<String, Object?> _goalRow(
     'verify_comparator': g['verify_comparator'],
     'verify_threshold': g['verify_threshold'],
     'verify_unit': g['verify_unit'],
+    'verify_effective_from': g['verify_effective_from'],
+    'verify_conditions': g['verify_conditions'],
   };
 }
 
@@ -1174,6 +1182,17 @@ CloudImportPlan planCloudImport({
       'created_at': g['created_at'] ?? now,
       'updated_at': g['updated_at'] ?? now,
       'reminder_time': g['reminder_time'],
+      // Carry the verification rule into the cloud upsert — otherwise a
+      // cloud-mode (account) import silently strips auto-verification from every
+      // habit. Mirrors the private merge (_goalRow), the live writer
+      // (Goal.toJson), and the desktop cloud plan.
+      'verify_provider': g['verify_provider'],
+      'verify_metric': g['verify_metric'],
+      'verify_comparator': g['verify_comparator'],
+      'verify_threshold': g['verify_threshold'],
+      'verify_unit': g['verify_unit'],
+      'verify_effective_from': g['verify_effective_from'],
+      'verify_conditions': g['verify_conditions'],
     });
     has ? stats.habits.updated++ : stats.habits.added++;
   }

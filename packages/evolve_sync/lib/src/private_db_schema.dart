@@ -30,7 +30,18 @@ class PrivateDbSchema {
   ///   record under row-level last-write-wins: changing accent on one device and
   ///   language on the other inside a sync window silently reverted one of them.
   ///   Per-key records make that structurally impossible.
-  static const int version = 6;
+  /// - v7: add `goals.verify_effective_from` — the day the goal's current
+  ///   verification rule took effect (D10, forward-only rule edits). Nullable;
+  ///   null ⇒ fall back to `start_date`, so habits that predate this column keep
+  ///   their existing behavior until the rule is next edited. Reconcile never
+  ///   rewrites days before this date, so editing a threshold no longer silently
+  ///   re-derives recent history.
+  /// - v8: add `goals.verify_conditions` — a JSON `{v,op,conditions:[...]}`
+  ///   joining 2–3 conditions for a compound verifiable habit (steps OR/AND
+  ///   exercise, …). When set, the flat `verify_*` columns are NULL, so a
+  ///   pre-compound client reads the habit as manual and never mis-verifies it.
+  ///   Null ⇒ an ordinary single-rule or manual habit (the flat columns rule).
+  static const int version = 8;
 
   /// The user-data tables whose rows sync to iCloud. Each gets dirty/tombstone
   /// triggers that maintain [syncStateTable]. (Order matters for nothing here,
@@ -180,6 +191,12 @@ class PrivateDbSchema {
     if (oldVersion < 6) {
       await _upgradeToV6(db);
     }
+    if (oldVersion < 7) {
+      await _upgradeToV7(db);
+    }
+    if (oldVersion < 8) {
+      await _upgradeToV8(db);
+    }
   }
 
   /// Fail closed on a schema downgrade. With NO onDowngrade, sqflite's default
@@ -228,6 +245,47 @@ CREATE TABLE user_settings (
   UNIQUE(user_id, key)
 )
 ''';
+
+  // ── v8 migration ──────────────────────────────────────────────────────────
+
+  static Future<void> _upgradeToV8(DatabaseExecutor db) async {
+    // Compound verifiable habits: one nullable JSON `verify_conditions` column on
+    // `goals`. Additive, so a plain ADD COLUMN; existing rows get NULL and read
+    // as single/manual via the flat verify_* columns — the compound-aware read
+    // path only prefers verify_conditions when it is present and valid. Synced
+    // rows carry it automatically (whole-row serialization), so no push/pull
+    // change. Idempotent for the same version-round-trip reason as _upgradeToV4.
+    final existing = <String>{
+      for (final row in await db.rawQuery('PRAGMA table_info(goals)'))
+        row['name'] as String,
+    };
+    if (existing.contains('verify_conditions')) return;
+    await db.execute('ALTER TABLE goals ADD COLUMN verify_conditions TEXT');
+  }
+
+  // ── v7 migration ──────────────────────────────────────────────────────────
+
+  static Future<void> _upgradeToV7(DatabaseExecutor db) async {
+    // Forward-only verification-rule edits (D10): one nullable `effective_from`
+    // date on `goals`. Additive, so a plain ADD COLUMN; existing rows get NULL,
+    // and the wiring treats NULL as `start_date` — so upgraded databases keep
+    // their current behavior until the rule is next edited (no surprise
+    // re-freezing of history). Synced rows carry it automatically (the engine
+    // serializes whole rows), so no push/pull code changes are required.
+    //
+    // Idempotent for the same reason as _upgradeToV4: a version round-trip (v7 →
+    // a downgrade silently stamps user_version to 6 → v7) re-enters this against
+    // a `goals` table that already has the column, and a bare ADD COLUMN would
+    // then raise "duplicate column name" and permanently fail every open.
+    final existing = <String>{
+      for (final row in await db.rawQuery('PRAGMA table_info(goals)'))
+        row['name'] as String,
+    };
+    if (existing.contains('verify_effective_from')) return;
+    await db.execute(
+      'ALTER TABLE goals ADD COLUMN verify_effective_from TEXT',
+    );
+  }
 
   static Future<void> _upgradeToV6(DatabaseExecutor db) async {
     // Idempotent: a version round-trip must not wedge every future open.
@@ -508,7 +566,15 @@ CREATE TABLE goals (
   verify_metric TEXT,
   verify_comparator TEXT,
   verify_threshold REAL,
-  verify_unit TEXT
+  verify_unit TEXT,
+  -- Forward-only rule edit anchor (v7): the day the current verification rule
+  -- took effect. NULL ⇒ fall back to start_date. Reconcile never rewrites days
+  -- before this date.
+  verify_effective_from TEXT,
+  -- Compound verifiable habits (v8): JSON {v,op,conditions:[...]} joining 2..3
+  -- conditions. When set, the flat verify_* columns above are NULL. NULL here ⇒
+  -- an ordinary single-rule or manual habit.
+  verify_conditions TEXT
 )
 ''');
 

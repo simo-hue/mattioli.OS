@@ -1224,6 +1224,15 @@
     "couldNotVerifyTapToResolve": "Konnte nicht geprüft werden — zum Auflösen tippen",
     "needsAppleWatch": "Erfordert eine Apple Watch zur automatischen Prüfung",
     "grantHealthAccess": "Weiter",
+    "compound": {
+      "anyOfThese": "Eine davon",
+      "allOfThese": "Alle davon",
+      "anyHelper": "Gilt als erledigt, wenn eine davon erfüllt ist.",
+      "allHelper": "Gilt als erledigt, nur wenn alle erfüllt sind.",
+      "addCondition": "Bedingung hinzufügen",
+      "addSheetTitle": "Bedingung hinzufügen",
+      "add": "Hinzufügen"
+    },
     "templates": {
       "steps": "Schritte",
       "exerciseMinutes": "Trainingsminuten",

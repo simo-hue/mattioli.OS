@@ -1,4 +1,5 @@
 import 'package:evolve_verification/evolve_verification.dart';
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 
 class Goal {
@@ -17,6 +18,25 @@ class Goal {
   /// through the `verify_*` columns; verification itself runs only on iOS.
   final VerificationRule? verificationRule;
 
+  /// The day the current [verificationRule] took effect (D10, forward-only rule
+  /// edits). Null ⇒ fall back to [startDate]. Reconcile never rewrites days
+  /// before this date, so editing a rule doesn't silently re-derive recent
+  /// history. Owned by the save path (stamped on rule create/change), never set
+  /// by the creation UI.
+  final DateTime? verifyEffectiveFrom;
+
+  /// Extra conditions (2nd, 3rd) of a compound verifiable habit, joined by
+  /// [verificationJoin] (Q1–Q5). Null/empty ⇒ an ordinary single-rule habit
+  /// ([verificationRule] is the whole rule). When set, [verificationRule] is the
+  /// first condition and every condition is HealthKit (the v1 restriction, Q2).
+  /// Persisted via the `verify_conditions` JSON column; the flat `verify_*`
+  /// columns are then null.
+  final List<VerificationRule>? additionalConditions;
+
+  /// How a compound habit's conditions combine (Q1). Null for a single-rule or
+  /// manual habit.
+  final VerificationJoin? verificationJoin;
+
   const Goal({
     required this.id,
     required this.title,
@@ -29,9 +49,32 @@ class Goal {
     this.displayOrder,
     this.reminderTime,
     this.verificationRule,
+    this.verifyEffectiveFrom,
+    this.additionalConditions,
+    this.verificationJoin,
   });
 
   bool get isVerified => verificationRule != null;
+
+  /// All verification conditions in order — [verificationRule] (if any) followed
+  /// by [additionalConditions]. Empty for a manual habit, length 1 for a single
+  /// rule, 2..3 for a compound habit.
+  List<VerificationRule> get verificationConditions => [
+        ?verificationRule,
+        ...?additionalConditions,
+      ];
+
+  /// Whether this habit combines more than one verification condition (Q4/Q5).
+  bool get isCompoundVerified =>
+      additionalConditions != null && additionalConditions!.isNotEmpty;
+
+  /// Whether [other] has the same verification *meaning* — the same ordered
+  /// conditions AND operator. Drives the D10 re-stamp decision so that changing
+  /// any condition, adding/removing one, or flipping the operator counts as a
+  /// rule edit.
+  bool sameVerificationAs(Goal other) =>
+      listEquals(verificationConditions, other.verificationConditions) &&
+      verificationJoin == other.verificationJoin;
 
   /// Whether the habit's active *range* covers [date] (start ≤ date ≤ end),
   /// ignoring the weekly schedule. Use [isScheduledOn] for day-view display —
@@ -81,6 +124,12 @@ class Goal {
     bool clearReminderTime = false,
     VerificationRule? verificationRule,
     bool clearVerificationRule = false,
+    DateTime? verifyEffectiveFrom,
+    bool clearVerifyEffectiveFrom = false,
+    List<VerificationRule>? additionalConditions,
+    bool clearAdditionalConditions = false,
+    VerificationJoin? verificationJoin,
+    bool clearVerificationJoin = false,
   }) {
     return Goal(
       id: id ?? this.id,
@@ -96,6 +145,15 @@ class Goal {
       verificationRule: clearVerificationRule
           ? null
           : (verificationRule ?? this.verificationRule),
+      verifyEffectiveFrom: clearVerifyEffectiveFrom
+          ? null
+          : (verifyEffectiveFrom ?? this.verifyEffectiveFrom),
+      additionalConditions: clearAdditionalConditions
+          ? null
+          : (additionalConditions ?? this.additionalConditions),
+      verificationJoin: clearVerificationJoin
+          ? null
+          : (verificationJoin ?? this.verificationJoin),
     );
   }
 
@@ -115,6 +173,12 @@ class Goal {
     DateTime? parseDate(dynamic value) =>
         value is String ? DateTime.tryParse(value) : null;
 
+    // Read precedence (Q4): a compound habit's `verify_conditions` JSON wins;
+    // otherwise the flat `verify_*` columns describe a single rule (or a manual
+    // habit when both are absent).
+    final verification = readVerificationColumns(json);
+    final conditions = verification?.conditions ?? const <VerificationRule>[];
+
     return Goal(
       id: json['id'] as String,
       title: json['title'] as String,
@@ -126,7 +190,11 @@ class Goal {
       endDate: parseDate(json['end_date']),
       displayOrder: json['display_order'] as int?,
       reminderTime: json['reminder_time'] as String?,
-      verificationRule: VerificationRule.fromColumns(json),
+      verificationRule: conditions.isEmpty ? null : conditions.first,
+      additionalConditions:
+          conditions.length > 1 ? conditions.sublist(1) : null,
+      verificationJoin: conditions.length > 1 ? verification!.op : null,
+      verifyEffectiveFrom: parseDate(json['verify_effective_from']),
     );
   }
 
@@ -145,6 +213,11 @@ class Goal {
 
   Map<String, dynamic> toJson() {
     String toHex(Color c) => '#${c.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
+    // Date-only (YYYY-MM-DD) to match the Supabase `date` column and the
+    // day-keyed reconcile logic.
+    String isoDate(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
+        '${d.month.toString().padLeft(2, '0')}-'
+        '${d.day.toString().padLeft(2, '0')}';
 
     return {
       if (id.isNotEmpty) 'id': id,
@@ -158,9 +231,54 @@ class Goal {
       if (displayOrder != null) 'display_order': displayOrder,
       if (reminderTime != null) 'reminder_time': reminderTime,
       // Only emitted for verified goals: keeps manual-habit writes free of the
-      // verify_* columns, so they don't depend on the Supabase migration having
-      // been applied yet. The private (SQLite) path always writes them.
-      if (verificationRule != null) ...verificationRule!.toColumns(),
+      // verification columns, so they don't depend on the Supabase migration
+      // having been applied yet. Single rule → flat verify_* columns; compound →
+      // verify_conditions JSON with the flat columns nulled (Q4).
+      if (verificationRule != null)
+        ...verificationColumnsFor(
+            verificationConditions, verificationJoin ?? VerificationJoin.or),
+      // The rule's effective-from day (D10) rides alongside a live rule; a
+      // manual habit has neither a rule nor an effective-from.
+      if (verificationRule != null && verifyEffectiveFrom != null)
+        'verify_effective_from': isoDate(verifyEffectiveFrom!),
     };
   }
+}
+
+/// Stamps [updated]'s [Goal.verifyEffectiveFrom] for a forward-only rule edit
+/// (D10). The save layer calls this so the anchor is owned centrally and never
+/// by the creation UI:
+///
+/// - manual habit (no rule) ⇒ no anchor;
+/// - rule content unchanged vs [previous] ⇒ preserve the previous anchor
+///   verbatim, **including null** — a title/colour/schedule edit must never
+///   retroactively freeze a habit that predates the anchor;
+/// - rule newly set, or its content changed ⇒ the rule takes effect [today], so
+///   reconcile won't rewrite days before the edit.
+///
+/// "Rule content" is the full verification meaning — the ordered conditions AND
+/// the operator ([Goal.sameVerificationAs]) — so changing any condition's
+/// threshold/metric, adding or removing a condition, or flipping OR↔AND all
+/// count as an edit.
+Goal stampVerificationEffectiveFrom(
+  Goal updated, {
+  required Goal? previous,
+  required DateTime today,
+}) {
+  // Manual habit (no conditions) ⇒ no anchor.
+  if (updated.verificationRule == null) {
+    return updated.copyWith(clearVerifyEffectiveFrom: true);
+  }
+  // Same verification meaning ⇒ preserve the prior anchor verbatim (incl. null):
+  // a title/colour/schedule edit must never retroactively freeze history.
+  if (previous != null && previous.sameVerificationAs(updated)) {
+    final anchor = previous.verifyEffectiveFrom;
+    return anchor == null
+        ? updated.copyWith(clearVerifyEffectiveFrom: true)
+        : updated.copyWith(verifyEffectiveFrom: anchor);
+  }
+  // Newly verified, or the conditions/operator changed ⇒ effective from today.
+  return updated.copyWith(
+    verifyEffectiveFrom: DateTime(today.year, today.month, today.day),
+  );
 }

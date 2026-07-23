@@ -3,11 +3,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 import '../../core/theme.dart';
 import '../../i18n/translations.g.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../kit/evolve_kit.dart';
-import '../../core/theme.dart';
 
 /// Display helpers for a verification template/rule. Localized via slang — the
 /// [Translations] instance is passed in so the pure helpers stay testable
@@ -251,10 +251,16 @@ class VerificationRuleField extends StatefulWidget {
     required this.rule,
     required this.onChanged,
     this.templates = VerificationCatalog.all,
+    this.showSwitch = true,
   });
 
   final VerificationRule? rule;
   final ValueChanged<VerificationRule?> onChanged;
+
+  /// Whether to show the "Auto-verify" enable switch. False inside the compound
+  /// "add a condition" sheet, where the control is just a metric picker +
+  /// threshold stepper for an always-present condition.
+  final bool showSwitch;
 
   /// The templates the user may choose from — pass a provider-filtered subset
   /// (e.g. HealthKit-only) so disabled providers aren't offered. Defaults to all.
@@ -408,13 +414,15 @@ class _VerificationRuleFieldState extends State<VerificationRuleField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(tr.verification.autoVerify, style: theme.textTheme.titleSmall),
-            CupertinoSwitch(value: r != null, onChanged: _toggle),
-          ],
-        ),
+        if (widget.showSwitch)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(tr.verification.autoVerify,
+                  style: theme.textTheme.titleSmall),
+              CupertinoSwitch(value: r != null, onChanged: _toggle),
+            ],
+          ),
         if (r != null) ...[
           const SizedBox(height: 4),
           // Templates grouped into labelled sections (Activity / Mindfulness /

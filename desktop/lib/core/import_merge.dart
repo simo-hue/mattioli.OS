@@ -155,6 +155,8 @@ ValidatedBackup validateCanonical(Map<String, dynamic> canonical) {
       'verify_comparator': _str(g['verify_comparator']),
       'verify_threshold': (g['verify_threshold'] as num?)?.toDouble(),
       'verify_unit': _str(g['verify_unit']),
+      'verify_effective_from': _str(g['verify_effective_from']),
+      'verify_conditions': _str(g['verify_conditions']),
     });
   }
 
@@ -558,6 +560,8 @@ CloudImportPlan planCloudImport({
       'verify_comparator': g['verify_comparator'],
       'verify_threshold': g['verify_threshold'],
       'verify_unit': g['verify_unit'],
+      'verify_effective_from': g['verify_effective_from'],
+      'verify_conditions': g['verify_conditions'],
     });
     has ? stats.habits.updated++ : stats.habits.added++;
   }

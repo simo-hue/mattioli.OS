@@ -466,6 +466,8 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
             'verify_comparator': g['verify_comparator'],
             'verify_threshold': g['verify_threshold'],
             'verify_unit': g['verify_unit'],
+            'verify_effective_from': g['verify_effective_from'],
+            'verify_conditions': g['verify_conditions'],
           },
       ],
       'habitLogs': [
@@ -1486,6 +1488,8 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
       'verify_comparator': g['verify_comparator'],
       'verify_threshold': g['verify_threshold'],
       'verify_unit': g['verify_unit'],
+      'verify_effective_from': g['verify_effective_from'],
+      'verify_conditions': g['verify_conditions'],
       'created_at': createdAt,
       'updated_at': g['updated_at'] ?? updatedAt,
     };

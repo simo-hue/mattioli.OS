@@ -12,6 +12,7 @@ import '../../core/app_logger.dart';
 import '../../core/haptics.dart';
 import '../../core/verification_config.dart';
 import '../../core/verification_providers.dart';
+import 'compound_conditions_field.dart';
 import 'verification_rule_field.dart';
 import '../../core/time_formatting.dart';
 import '../../models/goal.dart';
@@ -52,6 +53,12 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
   Goal? _editingHabit;
   String? _reminderTime;
   VerificationRule? _verificationRule;
+
+  /// Compound verifiable habit (Q1–Q5): the 2nd/3rd conditions and how they
+  /// combine. Empty ⇒ an ordinary single-metric habit. Only meaningful when
+  /// [_verificationRule] is a HealthKit rule and compound is enabled.
+  List<VerificationRule> _additionalConditions = [];
+  VerificationJoin _verificationJoin = VerificationJoin.or;
 
   /// Weekly-schedule selection (ISO 1=Mon…7=Sun). Defaults to every day; an
   /// all-7 selection is persisted as `null` (every-day) via
@@ -192,6 +199,11 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
     try {
       // All-7 collapses to null (every-day) — the canonical shared encoding.
       final frequencyDays = Goal.canonicalFrequencyDays(_selectedDays);
+      // A compound habit needs a HealthKit primary and ≥1 extra condition (Q2).
+      // Otherwise persist as an ordinary single rule (or manual).
+      final hasCompound = _verificationRule != null &&
+          _verificationRule!.isHealthKit &&
+          _additionalConditions.isNotEmpty;
       if (isEditing) {
         final updated = _editingHabit!.copyWith(
           title: name,
@@ -202,6 +214,10 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
           clearFrequency: frequencyDays == null,
           verificationRule: _verificationRule,
           clearVerificationRule: _verificationRule == null,
+          additionalConditions: hasCompound ? _additionalConditions : null,
+          clearAdditionalConditions: !hasCompound,
+          verificationJoin: hasCompound ? _verificationJoin : null,
+          clearVerificationJoin: !hasCompound,
         );
         ok = await ref.read(goalsProvider.notifier).updateHabit(updated);
       } else {
@@ -219,6 +235,8 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
           ),
           reminderTime: _reminderTime,
           verificationRule: _verificationRule,
+          additionalConditions: hasCompound ? _additionalConditions : null,
+          verificationJoin: hasCompound ? _verificationJoin : null,
         );
         // addHabit returns the PERSISTED goal (its id is the server UUID in
         // cloud mode, not the throwaway temp id above).
@@ -261,6 +279,8 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       _reminderTime = null;
       _selectedDays = _everyDay;
       _verificationRule = null;
+      _additionalConditions = [];
+      _verificationJoin = VerificationJoin.or;
       _appsSelection = null;
       _verifyError = null;
       _nameError = null;
@@ -286,6 +306,9 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
           ? _everyDay
           : (List<int>.from(freq)..sort());
       _verificationRule = habit.verificationRule;
+      _additionalConditions =
+          List<VerificationRule>.from(habit.additionalConditions ?? const []);
+      _verificationJoin = habit.verificationJoin ?? VerificationJoin.or;
       // Mode A: rehydrate the picked selection from the device-local store. If
       // it isn't resolvable here (e.g. synced from another device), leave it
       // null so the habit reads as couldn't-verify until re-picked — never a
@@ -761,6 +784,18 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                               if (r?.metricKey != 'screen_time_apps') {
                                 _appsSelection = null;
                               }
+                              // Compound conditions need a HealthKit primary (Q2):
+                              // drop them if the rule is cleared or becomes Screen
+                              // Time, and de-dupe if the new metric now collides
+                              // with an existing condition.
+                              if (r == null || !r.isHealthKit) {
+                                _additionalConditions = [];
+                                _verificationJoin = VerificationJoin.or;
+                              } else {
+                                _additionalConditions = _additionalConditions
+                                    .where((c) => c.metricKey != r.metricKey)
+                                    .toList();
+                              }
                               _verifyError = null;
                               // Offer the metric's label as a default name when
                               // the metric changes — but only while the field is
@@ -779,6 +814,28 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                             });
                           },
                         ),
+                        // Compound verifiable habits (Q1–Q5): combine 2–3
+                        // HealthKit conditions with OR/AND. Only for a HealthKit
+                        // primary rule; gated behind the dark-launch flag, and the
+                        // "+ Add condition" affordance is Pro-gated inside.
+                        if (VerificationConfig.compoundVerificationEnabled &&
+                            _verificationRule != null &&
+                            _verificationRule!.isHealthKit)
+                          CompoundConditionsField(
+                            primaryRule: _verificationRule!,
+                            additionalConditions: _additionalConditions,
+                            join: _verificationJoin,
+                            isPro: isPro,
+                            onConditionsChanged: (c) =>
+                                setState(() => _additionalConditions = c),
+                            onJoinChanged: (j) =>
+                                setState(() => _verificationJoin = j),
+                            onNeedPro: () {
+                              FocusScope.of(context).unfocus();
+                              Navigator.push(
+                                  context, SubscriptionScreen.route());
+                            },
+                          ),
                         // Proactive "grant Health access" affordance (D9) for
                         // HealthKit rules — requests read access up front instead
                         // of waiting to infer denial from couldn't-verify days.
@@ -852,6 +909,8 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                                   _reminderTime = null;
                                   _selectedDays = _everyDay;
                                   _verificationRule = null;
+                                  _additionalConditions = [];
+                                  _verificationJoin = VerificationJoin.or;
                                   _appsSelection = null;
                                   _verifyError = null;
                                   _nameError = null;

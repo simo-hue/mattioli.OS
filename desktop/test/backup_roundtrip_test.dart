@@ -14,6 +14,7 @@ import 'package:evolve_desktop/core/desktop_backup_import_service.dart';
 import 'package:evolve_desktop/core/desktop_private_db.dart';
 import 'package:evolve_desktop/core/import_merge.dart';
 import 'package:evolve_sync/evolve_sync.dart';
+import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -94,6 +95,12 @@ void main() {
         'created_at': ts,
         'updated_at': ts,
         'reminder_time': '09:00',
+        'verify_provider': 'healthkit',
+        'verify_metric': 'steps',
+        'verify_comparator': 'gte',
+        'verify_threshold': 10000,
+        'verify_unit': 'count',
+        'verify_effective_from': '2026-06-15',
       },
     ],
     'goal_logs': [
@@ -201,6 +208,10 @@ void main() {
       expect(goals.single['title'], 'Read');
       expect(goals.single['user_id'], owner);
       expect(goals.single['color'], '#00FF00');
+      // The auto-verification rule and its D10 forward-only anchor survive the
+      // full export → canonical → encrypted-schema round-trip.
+      expect(goals.single['verify_metric'], 'steps');
+      expect(goals.single['verify_effective_from'], '2026-06-15');
 
       final logs = await db.query('goal_logs');
       expect(logs.length, 2);
@@ -228,6 +239,53 @@ void main() {
       expect(profile['is_pro'], 1); // forced (source was 0)
       expect(profile['sentry_consent'], 0); // forced (source was 1)
       expect(profile['avatar_url'], isNull); // local path dropped
+    });
+
+    test('a compound verifiable habit round-trips via verify_conditions', () async {
+      final db = await seeded();
+      addTearDown(db.close);
+
+      // A compound habit (Q4) stores its conditions in the verify_conditions
+      // JSON with the flat verify_* columns absent. macOS never verifies, but
+      // the blob must survive export → canonical → encrypted-schema untouched
+      // so a desktop edit can't wipe a compound rule set on iOS.
+      final export = nativeExport();
+      final goal = Map<String, dynamic>.from(
+        (export['goals'] as List).single as Map,
+      );
+      goal
+        ..remove('verify_provider')
+        ..remove('verify_metric')
+        ..remove('verify_comparator')
+        ..remove('verify_threshold')
+        ..remove('verify_unit')
+        ..remove('verify_effective_from');
+      goal['verify_conditions'] = encodeVerifyConditions(
+        [
+          VerificationCatalog.steps.ruleWith(10000),
+          VerificationCatalog.exerciseMinutes.ruleWith(30),
+        ],
+        VerificationJoin.and,
+      );
+      export['goals'] = [goal];
+
+      final model = DesktopBackupImportService.buildCanonicalModel(
+        export,
+      ).canonical;
+      await apply(db, model);
+
+      final row = (await db.query('goals')).single;
+      // The compound blob persisted, and the flat single-rule columns stay null
+      // so a pre-compound client reads the habit as manual (never mis-verifies).
+      expect(row['verify_conditions'], isNotNull);
+      expect(row['verify_metric'], isNull);
+      final decoded = decodeVerifyConditions(row['verify_conditions']);
+      expect(decoded, isNotNull);
+      expect(decoded!.op, VerificationJoin.and);
+      expect(
+        decoded.conditions.map((c) => c.metricKey).toList(),
+        ['steps', 'exercise_minutes'],
+      );
     });
   });
 

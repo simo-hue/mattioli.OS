@@ -47,38 +47,6 @@ flutter build ipa --release
 
 ---
 
-## 2026-07-21 — iCloud sync Tier A: native verification needed (Mac mini, Xcode)
-
-The Swift changes below are the only part of this pass I could not execute. **There is no Xcode
-on the dev machine**, so nothing native was built or run.
-
-**What I could verify:** both bridges typecheck cleanly against the real CloudKit framework
-(`swiftc -typecheck`, Swift 6.3, macOS SDK, Command Line Tools). That confirms the API surface
-is right — `CKError.retryAfterSeconds` exists and is `Double?`, `.requestRateLimited` /
-`.serviceUnavailable` / `.zoneBusy` are valid codes, `qualityOfService` is settable on every
-operation type used. It does **not** confirm any runtime behaviour.
-
-**What I could NOT verify — and what only the Mac mini can settle:**
-
-- [ ] **Both apps still build and launch.** `flutter build macos --release` and
-      `flutter build ipa --release`. The bridges are `Runner`-target members, so a compile error
-      here surfaces only in Xcode.
-- [ ] **A throttled push actually recovers.** The retry path has never run. The realistic way to
-      hit it is a large first push: enable sync on a device with a full dataset and watch the log
-      for `[CloudKit] saveRecords throttled by iCloud — retrying in Ns (attempt K of 4)`.
-      If you never see that line, the path is simply untested — not proven good.
-- [ ] **The retry does not double-apply anything.** After any retry, run the diagnostics report on
-      both devices and confirm the per-table counts still match.
-- [ ] **`qualityOfService` did not make sync feel slower.** Every operation is now `.utility`
-      except `zoneHasRecords`, which is `.userInitiated` because it blocks the enable the user is
-      watching. If enable or first sync feels sluggish, that trade is the thing to revisit.
-
-Note both `AppDelegate.swift` files were patched from one script precisely so they stay
-line-for-line ports of each other; every line changed is byte-identical between them. If you edit
-one by hand, mirror it.
-
----
-
 ## 2026-07-21 — iCloud sync Tier C: residual items (none block the release)
 
 These were found while closing Tier C and deliberately NOT bundled into it. Each is real; none

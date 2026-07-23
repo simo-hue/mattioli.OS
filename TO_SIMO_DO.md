@@ -5,7 +5,7 @@
 - [ ] Different habits & goals types, not only checkboxes like status,progress bar
 ## prompt
 
-/grill-me we are working inside the flutter implementations on both desktop and mobile versions. What I was thinking about was to Add the "mixture" of habits to make it one ( for example 10 mins of workout OR 10000 steps ). Could exclusive ( OR ) or inclusive ( AND ). What do you think? How we can implement it in the most professional and user friendly way?
+/grill-me we are working inside the flutter implementations on both desktop and mobile versions. What I was thinking about was to Add the "mixture" of habits using logical conditions to make it one ( for example 10 mins of workout OR 10000 steps ). Could exclusive ( OR ) or inclusive ( AND ). What do you think? How we can implement it in the most professional and user friendly way?
 
 ## prompt
 
@@ -1241,66 +1241,3 @@ Observed 2026-07-23: the Mac logs `[APNs] Registration FAILED … OSStatus error
 
 ### D. Not fixing (agreed): the "no re-backfill" code path
 - Real App Store users only ever use Production and get a full `markAllDirty` push at first-enable, so they can't reach the stranded state; `resetSyncFromThisDevice` already covers the developer dev→prod case. No automatic empty-zone re-upload was added (would guard a developer-only scenario).
-
----
-
-## macOS Evolve Pro paywall — production parity (2026-07-23)
-
-The macOS paywall was brought to functional + compliance parity with the live iOS paywall (same purchase logic + prices, native macOS presentation). Code is done and verified headless (`flutter analyze` clean; `flutter test` 525 passing). **No RevenueCat dashboard changes are needed** — because the macOS app ships as Universal Purchase under the same `com.simo.evolve` App Store Connect record as iOS, it shares the same products, entitlement, Offering and `appl_` key. The below is verification + on-device QA that I **cannot** do here (no Xcode / no device / no StoreKit).
-
-### A. App Store Connect — 60-second sanity check (not RevenueCat)
-- [ ] Confirm the two IAPs (`com.simo.evolve.pro.monthly`, `com.simo.evolve.pro.yearly`) are **Cleared for Sale** and available on the **macOS** platform (automatic under Universal Purchase, but confirm).
-- [ ] Paid Apps agreement active (it is — iOS already sells; nothing to do unless it lapsed).
-- [ ] In RevenueCat: the app is the modern **"App Store"** type (Mac config hidden). If you ever see a **"legacy Mac app"** toggle, **do NOT enable it** (that's the pre-2020 separate-record path, not you).
-
-### B. On-device StoreKit-sandbox QA on the Mac mini (blocking before release)
-Build the desktop app in Xcode with a **sandbox Apple ID** signed in, then:
-- [ ] **Purchase — annual**: open the paywall (Settings → Subscription, and via a locked feature e.g. AI Coach → "View Pro plans"). Confirm the annual card shows a real **per-month price + honest "Save X%"** (computed from live prices, not a hardcoded number), buy it, confirm the **success dialog** appears and — when opened from a locked feature (modal) — that dismissing it **closes the paywall** and the feature is unlocked.
-- [ ] **Purchase — monthly**: same, selecting the monthly plan.
-- [ ] **Cancel the payment sheet**: dismiss Apple's sheet mid-purchase — must be **silent** (no error toast).
-- [ ] **Already-Pro view**: reopen the subscription surface while subscribed — confirm the plan cards are replaced by the **status/details panel** (plan name, "Active", the real **next-renewal date**, "Apple / App Store" payment method) with **Manage subscription + Restore** (no "Activate").
-- [ ] **Restore**: on a second signed-in device / after reinstall, tap **Restore purchases** → success toast + Pro unlocked; and with no purchase → the neutral "no active subscription" toast.
-- [ ] **Manage subscription**: taps through to Apple's `apps.apple.com/account/subscriptions` page in the browser.
-- [ ] **Legal links** on the paywall (Privacy Policy + Terms/EULA) open and follow the app language; the auto-renewal disclaimer is present (Guideline 3.1.2).
-- [ ] **Localization spot-check**: switch the app to it/es/de/ar and confirm the plan/savings subtitle and any error toast render translated (not English), and that Arabic renders RTL cleanly.
-
-### C. Note (not a blocker)
-- One pre-existing test failure, `desktop/test/coach_settings_widget_test.dart` ("AI Coach section shows the engine rows…", expects the coach "Your OpenRouter" backend label), is **red on `main` independently of this change** — it was already failing before the paywall work. Left untouched here; flag if you want it fixed separately.
-
----
-
-## Desktop Habits › Protocol tab now shows only ACTIVE habits — on-device visual QA (Mac mini)
-
-Code is done and verified headless (`flutter analyze` clean on the changed files; new reorder tests green). This is a purely visual/interaction change I **cannot** run here (no Xcode). Quick QA on the Mac mini:
-
-- [ ] **Ended / upcoming habits disappear**: on an account with a habit whose end-date is in the past (or a start-date in the future — both are set on mobile), open **Habits → Protocol**. It should **no longer** appear in the table, but still show in the mobile app and in **Statistics → Habits** when that page's filter is set to **All**. (This matches the Statistics "Active" rule exactly.)
-- [ ] **Off-schedule-today active habit still shows**: a currently-active habit scheduled only e.g. Mon/Wed/Fri must **still appear** in Protocol on a Sunday (the table spans the whole week — it is intentionally *not* hidden on its off days).
-- [ ] **New habit appears immediately**: create a habit on desktop → it shows in Protocol right away (created active as of today).
-- [ ] **Empty state**: on an account where *every* habit is ended/upcoming, the Protocol table shows the normal "add a habit" empty card (no crash, no blank panel).
-- [ ] **Drag-reorder still correct**: with a mix of active + hidden habits, drag to reorder the visible rows — confirm the row you dragged lands where you dropped it (the *right* habit moves), the order **persists** after leaving/returning to the tab, and it **syncs** to mobile. If you later un-hide a previously-inactive habit (extend its end-date on mobile), it should reappear roughly in its original relative position.
-- [ ] **"Active protocol" summary card** (top of the page) is deliberately left as-is — it counts habits scheduled *today*, so it can legitimately read lower than the number of rows in the table. Not a bug.
-
----
-
-## Desktop Calendar day-detail popup now shows the "Verified" badge — on-device glance (Mac mini)
-
-Code is done and verified headless (analyze clean; 2 new widget tests green). Purely visual — confirm on the Mac mini:
-
-- [ ] On an account that has an **auto-verified** habit (verification set on the iPhone — HealthKit / Screen Time), go to **Habits → Calendar**, click a day that habit is scheduled on, and confirm the popup row shows the same **shield-check "Verified" badge** next to the title that the **Protocol** tab shows — and that a manual habit on the same day has **no** badge.
-- [ ] Long habit titles + the badge don't overflow the row (title ellipsises, badge stays visible).
-
----
-
-## AI coach engine picker redesign (desktop) — on-device QA (Mac mini)
-
-Code done + verified headless (`flutter analyze` clean; **543 tests green** incl. new per-product-memory + card-dialog widget tests). Purely a desktop UI/UX rework of *how the coach LLM is chosen*. Confirm on the Mac mini, ideally with **both Ollama and LM Studio installed**:
-
-- [ ] **Header selector**: the chat-header pill shows the active engine + model with a status dot (green = reachable, amber = needs setup, grey = off). Clicking it opens the "AI coach engine" popup directly — the old quick-dropdown is gone.
-- [ ] **Private-mode cards**: in Private mode the popup top shows an OpenRouter card + a "Local — on this Mac" group with **Ollama** and **LM Studio** cards (each live/off), plus a "Use a custom server…" link.
-- [ ] **One-tap product switch (the headline)**: with Ollama running, click its card → activates + lists its models; pick a model. Click LM Studio → switches; pick a different model. Switch back and forth — **each product must restore its own last-used model**, not the other's.
-- [ ] **Off → Start**: click a product whose server is off → a "Start {app}" button appears in the detail (Ollama launches; LM Studio shows the Developer → Start Server hint). Selecting a card must NOT launch an app by itself.
-- [ ] **Auto-pick single model**: point at a server exposing exactly one model with none remembered → it is auto-selected (no blank dropdown before you can chat).
-- [ ] **Custom server**: "Use a custom server…" reveals the editable base URL + manual-model field and the remote/LAN warning for a non-loopback host; picking a named card hides them again. A previously-saved custom URL opens straight into these fields.
-- [ ] **Account mode intact**: signed-in account mode still shows only the Evolve AI card + the "available in Private mode" note — no key field, no local cards (Guideline 3.1.1 shape).
-- [ ] **Banners**: the offline-recovery banner (Start when your local server drops) and the detected-local nudge still appear and self-heal.
-- [ ] **Translations glance** (optional): the 6 new strings read naturally in it/de/es/ar in context (`localGroupLabel`, `useCustomServer`, `cardLive`, `cardOff`, `engineOpenRouterHint`).

@@ -1,5 +1,6 @@
 # TO_SIMO_DO.md
 - [ ] Widget for iPhone & MacOS
+- [ ] Paywall and subs from macOS must be coherent and real
 - [ ] Organize better the selection of the LLM in the AI coach
 - [ ] settings in desktop implementation is really weird and not intuitive as it is in the mobile app
 - [ ] what happens if I modify manually an automatic habits?
@@ -1205,3 +1206,29 @@ SQLCipher
 /Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:268053:18 Ambiguous expansion of macro 'MIN'
 
 /Users/simo/Developer/mattioli.OS/mobile/ios/Pods/SQLCipher/sqlite3.c:268127:20 Ambiguous expansion of macro 'MIN'
+
+---
+
+## iCloud sync — Mac missing data: recovery + CloudKit env hardening (2026-07-23)
+
+**Diagnosis (settled):** the Mac is not missing data because of a key-split — the shared E2E key decrypts fine (profile image + a few macro goals crossed). The iPhone's bulk (3,489 macro goals / 2,591 logs / 20 habits) was pushed to the **CloudKit *Development*** datastore during earlier **dev-build (Xcode `flutter run`) testing**; TestFlight uses **Production**. Those rows are all `dirty=0` locally and the engine only ever pushes `dirty=1` (no re-backfill), so the iPhone never re-uploaded them to Production. The Mac (Production) only ever pulled the handful of records edited after the TestFlight install. Dev→Prod is a developer-only artifact — real App Store users can't hit it.
+
+### A. Blocking — recover the data (ON THE iPHONE ONLY; I cannot do on-device steps)
+- [ ] ⚠️ **NEVER tap "Reset sync from this device" or "Delete all data" ON THE MAC.** Both fire a *synchronizable* Keychain/zone delete that propagates and would destroy the iPhone's only complete copy. If the Mac shows a sync-key/reset card, do NOT act on it — let it adopt, don't reset.
+- [ ] Preconditions (confirmed 2026-07-23): both devices same Apple ID + iCloud Keychain ON.
+- [ ] **Quit the Mac app entirely (⌘Q)** and leave it quit for the whole reset (avoids the empty-zone mint-race window; the native `tryClaimFirstMint` guard is not in the current TestFlight build).
+- [ ] On the **iPhone** → iCloud sync settings → **"Reset sync from this device"** → confirm. This deletes the Production zone, mints a fresh shared key, re-dirties ALL local rows (`markAllDirty`), and re-uploads everything.
+- [ ] **Wait** and watch the iPhone's sync diagnostics: `pending` spikes (re-dirtying ~6,000 rows) then drains to **0**, status "Up to date." This is the large-first-push path (retry/backoff A2 is unverified) — be patient; re-trigger sync (refocus/manual) until `pending` = 0.
+- [ ] **Only after** the iPhone reads "Up to date" / pending 0, **reopen the Mac app**; give it a few 60s poll cycles (or relaunch once). It drops its stale token on the key-fingerprint change and full-refetches.
+- [ ] Verify on the Mac: diagnostics counts climb to match the iPhone; habits/macro-goals/statistics populate.
+
+### B. Done in code (2026-07-23) — verify on your next archive
+- [x] **Lever 1 — explicit CloudKit environment pin (macOS).** Added `com.apple.developer.icloud-container-environment` = **Production** to `desktop/macos/Runner/Release.entitlements` and = **Development** to `DebugProfile.entitlements`. `plutil -lint` OK on both. So the environment is deterministic per build config instead of signing-dependent; dev builds stay in Development, release builds in Production.
+- [ ] **Verify once in Xcode:** archive the macOS app (Release) → Distribute → App Store Connect and confirm it still validates/signs with no entitlement error, and that CloudKit still works. The key is ignored for App Store distribution (Production is forced), so this should be transparent — but confirm. If automatic signing ever complains about the entitlement, removing the two added keys is a safe rollback.
+- [ ] iOS was intentionally NOT pinned: it uses a single `Runner.entitlements` shared by Debug+Release, so a naive pin would force Debug iOS onto Production. iOS already selects the environment correctly by signing (dev→Development, App Store→Production). Optional future work: split iOS into RunnerDebug/Runner entitlements + per-config `CODE_SIGN_ENTITLEMENTS` if you want strict parity (needs an Xcode build to verify).
+
+### C. Lever 2 — macOS release signing (yours, in Xcode; recommended before release)
+- [ ] `desktop/macos/Runner.xcodeproj/project.pbxproj:788` signs the Release config with **"Apple Development"** and an empty provisioning-profile specifier. For an App Store Connect build the Distribute flow re-signs with a distribution profile (which is why your current Mac build correctly landed on Production), but confirm your Archive → Distribute → App Store Connect step is using an **Apple Distribution / Mac App Store** profile, not exporting a development-signed build. A development-signed Mac build would bind to **Development** CloudKit and permanently fail to sync with Production iPhones.
+
+### D. Not fixing (agreed): the "no re-backfill" code path
+- Real App Store users only ever use Production and get a full `markAllDirty` push at first-enable, so they can't reach the stranded state; `resetSyncFromThisDevice` already covers the developer dev→prod case. No automatic empty-zone re-upload was added (would guard a developer-only scenario).

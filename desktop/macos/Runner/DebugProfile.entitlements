@@ -38,6 +38,13 @@
 	<array>
 		<string>CloudKit</string>
 	</array>
+	<!-- Pin the CloudKit environment explicitly instead of letting the signing
+	     identity choose it. Debug/Profile → Development, so `flutter run` and
+	     local profile builds stay isolated in the Development datastore and can
+	     never write into the production zone shared by shipped builds. The
+	     Release entitlements pin Production. -->
+	<key>com.apple.developer.icloud-container-environment</key>
+	<string>Development</string>
 	<!-- Sync secrets (E2E key + canonical owner) live in the shared group so
 	     both apps read the same iCloud-Keychain items; the app's own group
 	     stays first so it remains the default for group-less keychain writes

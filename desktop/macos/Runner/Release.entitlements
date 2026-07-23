@@ -38,6 +38,17 @@
 	<array>
 		<string>CloudKit</string>
 	</array>
+	<!-- Pin the CloudKit environment explicitly instead of letting the signing
+	     identity choose it — the implicit choice is exactly how a dev build and a
+	     TestFlight build once landed in different datastores (dev data stranded
+	     in Development, invisible to a Production build). Release → Production.
+	     An App Store Connect build's distribution profile forces Production
+	     anyway, so here this is belt-and-suspenders; its real job is that a
+	     locally-archived Release build can no longer silently bind to
+	     Development. The Debug/Profile entitlements pin Development, keeping dev
+	     testing isolated from the production zone. -->
+	<key>com.apple.developer.icloud-container-environment</key>
+	<string>Production</string>
 	<!-- Sync secrets (E2E key + canonical owner) live in the shared group so
 	     both apps read the same iCloud-Keychain items; the app's own group
 	     stays first so it remains the default for group-less keychain writes

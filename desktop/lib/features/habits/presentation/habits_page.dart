@@ -9,6 +9,7 @@ import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/auth/application/desktop_profile_controller.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
+import 'package:evolve_desktop/features/habits/application/protocol_reorder.dart';
 import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
 import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
@@ -297,9 +298,9 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
       onAdd: () => _openHabitEditor(),
       onEdit: _openHabitEditor,
       onDelete: _deleteHabit,
-      onReorder: (oldIndex, newIndex) => ref
+      onReorder: (reordered) => ref
           .read(dashboardControllerProvider.notifier)
-          .reorderHabits(oldIndex, newIndex),
+          .reorderHabitsList(reordered),
     );
   }
 
@@ -395,12 +396,8 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
     await ref.read(dashboardControllerProvider.notifier).deleteHabit(habit.id);
   }
 
-  Future<void> _openDayDetails(DateTime date) async {
-    await showEvolveDialog<void>(
-      context: context,
-      builder: (context) => _DayDetailsDialog(date: date),
-    );
-  }
+  Future<void> _openDayDetails(DateTime date) =>
+      showDayDetailsDialog(context, date);
 }
 
 /// AnimatedSwitcher layout that keeps both the incoming and the outgoing view
@@ -554,7 +551,11 @@ class _ProtocolPanel extends StatefulWidget {
   final ValueChanged<String> onToggle;
   final ValueChanged<DashboardHabit> onEdit;
   final ValueChanged<DashboardHabit> onDelete;
-  final void Function(int oldIndex, int newIndex) onReorder;
+
+  /// Persist a full reordered habit list. The panel rebuilds the complete order
+  /// from a drag on the filtered (active-only) rows before calling this — see
+  /// [_ProtocolPanelState._handleReorder].
+  final ValueChanged<List<DashboardHabit>> onReorder;
 
   /// Quick-add action shown next to the status pill.
   final VoidCallback onAdd;
@@ -582,9 +583,35 @@ class _ProtocolPanelState extends State<_ProtocolPanel> {
     super.dispose();
   }
 
+  /// Reconcile a drag on the filtered (active-only) rows with the full habit
+  /// list: rebuild the complete order — active habits in their new order,
+  /// inactive ones pinned in place — then persist it. Never fires for the tour
+  /// override (a throwaway demo row).
+  void _handleReorder(int oldIndex, int newIndex) {
+    if (widget.habitsOverride != null) return;
+    final full = widget.snapshot.habits;
+    final rebuilt = reorderActiveHabits(
+      full: full,
+      on: DateTime.now(),
+      oldIndex: oldIndex,
+      newIndex: newIndex,
+    );
+    if (identical(rebuilt, full)) return; // out of range or no-op
+    widget.onReorder(rebuilt);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final habits = widget.habitsOverride ?? widget.snapshot.habits;
+    // The Protocol tab shows only currently-active habits — same rule as the
+    // Statistics › Habits "Active" filter: today falls inside the habit's
+    // [startDate, endDate] range. Off-schedule-today habits still appear (the
+    // table's columns span the whole week); ended and not-yet-started ones are
+    // hidden. The tour override (view-only demo row) bypasses the filter.
+    final habits =
+        widget.habitsOverride ??
+        widget.snapshot.habits
+            .where((habit) => habit.isActiveOn(DateTime.now()))
+            .toList();
     const metrics = _HabitRowMetrics.comfortable();
     return EvolvePanel(
       radius: 20,
@@ -624,7 +651,7 @@ class _ProtocolPanelState extends State<_ProtocolPanel> {
                       padding: const EdgeInsets.only(bottom: 4),
                       buildDefaultDragHandles: false,
                       itemCount: habits.length,
-                      onReorderItem: widget.onReorder,
+                      onReorderItem: _handleReorder,
                       itemBuilder: (context, index) {
                         final habit = habits[index];
                         // Only the first row carries the tour spotlight keys.
@@ -1951,6 +1978,17 @@ class _LifeMetric extends StatelessWidget {
   }
 }
 
+/// Opens the calendar day-detail dialog for [date] — the read-only-aware habit
+/// completion list for a single day, including the "Verified" badge on
+/// auto-verified habits. Public so widget tests can drive the real dialog; the
+/// page itself calls it from the calendar's day tap.
+Future<void> showDayDetailsDialog(BuildContext context, DateTime date) {
+  return showEvolveDialog<void>(
+    context: context,
+    builder: (context) => _DayDetailsDialog(date: date),
+  );
+}
+
 class _DayDetailsDialog extends ConsumerWidget {
   const _DayDetailsDialog({required this.date});
 
@@ -2004,6 +2042,7 @@ class _DayDetailsDialog extends ConsumerWidget {
               streak: habit.streak,
               done: _habitStatus(snapshot, habit.id, date, habit) == 'done',
               missed: _habitStatus(snapshot, habit.id, date, habit) == 'missed',
+              verified: habit.verificationRule != null,
               statusLabel: _habitStatusLabel(snapshot, habit.id, date, habit),
               onToggle: _canEditDate(date)
                   ? () => ref
@@ -2035,6 +2074,7 @@ class _DayHabitRow extends StatelessWidget {
     required this.streak,
     required this.done,
     required this.missed,
+    required this.verified,
     required this.statusLabel,
     required this.onToggle,
   });
@@ -2044,6 +2084,11 @@ class _DayHabitRow extends StatelessWidget {
   final int streak;
   final bool done;
   final bool missed;
+
+  /// Whether this habit is auto-verified from the iPhone (HealthKit / Screen
+  /// Time) — i.e. `verificationRule != null`. Drives the read-only "Verified"
+  /// badge, mirroring the Protocol table's `_HabitRow`.
+  final bool verified;
   final String statusLabel;
   final VoidCallback? onToggle;
 
@@ -2083,13 +2128,27 @@ class _DayHabitRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: colors.foreground,
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: colors.foreground,
+                        ),
+                      ),
+                    ),
+                    // Read-only marker for iPhone-verified habits, matching the
+                    // Protocol table's `_HabitRow` (mobile parity).
+                    if (verified) ...[
+                      const SizedBox(width: 6),
+                      const VerifiedHabitBadge(),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 1),
                 Text(

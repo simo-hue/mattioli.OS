@@ -214,14 +214,26 @@ class DashboardController extends Notifier<DashboardSnapshot> {
 
     final moved = habits.removeAt(oldIndex);
     habits.insert(newIndex, moved);
-    final reordered = [
-      for (var i = 0; i < habits.length; i++)
-        habits[i].copyWith(displayOrder: i),
+    await reorderHabitsList(habits);
+  }
+
+  /// Persist an already-reordered *full* habit list: reassign every habit's
+  /// `displayOrder` to its new position, then save (optimistic + local-first,
+  /// exactly like [reorderHabits]).
+  ///
+  /// The Habits › Protocol tab renders a filtered, active-only subset, so it
+  /// can't express a reorder as two indices into [state.habits]. It rebuilds the
+  /// complete order itself — keeping hidden habits pinned in place — and hands
+  /// the whole list here.
+  Future<void> reorderHabitsList(List<DashboardHabit> reordered) async {
+    final withOrder = [
+      for (var i = 0; i < reordered.length; i++)
+        reordered[i].copyWith(displayOrder: i),
     ];
 
-    state = state.copyWith(habits: reordered);
+    state = state.copyWith(habits: withOrder);
     await _saveLocal();
-    await _syncRemote(() => _repository.reorderHabits(reordered));
+    await _syncRemote(() => _repository.reorderHabits(withOrder));
   }
 
   /// Re-schedule the OS daily notifications after a habit add/edit/delete so a

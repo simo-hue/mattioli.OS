@@ -1,5 +1,6 @@
 # TO_SIMO_DO.md
 - [ ] Widget for iPhone & MacOS
+- [ ] Evolve pro da rimuovere il badge nelle statistiche quando c'è il selettore "globale" quindi tutti gli habit ma solamente quando viene selezionato un habit specifico
 - [ ] settings in desktop implementation is really weird and not intuitive as it is in the mobile app
 - [ ] what happens if I modify manually an automatic habits?
 - [ ] Different habits & goals types, not only checkboxes like status,progress bar

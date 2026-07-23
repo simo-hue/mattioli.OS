@@ -302,9 +302,12 @@ void main() {
 
     await tester.tap(find.text('Abbonamento'));
     await tester.pumpAndSettle();
+    // A non-subscribed account sees the purchase actions. "Gestisci abbonamento"
+    // (Manage subscription) now lives in the already-Pro view — there is nothing
+    // to manage before subscribing (mobile parity).
     expect(find.text('Attiva Evolve Pro'), findsOneWidget);
     expect(find.text('Ripristina acquisti'), findsOneWidget);
-    expect(find.text('Gestisci abbonamento'), findsOneWidget);
+    expect(find.text('Gestisci abbonamento'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

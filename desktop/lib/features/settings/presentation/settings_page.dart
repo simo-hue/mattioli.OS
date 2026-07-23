@@ -1,6 +1,7 @@
 import 'package:evolve_legal/evolve_legal.dart';
 import 'package:evolve_desktop/core/desktop_backup_import_service.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:intl/intl.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -340,6 +341,7 @@ class SettingsPage extends ConsumerStatefulWidget {
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
   _SettingsSection _section = _SettingsSection.profile;
+
   /// The canonical theme CODE ('light'/'dark'/'system'), not a bool.
   ///
   /// It used to be `bool _darkMode`, and every write derived from it collapsed
@@ -1362,12 +1364,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       if (image == null || !mounted) return;
 
       final selectedFile = File(image.path);
-      
+
       final Uint8List? croppedBytes = await showEvolveDialog<Uint8List>(
         context: context,
-        builder: (context) => EvolveImageCropDialog(
-          image: FileImage(selectedFile),
-        ),
+        builder: (context) =>
+            EvolveImageCropDialog(image: FileImage(selectedFile)),
       );
 
       if (croppedBytes == null) return;
@@ -1884,8 +1885,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Future<void> _refreshSyncDiagnostics() async {
     if (!mounted) return;
     try {
-      final d =
-          await ref.read(desktopPrivateSyncServiceProvider).diagnostics();
+      final d = await ref.read(desktopPrivateSyncServiceProvider).diagnostics();
       if (!mounted) return;
       setState(() => _syncDiagnostics = d);
     } catch (error, stack) {
@@ -2160,7 +2160,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           );
         }
       } catch (error, stack) {
-        AppLogger.error('Unable to reset locked private database', error, stack);
+        AppLogger.error(
+          'Unable to reset locked private database',
+          error,
+          stack,
+        );
         if (mounted) {
           Navigator.pop(context); // close loading dialog
           _showResultDialog(
@@ -2536,16 +2540,22 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       _milestones = boolOr(kSettingMilestones, _milestones);
       _deepWorkInsights = boolOr(kSettingDeepWorkInsights, _deepWorkInsights);
       if (incoming.containsKey(kSettingCalendarView)) {
-        _calendarView = normalizeCalendarViewCode(incoming[kSettingCalendarView]);
+        _calendarView = normalizeCalendarViewCode(
+          incoming[kSettingCalendarView],
+        );
       }
       if (incoming.containsKey(kSettingLanguage)) {
         _language = SettingsCodec.normalizeLanguage(incoming[kSettingLanguage]);
       }
       _morningTime =
-          SettingsCodec.normalizeTimeOfDay(incoming[kSettingMorningBriefTime]) ??
+          SettingsCodec.normalizeTimeOfDay(
+            incoming[kSettingMorningBriefTime],
+          ) ??
           _morningTime;
       _eveningTime =
-          SettingsCodec.normalizeTimeOfDay(incoming[kSettingEveningReviewTime]) ??
+          SettingsCodec.normalizeTimeOfDay(
+            incoming[kSettingEveningReviewTime],
+          ) ??
           _eveningTime;
     });
 
@@ -2562,7 +2572,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     if (preferences != null) {
       await Future.wait([
         preferences.setString('pref_theme_mode', _themeMode),
-        preferences.setString('pref_accent_color', dashboardColorToHex(_accent)),
+        preferences.setString(
+          'pref_accent_color',
+          dashboardColorToHex(_accent),
+        ),
         preferences.setBool(
           'desktop_dark_mode',
           DesktopAppearanceController.resolvesDark(appearance.themeMode),
@@ -2869,7 +2882,8 @@ extension _AiCoachSection on _SettingsPageState {
                 // expects the same. Granting is one click in a dialog, so taking
                 // it back is one click here. Renders only once a consent exists:
                 // there is nothing to withdraw before that.
-                if (ref.watch(hasAnyCoachConsentProvider).asData?.value ?? false)
+                if (ref.watch(hasAnyCoachConsentProvider).asData?.value ??
+                    false)
                   _ActionRow(
                     icon: LucideIcons.shieldCheck,
                     title: t.ai.consent.rowTitle,
@@ -3646,6 +3660,31 @@ class _PlatformNote extends StatelessWidget {
   }
 }
 
+/// Product identifiers for the plan-label switch in the "already Pro" details
+/// panel. Kept in sync with [DesktopSubscriptionController.proProductIds].
+const _kMonthlyProductId = 'com.simo.evolve.pro.monthly';
+const _kYearlyProductId = 'com.simo.evolve.pro.yearly';
+
+/// Whole-percent saving of the annual plan against twelve months of the monthly
+/// plan, or null when there is no honest saving to claim.
+///
+/// Computed from live store prices rather than stated as a constant: Apple's
+/// price tiers are not linear across currencies, so a fixed "Save 40%" claim is
+/// wrong in most storefronts. Returns null when either price is unusable or the
+/// annual plan is not actually cheaper, so the UI falls back to a neutral line.
+@visibleForTesting
+int? annualSavingPercent({
+  required double monthlyPrice,
+  required double yearlyPrice,
+}) {
+  if (monthlyPrice <= 0 || yearlyPrice <= 0) return null;
+  final saving = (1 - yearlyPrice / (monthlyPrice * 12)) * 100;
+  // Round first: 0.6% would otherwise survive the check and render as "Save 1%".
+  final rounded = saving.round();
+  if (rounded < 1) return null;
+  return rounded;
+}
+
 /// Opens the subscription purchase surface as a modal dialog — the SAME plans,
 /// pricing, purchase, restore and compliance the Settings → Subscription section
 /// renders, presented directly so a locked feature (e.g. the AI Coach) sends the
@@ -3660,9 +3699,12 @@ Future<void> showPaywallDialog(BuildContext context) {
       maxWidth: 560,
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
-        child: const _SubscriptionSettings(
+        child: _SubscriptionSettings(
           twoColumn: false,
           showFeaturePitch: false,
+          // A successful purchase should return the user to the feature they
+          // were trying to unlock, so close this modal once Pro is active.
+          onProActivated: () => Navigator.of(dialogContext).maybePop(),
         ),
       ),
     ),
@@ -3673,6 +3715,7 @@ class _SubscriptionSettings extends ConsumerStatefulWidget {
   const _SubscriptionSettings({
     required this.twoColumn,
     this.showFeaturePitch = true,
+    this.onProActivated,
   });
 
   final bool twoColumn;
@@ -3681,6 +3724,11 @@ class _SubscriptionSettings extends ConsumerStatefulWidget {
   /// [showPaywallDialog], where the preceding Pro-features dialog already pitched
   /// them and repeating would be redundant.
   final bool showFeaturePitch;
+
+  /// Invoked after the user dismisses the purchase-success dialog. Set by
+  /// [showPaywallDialog] to close the modal; null in the Settings section, where
+  /// the surface should stay put and flip to the "already Pro" panel in place.
+  final VoidCallback? onProActivated;
 
   @override
   ConsumerState<_SubscriptionSettings> createState() =>
@@ -3693,8 +3741,6 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
   @override
   Widget build(BuildContext context) {
     final subscription = ref.watch(desktopSubscriptionControllerProvider);
-    final monthly = subscription.monthlyPackage;
-    final yearly = subscription.yearlyPackage;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -3703,177 +3749,406 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
           subtitle: t.settingsPage.proSubtitle,
         ),
         const SizedBox(height: 20),
-        if (!subscription.isPro && widget.showFeaturePitch) ...[
-          EvolvePanel(
-            padding: const EdgeInsets.all(20),
-            radius: 20,
-            glowColor: proAccent,
-            child: SizedBox(
-              width: double.infinity,
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: proAccent.withValues(alpha: 0.1),
-                      border: Border.all(
-                        color: proAccent.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: const Icon(
-                      LucideIcons.sparkles,
-                      size: 26,
-                      color: proAccent,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    t.settingsPage.proUpsellTitle,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: context.evolveColors.foreground,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.4,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    t.settingsPage.proUpsellSubtitle,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: context.evolveColors.muted,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
+        // A subscribed user gets the status + details panel; everyone else gets
+        // the purchase surface. Mirrors the mobile paywall's two states.
+        if (subscription.isPro)
+          ..._proView(context, subscription)
+        else
+          ..._purchaseView(context, subscription),
+      ],
+    );
+  }
+
+  // ------------------------------------------------------------------ Purchase
+
+  List<Widget> _purchaseView(
+    BuildContext context,
+    DesktopSubscriptionState subscription,
+  ) {
+    final busy = subscription.isLoading;
+    return [
+      if (widget.showFeaturePitch) ...[
+        _featurePitch(context),
+        const SizedBox(height: 24),
+        EvolveSectionLabel(t.proModal.featuresHeader, withRule: false),
+        const SizedBox(height: 12),
+        for (final feature in proFeatures()) ...[
+          ProFeatureRow(feature: feature),
+          const SizedBox(height: 14),
+        ],
+        const SizedBox(height: 6),
+      ],
+      _PlatformNote(
+        title: subscription.isSupportedPlatform
+            ? t.settingsPage.billingAppleTitle
+            : t.settingsPage.commercialChannelRequired,
+        detail: subscription.isSupportedPlatform
+            ? subscription.isConfigured
+                  ? t.settingsPage.billingAppleDetail
+                  : t.settingsPage.billingUnavailableDetail
+            : t.settingsPage.billingPlatformUnsupported,
+      ),
+      const SizedBox(height: 16),
+      Row(
+        children: [
+          Expanded(
+            child: _PlanCard(
+              title: t.settingsPage.planMonthly,
+              // Never fall back to the plan NAME here: that renders the title
+              // twice where Guideline 3.1.2 requires the price per period. The
+              // product resolves from the Offering or the direct-product fetch.
+              price: subscription.monthlyProduct?.priceString,
+              selected: _plan == 'monthly',
+              onTap: () => setState(() => _plan = 'monthly'),
             ),
           ),
-          const SizedBox(height: 24),
-          EvolveSectionLabel(t.proModal.featuresHeader, withRule: false),
-          const SizedBox(height: 12),
-          for (final feature in proFeatures()) ...[
-            ProFeatureRow(feature: feature),
-            const SizedBox(height: 14),
-          ],
-          const SizedBox(height: 6),
+          const SizedBox(width: 14),
+          Expanded(
+            child: _PlanCard(
+              title: t.settingsPage.planAnnual,
+              price: subscription.yearlyProduct?.priceString,
+              // Honest per-month + saving from live store prices, or the neutral
+              // "best value" line when no price resolved — never an invented %.
+              detail: _annualSubtitle(subscription) ?? t.settingsPage.bestValue,
+              selected: _plan == 'yearly',
+              onTap: () => setState(() => _plan = 'yearly'),
+            ),
+          ),
         ],
-        _PlatformNote(
-          title: subscription.isSupportedPlatform
-              ? t.settingsPage.billingAppleTitle
-              : t.settingsPage.commercialChannelRequired,
-          detail: subscription.isSupportedPlatform
-              ? subscription.isConfigured
-                    ? t.settingsPage.billingAppleDetail
-                    : t.settingsPage.billingUnavailableDetail
-              : t.settingsPage.billingPlatformUnsupported,
-        ),
-        const SizedBox(height: 16),
-        Row(
+      ),
+      const SizedBox(height: 16),
+      const _ComplianceLinks(),
+      const SizedBox(height: 24),
+      _GroupGrid(
+        twoColumn: widget.twoColumn,
+        groups: [
+          _SettingsGroup(
+            title: t.settingsPage.planManagement,
+            children: [
+              _ActionRow(
+                icon: LucideIcons.sparkles,
+                title: t.settingsPage.activateEvolvePro,
+                detail: t.settingsPage.activateEvolveProStart,
+                onTap: busy ? () {} : () => unawaited(_activate()),
+              ),
+              _ActionRow(
+                icon: LucideIcons.refreshCw,
+                title: t.settingsPage.restorePurchases,
+                detail: t.settingsPage.restorePurchasesDetail,
+                onTap: busy ? () {} : () => unawaited(_restore()),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ];
+  }
+
+  Widget _featurePitch(BuildContext context) {
+    return EvolvePanel(
+      padding: const EdgeInsets.all(20),
+      radius: 20,
+      glowColor: proAccent,
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
           children: [
-            Expanded(
-              child: _PlanCard(
-                title: t.settingsPage.planMonthly,
-                // Never fall back to the plan NAME here: that renders the title
-                // twice where Guideline 3.1.2 requires the price per period.
-                price: monthly?.storeProduct.priceString,
-                selected: _plan == 'monthly',
-                onTap: () => setState(() => _plan = 'monthly'),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: proAccent.withValues(alpha: 0.1),
+                border: Border.all(color: proAccent.withValues(alpha: 0.3)),
+              ),
+              child: const Icon(
+                LucideIcons.sparkles,
+                size: 26,
+                color: proAccent,
               ),
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: _PlanCard(
-                title: t.settingsPage.planAnnual,
-                price: yearly?.storeProduct.priceString,
-                detail: t.settingsPage.bestValue,
-                selected: _plan == 'yearly',
-                onTap: () => setState(() => _plan = 'yearly'),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        const _ComplianceLinks(),
-        const SizedBox(height: 24),
-        _GroupGrid(
-          twoColumn: widget.twoColumn,
-          groups: [
-            _SettingsGroup(
-              title: t.settingsPage.planManagement,
-              children: [
-                _ActionRow(
-                  icon: LucideIcons.sparkles,
-                  title: t.settingsPage.activateEvolvePro,
-                  detail: subscription.isPro
-                      ? t.settingsPage.activateEvolveProActive
-                      : t.settingsPage.activateEvolveProStart,
-                  onTap: subscription.isLoading
-                      ? () {}
-                      : () async {
-                          final package = _plan == 'monthly' ? monthly : yearly;
-                          if (package == null) {
-                            await ref
-                                .read(
-                                  desktopSubscriptionControllerProvider
-                                      .notifier,
-                                )
-                                .refresh();
-                            return;
-                          }
-                          final activated = await ref
-                              .read(
-                                desktopSubscriptionControllerProvider.notifier,
-                              )
-                              .purchase(package);
-                          if (activated && mounted) {
-                            _showProSuccessDialog();
-                          }
-                        },
-                ),
-                _ActionRow(
-                  icon: LucideIcons.refreshCw,
-                  title: t.settingsPage.restorePurchases,
-                  detail: t.settingsPage.restorePurchasesDetail,
-                  onTap: () => unawaited(
-                    ref
-                        .read(desktopSubscriptionControllerProvider.notifier)
-                        .restore(),
-                  ),
-                ),
-                _ActionRow(
-                  icon: LucideIcons.creditCard,
-                  title: t.settingsPage.manageSubscription,
-                  detail: t.settingsPage.manageSubscriptionDetail,
-                  onTap: () => unawaited(
-                    ref
-                        .read(desktopSubscriptionControllerProvider.notifier)
-                        .manageSubscription(),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        if (subscription.message != null) ...[
-          const SizedBox(height: 12),
-          Center(
-            child: Text(
-              subscription.message!,
+            const SizedBox(height: 14),
+            Text(
+              t.settingsPage.proUpsellTitle,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: context.evolveColors.muted.withValues(alpha: 0.8),
-                fontSize: 12,
+                color: context.evolveColors.foreground,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.4,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              t.settingsPage.proUpsellSubtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: context.evolveColors.muted,
+                fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Annual-plan subtitle carrying the two things Guideline 3.1.2 wants beyond
+  /// the headline price: the price per month and a saving that is actually true.
+  /// Both come from the store at runtime, never from constants — Apple's price
+  /// tiers aren't linear across currencies, so a hardcoded "save X%" is false
+  /// abroad. Returns null when no store price resolved, so the caller shows the
+  /// neutral "best value" line instead of inventing a figure.
+  String? _annualSubtitle(DesktopSubscriptionState subscription) {
+    final yearly = subscription.yearlyProduct;
+    final perMonth = yearly?.pricePerMonthString;
+    if (yearly == null || perMonth == null) return null;
+    final monthly = subscription.monthlyProduct;
+    final percent = monthly == null
+        ? null
+        : annualSavingPercent(
+            monthlyPrice: monthly.price,
+            yearlyPrice: yearly.price,
+          );
+    if (percent == null) return t.settingsPage.perMonth(price: perMonth);
+    return t.settingsPage.perMonthWithSavings(
+      price: perMonth,
+      percent: percent,
+    );
+  }
+
+  // ---------------------------------------------------------------- Already Pro
+
+  List<Widget> _proView(
+    BuildContext context,
+    DesktopSubscriptionState subscription,
+  ) {
+    final details = ref
+        .read(desktopSubscriptionControllerProvider.notifier)
+        .proDetails();
+    return [
+      EvolvePanel(
+        padding: const EdgeInsets.all(20),
+        radius: 20,
+        glowColor: EvolveColors.success,
+        child: SizedBox(
+          width: double.infinity,
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: EvolveColors.success.withValues(alpha: 0.1),
+                  border: Border.all(
+                    color: EvolveColors.success.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: const Icon(
+                  LucideIcons.shieldCheck,
+                  size: 26,
+                  color: EvolveColors.success,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                t.settingsPage.youArePro,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: context.evolveColors.foreground,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.4,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                t.settingsPage.proThankYou,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: context.evolveColors.muted,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      const SizedBox(height: 24),
+      _GroupGrid(
+        twoColumn: widget.twoColumn,
+        groups: [
+          _SettingsGroup(
+            title: t.settingsPage.detailsHeader,
+            children: _detailRows(context, details),
+          ),
+          _SettingsGroup(
+            title: t.settingsPage.planManagement,
+            children: [
+              _ActionRow(
+                icon: LucideIcons.creditCard,
+                title: t.settingsPage.manageSubscription,
+                detail: t.settingsPage.manageSubscriptionDetail,
+                onTap: () => unawaited(_manage()),
+              ),
+              _ActionRow(
+                icon: LucideIcons.refreshCw,
+                title: t.settingsPage.restorePurchases,
+                detail: t.settingsPage.restorePurchasesDetail,
+                onTap: subscription.isLoading
+                    ? () {}
+                    : () => unawaited(_restore()),
+              ),
+            ],
           ),
         ],
-      ],
+      ),
+    ];
+  }
+
+  List<Widget> _detailRows(BuildContext context, DesktopProDetails? details) {
+    final planLabel = switch (details?.productIdentifier) {
+      _kMonthlyProductId =>
+        '${t.settingsPage.proName} ${t.settingsPage.planMonthly}',
+      _kYearlyProductId =>
+        '${t.settingsPage.proName} ${t.settingsPage.planAnnual}',
+      _ => t.settingsPage.proActiveName,
+    };
+    final expiration = details?.expiration;
+    final dateFormat = DateFormat(
+      'dd MMMM yyyy',
+      LocaleSettings.currentLocale.languageCode,
     );
+    return [
+      _InfoRow(
+        icon: LucideIcons.sparkles,
+        label: t.settingsPage.planLabel,
+        value: planLabel,
+      ),
+      _InfoRow(
+        icon: LucideIcons.circleCheck,
+        label: t.settingsPage.statusLabel,
+        value: t.settingsPage.statusActive,
+      ),
+      if (expiration != null)
+        _InfoRow(
+          icon: LucideIcons.calendar,
+          label: (details?.willRenew ?? false)
+              ? t.settingsPage.nextRenewal
+              : t.settingsPage.expiresOn,
+          value: dateFormat.format(expiration),
+        ),
+      if (details?.isAppStorePayment ?? false)
+        _InfoRow(
+          icon: LucideIcons.creditCard,
+          label: t.settingsPage.paymentMethod,
+          value: t.settingsPage.paymentMethodValue,
+        ),
+    ];
+  }
+
+  // -------------------------------------------------------------------- Actions
+
+  Future<void> _activate() async {
+    final controller = ref.read(desktopSubscriptionControllerProvider.notifier);
+    var package = _plan == 'monthly'
+        ? ref.read(desktopSubscriptionControllerProvider).monthlyPackage
+        : ref.read(desktopSubscriptionControllerProvider).yearlyPackage;
+
+    // Prices may be showing via the direct-product fallback while no Offering is
+    // published — but a purchase needs a Package. Retry the offering load once,
+    // then purchase if one materialised; otherwise surface the failure.
+    if (package == null) {
+      await controller.refresh();
+      final refreshed = ref.read(desktopSubscriptionControllerProvider);
+      package = _plan == 'monthly'
+          ? refreshed.monthlyPackage
+          : refreshed.yearlyPackage;
+      if (package == null) {
+        if (mounted) {
+          showEvolveToast(
+            context,
+            message: t.subscriptionCtrl.loadOffersFailed,
+            kind: EvolveToastKind.error,
+          );
+        }
+        return;
+      }
+    }
+
+    final result = await controller.purchase(package);
+    if (!mounted) return;
+    switch (result.status) {
+      case DesktopPurchaseStatus.activated:
+        _showProSuccessDialog();
+        break;
+      case DesktopPurchaseStatus.cancelled:
+        break;
+      case DesktopPurchaseStatus.pending:
+        showEvolveToast(
+          context,
+          message: result.message ?? t.subscriptionCtrl.paymentPending,
+        );
+        break;
+      case DesktopPurchaseStatus.registeredNotActive:
+        showEvolveToast(
+          context,
+          message: t.subscriptionCtrl.purchaseRegisteredNotActive,
+        );
+        break;
+      case DesktopPurchaseStatus.failed:
+        showEvolveToast(
+          context,
+          message: result.message ?? t.subscriptionCtrl.purchaseFailedMessage,
+          kind: EvolveToastKind.error,
+        );
+        break;
+    }
+  }
+
+  Future<void> _restore() async {
+    final result = await ref
+        .read(desktopSubscriptionControllerProvider.notifier)
+        .restore();
+    if (!mounted) return;
+    switch (result.status) {
+      case DesktopRestoreStatus.restored:
+        showEvolveToast(
+          context,
+          message: t.subscriptionCtrl.purchasesRestored,
+          kind: EvolveToastKind.success,
+        );
+        break;
+      case DesktopRestoreStatus.noActiveSub:
+        showEvolveToast(
+          context,
+          message: t.subscriptionCtrl.noActiveSubscription,
+        );
+        break;
+      case DesktopRestoreStatus.cancelled:
+        break;
+      case DesktopRestoreStatus.failed:
+        showEvolveToast(
+          context,
+          message: result.message ?? t.subscriptionCtrl.restoreFailedMessage,
+          kind: EvolveToastKind.error,
+        );
+        break;
+    }
+  }
+
+  Future<void> _manage() async {
+    final ok = await ref
+        .read(desktopSubscriptionControllerProvider.notifier)
+        .manageSubscription();
+    if (!ok && mounted) {
+      showEvolveToast(
+        context,
+        message: t.subscriptionCtrl.cantOpenApple,
+        kind: EvolveToastKind.error,
+      );
+    }
   }
 
   void _showProSuccessDialog() {
@@ -3937,7 +4212,13 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
                       letterSpacing: -0.2,
                     ),
                   ),
-                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                    // In the modal paywall this closes it so the user lands back
+                    // on the unlocked feature; in the Settings section it's null
+                    // and the surface flips to the "already Pro" panel in place.
+                    widget.onProActivated?.call();
+                  },
                   child: Text(t.settingsPage.proStartJourney),
                 ),
               ),
@@ -3981,12 +4262,12 @@ class _ComplianceLinks extends StatelessWidget {
             _LegalLink(label: t.settingsPage.privacyPolicy, url: privacyPolicy),
             Text(
               '  •  ',
-              style: TextStyle(
-                color: context.evolveColors.muted,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: context.evolveColors.muted, fontSize: 12),
             ),
-            _LegalLink(label: t.settingsPage.termsEula, url: LegalUrls.appleEula),
+            _LegalLink(
+              label: t.settingsPage.termsEula,
+              url: LegalUrls.appleEula,
+            ),
           ],
         ),
       ],
@@ -4005,9 +4286,8 @@ class _LegalLink extends StatelessWidget {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: () => unawaited(
-          launchUrl(url, mode: LaunchMode.externalApplication),
-        ),
+        onTap: () =>
+            unawaited(launchUrl(url, mode: LaunchMode.externalApplication)),
         child: Text(
           label,
           style: TextStyle(

@@ -1134,6 +1134,19 @@ class _Translations$settingsPage$es extends Translations$settingsPage$en {
 	@override String get systemSection => 'Sistema';
 	@override String get appLogsTitle => 'Registros de la app';
 	@override String get appLogsDetail => 'Ver los registros de diagnóstico de esta sesión';
+	@override String perMonth({required Object price}) => '${price} al mes';
+	@override String perMonthWithSavings({required Object price, required Object percent}) => '${price} al mes · Ahorra un ${percent}%';
+	@override String get detailsHeader => 'Detalles de la suscripción';
+	@override String get statusLabel => 'Estado';
+	@override String get statusActive => 'Activo';
+	@override String get planLabel => 'Plan';
+	@override String get nextRenewal => 'Próxima renovación';
+	@override String get expiresOn => 'Caduca el';
+	@override String get paymentMethod => 'Método de pago';
+	@override String get paymentMethodValue => 'Apple Pay / App Store';
+	@override String get proActiveName => 'Evolve PRO activo';
+	@override String get youArePro => 'Eres usuario PRO';
+	@override String get proThankYou => 'Gracias por apoyar el desarrollo de Evolve.';
 }
 
 // Path: consent
@@ -1249,13 +1262,27 @@ class _Translations$subscriptionCtrl$es extends Translations$subscriptionCtrl$en
 	@override String get purchaseIncomplete => 'Compra no completada.';
 	@override String get cantOpenApple => 'No se pudo abrir la gestión de suscripciones de Apple.';
 	@override String get macOnly => 'Las compras dentro de la app están disponibles en el cliente de macOS.';
-	@override String get loadOffersFailed => 'No se pudieron cargar las ofertas de RevenueCat.';
+	@override String get loadOffersFailed => 'No se pudieron cargar los planes de suscripción. Comprueba tu conexión e inténtalo de nuevo.';
 	@override String get proActivated => 'Evolve Pro activado.';
 	@override String get purchasesRestored => 'Compras restauradas.';
 	@override String get noActiveSub => 'No se encontró ninguna suscripción Pro activa.';
 	@override String get restoreFailed => 'No se pudieron restaurar las compras.';
-	@override String get configKey => 'Configura la clave pública de RevenueCat del cliente de escritorio.';
+	@override String get configKey => 'Las compras dentro de la app no están disponibles temporalmente.';
 	@override String get loginFirst => 'Inicia sesión antes de gestionar Evolve Pro.';
+	@override String get paidAppsAgreement => 'El acuerdo de aplicaciones pagas no está activo. El titular de la cuenta debe aceptar el acuerdo de aplicaciones pagas en App Store Connect.';
+	@override String get alreadyPurchased => 'Esta suscripción ya está comprada. Utilice Restaurar compras para reactivar el acceso Pro.';
+	@override String get purchasesNotAllowed => 'No se permiten compras dentro de la aplicación en este dispositivo ni en la cuenta de Apple.';
+	@override String get planUnavailable => 'El plan seleccionado no está disponible para su compra. Vuelve a intentarlo más tarde.';
+	@override String get paymentPending => 'El pago está pendiente. El acceso Pro se activará cuando Apple confirme la transacción.';
+	@override String get connectionUnavailable => 'Conexión no disponible. Verifique su red e inténtelo nuevamente.';
+	@override String get linkedToAnotherAccount => 'Esta compra ya está vinculada a otra cuenta de Evolve. Inicie sesión con esa cuenta o comuníquese con el soporte.';
+	@override String get purchaseInProgress => 'Ya hay una operación de compra en curso. Espere unos segundos.';
+	@override String get restoreInProgress => 'Ya hay una restauración en curso. Espere unos segundos.';
+	@override String get purchaseFailedMessage => 'No se pudo completar la compra. Vuelve a intentarlo en breve.';
+	@override String get restoreFailedMessage => 'No se pudieron restaurar las compras. Vuelve a intentarlo en breve.';
+	@override String get purchaseRegisteredNotActive => 'Compra registrada, pero la suscripción Pro aún no está activa. Espere unos segundos y use Restaurar compras.';
+	@override String get noActiveSubscription => 'No se encontró ninguna suscripción activa a Evolve PRO en este Apple ID. Asegúrate de usar el mismo Apple ID de la compra.';
+	@override String get invalidConfig => 'Configuración de compras no válida. Inténtalo de nuevo más tarde o contacta con soporte.';
 }
 
 // Path: authCtrl
@@ -1408,6 +1435,12 @@ class _Translations$coachSettings$es extends Translations$coachSettings$en {
 	@override String get standardUnavailableNote => 'Evolve AI no está disponible en esta versión. Conecta tu cuenta de OpenRouter o usa un modelo local.';
 	@override String get standardPrivateNote => 'Evolve AI necesita una cuenta de Evolve, y el modo Privado no guarda ninguna. Conecta tu cuenta de OpenRouter o usa un modelo local: aquí ambos siguen funcionando.';
 	@override String get accountModeNote => '¿Prefieres tu propia clave de OpenRouter o un modelo local? Están disponibles en el modo Privado.';
+	@override String get localGroupLabel => 'Local — en este Mac';
+	@override String get useCustomServer => 'Usar un servidor personalizado…';
+	@override String get cardLive => 'Activo';
+	@override String get cardOff => 'Apagado';
+	@override String get engineOpenRouter => 'OpenRouter';
+	@override String get engineOpenRouterHint => 'Tu propia clave · gratis';
 }
 
 // Path: tour
@@ -2756,6 +2789,19 @@ extension on TranslationsEs {
 			'settingsPage.systemSection' => 'Sistema',
 			'settingsPage.appLogsTitle' => 'Registros de la app',
 			'settingsPage.appLogsDetail' => 'Ver los registros de diagnóstico de esta sesión',
+			'settingsPage.perMonth' => ({required Object price}) => '${price} al mes',
+			'settingsPage.perMonthWithSavings' => ({required Object price, required Object percent}) => '${price} al mes · Ahorra un ${percent}%',
+			'settingsPage.detailsHeader' => 'Detalles de la suscripción',
+			'settingsPage.statusLabel' => 'Estado',
+			'settingsPage.statusActive' => 'Activo',
+			'settingsPage.planLabel' => 'Plan',
+			'settingsPage.nextRenewal' => 'Próxima renovación',
+			'settingsPage.expiresOn' => 'Caduca el',
+			'settingsPage.paymentMethod' => 'Método de pago',
+			'settingsPage.paymentMethodValue' => 'Apple Pay / App Store',
+			'settingsPage.proActiveName' => 'Evolve PRO activo',
+			'settingsPage.youArePro' => 'Eres usuario PRO',
+			'settingsPage.proThankYou' => 'Gracias por apoyar el desarrollo de Evolve.',
 			'consent.onboardingTitle' => 'Tu privacidad importa',
 			'consent.continueButton' => 'Continuar',
 			'notifications.actionDone' => 'Hecho',
@@ -2799,13 +2845,27 @@ extension on TranslationsEs {
 			'subscriptionCtrl.purchaseIncomplete' => 'Compra no completada.',
 			'subscriptionCtrl.cantOpenApple' => 'No se pudo abrir la gestión de suscripciones de Apple.',
 			'subscriptionCtrl.macOnly' => 'Las compras dentro de la app están disponibles en el cliente de macOS.',
-			'subscriptionCtrl.loadOffersFailed' => 'No se pudieron cargar las ofertas de RevenueCat.',
+			'subscriptionCtrl.loadOffersFailed' => 'No se pudieron cargar los planes de suscripción. Comprueba tu conexión e inténtalo de nuevo.',
 			'subscriptionCtrl.proActivated' => 'Evolve Pro activado.',
 			'subscriptionCtrl.purchasesRestored' => 'Compras restauradas.',
 			'subscriptionCtrl.noActiveSub' => 'No se encontró ninguna suscripción Pro activa.',
 			'subscriptionCtrl.restoreFailed' => 'No se pudieron restaurar las compras.',
-			'subscriptionCtrl.configKey' => 'Configura la clave pública de RevenueCat del cliente de escritorio.',
+			'subscriptionCtrl.configKey' => 'Las compras dentro de la app no están disponibles temporalmente.',
 			'subscriptionCtrl.loginFirst' => 'Inicia sesión antes de gestionar Evolve Pro.',
+			'subscriptionCtrl.paidAppsAgreement' => 'El acuerdo de aplicaciones pagas no está activo. El titular de la cuenta debe aceptar el acuerdo de aplicaciones pagas en App Store Connect.',
+			'subscriptionCtrl.alreadyPurchased' => 'Esta suscripción ya está comprada. Utilice Restaurar compras para reactivar el acceso Pro.',
+			'subscriptionCtrl.purchasesNotAllowed' => 'No se permiten compras dentro de la aplicación en este dispositivo ni en la cuenta de Apple.',
+			'subscriptionCtrl.planUnavailable' => 'El plan seleccionado no está disponible para su compra. Vuelve a intentarlo más tarde.',
+			'subscriptionCtrl.paymentPending' => 'El pago está pendiente. El acceso Pro se activará cuando Apple confirme la transacción.',
+			'subscriptionCtrl.connectionUnavailable' => 'Conexión no disponible. Verifique su red e inténtelo nuevamente.',
+			'subscriptionCtrl.linkedToAnotherAccount' => 'Esta compra ya está vinculada a otra cuenta de Evolve. Inicie sesión con esa cuenta o comuníquese con el soporte.',
+			'subscriptionCtrl.purchaseInProgress' => 'Ya hay una operación de compra en curso. Espere unos segundos.',
+			'subscriptionCtrl.restoreInProgress' => 'Ya hay una restauración en curso. Espere unos segundos.',
+			'subscriptionCtrl.purchaseFailedMessage' => 'No se pudo completar la compra. Vuelve a intentarlo en breve.',
+			'subscriptionCtrl.restoreFailedMessage' => 'No se pudieron restaurar las compras. Vuelve a intentarlo en breve.',
+			'subscriptionCtrl.purchaseRegisteredNotActive' => 'Compra registrada, pero la suscripción Pro aún no está activa. Espere unos segundos y use Restaurar compras.',
+			'subscriptionCtrl.noActiveSubscription' => 'No se encontró ninguna suscripción activa a Evolve PRO en este Apple ID. Asegúrate de usar el mismo Apple ID de la compra.',
+			'subscriptionCtrl.invalidConfig' => 'Configuración de compras no válida. Inténtalo de nuevo más tarde o contacta con soporte.',
 			'authCtrl.appleNoToken' => 'Apple no devolvió un token de identidad.',
 			'authCtrl.appleAuthFailed' => 'Error de autenticación de Apple.',
 			'authCtrl.cantOpenBrowser' => 'No se pudo abrir el navegador del sistema.',
@@ -2824,6 +2884,8 @@ extension on TranslationsEs {
 			'proModal.unlimitedTitle' => 'Hábitos ilimitados',
 			'proModal.unlimitedDesc' => 'Crea y rastrea todos los hábitos que quieras sin límites.',
 			'proModal.maybeLater' => 'Quizá más tarde',
+			_ => null,
+		} ?? switch (path) {
 			'proModal.viewPlans' => 'Ver planes Pro',
 			'appLogs.title' => 'Registros de la App',
 			'appLogs.copiedToClipboard' => 'Registros copiados al portapapeles',
@@ -2851,8 +2913,6 @@ extension on TranslationsEs {
 			'coachSettings.backendLocal' => 'Local · privado',
 			'coachSettings.cloudDesc' => 'Conecta tu propia cuenta de OpenRouter y paga directamente al proveedor. Gratis: no necesitas suscripción. El contexto que compartes se envía al proveedor.',
 			'coachSettings.localDesc' => 'Tu propio modelo vía Ollama, LM Studio o cualquier servidor compatible con OpenAI. Nada sale de este dispositivo.',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.presetLabel' => 'Servidor',
 			'coachSettings.presetOllama' => 'Ollama',
 			'coachSettings.presetLmStudio' => 'LM Studio',
@@ -2924,6 +2984,12 @@ extension on TranslationsEs {
 			'coachSettings.standardUnavailableNote' => 'Evolve AI no está disponible en esta versión. Conecta tu cuenta de OpenRouter o usa un modelo local.',
 			'coachSettings.standardPrivateNote' => 'Evolve AI necesita una cuenta de Evolve, y el modo Privado no guarda ninguna. Conecta tu cuenta de OpenRouter o usa un modelo local: aquí ambos siguen funcionando.',
 			'coachSettings.accountModeNote' => '¿Prefieres tu propia clave de OpenRouter o un modelo local? Están disponibles en el modo Privado.',
+			'coachSettings.localGroupLabel' => 'Local — en este Mac',
+			'coachSettings.useCustomServer' => 'Usar un servidor personalizado…',
+			'coachSettings.cardLive' => 'Activo',
+			'coachSettings.cardOff' => 'Apagado',
+			'coachSettings.engineOpenRouter' => 'OpenRouter',
+			'coachSettings.engineOpenRouterHint' => 'Tu propia clave · gratis',
 			'tour.back' => 'Atrás',
 			'tour.next' => 'Siguiente',
 			'tour.continueLabel' => 'Continuar',

@@ -1,5 +1,7 @@
 // Item 2 — Pro upsell modal. Asserts the Italian pitch copy (reused from mobile)
-// and that the CTA deep-links to Settings while "maybe later" just dismisses.
+// and that the CTA opens the paywall dialog in place (it used to deep-link into
+// Settings, which in Private mode landed on Profile / was filtered out), while
+// "maybe later" just dismisses.
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
 import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
@@ -36,7 +38,7 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
   }
 
-  testWidgets('opens with the pitch and deep-links to Settings', (
+  testWidgets('opens with the pitch and its CTA opens the paywall', (
     tester,
   ) async {
     await bigSurface(tester);
@@ -59,24 +61,27 @@ void main() {
     // gate a free user actually meets, so it leads.
     expect(
       tester.getTopLeft(find.text('Abitudini Illimitate')).dy,
-      lessThan(tester.getTopLeft(find.text('AI Coach, senza configurazione')).dy),
+      lessThan(
+        tester.getTopLeft(find.text('AI Coach, senza configurazione')).dy,
+      ),
       reason: 'the coach must not head the Pro pitch — it is free via BYOK',
     );
 
     final container = containerFrom(tester);
-    expect(
-      container.read(navigationControllerProvider),
-      DesktopSection.overview,
-    );
 
-    // CTA closes the dialog and navigates to Settings.
+    // The CTA closes the pitch and opens the paywall dialog directly — no
+    // deep-link through Settings (which in Private mode landed on Profile).
     await tester.tap(find.text('Vedi i piani Pro'));
     await tester.pumpAndSettle();
 
     expect(find.text('Sblocca Evolve Pro'), findsNothing);
+    // The auto-renewal disclosure is unique to the paywall surface: its presence
+    // proves the plans dialog opened.
+    expect(find.text(t.settingsPage.renewalDisclaimer), findsOneWidget);
+    // It opens in place; the app must not have navigated anywhere.
     expect(
       container.read(navigationControllerProvider),
-      DesktopSection.settings,
+      DesktopSection.overview,
     );
   });
 

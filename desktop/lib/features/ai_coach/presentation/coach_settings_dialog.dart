@@ -15,9 +15,9 @@ import '../domain/coach_config.dart';
 import '../domain/local_server_target.dart';
 import 'start_local_server_button.dart';
 
-/// Opens the reusable coach-engine configuration dialog (backend, local server,
-/// model discovery, system prompt, temperature). Used from both the chat header
-/// and the Settings page.
+/// Opens the reusable coach-engine configuration dialog (engine cards, local
+/// server, model discovery, system prompt, temperature). Used from both the chat
+/// header and the Settings page.
 Future<void> showCoachSettingsDialog(BuildContext context) {
   return showEvolveDialog<void>(
     context: context,
@@ -40,6 +40,12 @@ class _CoachSettingsDialogState extends ConsumerState<CoachSettingsDialog> {
   final FocusNode _baseUrlFocus = FocusNode();
   bool _advancedOpen = false;
 
+  /// Whether the custom-server fields (free-form base URL + manual model) are
+  /// revealed. Named products hide the URL entirely — their card IS the URL — so
+  /// this is true only when the user asked for a custom endpoint, or a previously
+  /// saved custom URL is already active.
+  bool _customExpanded = false;
+
   @override
   void initState() {
     super.initState();
@@ -50,6 +56,12 @@ class _CoachSettingsDialogState extends ConsumerState<CoachSettingsDialog> {
       text: config.systemPromptOverride ?? '',
     );
     _advancedOpen = config.systemPromptOverride != null;
+    // A saved custom endpoint (one that matches no named preset) opens straight
+    // into its editable fields rather than looking like an unselected picker.
+    _customExpanded =
+        config.backend == CoachBackendKind.local &&
+        LocalServerPreset.match(config.localBaseUrl) ==
+            LocalServerPreset.custom;
   }
 
   @override
@@ -80,34 +92,39 @@ class _CoachSettingsDialogState extends ConsumerState<CoachSettingsDialog> {
   /// tap) can drop an edit — the fields also commit live/on-blur, this is the
   /// belt-and-suspenders sweep for the Save button.
   void _commitAll() {
-    _commitBaseUrl();
+    if (_customExpanded) _commitBaseUrl();
     _commitSystemPrompt();
   }
 
-  void _applyPreset(LocalServerPreset preset) {
-    if (preset == LocalServerPreset.custom) {
-      // "Custom" isn't a URL — move focus to the field so the user can type.
-      _baseUrlFocus.requestFocus();
-      return;
-    }
+  /// Switch to a named local product in one tap: point the local endpoint at its
+  /// URL and make local the active backend. The remembered model for that URL
+  /// follows automatically (per-product memory), and discovery re-runs because
+  /// the model provider is keyed by base URL.
+  void _selectLocalProduct(LocalServerPreset preset) {
     _baseUrl.text = preset.baseUrl;
-    _controller.setLocalBaseUrl(preset.baseUrl);
+    _controller.useLocalServer(preset.baseUrl);
+    setState(() => _customExpanded = false);
+  }
+
+  void _useCustomServer() {
+    _controller.setBackend(CoachBackendKind.local);
+    setState(() => _customExpanded = true);
+    _baseUrlFocus.requestFocus();
   }
 
   @override
   Widget build(BuildContext context) {
     final config = ref.watch(coachConfigProvider);
     // What will actually serve — not what is persisted. In Private mode a stored
-    // Standard choice resolves to BYOK, and the dialog must show the section the
+    // Standard choice resolves to BYOK, and the dialog must show the engine the
     // user can act on rather than one that can only fail.
     final backend = ref.watch(effectiveCoachBackendProvider);
     final standardStatus = ref.watch(standardCoachStatusProvider);
-    // Private mode keeps no account, so Standard is not a choice there — offering
-    // it would be offering a mode that cannot answer. The note in its place
-    // explains why and points at the two engines that do work.
+    // Private mode keeps no account, so Standard is not a choice there. Its
+    // absence is what flips the dialog from the single managed engine to the
+    // BYOK + local engine cards.
     final offerStandard =
         standardStatus != StandardCoachStatus.unavailablePrivate;
-    final colors = context.evolveColors;
 
     return EvolveAlertDialog(
       maxWidth: 560,
@@ -119,64 +136,24 @@ class _CoachSettingsDialogState extends ConsumerState<CoachSettingsDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // The backend picker is mode-scoped. In account mode the coach is
-          // Standard-only — bring-your-own-key and local models are Private-mode
-          // features — so there is nothing to pick, and the note below says where
-          // they live. In Private mode those two self-served engines are the only
-          // choices (Standard needs an account Private mode does not keep).
-          if (!offerStandard) ...[
-            EvolveSegmentedControl<CoachBackendKind>(
-              segments: {
-                CoachBackendKind.cloud: t.coachSettings.backendCloud,
-                CoachBackendKind.local: t.coachSettings.backendLocal,
-              },
-              selected: backend,
-              onSelected: _controller.setBackend,
-            ),
-            const SizedBox(height: 12),
-          ],
-          Text(
-            switch (backend) {
-              CoachBackendKind.local => t.coachSettings.localDesc,
-              CoachBackendKind.standard => t.coachSettings.standardDesc,
-              CoachBackendKind.cloud => t.coachSettings.cloudDesc,
-            },
-            style: TextStyle(
-              color: colors.muted,
-              fontSize: 12.5,
-              fontWeight: FontWeight.w500,
-              height: 1.45,
-            ),
-          ),
-          if (backend == CoachBackendKind.standard) ...[
-            const SizedBox(height: 18),
-            _StandardSection(status: standardStatus),
-            const SizedBox(height: 12),
-            Text(
-              t.coachSettings.accountModeNote,
-              style: TextStyle(
-                color: colors.muted,
-                fontSize: 12.5,
-                fontWeight: FontWeight.w500,
-                height: 1.45,
-              ),
-            ),
-          ],
-          if (backend == CoachBackendKind.cloud) ...[
-            const SizedBox(height: 18),
-            const _CloudApiKeySection(),
-          ],
-          if (backend == CoachBackendKind.local) ...[
-            const SizedBox(height: 18),
-            _LocalServerSection(
+          if (offerStandard)
+            _StandardEngine(status: standardStatus)
+          else
+            _PrivateEngines(
               config: config,
+              backend: backend,
+              customExpanded: _customExpanded,
               baseUrlController: _baseUrl,
               baseUrlFocus: _baseUrlFocus,
               manualModelController: _manualModel,
+              onSelectCloud: () {
+                _controller.setBackend(CoachBackendKind.cloud);
+                setState(() => _customExpanded = false);
+              },
+              onSelectProduct: _selectLocalProduct,
+              onUseCustomServer: _useCustomServer,
               onCommitBaseUrl: _commitBaseUrl,
-              onApplyPreset: _applyPreset,
             ),
-          ],
           const SizedBox(height: 18),
           _AdvancedSection(
             open: _advancedOpen,
@@ -200,47 +177,19 @@ class _CoachSettingsDialogState extends ConsumerState<CoachSettingsDialog> {
   }
 }
 
-/// Standard block: what the Evolve Pro subscription buys, and — when it cannot
-/// serve — which of the two free engines to use instead.
-///
-/// Deliberately has no key field, no URL, and no model picker. That absence is
-/// the point: Guideline 3.1.1 rejected the app because paid functionality was
-/// enabled by a key the user pasted. Here the purchase is the only unlock, and
-/// there is nothing to configure.
-class _StandardSection extends StatelessWidget {
-  const _StandardSection({required this.status});
+/// Account-mode engine: a single Evolve AI card carrying its subscription status,
+/// plus the note that says where BYOK/local live (Private mode). No key field, no
+/// URL, no model picker — that absence is the Guideline 3.1.1 shape: the purchase
+/// is the only unlock, and there is nothing here to configure.
+class _StandardEngine extends StatelessWidget {
+  const _StandardEngine({required this.status});
 
   final StandardCoachStatus status;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.evolveColors;
-    final ready = status == StandardCoachStatus.ready;
-
-    final (label, pillColor, icon) = switch (status) {
-      StandardCoachStatus.ready => (
-        t.coachSettings.standardStatusReady,
-        EvolveColors.success,
-        LucideIcons.circleCheck,
-      ),
-      StandardCoachStatus.needsPro => (
-        t.coachSettings.standardStatusNeedsPro,
-        EvolveColors.amber,
-        LucideIcons.sparkles,
-      ),
-      StandardCoachStatus.needsSignIn => (
-        t.coachSettings.standardStatusNeedsSignIn,
-        EvolveColors.amber,
-        LucideIcons.logIn,
-      ),
-      StandardCoachStatus.unavailablePrivate ||
-      StandardCoachStatus.unavailableUnconfigured => (
-        t.coachSettings.standardStatusUnavailable,
-        EvolveColors.destructive,
-        LucideIcons.circleX,
-      ),
-    };
-
+    final (statusColor, statusLabel) = _standardStatusChip(status);
     final note = switch (status) {
       StandardCoachStatus.ready => null,
       StandardCoachStatus.needsPro => t.coachSettings.standardNeedsProNote,
@@ -255,27 +204,382 @@ class _StandardSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Expanded(child: EvolveFieldLabel(t.coachSettings.standardSection)),
-            StatusPill(label: label, color: pillColor, icon: icon),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          // The one model the proxy runs. The server pins it; this only says so.
-          t.coachSettings.activeStandard(model: kStandardCoachModel),
-          style: TextStyle(
-            color: ready ? colors.foreground : colors.muted,
-            fontSize: 12.5,
-            fontWeight: FontWeight.w600,
-          ),
+        _EngineCard(
+          icon: LucideIcons.sparkles,
+          iconColor: EvolveColors.violet,
+          name: t.coachSettings.backendStandard,
+          subtitle: kStandardCoachModel,
+          selected: true,
+          statusColor: statusColor,
+          statusLabel: statusLabel,
+          onTap: null,
         ),
         if (note != null) ...[
           const SizedBox(height: 12),
           _WarningNote(text: note),
         ],
+        const SizedBox(height: 12),
+        Text(
+          t.coachSettings.accountModeNote,
+          style: TextStyle(
+            color: colors.muted,
+            fontSize: 12.5,
+            fontWeight: FontWeight.w500,
+            height: 1.45,
+          ),
+        ),
       ],
+    );
+  }
+}
+
+/// The (colour, label) chip for an Evolve AI status: green when it can answer,
+/// amber for a one-off fix the user owns (sign in / subscribe), red for a state
+/// they cannot.
+(Color, String) _standardStatusChip(StandardCoachStatus status) =>
+    switch (status) {
+      StandardCoachStatus.ready => (
+        EvolveColors.success,
+        t.coachSettings.standardStatusReady,
+      ),
+      StandardCoachStatus.needsPro => (
+        EvolveColors.amber,
+        t.coachSettings.standardStatusNeedsPro,
+      ),
+      StandardCoachStatus.needsSignIn => (
+        EvolveColors.amber,
+        t.coachSettings.standardStatusNeedsSignIn,
+      ),
+      StandardCoachStatus.unavailablePrivate ||
+      StandardCoachStatus.unavailableUnconfigured => (
+        EvolveColors.destructive,
+        t.coachSettings.standardStatusUnavailable,
+      ),
+    };
+
+/// Private-mode engines: the OpenRouter (BYOK) card, the two local product cards
+/// with live status, a custom-server link, and the detail panel for whichever
+/// engine is active. This is the whole point of the redesign — Ollama and
+/// LM Studio are first-class, one-tap picks here, not options buried behind a
+/// preset dropdown.
+class _PrivateEngines extends ConsumerWidget {
+  const _PrivateEngines({
+    required this.config,
+    required this.backend,
+    required this.customExpanded,
+    required this.baseUrlController,
+    required this.baseUrlFocus,
+    required this.manualModelController,
+    required this.onSelectCloud,
+    required this.onSelectProduct,
+    required this.onUseCustomServer,
+    required this.onCommitBaseUrl,
+  });
+
+  final CoachConfig config;
+  final CoachBackendKind backend;
+  final bool customExpanded;
+  final TextEditingController baseUrlController;
+  final FocusNode baseUrlFocus;
+  final TextEditingController manualModelController;
+  final VoidCallback onSelectCloud;
+  final ValueChanged<LocalServerPreset> onSelectProduct;
+  final VoidCallback onUseCustomServer;
+  final VoidCallback onCommitBaseUrl;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.evolveColors;
+    final isLocal = backend == CoachBackendKind.local;
+    final activePreset = LocalServerPreset.match(config.localBaseUrl);
+    final hasKey = ref.watch(coachApiKeyProvider).asData?.value != null;
+
+    // Both products are probed, so both cards show their own live/off state — the
+    // detail no longer decides which single server we may look at.
+    final ollamaReachable = ref
+        .watch(coachLocalReachableProvider(LocalServerPreset.ollama.baseUrl))
+        .asData
+        ?.value;
+    final lmStudioReachable = ref
+        .watch(coachLocalReachableProvider(LocalServerPreset.lmStudio.baseUrl))
+        .asData
+        ?.value;
+
+    final (ollamaColor, ollamaLabel) = _localStatusChip(context, ollamaReachable);
+    final (lmColor, lmLabel) = _localStatusChip(context, lmStudioReachable);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _EngineCard(
+          icon: LucideIcons.cloud,
+          iconColor: EvolveColors.cyan,
+          name: t.coachSettings.engineOpenRouter,
+          subtitle: t.coachSettings.engineOpenRouterHint,
+          selected: backend == CoachBackendKind.cloud,
+          statusColor: hasKey ? EvolveColors.success : EvolveColors.amber,
+          statusLabel: hasKey
+              ? t.ai.apiKey.statusSet
+              : t.ai.apiKey.statusMissing,
+          onTap: onSelectCloud,
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Icon(LucideIcons.monitor, size: 14, color: colors.muted),
+            const SizedBox(width: 7),
+            Text(
+              t.coachSettings.localGroupLabel,
+              style: TextStyle(
+                color: colors.muted,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _EngineCard(
+                icon: LucideIcons.cpu,
+                iconColor: EvolveColors.violet,
+                name: t.coachSettings.presetOllama,
+                selected:
+                    isLocal &&
+                    !customExpanded &&
+                    activePreset == LocalServerPreset.ollama,
+                statusColor: ollamaColor,
+                statusLabel: ollamaLabel,
+                onTap: () => onSelectProduct(LocalServerPreset.ollama),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _EngineCard(
+                icon: LucideIcons.cpu,
+                iconColor: EvolveColors.violet,
+                name: t.coachSettings.presetLmStudio,
+                selected:
+                    isLocal &&
+                    !customExpanded &&
+                    activePreset == LocalServerPreset.lmStudio,
+                statusColor: lmColor,
+                statusLabel: lmLabel,
+                onTap: () => onSelectProduct(LocalServerPreset.lmStudio),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: _CustomServerLink(
+            active: isLocal && customExpanded,
+            onTap: onUseCustomServer,
+          ),
+        ),
+        if (backend == CoachBackendKind.cloud) ...[
+          const SizedBox(height: 16),
+          const _CloudApiKeySection(),
+        ],
+        if (isLocal) ...[
+          const SizedBox(height: 16),
+          _LocalDetail(
+            config: config,
+            customExpanded: customExpanded,
+            baseUrlController: baseUrlController,
+            baseUrlFocus: baseUrlFocus,
+            manualModelController: manualModelController,
+            onCommitBaseUrl: onCommitBaseUrl,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// The (colour, label) chip for a local product card: green "Live" when its port
+/// answers, muted "Off" when it doesn't, muted "Checking…" while the probe runs.
+(Color, String) _localStatusChip(BuildContext context, bool? reachable) {
+  if (reachable == null) {
+    return (context.evolveColors.muted, t.coachSettings.statusChecking);
+  }
+  return reachable
+      ? (EvolveColors.success, t.coachSettings.cardLive)
+      : (context.evolveColors.muted, t.coachSettings.cardOff);
+}
+
+/// A selectable engine card: icon, name, optional subtitle, and a status
+/// dot+label. Selection is a 2px accent ring (and a check) — deliberately
+/// independent of the status dot, because a card can be the active engine while
+/// its server is off.
+class _EngineCard extends StatefulWidget {
+  const _EngineCard({
+    required this.icon,
+    required this.iconColor,
+    required this.name,
+    required this.selected,
+    required this.statusColor,
+    required this.statusLabel,
+    required this.onTap,
+    this.subtitle,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final String name;
+  final String? subtitle;
+  final bool selected;
+  final Color statusColor;
+  final String statusLabel;
+
+  /// Null renders a non-interactive card (the account-mode Evolve AI card, which
+  /// is the only engine and so nothing to switch to).
+  final VoidCallback? onTap;
+
+  @override
+  State<_EngineCard> createState() => _EngineCardState();
+}
+
+class _EngineCardState extends State<_EngineCard> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.evolveColors;
+    final accent = context.evolveAccent;
+    final interactive = widget.onTap != null;
+
+    final content = AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: widget.selected
+            ? accent.withValues(alpha: 0.06)
+            : colors.panel.withValues(alpha: _hovered ? 0.5 : 0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: widget.selected
+              ? accent
+              : (_hovered ? colors.borderStrong : colors.border),
+          width: widget.selected ? 2 : 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(widget.icon, size: 20, color: widget.iconColor),
+              const Spacer(),
+              if (widget.selected)
+                Icon(LucideIcons.circleCheck, size: 17, color: accent),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            widget.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: colors.foreground,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (widget.subtitle != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              widget.subtitle!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: colors.muted,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: widget.statusColor,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                widget.statusLabel,
+                style: TextStyle(
+                  color: widget.statusColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    if (!interactive) return content;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        behavior: HitTestBehavior.opaque,
+        child: content,
+      ),
+    );
+  }
+}
+
+/// The "Use a custom server…" affordance below the product cards — reveals the
+/// free-form base-URL + manual-model fields for llama.cpp, Jan, or a LAN box.
+class _CustomServerLink extends StatelessWidget {
+  const _CustomServerLink({required this.active, required this.onTap});
+
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.evolveColors;
+    final color = active ? context.evolveAccent : colors.muted;
+    return TextButton(
+      onPressed: onTap,
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        minimumSize: const Size(0, 30),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            active ? LucideIcons.chevronDown : LucideIcons.chevronRight,
+            size: 14,
+            color: color,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            t.coachSettings.useCustomServer,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -478,24 +782,26 @@ class _WarningNote extends StatelessWidget {
   }
 }
 
-/// Local-server block: preset, base URL, live status + remote badge, and model
-/// discovery (auto-list with a manual fallback).
-class _LocalServerSection extends ConsumerWidget {
-  const _LocalServerSection({
+/// Detail panel for the active local product: product name + live status, an
+/// in-place Start button when the server is down, the free-form base URL only
+/// when the custom path is open, and model discovery (auto-list with a manual
+/// fallback).
+class _LocalDetail extends ConsumerWidget {
+  const _LocalDetail({
     required this.config,
+    required this.customExpanded,
     required this.baseUrlController,
     required this.baseUrlFocus,
     required this.manualModelController,
     required this.onCommitBaseUrl,
-    required this.onApplyPreset,
   });
 
   final CoachConfig config;
+  final bool customExpanded;
   final TextEditingController baseUrlController;
   final FocusNode baseUrlFocus;
   final TextEditingController manualModelController;
   final VoidCallback onCommitBaseUrl;
-  final ValueChanged<LocalServerPreset> onApplyPreset;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -504,73 +810,68 @@ class _LocalServerSection extends ConsumerWidget {
     final target = LocalServerTarget.forPreset(preset);
     final isRemote = !config.localIsPrivate;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: EvolveSelect<LocalServerPreset>(
-                label: t.coachSettings.presetLabel,
-                expand: true,
-                value: preset,
-                options: [
-                  EvolveSelectOption(
-                    value: LocalServerPreset.ollama,
-                    label: t.coachSettings.presetOllama,
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colors.panel.withValues(alpha: 0.25),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.border.withValues(alpha: 0.6)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  target.displayName,
+                  style: TextStyle(
+                    color: colors.foreground,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
                   ),
-                  EvolveSelectOption(
-                    value: LocalServerPreset.lmStudio,
-                    label: t.coachSettings.presetLmStudio,
-                  ),
-                  EvolveSelectOption(
-                    value: LocalServerPreset.custom,
-                    label: t.coachSettings.presetCustom,
-                  ),
-                ],
-                onChanged: onApplyPreset,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            if (isRemote) ...[
-              StatusPill(
-                label: t.coachSettings.remoteBadge,
-                color: EvolveColors.amber,
-                icon: LucideIcons.globe,
-              ),
-              const SizedBox(width: 8),
+              if (isRemote) ...[
+                StatusPill(
+                  label: t.coachSettings.remoteBadge,
+                  color: EvolveColors.amber,
+                  icon: LucideIcons.globe,
+                ),
+                const SizedBox(width: 8),
+              ],
+              _ReachabilityPill(baseUrl: config.localBaseUrl),
             ],
-            _ReachabilityPill(baseUrl: config.localBaseUrl),
+          ),
+          _LocalServerStartRow(config: config, target: target),
+          if (customExpanded) ...[
+            const SizedBox(height: 14),
+            EvolveFieldLabel(t.coachSettings.baseUrlLabel),
+            const SizedBox(height: 8),
+            TextField(
+              controller: baseUrlController,
+              focusNode: baseUrlFocus,
+              style: TextStyle(color: colors.foreground, fontSize: 13),
+              decoration: InputDecoration(hintText: target.baseUrlHint),
+              onSubmitted: (_) => onCommitBaseUrl(),
+              onTapOutside: (_) {
+                FocusManager.instance.primaryFocus?.unfocus();
+                onCommitBaseUrl();
+              },
+            ),
+            if (isRemote) ...[
+              const SizedBox(height: 10),
+              _WarningNote(text: t.coachSettings.remoteWarning),
+            ],
           ],
-        ),
-        _LocalServerStartRow(config: config, target: target),
-        const SizedBox(height: 14),
-        EvolveFieldLabel(t.coachSettings.baseUrlLabel),
-        const SizedBox(height: 8),
-        TextField(
-          controller: baseUrlController,
-          focusNode: baseUrlFocus,
-          style: TextStyle(color: colors.foreground, fontSize: 13),
-          // Placeholder follows the chosen product — an Ollama URL under the
-          // LM Studio preset would be a wrong example, not a neutral one.
-          decoration: InputDecoration(hintText: target.baseUrlHint),
-          onSubmitted: (_) => onCommitBaseUrl(),
-          onTapOutside: (_) {
-            FocusManager.instance.primaryFocus?.unfocus();
-            onCommitBaseUrl();
-          },
-        ),
-        if (isRemote) ...[
-          const SizedBox(height: 10),
-          _WarningNote(text: t.coachSettings.remoteWarning),
+          const SizedBox(height: 16),
+          _ModelPickerRow(
+            config: config,
+            target: target,
+            manualModelController: manualModelController,
+          ),
         ],
-        const SizedBox(height: 16),
-        _ModelPickerRow(
-          config: config,
-          target: target,
-          manualModelController: manualModelController,
-        ),
-      ],
+      ),
     );
   }
 }
@@ -675,7 +976,9 @@ class _ReachabilityPill extends ConsumerWidget {
 }
 
 /// Model area: auto-discovered dropdown when the server lists models, a manual
-/// id field when it doesn't, always with a refresh affordance.
+/// id field when it doesn't, always with a refresh affordance. When exactly one
+/// model is discovered and this product has none remembered, it is auto-selected
+/// so a one-tap product switch lands ready to chat.
 class _ModelPickerRow extends ConsumerWidget {
   const _ModelPickerRow({
     required this.config,
@@ -754,16 +1057,26 @@ class _ModelPickerRow extends ConsumerWidget {
                 ],
               );
             }
+            final current = config.localModel;
+            final hasCurrent = current != null && current.trim().isNotEmpty;
+            // Zero-choice case: a single model and nothing remembered here yet →
+            // adopt it after this frame so a one-tap switch is ready to chat.
+            // Guarded on a re-read so a pick made in the meantime always wins.
+            if (!hasCurrent && list.length == 1) {
+              final only = list.first.id;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                final stored = ref.read(coachConfigProvider).localModel;
+                if (stored == null || stored.trim().isEmpty) {
+                  ref.read(coachConfigProvider.notifier).setLocalModel(only);
+                }
+              });
+            }
             // Keep a hand-typed model selectable even if the server didn't list
             // it, so switching the base URL never strands the current pick.
-            final options = effectiveLocalModelOptions(list, config.localModel);
-            final current = config.localModel;
-            final value = (current != null && current.trim().isNotEmpty)
-                ? current
-                : null;
+            final options = effectiveLocalModelOptions(list, current);
             return EvolveSelect<String>(
               expand: true,
-              value: value,
+              value: hasCurrent ? current : null,
               options: [
                 for (final model in options)
                   EvolveSelectOption(

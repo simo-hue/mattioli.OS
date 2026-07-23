@@ -1134,6 +1134,19 @@ class _Translations$settingsPage$ar extends Translations$settingsPage$en {
 	@override String get systemSection => 'النظام';
 	@override String get appLogsTitle => 'سجلات التطبيق';
 	@override String get appLogsDetail => 'عرض سجلّات التشخيص لهذه الجلسة';
+	@override String perMonth({required Object price}) => '${price} شهريًا';
+	@override String perMonthWithSavings({required Object price, required Object percent}) => '${price} شهريًا · وفّر ${percent}%';
+	@override String get detailsHeader => 'تفاصيل الاشتراك';
+	@override String get statusLabel => 'الحالة';
+	@override String get statusActive => 'نشط';
+	@override String get planLabel => 'الخطة';
+	@override String get nextRenewal => 'التجديد التالي';
+	@override String get expiresOn => 'ينتهي في';
+	@override String get paymentMethod => 'طريقة الدفع';
+	@override String get paymentMethodValue => 'Apple Pay / App Store';
+	@override String get proActiveName => 'Evolve Pro نشط';
+	@override String get youArePro => 'أنت مستخدم Pro!';
+	@override String get proThankYou => 'شكراً لدعمك تطوير Evolve.';
 }
 
 // Path: consent
@@ -1249,13 +1262,27 @@ class _Translations$subscriptionCtrl$ar extends Translations$subscriptionCtrl$en
 	@override String get purchaseIncomplete => 'لم يكتمل الشراء.';
 	@override String get cantOpenApple => 'تعذّر فتح إدارة اشتراكات Apple.';
 	@override String get macOnly => 'تتوفر عمليات الشراء داخل التطبيق في تطبيق macOS.';
-	@override String get loadOffersFailed => 'تعذّر تحميل عروض RevenueCat.';
+	@override String get loadOffersFailed => 'تعذّر تحميل خطط الاشتراك. تحقّق من اتصالك وحاول مرة أخرى.';
 	@override String get proActivated => 'تم تفعيل Evolve Pro.';
 	@override String get purchasesRestored => 'تمت استعادة المشتريات.';
 	@override String get noActiveSub => 'لم يُعثر على اشتراك Pro نشط.';
 	@override String get restoreFailed => 'فشلت استعادة المشتريات.';
-	@override String get configKey => 'اضبط مفتاح RevenueCat العام لتطبيق سطح المكتب.';
+	@override String get configKey => 'عمليات الشراء داخل التطبيق غير متاحة مؤقتًا.';
 	@override String get loginFirst => 'سجّل الدخول قبل إدارة Evolve Pro.';
+	@override String get paidAppsAgreement => 'اتفاقية التطبيقات المدفوعة غير نشطة. يجب على صاحب الحساب قبول اتفاقية التطبيقات المدفوعة في App Store Connect.';
+	@override String get alreadyPurchased => 'هذا الاشتراك تم شراؤه بالفعل. استخدم استعادة المشتريات لإعادة تفعيل وصول Pro.';
+	@override String get purchasesNotAllowed => 'عمليات الشراء داخل التطبيق غير مسموح بها على هذا الجهاز أو حساب Apple.';
+	@override String get planUnavailable => 'الخطة المحدّدة غير متاحة للشراء. حاول مرة أخرى لاحقاً.';
+	@override String get paymentPending => 'الدفع قيد الانتظار. سيتم تفعيل وصول Pro عندما تؤكّد Apple العملية.';
+	@override String get connectionUnavailable => 'الاتصال غير متاح. تحقّق من شبكتك وحاول مرة أخرى.';
+	@override String get linkedToAnotherAccount => 'عملية الشراء هذه مرتبطة بالفعل بحساب Evolve آخر. سجّل الدخول بذلك الحساب أو تواصل مع الدعم.';
+	@override String get purchaseInProgress => 'هناك عملية شراء جارية بالفعل. انتظر بضع ثوانٍ.';
+	@override String get restoreInProgress => 'هناك عملية استعادة جارية بالفعل. انتظر بضع ثوانٍ.';
+	@override String get purchaseFailedMessage => 'تعذّر إتمام الشراء. حاول مرة أخرى بعد قليل.';
+	@override String get restoreFailedMessage => 'تعذّرت استعادة المشتريات. حاول مرة أخرى بعد قليل.';
+	@override String get purchaseRegisteredNotActive => 'تم تسجيل الشراء، لكن اشتراك Pro ليس نشطاً بعد. انتظر بضع ثوانٍ واستخدم استعادة المشتريات.';
+	@override String get noActiveSubscription => 'لم يُعثر على اشتراك Evolve Pro نشط على معرّف Apple هذا. تأكّد من استخدام نفس معرّف Apple المستخدَم في الشراء.';
+	@override String get invalidConfig => 'إعداد عمليات الشراء غير صالح. حاول مرة أخرى لاحقًا أو تواصل مع الدعم.';
 }
 
 // Path: authCtrl
@@ -1408,6 +1435,12 @@ class _Translations$coachSettings$ar extends Translations$coachSettings$en {
 	@override String get standardUnavailableNote => 'Evolve AI غير متاح في هذه النسخة. اربط حساب OpenRouter الخاص بك أو استخدم نموذجًا محليًا.';
 	@override String get standardPrivateNote => 'يحتاج Evolve AI إلى حساب Evolve، والوضع الخاص لا يحتفظ بحساب. اربط حساب OpenRouter الخاص بك أو استخدم نموذجًا محليًا — كلاهما يعمل هنا.';
 	@override String get accountModeNote => 'تفضّل استخدام مفتاح OpenRouter الخاص بك أو نموذجًا محليًا؟ كلاهما متاح في الوضع الخاص.';
+	@override String get localGroupLabel => 'محلي — على هذا الـ Mac';
+	@override String get useCustomServer => 'استخدام خادم مخصّص…';
+	@override String get cardLive => 'يعمل';
+	@override String get cardOff => 'متوقف';
+	@override String get engineOpenRouter => 'OpenRouter';
+	@override String get engineOpenRouterHint => 'مفتاحك الخاص · مجانًا';
 }
 
 // Path: tour
@@ -2756,6 +2789,19 @@ extension on TranslationsAr {
 			'settingsPage.systemSection' => 'النظام',
 			'settingsPage.appLogsTitle' => 'سجلات التطبيق',
 			'settingsPage.appLogsDetail' => 'عرض سجلّات التشخيص لهذه الجلسة',
+			'settingsPage.perMonth' => ({required Object price}) => '${price} شهريًا',
+			'settingsPage.perMonthWithSavings' => ({required Object price, required Object percent}) => '${price} شهريًا · وفّر ${percent}%',
+			'settingsPage.detailsHeader' => 'تفاصيل الاشتراك',
+			'settingsPage.statusLabel' => 'الحالة',
+			'settingsPage.statusActive' => 'نشط',
+			'settingsPage.planLabel' => 'الخطة',
+			'settingsPage.nextRenewal' => 'التجديد التالي',
+			'settingsPage.expiresOn' => 'ينتهي في',
+			'settingsPage.paymentMethod' => 'طريقة الدفع',
+			'settingsPage.paymentMethodValue' => 'Apple Pay / App Store',
+			'settingsPage.proActiveName' => 'Evolve Pro نشط',
+			'settingsPage.youArePro' => 'أنت مستخدم Pro!',
+			'settingsPage.proThankYou' => 'شكراً لدعمك تطوير Evolve.',
 			'consent.onboardingTitle' => 'خصوصيتك تهمّنا',
 			'consent.continueButton' => 'متابعة',
 			'notifications.actionDone' => 'تم',
@@ -2799,13 +2845,27 @@ extension on TranslationsAr {
 			'subscriptionCtrl.purchaseIncomplete' => 'لم يكتمل الشراء.',
 			'subscriptionCtrl.cantOpenApple' => 'تعذّر فتح إدارة اشتراكات Apple.',
 			'subscriptionCtrl.macOnly' => 'تتوفر عمليات الشراء داخل التطبيق في تطبيق macOS.',
-			'subscriptionCtrl.loadOffersFailed' => 'تعذّر تحميل عروض RevenueCat.',
+			'subscriptionCtrl.loadOffersFailed' => 'تعذّر تحميل خطط الاشتراك. تحقّق من اتصالك وحاول مرة أخرى.',
 			'subscriptionCtrl.proActivated' => 'تم تفعيل Evolve Pro.',
 			'subscriptionCtrl.purchasesRestored' => 'تمت استعادة المشتريات.',
 			'subscriptionCtrl.noActiveSub' => 'لم يُعثر على اشتراك Pro نشط.',
 			'subscriptionCtrl.restoreFailed' => 'فشلت استعادة المشتريات.',
-			'subscriptionCtrl.configKey' => 'اضبط مفتاح RevenueCat العام لتطبيق سطح المكتب.',
+			'subscriptionCtrl.configKey' => 'عمليات الشراء داخل التطبيق غير متاحة مؤقتًا.',
 			'subscriptionCtrl.loginFirst' => 'سجّل الدخول قبل إدارة Evolve Pro.',
+			'subscriptionCtrl.paidAppsAgreement' => 'اتفاقية التطبيقات المدفوعة غير نشطة. يجب على صاحب الحساب قبول اتفاقية التطبيقات المدفوعة في App Store Connect.',
+			'subscriptionCtrl.alreadyPurchased' => 'هذا الاشتراك تم شراؤه بالفعل. استخدم استعادة المشتريات لإعادة تفعيل وصول Pro.',
+			'subscriptionCtrl.purchasesNotAllowed' => 'عمليات الشراء داخل التطبيق غير مسموح بها على هذا الجهاز أو حساب Apple.',
+			'subscriptionCtrl.planUnavailable' => 'الخطة المحدّدة غير متاحة للشراء. حاول مرة أخرى لاحقاً.',
+			'subscriptionCtrl.paymentPending' => 'الدفع قيد الانتظار. سيتم تفعيل وصول Pro عندما تؤكّد Apple العملية.',
+			'subscriptionCtrl.connectionUnavailable' => 'الاتصال غير متاح. تحقّق من شبكتك وحاول مرة أخرى.',
+			'subscriptionCtrl.linkedToAnotherAccount' => 'عملية الشراء هذه مرتبطة بالفعل بحساب Evolve آخر. سجّل الدخول بذلك الحساب أو تواصل مع الدعم.',
+			'subscriptionCtrl.purchaseInProgress' => 'هناك عملية شراء جارية بالفعل. انتظر بضع ثوانٍ.',
+			'subscriptionCtrl.restoreInProgress' => 'هناك عملية استعادة جارية بالفعل. انتظر بضع ثوانٍ.',
+			'subscriptionCtrl.purchaseFailedMessage' => 'تعذّر إتمام الشراء. حاول مرة أخرى بعد قليل.',
+			'subscriptionCtrl.restoreFailedMessage' => 'تعذّرت استعادة المشتريات. حاول مرة أخرى بعد قليل.',
+			'subscriptionCtrl.purchaseRegisteredNotActive' => 'تم تسجيل الشراء، لكن اشتراك Pro ليس نشطاً بعد. انتظر بضع ثوانٍ واستخدم استعادة المشتريات.',
+			'subscriptionCtrl.noActiveSubscription' => 'لم يُعثر على اشتراك Evolve Pro نشط على معرّف Apple هذا. تأكّد من استخدام نفس معرّف Apple المستخدَم في الشراء.',
+			'subscriptionCtrl.invalidConfig' => 'إعداد عمليات الشراء غير صالح. حاول مرة أخرى لاحقًا أو تواصل مع الدعم.',
 			'authCtrl.appleNoToken' => 'لم يُرجع Apple رمز هوية.',
 			'authCtrl.appleAuthFailed' => 'فشلت مصادقة Apple.',
 			'authCtrl.cantOpenBrowser' => 'تعذّر فتح متصفح النظام.',
@@ -2824,6 +2884,8 @@ extension on TranslationsAr {
 			'proModal.unlimitedTitle' => 'عادات غير محدودة',
 			'proModal.unlimitedDesc' => 'أنشئ وتتبّع كل العادات التي تريدها دون أي حدود.',
 			'proModal.maybeLater' => 'ربما لاحقاً',
+			_ => null,
+		} ?? switch (path) {
 			'proModal.viewPlans' => 'عرض خطط Pro',
 			'appLogs.title' => 'سجلات التطبيق',
 			'appLogs.copiedToClipboard' => 'تم نسخ السجلات إلى الحافظة',
@@ -2851,8 +2913,6 @@ extension on TranslationsAr {
 			'coachSettings.backendLocal' => 'محلي · خاص',
 			'coachSettings.cloudDesc' => 'اربط حساب OpenRouter الخاص بك وادفع للمزوّد مباشرةً. مجاني — لا يتطلب اشتراكًا. يُرسَل السياق الذي تشاركه إلى المزوّد.',
 			'coachSettings.localDesc' => 'نموذجك الخاص عبر Ollama أو LM Studio أو أي خادم متوافق مع OpenAI. لا شيء يغادر هذا الجهاز.',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.presetLabel' => 'الخادم',
 			'coachSettings.presetOllama' => 'Ollama',
 			'coachSettings.presetLmStudio' => 'LM Studio',
@@ -2924,6 +2984,12 @@ extension on TranslationsAr {
 			'coachSettings.standardUnavailableNote' => 'Evolve AI غير متاح في هذه النسخة. اربط حساب OpenRouter الخاص بك أو استخدم نموذجًا محليًا.',
 			'coachSettings.standardPrivateNote' => 'يحتاج Evolve AI إلى حساب Evolve، والوضع الخاص لا يحتفظ بحساب. اربط حساب OpenRouter الخاص بك أو استخدم نموذجًا محليًا — كلاهما يعمل هنا.',
 			'coachSettings.accountModeNote' => 'تفضّل استخدام مفتاح OpenRouter الخاص بك أو نموذجًا محليًا؟ كلاهما متاح في الوضع الخاص.',
+			'coachSettings.localGroupLabel' => 'محلي — على هذا الـ Mac',
+			'coachSettings.useCustomServer' => 'استخدام خادم مخصّص…',
+			'coachSettings.cardLive' => 'يعمل',
+			'coachSettings.cardOff' => 'متوقف',
+			'coachSettings.engineOpenRouter' => 'OpenRouter',
+			'coachSettings.engineOpenRouterHint' => 'مفتاحك الخاص · مجانًا',
 			'tour.back' => 'رجوع',
 			'tour.next' => 'التالي',
 			'tour.continueLabel' => 'متابعة',

@@ -14,6 +14,63 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+/// Outcome of a purchase attempt, so the UI can pick the right feedback
+/// (success dialog, silent on cancel, informative toast on failure) instead of
+/// the controller owning presentation. Mirrors the mobile paywall's handling.
+enum DesktopPurchaseStatus {
+  /// Pro is active — show the celebratory success dialog.
+  activated,
+
+  /// The store accepted the purchase but the entitlement has not propagated
+  /// yet; the user should wait and use Restore.
+  registeredNotActive,
+
+  /// A deferred/pending transaction (e.g. Ask to Buy) — parked, not failed.
+  pending,
+
+  /// The user dismissed the payment sheet — stay silent.
+  cancelled,
+
+  /// A real failure — surface [DesktopPurchaseResult.message].
+  failed,
+}
+
+class DesktopPurchaseResult {
+  const DesktopPurchaseResult(this.status, [this.message]);
+  final DesktopPurchaseStatus status;
+
+  /// Localized, user-facing message for [DesktopPurchaseStatus.failed] /
+  /// `pending`. Null when nothing should be shown.
+  final String? message;
+}
+
+enum DesktopRestoreStatus { restored, noActiveSub, cancelled, failed }
+
+class DesktopRestoreResult {
+  const DesktopRestoreResult(this.status, [this.message]);
+  final DesktopRestoreStatus status;
+  final String? message;
+}
+
+/// Presentation-ready snapshot of the active Pro entitlement, so the UI can
+/// render the "already Pro" details panel without importing RevenueCat types.
+class DesktopProDetails {
+  const DesktopProDetails({
+    this.productIdentifier,
+    this.willRenew = false,
+    this.expiration,
+    this.isAppStorePayment = false,
+  });
+
+  final String? productIdentifier;
+  final bool willRenew;
+
+  /// Next-renewal / expiry instant (local time), or null for a non-expiring or
+  /// unresolved entitlement — the row is then omitted rather than faked.
+  final DateTime? expiration;
+  final bool isAppStorePayment;
+}
+
 class DesktopSubscriptionState {
   const DesktopSubscriptionState({
     required this.isSupportedPlatform,
@@ -22,6 +79,9 @@ class DesktopSubscriptionState {
     this.isPro = false,
     this.monthlyPackage,
     this.yearlyPackage,
+    this.monthlyProduct,
+    this.yearlyProduct,
+    this.customerInfo,
     this.message,
   });
 
@@ -31,6 +91,15 @@ class DesktopSubscriptionState {
   final bool isPro;
   final Package? monthlyPackage;
   final Package? yearlyPackage;
+
+  /// The store products actually in play, resolved from the Offering package or
+  /// — when no Offering is published — a direct product fetch. Everything
+  /// price-related reads these so the two resolution paths cannot drift apart.
+  final StoreProduct? monthlyProduct;
+  final StoreProduct? yearlyProduct;
+
+  /// Last resolved entitlement snapshot, feeding the "already Pro" panel.
+  final CustomerInfo? customerInfo;
   final String? message;
 
   DesktopSubscriptionState copyWith({
@@ -38,6 +107,9 @@ class DesktopSubscriptionState {
     bool? isPro,
     Package? monthlyPackage,
     Package? yearlyPackage,
+    StoreProduct? monthlyProduct,
+    StoreProduct? yearlyProduct,
+    CustomerInfo? customerInfo,
     String? message,
     bool clearMessage = false,
   }) {
@@ -48,6 +120,9 @@ class DesktopSubscriptionState {
       isPro: isPro ?? this.isPro,
       monthlyPackage: monthlyPackage ?? this.monthlyPackage,
       yearlyPackage: yearlyPackage ?? this.yearlyPackage,
+      monthlyProduct: monthlyProduct ?? this.monthlyProduct,
+      yearlyProduct: yearlyProduct ?? this.yearlyProduct,
+      customerInfo: customerInfo ?? this.customerInfo,
       message: clearMessage ? null : (message ?? this.message),
     );
   }
@@ -72,10 +147,10 @@ final desktopIsProProvider = Provider<bool>((ref) {
 
 class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
   static const entitlementIds = {'Evolve Pro', 'evolve_pro', 'pro'};
-  static const proProductIds = {
-    'com.simo.evolve.pro.monthly',
-    'com.simo.evolve.pro.yearly',
-  };
+  static const _monthlyProductId = 'com.simo.evolve.pro.monthly';
+  static const _yearlyProductId = 'com.simo.evolve.pro.yearly';
+  static const proProductIds = {_monthlyProductId, _yearlyProductId};
+  static const _proProductIdList = [_monthlyProductId, _yearlyProductId];
 
   /// Entitlement cache key, scoped per account like the dashboard cache
   /// (`desktop_dashboard_cache_$userId`). This provider is never autoDisposed
@@ -136,18 +211,70 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
     state = state.copyWith(isLoading: true, clearMessage: true);
     try {
       await _configure();
-      final offerings = await Purchases.getOfferings();
+
+      // Two-tier price resolution (mobile parity). Prefer the published
+      // Offering; if it hasn't been configured yet, fall back to fetching the
+      // raw store products so prices still render (and the annual saving can
+      // still be computed) before an Offering exists. An Offering failure alone
+      // must not blank the surface, so it is caught locally rather than aborting
+      // the whole refresh.
+      Package? monthlyPackage;
+      Package? yearlyPackage;
+      try {
+        final current = (await Purchases.getOfferings()).current;
+        monthlyPackage = current?.monthly;
+        yearlyPackage = current?.annual;
+      } catch (error, stack) {
+        AppLogger.warning(
+          'Unable to load offerings; will try products',
+          error,
+          stack,
+        );
+      }
+
+      StoreProduct? monthlyProduct = monthlyPackage?.storeProduct;
+      StoreProduct? yearlyProduct = yearlyPackage?.storeProduct;
+      if (monthlyProduct == null || yearlyProduct == null) {
+        try {
+          final products = await Purchases.getProducts(_proProductIdList);
+          for (final product in products) {
+            if (product.identifier == _monthlyProductId) {
+              monthlyProduct ??= product;
+            } else if (product.identifier == _yearlyProductId) {
+              yearlyProduct ??= product;
+            }
+          }
+        } catch (error, stack) {
+          AppLogger.warning('Unable to load store products', error, stack);
+        }
+      }
+
+      // Commit the resolved prices/packages BEFORE the entitlement fetch, so a
+      // getCustomerInfo failure (which drops to the outer catch) still leaves
+      // the prices on screen — mobile keeps the two independent, and blanking a
+      // resolved price on an unrelated entitlement hiccup is exactly the failure
+      // the fallback exists to prevent. isPro is deliberately NOT touched here:
+      // it stays at its offline-first seed until the entitlement resolves below.
+      state = state.copyWith(
+        monthlyPackage: monthlyPackage,
+        yearlyPackage: yearlyPackage,
+        monthlyProduct: monthlyProduct,
+        yearlyProduct: yearlyProduct,
+      );
+
+      // The entitlement is the source of truth for isPro. Fetch it last and
+      // unguarded: if it throws (offline, or no store plugin under `flutter
+      // test`), the outer catch leaves the offline-first seeded isPro untouched
+      // — the guarantee subscription_entitlement_scope_test pins.
       final customerInfo = await Purchases.getCustomerInfo();
-      final current = offerings.current;
       state = state.copyWith(
         isLoading: false,
         isPro: _hasActiveProAccess(customerInfo),
-        monthlyPackage: current?.monthly,
-        yearlyPackage: current?.annual,
+        customerInfo: customerInfo,
       );
       await _persistProStatus(state.isPro);
     } catch (error, stack) {
-      AppLogger.error('Unable to refresh RevenueCat offerings', error, stack);
+      AppLogger.error('Unable to refresh subscription state', error, stack);
       state = state.copyWith(
         isLoading: false,
         message: t.subscriptionCtrl.loadOffersFailed,
@@ -155,15 +282,19 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
     }
   }
 
-  Future<bool> purchase(Package package) async {
-    if (!_canUseRevenueCat()) return false;
+  Future<DesktopPurchaseResult> purchase(Package package) async {
+    if (!_canUseRevenueCat()) {
+      // `_canUseRevenueCat` already set the reason on state.message.
+      return DesktopPurchaseResult(DesktopPurchaseStatus.failed, state.message);
+    }
     state = state.copyWith(isLoading: true, clearMessage: true);
     try {
       await _configure();
       final purchase = await Purchases.purchase(
         PurchaseParams.package(package),
       );
-      var isPro = _hasActiveProAccess(purchase.customerInfo);
+      var customerInfo = purchase.customerInfo;
+      var isPro = _hasActiveProAccess(customerInfo);
 
       // RevenueCat's CustomerInfo cache is eventually-consistent, so a real
       // purchase can momentarily read back as not-Pro. Sync + invalidate +
@@ -172,7 +303,8 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
         try {
           await Purchases.syncPurchases();
           await Purchases.invalidateCustomerInfoCache();
-          isPro = _hasActiveProAccess(await Purchases.getCustomerInfo());
+          customerInfo = await Purchases.getCustomerInfo();
+          isPro = _hasActiveProAccess(customerInfo);
         } catch (e, stack) {
           AppLogger.warning(
             'Purchase completed but the RevenueCat sync fallback failed',
@@ -185,42 +317,77 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
       state = state.copyWith(
         isLoading: false,
         isPro: isPro,
-        message: isPro
-            ? t.subscriptionCtrl.proActivated
-            : t.subscriptionCtrl.purchaseComplete,
+        customerInfo: customerInfo,
       );
       await _persistProStatus(isPro);
-      return isPro;
-    } on PlatformException catch (error, stack) {
-      // Already-purchased (re-buying an active sub) → auto-restore instead of
-      // surfacing a failure (mobile parity).
-      if (PurchasesErrorHelper.getErrorCode(error) ==
-          PurchasesErrorCode.productAlreadyPurchasedError) {
-        AppLogger.info('Product already purchased; auto-restoring');
-        return restore();
-      }
-      AppLogger.error('RevenueCat purchase failed', error, stack);
-      state = state.copyWith(
-        isLoading: false,
-        message: t.subscriptionCtrl.purchaseIncomplete,
+      return DesktopPurchaseResult(
+        isPro
+            ? DesktopPurchaseStatus.activated
+            : DesktopPurchaseStatus.registeredNotActive,
       );
-      return false;
+    } on PlatformException catch (error, stack) {
+      final code = _errorCode(error);
+
+      // Already-purchased (re-buying an active sub) → auto-restore instead of
+      // surfacing a failure (mobile parity). Map the restore outcome onto
+      // purchase semantics so the user sees what the direct path would give:
+      // a cancelled restore prompt stays silent, and an entitlement that hasn't
+      // propagated yet is the benign "registered, not active" warning — never a
+      // hard error. Only a genuine restore failure surfaces as a failure.
+      if (code == PurchasesErrorCode.productAlreadyPurchasedError) {
+        AppLogger.info('Product already purchased; auto-restoring');
+        final restored = await restore();
+        return switch (restored.status) {
+          DesktopRestoreStatus.restored => const DesktopPurchaseResult(
+            DesktopPurchaseStatus.activated,
+          ),
+          DesktopRestoreStatus.noActiveSub => const DesktopPurchaseResult(
+            DesktopPurchaseStatus.registeredNotActive,
+          ),
+          DesktopRestoreStatus.cancelled => const DesktopPurchaseResult(
+            DesktopPurchaseStatus.cancelled,
+          ),
+          DesktopRestoreStatus.failed => DesktopPurchaseResult(
+            DesktopPurchaseStatus.failed,
+            restored.message,
+          ),
+        };
+      }
+
+      state = state.copyWith(isLoading: false);
+
+      // A user-dismissed payment sheet is not a failure — stay silent.
+      if (code == PurchasesErrorCode.purchaseCancelledError) {
+        return const DesktopPurchaseResult(DesktopPurchaseStatus.cancelled);
+      }
+
+      // A deferred/pending transaction is parked awaiting approval, not failed.
+      final pending =
+          code == PurchasesErrorCode.paymentPendingError ||
+          code == PurchasesErrorCode.operationAlreadyInProgressError;
+      AppLogger.error('RevenueCat purchase failed', error, stack);
+      return DesktopPurchaseResult(
+        pending ? DesktopPurchaseStatus.pending : DesktopPurchaseStatus.failed,
+        _purchaseErrorMessage(error),
+      );
     } catch (error, stack) {
       AppLogger.error('RevenueCat purchase failed', error, stack);
-      state = state.copyWith(
-        isLoading: false,
-        message: t.subscriptionCtrl.purchaseIncomplete,
+      state = state.copyWith(isLoading: false);
+      return DesktopPurchaseResult(
+        DesktopPurchaseStatus.failed,
+        _purchaseErrorMessage(error),
       );
-      return false;
     }
   }
 
-  Future<bool> restore() async {
-    if (!_canUseRevenueCat()) return false;
+  Future<DesktopRestoreResult> restore() async {
+    if (!_canUseRevenueCat()) {
+      return DesktopRestoreResult(DesktopRestoreStatus.failed, state.message);
+    }
     state = state.copyWith(isLoading: true, clearMessage: true);
     try {
       await _configure();
-      final customerInfo = await Purchases.restorePurchases();
+      var customerInfo = await Purchases.restorePurchases();
       var isPro = _hasActiveProAccess(customerInfo);
 
       // Refresh once against a cleared cache before concluding "no active sub"
@@ -228,7 +395,8 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
       if (!isPro) {
         try {
           await Purchases.invalidateCustomerInfoCache();
-          isPro = _hasActiveProAccess(await Purchases.getCustomerInfo());
+          customerInfo = await Purchases.getCustomerInfo();
+          isPro = _hasActiveProAccess(customerInfo);
         } catch (e, stack) {
           AppLogger.warning(
             'Restore completed but the CustomerInfo refresh failed',
@@ -241,27 +409,43 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
       state = state.copyWith(
         isLoading: false,
         isPro: isPro,
-        message: isPro
-            ? t.subscriptionCtrl.purchasesRestored
-            : t.subscriptionCtrl.noActiveSub,
+        customerInfo: customerInfo,
       );
       await _persistProStatus(isPro);
-      return isPro;
+      return DesktopRestoreResult(
+        isPro
+            ? DesktopRestoreStatus.restored
+            : DesktopRestoreStatus.noActiveSub,
+      );
+    } on PlatformException catch (error, stack) {
+      state = state.copyWith(isLoading: false);
+      if (_errorCode(error) == PurchasesErrorCode.purchaseCancelledError) {
+        return const DesktopRestoreResult(DesktopRestoreStatus.cancelled);
+      }
+      AppLogger.error('RevenueCat restore failed', error, stack);
+      return DesktopRestoreResult(
+        DesktopRestoreStatus.failed,
+        _restoreErrorMessage(error),
+      );
     } catch (error, stack) {
       AppLogger.error('RevenueCat restore failed', error, stack);
-      state = state.copyWith(
-        isLoading: false,
-        message: t.subscriptionCtrl.restoreFailed,
+      state = state.copyWith(isLoading: false);
+      return DesktopRestoreResult(
+        DesktopRestoreStatus.failed,
+        _restoreErrorMessage(error),
       );
-      return false;
     }
   }
 
-  Future<void> manageSubscription() async {
-    final uri = LegalUrls.manageSubscriptions;
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      state = state.copyWith(message: t.subscriptionCtrl.cantOpenApple);
-    }
+  /// Opens Apple's subscription-management page (where a subscription is
+  /// cancelled or changed). Returns false if the URL could not be opened, so
+  /// the UI can surface it; RevenueCat's in-app Customer Center is iOS/Android
+  /// only, so the external page is the macOS-correct surface.
+  Future<bool> manageSubscription() {
+    return launchUrl(
+      LegalUrls.manageSubscriptions,
+      mode: LaunchMode.externalApplication,
+    );
   }
 
   bool _canUseRevenueCat() {
@@ -321,11 +505,12 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
       // failed offline, or a push landing before _configure() switched user —
       // applying it would hand the previous account's entitlement to this one.
       if (_configuredUserId == null ||
-          _configuredUserId != ref.read(desktopAuthControllerProvider).user?.id) {
+          _configuredUserId !=
+              ref.read(desktopAuthControllerProvider).user?.id) {
         return;
       }
       final isPro = _hasActiveProAccess(customerInfo);
-      state = state.copyWith(isPro: isPro);
+      state = state.copyWith(isPro: isPro, customerInfo: customerInfo);
       unawaited(_persistProStatus(isPro));
     });
     _customerInfoListenerRegistered = true;
@@ -352,6 +537,135 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
       return true;
     }
     return false;
+  }
+
+  /// The entitlement that actually grants Pro, resolved with the same
+  /// precedence as [_hasActiveProAccess]. Null when Pro comes from a bare
+  /// active subscription with no entitlement, or nothing grants it.
+  EntitlementInfo? _activeProEntitlement(CustomerInfo customerInfo) {
+    for (final id in entitlementIds) {
+      final entitlement = customerInfo.entitlements.all[id];
+      if (entitlement?.isActive ?? false) return entitlement;
+    }
+    for (final entitlement in customerInfo.entitlements.active.values) {
+      if (proProductIds.contains(entitlement.productIdentifier)) {
+        return entitlement;
+      }
+    }
+    return customerInfo.entitlements.active.values.isEmpty
+        ? null
+        : customerInfo.entitlements.active.values.first;
+  }
+
+  /// Presentation snapshot of the active Pro entitlement for the details panel.
+  /// Null when there is no CustomerInfo yet; an empty [DesktopProDetails] when
+  /// Pro is granted without a resolvable entitlement (rows are then omitted).
+  DesktopProDetails? proDetails() {
+    final customerInfo = state.customerInfo;
+    if (customerInfo == null) return null;
+    final entitlement = _activeProEntitlement(customerInfo);
+    if (entitlement == null) return const DesktopProDetails();
+
+    // `expirationDate` is a nullable ISO-8601 string, absent for non-expiring
+    // entitlements. Unparseable or absent means the row is omitted, never faked.
+    final rawExpiration = entitlement.expirationDate;
+    final expiration = rawExpiration == null
+        ? null
+        : DateTime.tryParse(rawExpiration)?.toLocal();
+    return DesktopProDetails(
+      productIdentifier: entitlement.productIdentifier,
+      willRenew: entitlement.willRenew,
+      expiration: expiration,
+      isAppStorePayment:
+          entitlement.store == Store.appStore ||
+          entitlement.store == Store.macAppStore,
+    );
+  }
+
+  static PurchasesErrorCode? _errorCode(PlatformException exception) {
+    try {
+      return PurchasesErrorHelper.getErrorCode(exception);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Maps a purchase error to localized, user-facing copy. Mirrors the mobile
+  /// paywall's mapping; deliberately names no vendor or SDK (desktop keeps its
+  /// monetization copy free of implementation detail — see
+  /// subscription_compliance_test).
+  static String _purchaseErrorMessage(Object error) {
+    if (error is PlatformException) {
+      if (_isPaidAppsAgreement(error)) {
+        return t.subscriptionCtrl.paidAppsAgreement;
+      }
+      return switch (_errorCode(error)) {
+        PurchasesErrorCode.productAlreadyPurchasedError =>
+          t.subscriptionCtrl.alreadyPurchased,
+        PurchasesErrorCode.purchaseNotAllowedError =>
+          t.subscriptionCtrl.purchasesNotAllowed,
+        PurchasesErrorCode.productNotAvailableForPurchaseError =>
+          t.subscriptionCtrl.planUnavailable,
+        PurchasesErrorCode.paymentPendingError =>
+          t.subscriptionCtrl.paymentPending,
+        PurchasesErrorCode.networkError ||
+        PurchasesErrorCode.offlineConnectionError ||
+        PurchasesErrorCode.apiEndpointBlocked =>
+          t.subscriptionCtrl.connectionUnavailable,
+        PurchasesErrorCode.configurationError ||
+        PurchasesErrorCode.invalidCredentialsError ||
+        PurchasesErrorCode.invalidReceiptError ||
+        PurchasesErrorCode.missingReceiptFileError =>
+          t.subscriptionCtrl.invalidConfig,
+        PurchasesErrorCode.receiptAlreadyInUseError ||
+        PurchasesErrorCode.receiptInUseByOtherSubscriberError ||
+        PurchasesErrorCode.purchaseBelongsToOtherUser =>
+          t.subscriptionCtrl.linkedToAnotherAccount,
+        PurchasesErrorCode.operationAlreadyInProgressError =>
+          t.subscriptionCtrl.purchaseInProgress,
+        _ => t.subscriptionCtrl.purchaseFailedMessage,
+      };
+    }
+    return t.subscriptionCtrl.purchaseFailedMessage;
+  }
+
+  static String _restoreErrorMessage(Object error) {
+    if (error is PlatformException) {
+      if (_isPaidAppsAgreement(error)) {
+        return t.subscriptionCtrl.paidAppsAgreement;
+      }
+      return switch (_errorCode(error)) {
+        PurchasesErrorCode.networkError ||
+        PurchasesErrorCode.offlineConnectionError ||
+        PurchasesErrorCode.apiEndpointBlocked =>
+          t.subscriptionCtrl.connectionUnavailable,
+        PurchasesErrorCode.receiptAlreadyInUseError ||
+        PurchasesErrorCode.receiptInUseByOtherSubscriberError ||
+        PurchasesErrorCode.purchaseBelongsToOtherUser =>
+          t.subscriptionCtrl.linkedToAnotherAccount,
+        PurchasesErrorCode.configurationError ||
+        PurchasesErrorCode.invalidCredentialsError ||
+        PurchasesErrorCode.invalidReceiptError ||
+        PurchasesErrorCode.missingReceiptFileError =>
+          t.subscriptionCtrl.invalidConfig,
+        PurchasesErrorCode.operationAlreadyInProgressError =>
+          t.subscriptionCtrl.restoreInProgress,
+        _ => t.subscriptionCtrl.restoreFailedMessage,
+      };
+    }
+    return t.subscriptionCtrl.restoreFailedMessage;
+  }
+
+  /// The store surfaces the un-signed Paid Apps agreement as a generic error;
+  /// match on its text so the user gets an actionable message instead of a
+  /// bare failure (mobile parity).
+  static bool _isPaidAppsAgreement(PlatformException error) {
+    final msg = error.message?.toLowerCase() ?? '';
+    final details = error.details?.toString().toLowerCase() ?? '';
+    return msg.contains('paid apps agreement') ||
+        msg.contains('paid applications agreement') ||
+        details.contains('paid apps agreement') ||
+        details.contains('paid applications agreement');
   }
 
   Future<void> _persistProStatus(bool isPro) async {

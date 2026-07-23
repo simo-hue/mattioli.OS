@@ -71,8 +71,8 @@ class CoachConfig {
     required this.backend,
     required this.localBaseUrl,
     required this.cloudModel,
-    required this.localModel,
     required this.temperature,
+    this.localModels = const <String, String>{},
     this.systemPromptOverride,
   });
 
@@ -93,7 +93,6 @@ class CoachConfig {
     backend: CoachBackendKind.standard,
     localBaseUrl: kDefaultLocalBaseUrl,
     cloudModel: kDefaultCloudModel,
-    localModel: null,
     temperature: kDefaultTemperature,
     systemPromptOverride: null,
   );
@@ -107,8 +106,22 @@ class CoachConfig {
   /// Last-used cloud model id.
   final String cloudModel;
 
-  /// Last-used local model id, or null until the user picks one.
-  final String? localModel;
+  /// Last-used local model id per (normalized) local base URL. Ollama, LM Studio
+  /// and any custom server each keep their own remembered model, so switching
+  /// products restores the model you last ran there instead of stranding a stale
+  /// id from another server (which the target would answer with "model not
+  /// found"). Persisted as one JSON blob; seeded on migration from the former
+  /// single `coach_local_model` string at the then-current base URL.
+  final Map<String, String> localModels;
+
+  /// The remembered model for the active [localBaseUrl], or null when this
+  /// product has none yet. Derived from [localModels] — there is no separate
+  /// "active local model" field, so changing [localBaseUrl] changes the model
+  /// with no extra state to keep in sync.
+  String? get localModel {
+    final model = localModels[localBaseUrl];
+    return (model == null || model.isEmpty) ? null : model;
+  }
 
   /// Sampling temperature applied to every request (0.0–2.0).
   final double temperature;
@@ -133,6 +146,10 @@ class CoachConfig {
   /// Whether the configured local endpoint is a private (loopback/LAN) host.
   bool get localIsPrivate => isLoopbackOrLan(localBaseUrl);
 
+  /// [localModel]/[clearLocalModel] edit the remembered model for the RESULTING
+  /// base URL (the new [localBaseUrl] if one is supplied, else the current one),
+  /// so setting a model and switching product in the same call can't cross the
+  /// wires. Everything else is a plain field replace.
   CoachConfig copyWith({
     CoachBackendKind? backend,
     String? localBaseUrl,
@@ -143,11 +160,21 @@ class CoachConfig {
     String? systemPromptOverride,
     bool clearSystemPrompt = false,
   }) {
+    final resolvedBaseUrl = localBaseUrl ?? this.localBaseUrl;
+    var models = localModels;
+    if (clearLocalModel) {
+      models = {...localModels}..remove(resolvedBaseUrl);
+    } else if (localModel != null) {
+      final trimmed = localModel.trim();
+      models = trimmed.isEmpty
+          ? ({...localModels}..remove(resolvedBaseUrl))
+          : {...localModels, resolvedBaseUrl: trimmed};
+    }
     return CoachConfig(
       backend: backend ?? this.backend,
-      localBaseUrl: localBaseUrl ?? this.localBaseUrl,
+      localBaseUrl: resolvedBaseUrl,
       cloudModel: cloudModel ?? this.cloudModel,
-      localModel: clearLocalModel ? null : (localModel ?? this.localModel),
+      localModels: models,
       temperature: temperature ?? this.temperature,
       systemPromptOverride: clearSystemPrompt
           ? null
@@ -161,7 +188,7 @@ class CoachConfig {
       other.backend == backend &&
       other.localBaseUrl == localBaseUrl &&
       other.cloudModel == cloudModel &&
-      other.localModel == localModel &&
+      _localModelsEqual(other.localModels, localModels) &&
       other.temperature == temperature &&
       other.systemPromptOverride == systemPromptOverride;
 
@@ -170,10 +197,25 @@ class CoachConfig {
     backend,
     localBaseUrl,
     cloudModel,
-    localModel,
+    // Order-independent: the map is a set of (url → model) facts, and two configs
+    // that remember the same models are equal regardless of insertion order.
+    Object.hashAllUnordered(
+      localModels.entries.map((e) => Object.hash(e.key, e.value)),
+    ),
     temperature,
     systemPromptOverride,
   );
+}
+
+/// Key-by-key equality for the per-URL model map (no `package:collection`
+/// dependency needed for one small map).
+bool _localModelsEqual(Map<String, String> a, Map<String, String> b) {
+  if (identical(a, b)) return true;
+  if (a.length != b.length) return false;
+  for (final entry in a.entries) {
+    if (b[entry.key] != entry.value) return false;
+  }
+  return true;
 }
 
 /// Canonicalizes a user- or preset-supplied base URL:

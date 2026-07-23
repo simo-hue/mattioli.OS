@@ -2736,6 +2736,45 @@ class Translations$settingsPage$en {
 
 	/// en: 'View diagnostic logs from this session'
 	String get appLogsDetail => 'View diagnostic logs from this session';
+
+	/// en: '{price} per month'
+	String perMonth({required Object price}) => '${price} per month';
+
+	/// en: '{price} per month · Save {percent}%'
+	String perMonthWithSavings({required Object price, required Object percent}) => '${price} per month · Save ${percent}%';
+
+	/// en: 'SUBSCRIPTION DETAILS'
+	String get detailsHeader => 'SUBSCRIPTION DETAILS';
+
+	/// en: 'Status'
+	String get statusLabel => 'Status';
+
+	/// en: 'Active'
+	String get statusActive => 'Active';
+
+	/// en: 'Plan'
+	String get planLabel => 'Plan';
+
+	/// en: 'Next Renewal'
+	String get nextRenewal => 'Next Renewal';
+
+	/// en: 'Expires On'
+	String get expiresOn => 'Expires On';
+
+	/// en: 'Payment Method'
+	String get paymentMethod => 'Payment Method';
+
+	/// en: 'Apple Pay / App Store'
+	String get paymentMethodValue => 'Apple Pay / App Store';
+
+	/// en: 'Active Evolve Pro'
+	String get proActiveName => 'Active Evolve Pro';
+
+	/// en: 'You are a Pro user!'
+	String get youArePro => 'You are a Pro user!';
+
+	/// en: 'Thank you for supporting Evolve's development.'
+	String get proThankYou => 'Thank you for supporting Evolve\'s development.';
 }
 
 // Path: consent
@@ -2938,8 +2977,8 @@ class Translations$subscriptionCtrl$en {
 	/// en: 'In-app purchases are available in the macOS client.'
 	String get macOnly => 'In-app purchases are available in the macOS client.';
 
-	/// en: 'Unable to load RevenueCat offerings.'
-	String get loadOffersFailed => 'Unable to load RevenueCat offerings.';
+	/// en: 'Unable to load subscription plans. Check your connection and try again.'
+	String get loadOffersFailed => 'Unable to load subscription plans. Check your connection and try again.';
 
 	/// en: 'Evolve Pro activated.'
 	String get proActivated => 'Evolve Pro activated.';
@@ -2953,11 +2992,53 @@ class Translations$subscriptionCtrl$en {
 	/// en: 'Failed to restore purchases.'
 	String get restoreFailed => 'Failed to restore purchases.';
 
-	/// en: 'Configure the desktop client's RevenueCat public key.'
-	String get configKey => 'Configure the desktop client\'s RevenueCat public key.';
+	/// en: 'In-app purchases are temporarily unavailable.'
+	String get configKey => 'In-app purchases are temporarily unavailable.';
 
 	/// en: 'Sign in before managing Evolve Pro.'
 	String get loginFirst => 'Sign in before managing Evolve Pro.';
+
+	/// en: 'Paid Apps agreement not active. The Account Holder must accept the Paid Apps agreement in App Store Connect.'
+	String get paidAppsAgreement => 'Paid Apps agreement not active. The Account Holder must accept the Paid Apps agreement in App Store Connect.';
+
+	/// en: 'This subscription is already purchased. Use Restore Purchases to reactivate Pro access.'
+	String get alreadyPurchased => 'This subscription is already purchased. Use Restore Purchases to reactivate Pro access.';
+
+	/// en: 'In-app purchases are not allowed on this device or Apple account.'
+	String get purchasesNotAllowed => 'In-app purchases are not allowed on this device or Apple account.';
+
+	/// en: 'Selected plan is not available for purchase. Try again later.'
+	String get planUnavailable => 'Selected plan is not available for purchase. Try again later.';
+
+	/// en: 'Payment is pending. Pro access will be activated when Apple confirms the transaction.'
+	String get paymentPending => 'Payment is pending. Pro access will be activated when Apple confirms the transaction.';
+
+	/// en: 'Connection unavailable. Check your network and try again.'
+	String get connectionUnavailable => 'Connection unavailable. Check your network and try again.';
+
+	/// en: 'This purchase is already linked to another Evolve account. Log in with that account or contact support.'
+	String get linkedToAnotherAccount => 'This purchase is already linked to another Evolve account. Log in with that account or contact support.';
+
+	/// en: 'A purchase operation is already in progress. Wait a few seconds.'
+	String get purchaseInProgress => 'A purchase operation is already in progress. Wait a few seconds.';
+
+	/// en: 'A restore is already in progress. Wait a few seconds.'
+	String get restoreInProgress => 'A restore is already in progress. Wait a few seconds.';
+
+	/// en: 'Could not complete the purchase. Try again shortly.'
+	String get purchaseFailedMessage => 'Could not complete the purchase. Try again shortly.';
+
+	/// en: 'Could not restore purchases. Try again shortly.'
+	String get restoreFailedMessage => 'Could not restore purchases. Try again shortly.';
+
+	/// en: 'Purchase registered, but Pro subscription is not active yet. Wait a few seconds and use Restore Purchases.'
+	String get purchaseRegisteredNotActive => 'Purchase registered, but Pro subscription is not active yet. Wait a few seconds and use Restore Purchases.';
+
+	/// en: 'No active Evolve Pro subscription found on this Apple ID. Make sure to use the same Apple ID as the purchase.'
+	String get noActiveSubscription => 'No active Evolve Pro subscription found on this Apple ID. Make sure to use the same Apple ID as the purchase.';
+
+	/// en: 'Purchases are temporarily misconfigured. Please try again later or contact support.'
+	String get invalidConfig => 'Purchases are temporarily misconfigured. Please try again later or contact support.';
 }
 
 // Path: authCtrl
@@ -3342,6 +3423,24 @@ class Translations$coachSettings$en {
 
 	/// en: 'Prefer your own OpenRouter key or a local model? Those are available in Private mode.'
 	String get accountModeNote => 'Prefer your own OpenRouter key or a local model? Those are available in Private mode.';
+
+	/// en: 'Local — on this Mac'
+	String get localGroupLabel => 'Local — on this Mac';
+
+	/// en: 'Use a custom server…'
+	String get useCustomServer => 'Use a custom server…';
+
+	/// en: 'Live'
+	String get cardLive => 'Live';
+
+	/// en: 'Off'
+	String get cardOff => 'Off';
+
+	/// en: 'OpenRouter'
+	String get engineOpenRouter => 'OpenRouter';
+
+	/// en: 'Your own key · free'
+	String get engineOpenRouterHint => 'Your own key · free';
 }
 
 // Path: tour
@@ -5052,6 +5151,19 @@ extension on Translations {
 			'settingsPage.systemSection' => 'System',
 			'settingsPage.appLogsTitle' => 'App Logs',
 			'settingsPage.appLogsDetail' => 'View diagnostic logs from this session',
+			'settingsPage.perMonth' => ({required Object price}) => '${price} per month',
+			'settingsPage.perMonthWithSavings' => ({required Object price, required Object percent}) => '${price} per month · Save ${percent}%',
+			'settingsPage.detailsHeader' => 'SUBSCRIPTION DETAILS',
+			'settingsPage.statusLabel' => 'Status',
+			'settingsPage.statusActive' => 'Active',
+			'settingsPage.planLabel' => 'Plan',
+			'settingsPage.nextRenewal' => 'Next Renewal',
+			'settingsPage.expiresOn' => 'Expires On',
+			'settingsPage.paymentMethod' => 'Payment Method',
+			'settingsPage.paymentMethodValue' => 'Apple Pay / App Store',
+			'settingsPage.proActiveName' => 'Active Evolve Pro',
+			'settingsPage.youArePro' => 'You are a Pro user!',
+			'settingsPage.proThankYou' => 'Thank you for supporting Evolve\'s development.',
 			'consent.onboardingTitle' => 'Your Privacy Matters',
 			'consent.continueButton' => 'Continue',
 			'notifications.actionDone' => 'Done',
@@ -5095,13 +5207,27 @@ extension on Translations {
 			'subscriptionCtrl.purchaseIncomplete' => 'Purchase not completed.',
 			'subscriptionCtrl.cantOpenApple' => 'Unable to open Apple subscription management.',
 			'subscriptionCtrl.macOnly' => 'In-app purchases are available in the macOS client.',
-			'subscriptionCtrl.loadOffersFailed' => 'Unable to load RevenueCat offerings.',
+			'subscriptionCtrl.loadOffersFailed' => 'Unable to load subscription plans. Check your connection and try again.',
 			'subscriptionCtrl.proActivated' => 'Evolve Pro activated.',
 			'subscriptionCtrl.purchasesRestored' => 'Purchases restored.',
 			'subscriptionCtrl.noActiveSub' => 'No active Pro subscription found.',
 			'subscriptionCtrl.restoreFailed' => 'Failed to restore purchases.',
-			'subscriptionCtrl.configKey' => 'Configure the desktop client\'s RevenueCat public key.',
+			'subscriptionCtrl.configKey' => 'In-app purchases are temporarily unavailable.',
 			'subscriptionCtrl.loginFirst' => 'Sign in before managing Evolve Pro.',
+			'subscriptionCtrl.paidAppsAgreement' => 'Paid Apps agreement not active. The Account Holder must accept the Paid Apps agreement in App Store Connect.',
+			'subscriptionCtrl.alreadyPurchased' => 'This subscription is already purchased. Use Restore Purchases to reactivate Pro access.',
+			'subscriptionCtrl.purchasesNotAllowed' => 'In-app purchases are not allowed on this device or Apple account.',
+			'subscriptionCtrl.planUnavailable' => 'Selected plan is not available for purchase. Try again later.',
+			'subscriptionCtrl.paymentPending' => 'Payment is pending. Pro access will be activated when Apple confirms the transaction.',
+			'subscriptionCtrl.connectionUnavailable' => 'Connection unavailable. Check your network and try again.',
+			'subscriptionCtrl.linkedToAnotherAccount' => 'This purchase is already linked to another Evolve account. Log in with that account or contact support.',
+			'subscriptionCtrl.purchaseInProgress' => 'A purchase operation is already in progress. Wait a few seconds.',
+			'subscriptionCtrl.restoreInProgress' => 'A restore is already in progress. Wait a few seconds.',
+			'subscriptionCtrl.purchaseFailedMessage' => 'Could not complete the purchase. Try again shortly.',
+			'subscriptionCtrl.restoreFailedMessage' => 'Could not restore purchases. Try again shortly.',
+			'subscriptionCtrl.purchaseRegisteredNotActive' => 'Purchase registered, but Pro subscription is not active yet. Wait a few seconds and use Restore Purchases.',
+			'subscriptionCtrl.noActiveSubscription' => 'No active Evolve Pro subscription found on this Apple ID. Make sure to use the same Apple ID as the purchase.',
+			'subscriptionCtrl.invalidConfig' => 'Purchases are temporarily misconfigured. Please try again later or contact support.',
 			'authCtrl.appleNoToken' => 'Apple did not return an identity token.',
 			'authCtrl.appleAuthFailed' => 'Apple authentication failed.',
 			'authCtrl.cantOpenBrowser' => 'Unable to open the system browser.',
@@ -5120,6 +5246,8 @@ extension on Translations {
 			'proModal.unlimitedTitle' => 'Unlimited Habits',
 			'proModal.unlimitedDesc' => 'Create and track all the habits you want without any limits.',
 			'proModal.maybeLater' => 'Maybe later',
+			_ => null,
+		} ?? switch (path) {
 			'proModal.viewPlans' => 'View Pro plans',
 			'appLogs.title' => 'App Logs',
 			'appLogs.copiedToClipboard' => 'Logs copied to clipboard',
@@ -5147,8 +5275,6 @@ extension on Translations {
 			'coachSettings.backendLocal' => 'Local · private',
 			'coachSettings.cloudDesc' => 'Connect your own OpenRouter account and pay the provider directly. Free — no subscription needed. The context you share is sent to the provider.',
 			'coachSettings.localDesc' => 'Your own model via Ollama, LM Studio or any OpenAI-compatible server. Nothing leaves this device.',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.presetLabel' => 'Server',
 			'coachSettings.presetOllama' => 'Ollama',
 			'coachSettings.presetLmStudio' => 'LM Studio',
@@ -5220,6 +5346,12 @@ extension on Translations {
 			'coachSettings.standardUnavailableNote' => 'Evolve AI isn\'t available in this build. Connect your own OpenRouter account, or run a local model.',
 			'coachSettings.standardPrivateNote' => 'Evolve AI needs an Evolve account, and Private mode doesn\'t keep one. Connect your own OpenRouter account, or run a local model — both keep working here.',
 			'coachSettings.accountModeNote' => 'Prefer your own OpenRouter key or a local model? Those are available in Private mode.',
+			'coachSettings.localGroupLabel' => 'Local — on this Mac',
+			'coachSettings.useCustomServer' => 'Use a custom server…',
+			'coachSettings.cardLive' => 'Live',
+			'coachSettings.cardOff' => 'Off',
+			'coachSettings.engineOpenRouter' => 'OpenRouter',
+			'coachSettings.engineOpenRouterHint' => 'Your own key · free',
 			'tour.back' => 'Back',
 			'tour.next' => 'Next',
 			'tour.continueLabel' => 'Continue',

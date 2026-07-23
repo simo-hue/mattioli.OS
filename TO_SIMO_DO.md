@@ -1,7 +1,5 @@
 # TO_SIMO_DO.md
 - [ ] Widget for iPhone & MacOS
-- [ ] Paywall and subs from macOS must be coherent and real
-- [ ] Organize better the selection of the LLM in the AI coach
 - [ ] settings in desktop implementation is really weird and not intuitive as it is in the mobile app
 - [ ] what happens if I modify manually an automatic habits?
 - [ ] Different habits & goals types, not only checkboxes like status,progress bar
@@ -1213,14 +1211,19 @@ SQLCipher
 
 **Diagnosis (settled):** the Mac is not missing data because of a key-split — the shared E2E key decrypts fine (profile image + a few macro goals crossed). The iPhone's bulk (3,489 macro goals / 2,591 logs / 20 habits) was pushed to the **CloudKit *Development*** datastore during earlier **dev-build (Xcode `flutter run`) testing**; TestFlight uses **Production**. Those rows are all `dirty=0` locally and the engine only ever pushes `dirty=1` (no re-backfill), so the iPhone never re-uploaded them to Production. The Mac (Production) only ever pulled the handful of records edited after the TestFlight install. Dev→Prod is a developer-only artifact — real App Store users can't hit it.
 
+### ✅ RESOLVED 2026-07-23 — recovery succeeded via the OFF→ON toggle
+Toggling iCloud Sync OFF then ON on the iPhone re-dirtied all rows and re-uploaded to Production; the Mac pulled everything via polling. Both devices now show identical diagnostics (long_term_goals 3490, goal_logs 2592, goals 20, daily_moods 173, same last-full-sync timestamp). Habits/macro-goals/statistics populate on the Mac. The steps below are kept as the reference procedure if it recurs.
+
 ### A. Blocking — recover the data (ON THE iPHONE ONLY; I cannot do on-device steps)
-- [ ] ⚠️ **NEVER tap "Reset sync from this device" or "Delete all data" ON THE MAC.** Both fire a *synchronizable* Keychain/zone delete that propagates and would destroy the iPhone's only complete copy. If the Mac shows a sync-key/reset card, do NOT act on it — let it adopt, don't reset.
+> NOTE (2026-07-23): the in-app **"Reset sync from this device"** button is rendered ONLY inside the key-split card (`undecryptableCount > 0`), so it is HIDDEN in this case (no key-split). Do NOT try to surface it — the gentler toggle below achieves the re-upload and is safer.
+- [ ] ⚠️ **NEVER use "Delete Private Data" or any reset ON THE MAC.** The full-reset/key-split-reset paths fire a *synchronizable* Keychain/zone delete (`keys.deleteAll()` / `deleteZone()`) that propagates and would destroy the iPhone's only complete copy. Mac "Export Data" is read-only and safe.
 - [ ] Preconditions (confirmed 2026-07-23): both devices same Apple ID + iCloud Keychain ON.
-- [ ] **Quit the Mac app entirely (⌘Q)** and leave it quit for the whole reset (avoids the empty-zone mint-race window; the native `tryClaimFirstMint` guard is not in the current TestFlight build).
-- [ ] On the **iPhone** → iCloud sync settings → **"Reset sync from this device"** → confirm. This deletes the Production zone, mints a fresh shared key, re-dirties ALL local rows (`markAllDirty`), and re-uploads everything.
-- [ ] **Wait** and watch the iPhone's sync diagnostics: `pending` spikes (re-dirtying ~6,000 rows) then drains to **0**, status "Up to date." This is the large-first-push path (retry/backoff A2 is unverified) — be patient; re-trigger sync (refocus/manual) until `pending` = 0.
-- [ ] **Only after** the iPhone reads "Up to date" / pending 0, **reopen the Mac app**; give it a few 60s poll cycles (or relaunch once). It drops its stale token on the key-fingerprint change and full-refetches.
+- [ ] **Recovery = toggle sync OFF then ON on the iPhone.** `disable()` is benign (keeps key + zone + data); `enable()` re-runs the engine and, because the shared key already exists (mint-race guard skipped), goes straight to `markAllDirty()` → re-dirties ALL local rows and re-uploads the whole dataset to Production. **No key rotation, no zone delete, no mint-race window.**
+  - iPhone → Privacy & Security → iCloud Sync → tap **Enable iCloud Sync OFF, then ON**.
+  - Open **Sync details** and watch `pending` spike (~6,000 rows) then drain to **0**; tap **Sync now** to nudge if it stalls (large first push; A2 retry unverified). Done at "Everything uploaded".
+- [ ] **Leave the Mac running** (no quit needed — no key deletion means no mint-race). It pulls the newly-uploaded rows on its next 60s poll; refocus/reopen to speed it up.
 - [ ] Verify on the Mac: diagnostics counts climb to match the iPhone; habits/macro-goals/statistics populate.
+- [ ] (Product gap noted) There is currently NO non-key-split UI path to force a full re-upload; the OFF/ON toggle is the workaround. Consider exposing an explicit "re-upload everything from this device" action if this recurs.
 
 ### B. Done in code (2026-07-23) — verify on your next archive
 - [x] **Lever 1 — explicit CloudKit environment pin (macOS).** Added `com.apple.developer.icloud-container-environment` = **Production** to `desktop/macos/Runner/Release.entitlements` and = **Development** to `DebugProfile.entitlements`. `plutil -lint` OK on both. So the environment is deterministic per build config instead of signing-dependent; dev builds stay in Development, release builds in Production.
@@ -1230,5 +1233,74 @@ SQLCipher
 ### C. Lever 2 — macOS release signing (yours, in Xcode; recommended before release)
 - [ ] `desktop/macos/Runner.xcodeproj/project.pbxproj:788` signs the Release config with **"Apple Development"** and an empty provisioning-profile specifier. For an App Store Connect build the Distribute flow re-signs with a distribution profile (which is why your current Mac build correctly landed on Production), but confirm your Archive → Distribute → App Store Connect step is using an **Apple Distribution / Mac App Store** profile, not exporting a development-signed build. A development-signed Mac build would bind to **Development** CloudKit and permanently fail to sync with Production iPhones.
 
+### E. macOS APNs OSStatus 13 (D2 decision — not a sync blocker)
+Observed 2026-07-23: the Mac logs `[APNs] Registration FAILED … OSStatus error 13` (iPhone registers fine). This is the known macOS-only push-registration failure tied to the same macOS signing/provisioning as Lever 2. Impact: the Mac gets no CloudKit silent-push, so it syncs by ~60s POLLING instead of instantly — sync WORKS (the recovery proved it), it's just not real-time on Mac. Decide before public release:
+- [ ] (a) Leave it — accept ~60s Mac latency + the error log. Ship-fine today.
+- [ ] (b) Fix the macOS distribution signing (Lever 2) — a Mac App Store distribution profile with Push enabled should make APNs register (real-time Mac sync) AND close the CloudKit-env risk in one move. Recommended if you want push parity.
+- [ ] (c) Remove the Push Notifications capability from the macOS target — no failing registration, no dead capability in the listing; sync stays on polling. Clean minimal release. (Native + entitlement change; ask me to prepare it if you choose this.)
+
 ### D. Not fixing (agreed): the "no re-backfill" code path
 - Real App Store users only ever use Production and get a full `markAllDirty` push at first-enable, so they can't reach the stranded state; `resetSyncFromThisDevice` already covers the developer dev→prod case. No automatic empty-zone re-upload was added (would guard a developer-only scenario).
+
+---
+
+## macOS Evolve Pro paywall — production parity (2026-07-23)
+
+The macOS paywall was brought to functional + compliance parity with the live iOS paywall (same purchase logic + prices, native macOS presentation). Code is done and verified headless (`flutter analyze` clean; `flutter test` 525 passing). **No RevenueCat dashboard changes are needed** — because the macOS app ships as Universal Purchase under the same `com.simo.evolve` App Store Connect record as iOS, it shares the same products, entitlement, Offering and `appl_` key. The below is verification + on-device QA that I **cannot** do here (no Xcode / no device / no StoreKit).
+
+### A. App Store Connect — 60-second sanity check (not RevenueCat)
+- [ ] Confirm the two IAPs (`com.simo.evolve.pro.monthly`, `com.simo.evolve.pro.yearly`) are **Cleared for Sale** and available on the **macOS** platform (automatic under Universal Purchase, but confirm).
+- [ ] Paid Apps agreement active (it is — iOS already sells; nothing to do unless it lapsed).
+- [ ] In RevenueCat: the app is the modern **"App Store"** type (Mac config hidden). If you ever see a **"legacy Mac app"** toggle, **do NOT enable it** (that's the pre-2020 separate-record path, not you).
+
+### B. On-device StoreKit-sandbox QA on the Mac mini (blocking before release)
+Build the desktop app in Xcode with a **sandbox Apple ID** signed in, then:
+- [ ] **Purchase — annual**: open the paywall (Settings → Subscription, and via a locked feature e.g. AI Coach → "View Pro plans"). Confirm the annual card shows a real **per-month price + honest "Save X%"** (computed from live prices, not a hardcoded number), buy it, confirm the **success dialog** appears and — when opened from a locked feature (modal) — that dismissing it **closes the paywall** and the feature is unlocked.
+- [ ] **Purchase — monthly**: same, selecting the monthly plan.
+- [ ] **Cancel the payment sheet**: dismiss Apple's sheet mid-purchase — must be **silent** (no error toast).
+- [ ] **Already-Pro view**: reopen the subscription surface while subscribed — confirm the plan cards are replaced by the **status/details panel** (plan name, "Active", the real **next-renewal date**, "Apple / App Store" payment method) with **Manage subscription + Restore** (no "Activate").
+- [ ] **Restore**: on a second signed-in device / after reinstall, tap **Restore purchases** → success toast + Pro unlocked; and with no purchase → the neutral "no active subscription" toast.
+- [ ] **Manage subscription**: taps through to Apple's `apps.apple.com/account/subscriptions` page in the browser.
+- [ ] **Legal links** on the paywall (Privacy Policy + Terms/EULA) open and follow the app language; the auto-renewal disclaimer is present (Guideline 3.1.2).
+- [ ] **Localization spot-check**: switch the app to it/es/de/ar and confirm the plan/savings subtitle and any error toast render translated (not English), and that Arabic renders RTL cleanly.
+
+### C. Note (not a blocker)
+- One pre-existing test failure, `desktop/test/coach_settings_widget_test.dart` ("AI Coach section shows the engine rows…", expects the coach "Your OpenRouter" backend label), is **red on `main` independently of this change** — it was already failing before the paywall work. Left untouched here; flag if you want it fixed separately.
+
+---
+
+## Desktop Habits › Protocol tab now shows only ACTIVE habits — on-device visual QA (Mac mini)
+
+Code is done and verified headless (`flutter analyze` clean on the changed files; new reorder tests green). This is a purely visual/interaction change I **cannot** run here (no Xcode). Quick QA on the Mac mini:
+
+- [ ] **Ended / upcoming habits disappear**: on an account with a habit whose end-date is in the past (or a start-date in the future — both are set on mobile), open **Habits → Protocol**. It should **no longer** appear in the table, but still show in the mobile app and in **Statistics → Habits** when that page's filter is set to **All**. (This matches the Statistics "Active" rule exactly.)
+- [ ] **Off-schedule-today active habit still shows**: a currently-active habit scheduled only e.g. Mon/Wed/Fri must **still appear** in Protocol on a Sunday (the table spans the whole week — it is intentionally *not* hidden on its off days).
+- [ ] **New habit appears immediately**: create a habit on desktop → it shows in Protocol right away (created active as of today).
+- [ ] **Empty state**: on an account where *every* habit is ended/upcoming, the Protocol table shows the normal "add a habit" empty card (no crash, no blank panel).
+- [ ] **Drag-reorder still correct**: with a mix of active + hidden habits, drag to reorder the visible rows — confirm the row you dragged lands where you dropped it (the *right* habit moves), the order **persists** after leaving/returning to the tab, and it **syncs** to mobile. If you later un-hide a previously-inactive habit (extend its end-date on mobile), it should reappear roughly in its original relative position.
+- [ ] **"Active protocol" summary card** (top of the page) is deliberately left as-is — it counts habits scheduled *today*, so it can legitimately read lower than the number of rows in the table. Not a bug.
+
+---
+
+## Desktop Calendar day-detail popup now shows the "Verified" badge — on-device glance (Mac mini)
+
+Code is done and verified headless (analyze clean; 2 new widget tests green). Purely visual — confirm on the Mac mini:
+
+- [ ] On an account that has an **auto-verified** habit (verification set on the iPhone — HealthKit / Screen Time), go to **Habits → Calendar**, click a day that habit is scheduled on, and confirm the popup row shows the same **shield-check "Verified" badge** next to the title that the **Protocol** tab shows — and that a manual habit on the same day has **no** badge.
+- [ ] Long habit titles + the badge don't overflow the row (title ellipsises, badge stays visible).
+
+---
+
+## AI coach engine picker redesign (desktop) — on-device QA (Mac mini)
+
+Code done + verified headless (`flutter analyze` clean; **543 tests green** incl. new per-product-memory + card-dialog widget tests). Purely a desktop UI/UX rework of *how the coach LLM is chosen*. Confirm on the Mac mini, ideally with **both Ollama and LM Studio installed**:
+
+- [ ] **Header selector**: the chat-header pill shows the active engine + model with a status dot (green = reachable, amber = needs setup, grey = off). Clicking it opens the "AI coach engine" popup directly — the old quick-dropdown is gone.
+- [ ] **Private-mode cards**: in Private mode the popup top shows an OpenRouter card + a "Local — on this Mac" group with **Ollama** and **LM Studio** cards (each live/off), plus a "Use a custom server…" link.
+- [ ] **One-tap product switch (the headline)**: with Ollama running, click its card → activates + lists its models; pick a model. Click LM Studio → switches; pick a different model. Switch back and forth — **each product must restore its own last-used model**, not the other's.
+- [ ] **Off → Start**: click a product whose server is off → a "Start {app}" button appears in the detail (Ollama launches; LM Studio shows the Developer → Start Server hint). Selecting a card must NOT launch an app by itself.
+- [ ] **Auto-pick single model**: point at a server exposing exactly one model with none remembered → it is auto-selected (no blank dropdown before you can chat).
+- [ ] **Custom server**: "Use a custom server…" reveals the editable base URL + manual-model field and the remote/LAN warning for a non-loopback host; picking a named card hides them again. A previously-saved custom URL opens straight into these fields.
+- [ ] **Account mode intact**: signed-in account mode still shows only the Evolve AI card + the "available in Private mode" note — no key field, no local cards (Guideline 3.1.1 shape).
+- [ ] **Banners**: the offline-recovery banner (Start when your local server drops) and the detected-local nudge still appear and self-heal.
+- [ ] **Translations glance** (optional): the 6 new strings read naturally in it/de/es/ar in context (`localGroupLabel`, `useCustomServer`, `cardLive`, `cardOff`, `engineOpenRouterHint`).

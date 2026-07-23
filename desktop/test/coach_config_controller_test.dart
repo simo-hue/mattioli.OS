@@ -130,6 +130,62 @@ void main() {
     expect(cfg.localBaseUrl, 'http://192.168.1.9:11434/v1');
   });
 
+  test('per-PRODUCT model memory persists and restores across servers',
+      () async {
+    // The headline of the redesign: Ollama and LM Studio each remember their own
+    // model, so a one-tap switch lands on the right one instead of stranding a
+    // stale id the other server can't serve.
+    final container = await _container();
+    final prefs = await SharedPreferences.getInstance();
+    final controller = container.read(coachConfigProvider.notifier);
+
+    // On Ollama (the default URL) pick a model.
+    await controller.setLocalModel('llama3.1:8b');
+    // Switch to LM Studio, pick a different one.
+    await controller.useLocalServer('http://localhost:1234/v1');
+    await controller.setLocalModel('qwen2.5-7b');
+    expect(container.read(coachConfigProvider).localModel, 'qwen2.5-7b');
+
+    // Back to Ollama → its own model returns; LM Studio's is untouched.
+    await controller.useLocalServer('http://localhost:11434/v1');
+    expect(container.read(coachConfigProvider).localModel, 'llama3.1:8b');
+
+    // Persisted as one JSON map keyed by base URL; the retired single-model pref
+    // is cleared so the one-time migration can't resurrect a stale value.
+    final raw = prefs.getString('coach_local_models');
+    expect(raw, isNotNull);
+    expect(raw, contains('qwen2.5-7b'));
+    expect(raw, contains('llama3.1:8b'));
+    expect(prefs.getString('coach_local_model'), isNull);
+  });
+
+  test('rehydrates the per-URL map, active model following the base URL',
+      () async {
+    final container = await _container({
+      'coach_backend': 'local',
+      'coach_local_base_url': 'http://localhost:1234/v1',
+      'coach_local_models':
+          '{"http://localhost:11434/v1":"llama3.1:8b",'
+          '"http://localhost:1234/v1":"qwen2.5-7b"}',
+    });
+    // Active URL is LM Studio → its remembered model.
+    expect(container.read(coachConfigProvider).localModel, 'qwen2.5-7b');
+  });
+
+  test('migrates the legacy single-model pref at the current base URL',
+      () async {
+    // An upgrading local user has only `coach_local_model`; it must reappear as
+    // the active model, now keyed under the URL they were on.
+    final container = await _container({
+      'coach_backend': 'local',
+      'coach_local_base_url': 'http://localhost:1234/v1',
+      'coach_local_model': 'phi3:mini',
+    });
+    final cfg = container.read(coachConfigProvider);
+    expect(cfg.localModel, 'phi3:mini');
+    expect(cfg.localModels['http://localhost:1234/v1'], 'phi3:mini');
+  });
+
   test('activeCoachBackendProvider is Standard in account mode, whatever is '
       'chosen', () async {
     // Account mode is Standard-only: BYOK and Local are Private-mode features,

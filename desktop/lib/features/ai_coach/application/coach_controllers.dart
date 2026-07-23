@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/core/desktop_supabase_config.dart';
@@ -26,7 +28,11 @@ class CoachConfigController extends Notifier<CoachConfig> {
   static const _kBackend = 'coach_backend';
   static const _kLocalBaseUrl = 'coach_local_base_url';
   static const _kCloudModel = 'coach_cloud_model';
+  // Legacy single-model pref. Superseded by [_kLocalModels]; still read once to
+  // migrate an upgrading user, and cleared on the first model write.
   static const _kLocalModel = 'coach_local_model';
+  // Per-base-URL model memory, JSON `{ baseUrl: modelId }`.
+  static const _kLocalModels = 'coach_local_models';
   static const _kTemperature = 'coach_temperature';
   static const _kSystemPrompt = 'coach_system_prompt';
 
@@ -39,18 +45,18 @@ class CoachConfigController extends Notifier<CoachConfig> {
     if (prefs == null) return defaults;
 
     final cloudModel = prefs.getString(_kCloudModel)?.trim();
-    final localModel = prefs.getString(_kLocalModel)?.trim();
     final systemPrompt = prefs.getString(_kSystemPrompt)?.trim();
+    final localBaseUrl = normalizeBaseUrl(
+      prefs.getString(_kLocalBaseUrl) ?? defaults.localBaseUrl,
+    );
 
     return CoachConfig(
       backend: CoachBackendKind.fromCode(prefs.getString(_kBackend)),
-      localBaseUrl: normalizeBaseUrl(
-        prefs.getString(_kLocalBaseUrl) ?? defaults.localBaseUrl,
-      ),
+      localBaseUrl: localBaseUrl,
       cloudModel: (cloudModel == null || cloudModel.isEmpty)
           ? defaults.cloudModel
           : cloudModel,
-      localModel: (localModel == null || localModel.isEmpty) ? null : localModel,
+      localModels: _readLocalModels(prefs, localBaseUrl),
       temperature: clampTemperature(
         prefs.getDouble(_kTemperature) ?? defaults.temperature,
       ),
@@ -58,6 +64,41 @@ class CoachConfigController extends Notifier<CoachConfig> {
           ? null
           : systemPrompt,
     );
+  }
+
+  /// Reads the per-URL model map, or reconstructs it from the retired single
+  /// `coach_local_model` pref (keyed at [currentBaseUrl]) so an upgrading local
+  /// user keeps the model they were on. A corrupt blob degrades to the legacy
+  /// value, then to empty — never throws out of `build()`.
+  Map<String, String> _readLocalModels(
+    SharedPreferences prefs,
+    String currentBaseUrl,
+  ) {
+    final raw = prefs.getString(_kLocalModels);
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is Map) {
+          final out = <String, String>{};
+          decoded.forEach((key, value) {
+            if (key is String &&
+                value is String &&
+                key.isNotEmpty &&
+                value.isNotEmpty) {
+              out[normalizeBaseUrl(key)] = value;
+            }
+          });
+          return out;
+        }
+      } catch (_) {
+        // Fall through to the legacy migration below.
+      }
+    }
+    final legacy = prefs.getString(_kLocalModel)?.trim();
+    if (legacy != null && legacy.isNotEmpty) {
+      return {currentBaseUrl: legacy};
+    }
+    return const {};
   }
 
   Future<void> setBackend(CoachBackendKind kind) async {
@@ -79,15 +120,28 @@ class CoachConfigController extends Notifier<CoachConfig> {
     await _prefs?.setString(_kCloudModel, trimmed);
   }
 
+  /// Remembers [model] for the ACTIVE local base URL (or forgets it when null /
+  /// blank). Because the model lives under `localBaseUrl`, this only ever touches
+  /// the current product's memory — switching to another server later restores
+  /// its own last pick untouched.
   Future<void> setLocalModel(String? model) async {
     final trimmed = model?.trim();
-    if (trimmed == null || trimmed.isEmpty) {
-      state = state.copyWith(clearLocalModel: true);
-      await _prefs?.remove(_kLocalModel);
+    state = (trimmed == null || trimmed.isEmpty)
+        ? state.copyWith(clearLocalModel: true)
+        : state.copyWith(localModel: trimmed);
+    await _persistLocalModels();
+  }
+
+  Future<void> _persistLocalModels() async {
+    final models = state.localModels;
+    if (models.isEmpty) {
+      await _prefs?.remove(_kLocalModels);
     } else {
-      state = state.copyWith(localModel: trimmed);
-      await _prefs?.setString(_kLocalModel, trimmed);
+      await _prefs?.setString(_kLocalModels, jsonEncode(models));
     }
+    // The map is now the source of truth; drop the retired single-model pref so
+    // the one-time migration can't re-run and resurrect a stale value.
+    await _prefs?.remove(_kLocalModel);
   }
 
   Future<void> setTemperature(double value) async {

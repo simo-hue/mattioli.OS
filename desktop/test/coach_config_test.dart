@@ -333,6 +333,62 @@ void main() {
     });
   });
 
+  group('per-product (per-base-URL) local model memory', () {
+    const ollama = kDefaultLocalBaseUrl; // :11434
+    const lmStudio = 'http://localhost:1234/v1';
+
+    test('localModel reads the entry for the ACTIVE base URL', () {
+      // A pick made on Ollama is Ollama's alone — pointing at LM Studio reads
+      // back null there (nothing remembered yet), not the Ollama id, which the
+      // LM Studio server would answer with "model not found".
+      final onOllama = CoachConfig.defaults().copyWith(localModel: 'llama3.1:8b');
+      expect(onOllama.localModel, 'llama3.1:8b');
+
+      final onLmStudio = onOllama.copyWith(localBaseUrl: lmStudio);
+      expect(onLmStudio.localModel, isNull);
+      expect(onLmStudio.localModels[ollama], 'llama3.1:8b');
+    });
+
+    test('each product keeps its own model across round-trips', () {
+      final config = CoachConfig.defaults()
+          .copyWith(localModel: 'llama3.1:8b') // on Ollama
+          .copyWith(localBaseUrl: lmStudio, localModel: 'qwen2.5-7b');
+
+      expect(config.localModel, 'qwen2.5-7b'); // active = LM Studio
+      expect(config.copyWith(localBaseUrl: ollama).localModel, 'llama3.1:8b');
+    });
+
+    test('copyWith(localModel:) keys at the RESULTING base URL', () {
+      // Setting the model and switching product in one call must land the model
+      // on the new URL, never cross the wires onto the old one.
+      final config = CoachConfig.defaults().copyWith(
+        localBaseUrl: lmStudio,
+        localModel: 'qwen2.5-7b',
+      );
+      expect(config.localModels[lmStudio], 'qwen2.5-7b');
+      expect(config.localModels.containsKey(ollama), isFalse);
+    });
+
+    test('clearLocalModel forgets only the active URL', () {
+      final config = CoachConfig.defaults()
+          .copyWith(localModel: 'llama3.1:8b')
+          .copyWith(localBaseUrl: lmStudio, localModel: 'qwen2.5-7b');
+
+      final cleared = config.copyWith(clearLocalModel: true); // on LM Studio
+      expect(cleared.localModel, isNull);
+      expect(cleared.copyWith(localBaseUrl: ollama).localModel, 'llama3.1:8b');
+    });
+
+    test('equality and hashCode fold in the model map', () {
+      final a = CoachConfig.defaults().copyWith(localModel: 'llama3.1:8b');
+      final b = CoachConfig.defaults().copyWith(localModel: 'llama3.1:8b');
+      final c = CoachConfig.defaults().copyWith(localModel: 'qwen2.5-7b');
+      expect(a, b);
+      expect(a.hashCode, b.hashCode);
+      expect(a, isNot(c));
+    });
+  });
+
   group('effectiveLocalModelOptions', () {
     const discovered = [CoachModel(id: 'llama3.1:8b'), CoachModel(id: 'qwen2.5:7b')];
 

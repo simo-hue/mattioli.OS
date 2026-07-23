@@ -2233,3 +2233,8 @@ All owner actions are itemized in **TO_SIMO_DO.md**.
     - **Tests**: 5 new in `sync_key_split_test.dart` (pure claim-guard defer, two-device convergence to one key, crash idempotency, fail-open mint, sentinel-not-quarantined); 2 new desktop widget tests in `icloud_sync_card_test.dart` covering the previously-untested key-split status label + `resetSyncFromThisDevice` recovery row. Forwarded the new method in the two `sync_convergence_test.dart` bridge wrappers.
     - Verified headless: `flutter analyze` (evolve_sync) clean; `flutter test` evolve_sync **200/200**, desktop `icloud_sync_card_test.dart` **13/13**.
   - *Current Status*: Dart + tests implemented and verified headless. **Native Swift is written but UNBUILT (no Xcode on this machine)** — must be compiled + on-device-verified on the Mac mini (both apps). Because the guard is fail-open, shipping the Dart without the native method is a no-op (identical to today); the race only closes once the native `tryClaimFirstMint` is built into both apps. Operational reconverge for the current split is in TO_SIMO_DO.md.
+
+- [2026-07-23]: **Bump Desktop (macOS) & Mobile (iOS) Build Versions**
+  - *Details*: Incremented application version build numbers in `desktop/pubspec.yaml` (`1.1.4+22` -> `1.1.4+23`) and `mobile/pubspec.yaml` (`1.1.3+38` -> `1.1.3+39`) for release build alignment across macOS and iOS.
+  - *Tech Notes*: `pubspec.yaml` version fields feed `CFBundleVersion` (`$(FLUTTER_BUILD_NUMBER)`) in `macos/Runner/Info.plist` and `ios/Runner/Info.plist`.
+

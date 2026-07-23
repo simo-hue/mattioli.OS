@@ -1231,5 +1231,9 @@ heading ellipsizing. `flutter analyze` clean; `tour_flow_test` still passes.
     (`NSRunningApplication.runningApplications(withBundleIdentifier:)`, `NSWorkspace.OpenConfiguration`)
     typechecks against the real framework via `swiftc -typecheck` (Swift 6.3.2). **NOT verified**:
     the full macOS build (no Xcode on this machine) and every runtime behaviour — three empirical
-    checks remain in `TO_SIMO_DO.md`. Note `dart format` reports 90 files as unformatted repo-wide;
     that drift is pre-existing and was deliberately NOT swept into this change.
+
+- [2026-07-23]: **Bump Desktop/macOS Build Version to 23**
+  - *Details*: Incremented application version build number from 22 to 23 in `pubspec.yaml` (`1.1.4+22` -> `1.1.4+23`) for macOS release build alignment.
+  - *Tech Notes*: `pubspec.yaml` version update feeds `CFBundleVersion` (`$(FLUTTER_BUILD_NUMBER)`) in `macos/Runner/Info.plist`. No API or dependency changes.
+

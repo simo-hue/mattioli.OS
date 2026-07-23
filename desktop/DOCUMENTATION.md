@@ -1237,3 +1237,8 @@ heading ellipsizing. `flutter analyze` clean; `tour_flow_test` still passes.
   - *Details*: Incremented application version build number from 22 to 23 in `pubspec.yaml` (`1.1.4+22` -> `1.1.4+23`) for macOS release build alignment.
   - *Tech Notes*: `pubspec.yaml` version update feeds `CFBundleVersion` (`$(FLUTTER_BUILD_NUMBER)`) in `macos/Runner/Info.plist`. No API or dependency changes.
 
+- [2026-07-23]: **Bump Desktop Version String to 1.1.5**
+  - *Details*: Incremented desktop version string from `1.1.4` to `1.1.5` (`1.1.5+23`) in `pubspec.yaml` and updated `MARKETING_VERSION` in `macos/Runner.xcodeproj/project.pbxproj` to `1.1.5`.
+  - *Tech Notes*: Keeps pubspec version name in sync with Xcode `MARKETING_VERSION`.
+
+

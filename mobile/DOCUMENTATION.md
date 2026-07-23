@@ -2525,3 +2525,8 @@ iCloud Sync core is implemented, unit-tested (160), and iOS-compiling. Remaining
   - *Details*: Incremented application version build number from 38 to 39 in `pubspec.yaml` (`1.1.3+38` -> `1.1.3+39`) for iOS release build alignment.
   - *Tech Notes*: `pubspec.yaml` version update feeds `CFBundleVersion` (`$(FLUTTER_BUILD_NUMBER)`) in `ios/Runner/Info.plist`. No API or dependency changes.
 
+- [2026-07-23]: **Bump Mobile Version String to 1.1.4**
+  - *Details*: Incremented mobile version string from `1.1.3` to `1.1.4` (`1.1.4+39`) in `pubspec.yaml` and updated `MARKETING_VERSION` in `ios/Runner.xcodeproj/project.pbxproj` to `1.1.4`.
+  - *Tech Notes*: Keeps pubspec version name in sync with Xcode `MARKETING_VERSION`.
+
+

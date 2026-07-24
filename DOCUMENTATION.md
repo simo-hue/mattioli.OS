@@ -2285,3 +2285,7 @@ All owner actions are itemized in **TO_SIMO_DO.md**.
 
 
 
+
+- [2026-07-23]: App Version Bumps
+  - *Details*: Increased versions for both iOS and macOS applications for the new release update.
+  - *Tech Notes*: Bumped mobile/pubspec.yaml version to 1.1.5+40. Bumped desktop/pubspec.yaml version to 1.1.6+24.

@@ -1,4 +1,13 @@
 {
+  "macroTargets": {
+    "sectionTitle": "Numeric target",
+    "none": "None",
+    "amountLabel": "Target amount",
+    "linkLabel": "Track with a habit",
+    "manual": "Manual",
+    "unitCount": "count",
+    "reached": "Reached"
+  },
   "auth": {
     "continuePrivately": "Continue privately on this Mac",
     "signIn": "Log In",
@@ -111,7 +120,8 @@
       "delete": "Delete",
       "edit": "Edit",
       "pick": "Pick",
-      "gotIt": "Got it"
+      "gotIt": "Got it",
+      "done": "Done"
     },
     "months": [
       "January",
@@ -1076,6 +1086,7 @@
     "windowsScheduling": "Windows schedules the next occurrence at each launch.",
     "morningBody": "Review today's habits and choose where to start.",
     "habitReminderBody": "It's time to complete your habit.",
+    "limitReminderBody": "Staying within your limit today? Check in when you can.",
     "eveningBody": "Wrap up the day and update your progress."
   },
   "biometricGate": {
@@ -1335,5 +1346,40 @@
     "footerOpen": "open",
     "footerMenu": "menu",
     "footerClose": "close"
+  },
+  "targets": {
+    "sectionTitle": "Target",
+    "none": "Simple",
+    "atLeastLabel": "Reach",
+    "atMostLabel": "Stay under",
+    "presets": {
+      "countDaily": {
+        "label": "Count",
+        "description": "Do it a set number of times a day."
+      },
+      "durationDaily": {
+        "label": "Duration",
+        "description": "Spend a set number of minutes a day."
+      },
+      "limitCountDaily": {
+        "label": "Limit",
+        "description": "Stay under a set number each day."
+      },
+      "limitDurationDaily": {
+        "label": "Time limit",
+        "description": "Stay under a set number of minutes a day."
+      }
+    },
+    "units": {
+      "min": "min",
+      "hour": "h",
+      "kcal": "kcal",
+      "km": "km"
+    },
+    "entry": {
+      "keepGoing": "Keep going",
+      "withinLimit": "Within your limit",
+      "overLimit": "Over your limit"
+    }
   }
 }

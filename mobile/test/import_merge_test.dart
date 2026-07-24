@@ -840,4 +840,156 @@ void main() {
       expect(cat.archivedAt, isNull);
     });
   });
+
+  // ── Quantitative targets (v9) round-trip ──────────────────────────────────
+  group('targets + goal_progress', () {
+    const targetBlob =
+        '{"v":1,"src":"manual","dir":"gte","per":"day","agg":"sum",'
+        '"amount":80,"unit":"count","step":20,"input":"stepper","preset":"count_daily"}';
+
+    test('a habit target round-trips through native normalize', () {
+      final c = normalizeBackup({
+        'mode': 'private',
+        'habits': [
+          {
+            'id': 'g1',
+            'title': 'Push-ups',
+            'color': '#3B82F6',
+            'start_date': '2026-01-01',
+            'target': targetBlob,
+          },
+        ],
+      });
+      expect((c[kGoalsKey] as List).single['target'], targetBlob);
+    });
+
+    test('import writes goals.target so a restore keeps the target', () async {
+      final db = await openDb();
+      final canonical = validateCanonical(normalizeBackup({
+        'mode': 'private',
+        'habits': [
+          {
+            'id': 'g1',
+            'title': 'Push-ups',
+            'color': '#3B82F6',
+            'start_date': '2026-01-01',
+            'target': targetBlob,
+          },
+        ],
+      })).canonical;
+      await merge(db, canonical);
+
+      final row = (await db.query('goals', where: 'id = ?', whereArgs: ['g1']))
+          .single;
+      expect(row['target'], targetBlob);
+      await db.close();
+    });
+
+    test('goal_progress rows round-trip (habitProgress key) with a deterministic id',
+        () async {
+      final db = await openDb();
+      final canonical = validateCanonical(normalizeBackup({
+        'mode': 'private',
+        'habits': [
+          {
+            'id': 'g1',
+            'title': 'Push-ups',
+            'color': '#3B82F6',
+            'start_date': '2026-01-01',
+            'target': targetBlob,
+          },
+        ],
+        'habitProgress': [
+          {
+            'goal_id': 'g1',
+            'date': '2026-01-05',
+            'amount': 40,
+            'source': 'manual',
+            'updated_at': '2026-01-05T10:00:00.000Z',
+          },
+        ],
+      })).canonical;
+      await merge(db, canonical);
+
+      final row =
+          (await db.query('goal_progress', where: 'goal_id = ?', whereArgs: ['g1']))
+              .single;
+      expect(row['id'], 'g1:2026-01-05', reason: 'deterministic id');
+      expect((row['amount'] as num).toDouble(), 40);
+      expect(row['source'], 'manual');
+      await db.close();
+    });
+
+    test('a progress row for an unknown goal is skipped (FK-safe)', () async {
+      final db = await openDb();
+      final canonical = validateCanonical(normalizeBackup({
+        'mode': 'private',
+        'habitProgress': [
+          {'goal_id': 'ghost', 'date': '2026-01-05', 'amount': 40},
+        ],
+      })).canonical;
+      await merge(db, canonical);
+      expect(await db.query('goal_progress'), isEmpty);
+      await db.close();
+    });
+
+    test('a non-positive progress amount is dropped in validation', () {
+      final v = validateCanonical(normalizeBackup({
+        'mode': 'private',
+        'habitProgress': [
+          {'goal_id': 'g1', 'date': '2026-01-05', 'amount': 0},
+          {'goal_id': 'g1', 'date': '2026-01-06', 'amount': -3},
+          {'goal_id': 'g1', 'date': '2026-01-07', 'amount': 20},
+        ],
+      }));
+      expect((v.canonical[kProgressKey] as List).length, 1);
+      expect((v.canonical[kProgressKey] as List).single['date'], '2026-01-07');
+    });
+
+    test('replace mode wipes goal_progress before re-inserting', () async {
+      final db = await openDb();
+      // Seed a habit + a stale progress row directly.
+      await db.insert('goals', {
+        'id': 'g1',
+        'user_id': owner,
+        'title': 'Push-ups',
+        'color': '#3B82F6',
+        'start_date': '2026-01-01',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('goal_progress', {
+        'id': 'g1:2026-01-01',
+        'user_id': owner,
+        'goal_id': 'g1',
+        'date': '2026-01-01',
+        'amount': 99,
+        'source': 'manual',
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      final canonical = validateCanonical(normalizeBackup({
+        'mode': 'private',
+        'habits': [
+          {
+            'id': 'g1',
+            'title': 'Push-ups',
+            'color': '#3B82F6',
+            'start_date': '2026-01-01',
+            'target': targetBlob,
+          },
+        ],
+        'habitProgress': [
+          {'goal_id': 'g1', 'date': '2026-01-05', 'amount': 40},
+        ],
+      })).canonical;
+      await merge(db, canonical, replace: true);
+
+      final rows = await db.query('goal_progress');
+      expect(rows.length, 1);
+      expect(rows.single['date'], '2026-01-05', reason: 'stale row wiped');
+      await db.close();
+    });
+  });
 }

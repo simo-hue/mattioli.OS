@@ -1,14 +1,18 @@
+import 'package:evolve_targets/evolve_targets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
+import '../../core/targets_config.dart';
 import '../../models/goal.dart';
 import '../../providers/goal_provider.dart';
 import '../../core/streak_utils.dart';
 import '../../core/verification_wiring.dart';
 import '../../core/haptics.dart';
 import 'habit_management_modal.dart';
+import 'target_entry_sheet.dart';
+import 'target_ring.dart';
 import 'verification_rule_field.dart';
 import '../../i18n/translations.g.dart';
 import '../kit/evolve_toast.dart';
@@ -24,6 +28,8 @@ class DayDetailsModal extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final habits = ref.watch(goalsProvider);
     final logs = ref.watch(habitLogsProvider);
+    final progress =
+        TargetsConfig.enabled ? ref.watch(habitProgressProvider) : const {};
     final dateKey =
         '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
     final dayRecord = logs[dateKey] ?? {};
@@ -147,6 +153,27 @@ class DayDetailsModal extends ConsumerWidget {
                                   ?.contains(dateMidnight) ??
                               false);
 
+                      // A MANUAL quantitative target: the card shows a progress
+                      // ring and opens the entry sheet instead of cycling a
+                      // checkbox. Deliberately not `displayTarget` — a projected
+                      // verification rule is measured, its value lives in
+                      // goal_logs.value not goal_progress, so its ring would read
+                      // empty; a verified habit keeps its checkbox + badge here.
+                      final target = TargetsConfig.enabled &&
+                              (habit.target?.isUserEnterable ?? false)
+                          ? habit.target
+                          : null;
+                      final progressAmount =
+                          (progress[dateKey]?[habit.id] as double?) ?? 0;
+                      final TargetVerdict? verdict = target == null
+                          ? null
+                          : evaluateTarget(
+                              target: target,
+                              progress: progressAmount,
+                              periodIsOver: periodIsOver(
+                                  target.period, date, DateTime.now()),
+                            );
+
                       // Signed streak via the shared, deterministic helper
                       // (same logic as cloud + Private Mode + the web app).
                       final streak = computeStreak(
@@ -162,6 +189,9 @@ class DayDetailsModal extends ConsumerWidget {
                         status: status,
                         streak: streak,
                         couldNotVerify: couldNotVerify,
+                        target: target,
+                        verdict: verdict,
+                        progressAmount: progressAmount,
                         onTap: () {
                           final today = DateTime(
                             DateTime.now().year,
@@ -184,6 +214,20 @@ class DayDetailsModal extends ConsumerWidget {
                               message:
                                   context.t.habits.youCanOnlyEditTodayAnd,
                               kind: EvolveToastKind.error,
+                            );
+                            return;
+                          }
+
+                          // A user-enterable target opens the progress entry
+                          // sheet (increment / timer); a measured target's ring
+                          // is filled by the verification pipeline, so it falls
+                          // through to the normal resolve/toggle path.
+                          if (target != null && target.isUserEnterable) {
+                            TargetEntrySheet.show(
+                              context,
+                              habit: habit,
+                              target: target,
+                              date: date,
                             );
                             return;
                           }
@@ -220,6 +264,12 @@ class GoalLogCard extends ConsumerWidget {
   /// (D6): renders the "?" resolve affordance in place of the pending circle.
   final bool couldNotVerify;
 
+  /// The habit's display target (own manual, or a projected rule). When set,
+  /// the leading slot shows a progress ring + count instead of the status icon.
+  final HabitTarget? target;
+  final TargetVerdict? verdict;
+  final double progressAmount;
+
   const GoalLogCard({
     super.key,
     required this.habit,
@@ -227,6 +277,9 @@ class GoalLogCard extends ConsumerWidget {
     required this.streak,
     required this.onTap,
     this.couldNotVerify = false,
+    this.target,
+    this.verdict,
+    this.progressAmount = 0,
   });
 
   @override
@@ -265,7 +318,14 @@ class GoalLogCard extends ConsumerWidget {
       iconColor = primary;
     }
 
-    final a11yStatus = status == 'done'
+    // For a target habit the spoken status is the progress ("40 of 80"); the
+    // ring carries the visual state, so the card's own colour stays neutral
+    // while pending.
+    final a11yStatus = target != null
+        ? '${formatTargetAmount(progressAmount)} / '
+            '${formatTargetAmount(target!.amount)}'
+            '${targetUnitShortLabel(context.t, target!.unit).isEmpty ? '' : ' ${targetUnitShortLabel(context.t, target!.unit)}'}'
+        : status == 'done'
         ? context.t.a11y.statusDone
         : status == 'missed'
         ? context.t.a11y.statusMissed
@@ -294,27 +354,46 @@ class GoalLogCard extends ConsumerWidget {
           ),
           child: Row(
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: iconBgColor,
-                  borderRadius: BorderRadius.circular(12),
+              if (target != null && verdict != null)
+                TargetRing(
+                  target: target!,
+                  verdict: verdict!,
+                  size: 44,
+                  strokeWidth: 4,
+                  accent: habit.color,
+                  child: Text(
+                    formatTargetAmount(progressAmount),
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      height: 1,
+                      color: textColor,
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  width: 44,
+                  height: 44,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: iconBgColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: couldNotVerify
+                      ? Text(
+                          '?',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: iconColor,
+                            height: 1,
+                          ),
+                        )
+                      : Icon(icon, color: iconColor, size: 20),
                 ),
-                child: couldNotVerify
-                    ? Text(
-                        '?',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: iconColor,
-                          height: 1,
-                        ),
-                      )
-                    : Icon(icon, color: iconColor, size: 20),
-              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -347,7 +426,19 @@ class GoalLogCard extends ConsumerWidget {
                         ],
                       ],
                     ),
-                    if (couldNotVerify) ...[
+                    if (target != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '${formatTargetAmount(progressAmount)} / '
+                        '${formatTargetAmount(target!.amount)}'
+                        '${targetUnitShortLabel(context.t, target!.unit).isEmpty ? '' : ' ${targetUnitShortLabel(context.t, target!.unit)}'}',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          color: context.appColors.mutedForeground,
+                        ),
+                      ),
+                    ] else if (couldNotVerify) ...[
                       const SizedBox(height: 2),
                       Text(
                         context.t.verification.couldNotVerifyTapToResolve,

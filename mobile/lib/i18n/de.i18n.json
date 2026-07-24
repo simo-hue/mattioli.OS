@@ -1,4 +1,13 @@
 {
+  "macroTargets": {
+    "sectionTitle": "Numerisches Ziel",
+    "none": "Keins",
+    "amountLabel": "Zielwert",
+    "linkLabel": "Mit einer Gewohnheit verknüpfen",
+    "manual": "Manuell",
+    "unitCount": "Anzahl",
+    "reached": "Erreicht"
+  },
   "appTitle": "Evolve",
   "aiSistema": "AI & SYSTEM",
   "suggerimentiAi": "AI-Vorschläge",
@@ -429,6 +438,9 @@
     "habitReminderMessage13": "Schätzen Sie Ihre Zeit: Es ist Zeit für „{title}“.",
     "habitReminderMessage14": "Fordern Sie sich heute erneut mit „{title}“ heraus.",
     "habitReminderMessage15": "Nur ein kleiner Aufwand, um „{title}“ zu vervollständigen.",
+    "limitReminderMessage1": "Wie sieht es heute mit deinem Limit für „{title}“ aus?",
+    "limitReminderMessage2": "Bleibst du heute innerhalb deines Limits für „{title}“?",
+    "limitReminderMessage3": "Sieh nach „{title}“ – achte heute auf dein Limit.",
     "verificationHeader": "GEWOHNHEITSPRÜFUNG",
     "verificationNudges": "Prüf-Erinnerungen",
     "verificationNudgesSubtitle": "Mich bitten, nicht automatisch prüfbare Gewohnheiten zu bestätigen",
@@ -1309,5 +1321,40 @@
     "deniedNote": "Der Zugriff auf die Bildschirmzeit ist deaktiviert. Zum Verwenden öffne Einstellungen, Bildschirmzeit und erlaube Evolve.",
     "manageHint": "Du kannst dies jederzeit in der iOS-App „Einstellungen“ ändern oder deaktivieren.",
     "enabledNote": "Die Bildschirmzeit-Verifizierung ist aktiv. Füge eine Bildschirmzeit-Gewohnheit hinzu, um zu starten."
+  },
+  "targets": {
+    "sectionTitle": "Ziel",
+    "none": "Einfach",
+    "atLeastLabel": "Erreiche",
+    "atMostLabel": "Bleib unter",
+    "presets": {
+      "countDaily": {
+        "label": "Anzahl",
+        "description": "Erledige es eine bestimmte Anzahl pro Tag."
+      },
+      "durationDaily": {
+        "label": "Dauer",
+        "description": "Verbringe eine bestimmte Anzahl Minuten pro Tag."
+      },
+      "limitCountDaily": {
+        "label": "Limit",
+        "description": "Bleib täglich unter einer bestimmten Anzahl."
+      },
+      "limitDurationDaily": {
+        "label": "Zeitlimit",
+        "description": "Bleib täglich unter einer bestimmten Minutenzahl."
+      }
+    },
+    "units": {
+      "min": "Min.",
+      "hour": "Std.",
+      "kcal": "kcal",
+      "km": "km"
+    },
+    "entry": {
+      "keepGoing": "Weiter so",
+      "withinLimit": "Innerhalb des Limits",
+      "overLimit": "Über dem Limit"
+    }
   }
 }

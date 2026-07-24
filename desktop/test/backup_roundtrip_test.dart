@@ -144,6 +144,79 @@ void main() {
     ],
   };
 
+  group('quantitative targets (v9) round-trip', () {
+    const targetBlob =
+        '{"v":1,"src":"manual","dir":"gte","per":"day","agg":"sum",'
+        '"amount":80,"unit":"count","step":20,"input":"stepper"}';
+
+    Map<String, dynamic> withTarget() => {
+          'mode': 'private',
+          'habits': [
+            {
+              'id': 'goal-1',
+              'title': 'Push-ups',
+              'color': '#00FF00',
+              'start_date': '2026-06-01',
+              'updated_at': ts,
+              'target': targetBlob,
+            },
+          ],
+          'habitProgress': [
+            {
+              'goal_id': 'goal-1',
+              'date': '2026-06-05',
+              'amount': 40,
+              'source': 'manual',
+              'updated_at': ts,
+            },
+          ],
+        };
+
+    test('the target + progress survive the canonical model', () {
+      final model =
+          DesktopBackupImportService.buildCanonicalModel(withTarget()).canonical;
+      expect((model['goals'] as List).single['target'], targetBlob);
+      final prog = (model['goal_progress'] as List).single as Map;
+      expect(prog['goal_id'], 'goal-1');
+      expect((prog['amount'] as num).toDouble(), 40);
+    });
+
+    test('applyImport persists goals.target and a deterministic goal_progress id',
+        () async {
+      final db = await seeded();
+      await apply(
+          db, DesktopBackupImportService.buildCanonicalModel(withTarget()).canonical);
+
+      final goal =
+          (await db.query('goals', where: 'id = ?', whereArgs: ['goal-1']))
+              .single;
+      expect(goal['target'], targetBlob);
+      final prog = (await db.query('goal_progress')).single;
+      expect(prog['id'], 'goal-1:2026-06-05');
+      expect((prog['amount'] as num).toDouble(), 40);
+      await db.close();
+    });
+
+    test('the cloud plan carries target + progress', () {
+      final model =
+          DesktopBackupImportService.buildCanonicalModel(withTarget()).canonical;
+      final plan = planCloudImport(
+        userId: 'cloud-user',
+        canonical: model,
+        replaceExisting: true,
+        now: now,
+        existingCategories: const [],
+        existingGoals: const {},
+        existingMacros: const {},
+        existingLogs: const {},
+        existingMoods: const {},
+        newId: () => 'gen',
+      );
+      expect(plan.goals.single['target'], targetBlob);
+      expect(plan.progress.single['id'], 'goal-1:2026-06-05');
+    });
+  });
+
   group('native DB-row export round-trip', () {
     test('build model preserves every entity + profile', () {
       final validated = DesktopBackupImportService.buildCanonicalModel(

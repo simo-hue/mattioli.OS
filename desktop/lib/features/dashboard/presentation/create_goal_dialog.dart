@@ -1,7 +1,10 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/macro_goal_calendar.dart';
+import 'package:evolve_desktop/core/macro_targets_config.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
+import 'package:evolve_desktop/shared/widgets/target_ring.dart';
+import 'package:evolve_targets/evolve_targets.dart';
 import 'package:evolve_desktop/features/goals/application/goal_categories_controller.dart';
 import 'package:evolve_desktop/features/search/application/goal_nav_target.dart';
 import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
@@ -36,6 +39,18 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
   final _categoryController = TextEditingController(
     text: t.createGoal.defaultCategory,
   );
+  final _amountController = TextEditingController();
+
+  /// Optional numeric target (behind [DesktopMacroTargetsConfig]). Null unit ⇒
+  /// a plain boolean macro goal, as today. Null [_linkedGoalId] ⇒ manual entry.
+  TargetUnit? _targetUnit;
+  String? _linkedGoalId;
+
+  /// Sentinel option value for "no numeric target" in the unit picker.
+  static const _kNoTarget = '__evolve_no_target__';
+
+  /// Sentinel option value for "manual entry" in the link picker.
+  static const _kManual = '__evolve_manual__';
 
   GoalType _selectedType = GoalType.monthly;
   bool _isLoading = false;
@@ -68,6 +83,7 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
   void dispose() {
     _titleController.dispose();
     _categoryController.dispose();
+    _amountController.dispose();
     super.dispose();
   }
 
@@ -201,6 +217,16 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
       weekNumber: weekNumber,
     );
 
+    // Attach the numeric target only when the feature is live AND a unit was
+    // chosen; otherwise the goal is exactly the boolean goal shipped today.
+    final unit = DesktopMacroTargetsConfig.enabled ? _targetUnit : null;
+    final typedAmount =
+        double.tryParse(_amountController.text.trim().replaceAll(',', '.'));
+    final targetAmount =
+        unit == null ? null : (typedAmount == null || typedAmount <= 0
+            ? 1.0
+            : typedAmount);
+
     try {
       await ref
           .read(dashboardControllerProvider.notifier)
@@ -214,6 +240,9 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
             quarter: quarter,
             month: month,
             weekNumber: weekNumber,
+            targetAmount: targetAmount,
+            targetUnit: unit?.wireName,
+            linkedGoalId: unit == null ? null : _linkedGoalId,
           );
       if (widget.jumpAfterCreate) {
         // Land the Goals page on exactly the period we just filed under (no id
@@ -342,6 +371,92 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
     if (_selectedWeek > weeks) _selectedWeek = weeks;
   }
 
+  String _unitLabel(TargetUnit unit) => unit == TargetUnit.count
+      ? t.macroTargets.unitCount
+      : targetUnitShortLabel(unit);
+
+  /// Optional numeric-target section — a unit picker ("None" + each
+  /// [TargetUnit]), an amount field, and a "track with a habit" picker (Manual +
+  /// the user's habits). Only shown behind [DesktopMacroTargetsConfig]; while
+  /// dark the dialog is exactly today's boolean-goal creator.
+  Widget _targetSection(BuildContext context) {
+    if (!DesktopMacroTargetsConfig.enabled) return const SizedBox.shrink();
+    final fill = context.evolveColors.background.withValues(alpha: 0.5);
+    final habits = ref.watch(dashboardControllerProvider).habits;
+    final unitSet = _targetUnit != null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 20),
+        EvolveFieldLabel(t.macroTargets.sectionTitle),
+        const SizedBox(height: 8),
+        EvolveSelect<String>(
+          value: _targetUnit?.wireName ?? _kNoTarget,
+          expand: true,
+          height: 46,
+          fillColor: fill,
+          options: [
+            EvolveSelectOption(value: _kNoTarget, label: t.macroTargets.none),
+            for (final unit in TargetUnit.values)
+              EvolveSelectOption(value: unit.wireName, label: _unitLabel(unit)),
+          ],
+          onChanged: (value) => setState(() {
+            _targetUnit =
+                value == _kNoTarget ? null : TargetUnit.fromWire(value);
+            if (_targetUnit == null) _linkedGoalId = null;
+          }),
+        ),
+        if (unitSet) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _amountController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: t.macroTargets.amountLabel,
+                  ),
+                ),
+              ),
+              if (_unitLabel(_targetUnit!).isNotEmpty) ...[
+                const SizedBox(width: 10),
+                Text(
+                  _unitLabel(_targetUnit!),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: context.evolveColors.foreground,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 12),
+          EvolveFieldLabel(t.macroTargets.linkLabel),
+          const SizedBox(height: 8),
+          EvolveSelect<String>(
+            value: _linkedGoalId ?? _kManual,
+            expand: true,
+            height: 46,
+            fillColor: fill,
+            options: [
+              EvolveSelectOption(value: _kManual, label: t.macroTargets.manual),
+              for (final habit in habits)
+                EvolveSelectOption(value: habit.id, label: habit.title),
+            ],
+            onChanged: (value) => setState(
+              () => _linkedGoalId = value == _kManual ? null : value,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final categories =
@@ -403,6 +518,7 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
             onChanged: (val) => setState(() => _selectedType = val),
           ),
           _periodPicker(context),
+          _targetSection(context),
         ],
       ),
       actions: [

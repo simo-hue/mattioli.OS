@@ -140,6 +140,17 @@ void main() async {
     }
   }
 
+  // Carica Progress Cache (quantitative-habit daily numbers). No SharedPreferences
+  // legacy to migrate — this cache is new in the targets feature — so a miss is
+  // simply an empty map, seeded from the private store / Supabase on first sync.
+  String? progressJson;
+  try {
+    progressJson = await SecureStorageUtils.read('goal_progress_cache');
+  } catch (e, stack) {
+    AppLogger.error('[Startup] goal_progress_cache secure read failed', e, stack);
+  }
+  progressJson ??= '{}';
+
   // ── Sentry init ──────────────────────────────────────────────────────────
   // Gated on the consent question having been ANSWERED, not just on the answer:
   // 'has_sentry_consent' is absent on a fresh install and reads back as true, so
@@ -223,6 +234,7 @@ void main() async {
           sharedPrefsProvider.overrideWithValue(prefs),
           initialGoalsProvider.overrideWithValue(goalsJson!),
           initialLogsProvider.overrideWithValue(logsJson!),
+          initialProgressProvider.overrideWithValue(progressJson!),
         ],
         child: TranslationProvider(child: const EvolveApp()),
       ),
@@ -454,6 +466,21 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
           await runVerificationReconcile(ref);
         } catch (e, stack) {
           AppLogger.error('[Verification] foreground reconcile failed', e, stack);
+        }
+      }());
+    }
+
+    // Quantitative targets: end-of-day resolution on foreground. Independent of
+    // the verification flag and of data mode — a manual target is plain local
+    // data that works in both modes — and a no-op until a habit actually has a
+    // manual target. This is what materialises a limit habit's quiet days into
+    // 'done' verdicts for days that closed while the app was shut.
+    if (state == AppLifecycleState.resumed) {
+      unawaited(() async {
+        try {
+          await ref.read(habitProgressProvider.notifier).reconcileManualTargets();
+        } catch (e, stack) {
+          AppLogger.error('[Targets] foreground reconcile failed', e, stack);
         }
       }());
     }

@@ -40,6 +40,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	Translations $copyWith({TranslationMetadata<AppLocale, Translations>? meta}) => Translations(meta: meta ?? this.$meta);
 
 	// Translations
+	late final Translations$macroTargets$en macroTargets = Translations$macroTargets$en.internal(_root);
 	late final Translations$auth$en auth = Translations$auth$en.internal(_root);
 	late final Translations$privateData$en privateData = Translations$privateData$en.internal(_root);
 	late final Translations$icloudSync$en icloudSync = Translations$icloudSync$en.internal(_root);
@@ -102,6 +103,37 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$coachSettings$en coachSettings = Translations$coachSettings$en.internal(_root);
 	late final Translations$tour$en tour = Translations$tour$en.internal(_root);
 	late final Translations$palette$en palette = Translations$palette$en.internal(_root);
+	late final Translations$targets$en targets = Translations$targets$en.internal(_root);
+}
+
+// Path: macroTargets
+class Translations$macroTargets$en {
+	Translations$macroTargets$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Numeric target'
+	String get sectionTitle => 'Numeric target';
+
+	/// en: 'None'
+	String get none => 'None';
+
+	/// en: 'Target amount'
+	String get amountLabel => 'Target amount';
+
+	/// en: 'Track with a habit'
+	String get linkLabel => 'Track with a habit';
+
+	/// en: 'Manual'
+	String get manual => 'Manual';
+
+	/// en: 'count'
+	String get unitCount => 'count';
+
+	/// en: 'Reached'
+	String get reached => 'Reached';
 }
 
 // Path: auth
@@ -2905,6 +2937,9 @@ class Translations$notif$en {
 	/// en: 'It's time to complete your habit.'
 	String get habitReminderBody => 'It\'s time to complete your habit.';
 
+	/// en: 'Staying within your limit today? Check in when you can.'
+	String get limitReminderBody => 'Staying within your limit today? Check in when you can.';
+
 	/// en: 'Wrap up the day and update your progress.'
 	String get eveningBody => 'Wrap up the day and update your progress.';
 }
@@ -3710,6 +3745,31 @@ class Translations$palette$en {
 	String get footerClose => 'close';
 }
 
+// Path: targets
+class Translations$targets$en {
+	Translations$targets$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Target'
+	String get sectionTitle => 'Target';
+
+	/// en: 'Simple'
+	String get none => 'Simple';
+
+	/// en: 'Reach'
+	String get atLeastLabel => 'Reach';
+
+	/// en: 'Stay under'
+	String get atMostLabel => 'Stay under';
+
+	late final Translations$targets$presets$en presets = Translations$targets$presets$en.internal(_root);
+	late final Translations$targets$units$en units = Translations$targets$units$en.internal(_root);
+	late final Translations$targets$entry$en entry = Translations$targets$entry$en.internal(_root);
+}
+
 // Path: common.actions
 class Translations$common$actions$en {
 	Translations$common$actions$en.internal(this._root);
@@ -3735,6 +3795,9 @@ class Translations$common$actions$en {
 
 	/// en: 'Got it'
 	String get gotIt => 'Got it';
+
+	/// en: 'Done'
+	String get done => 'Done';
 }
 
 // Path: common.calendarView
@@ -4062,6 +4125,58 @@ class Translations$settingsPage$languageOptions$en {
 	String get arabic => 'Arabic';
 }
 
+// Path: targets.presets
+class Translations$targets$presets$en {
+	Translations$targets$presets$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+	late final Translations$targets$presets$countDaily$en countDaily = Translations$targets$presets$countDaily$en.internal(_root);
+	late final Translations$targets$presets$durationDaily$en durationDaily = Translations$targets$presets$durationDaily$en.internal(_root);
+	late final Translations$targets$presets$limitCountDaily$en limitCountDaily = Translations$targets$presets$limitCountDaily$en.internal(_root);
+	late final Translations$targets$presets$limitDurationDaily$en limitDurationDaily = Translations$targets$presets$limitDurationDaily$en.internal(_root);
+}
+
+// Path: targets.units
+class Translations$targets$units$en {
+	Translations$targets$units$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'min'
+	String get min => 'min';
+
+	/// en: 'h'
+	String get hour => 'h';
+
+	/// en: 'kcal'
+	String get kcal => 'kcal';
+
+	/// en: 'km'
+	String get km => 'km';
+}
+
+// Path: targets.entry
+class Translations$targets$entry$en {
+	Translations$targets$entry$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Keep going'
+	String get keepGoing => 'Keep going';
+
+	/// en: 'Within your limit'
+	String get withinLimit => 'Within your limit';
+
+	/// en: 'Over your limit'
+	String get overLimit => 'Over your limit';
+}
+
 // Path: ai.coachPrompts.diagnoseWeakestHabit
 class Translations$ai$coachPrompts$diagnoseWeakestHabit$en {
 	Translations$ai$coachPrompts$diagnoseWeakestHabit$en.internal(this._root);
@@ -4212,6 +4327,66 @@ class Translations$ai$coachPrompts$whatCanYouHelp$en {
 	String get payload => 'Based on my habits and goals in this app, give me three specific examples of how you can help me — not generic advice, but things tied to my actual data.';
 }
 
+// Path: targets.presets.countDaily
+class Translations$targets$presets$countDaily$en {
+	Translations$targets$presets$countDaily$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Count'
+	String get label => 'Count';
+
+	/// en: 'Do it a set number of times a day.'
+	String get description => 'Do it a set number of times a day.';
+}
+
+// Path: targets.presets.durationDaily
+class Translations$targets$presets$durationDaily$en {
+	Translations$targets$presets$durationDaily$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Duration'
+	String get label => 'Duration';
+
+	/// en: 'Spend a set number of minutes a day.'
+	String get description => 'Spend a set number of minutes a day.';
+}
+
+// Path: targets.presets.limitCountDaily
+class Translations$targets$presets$limitCountDaily$en {
+	Translations$targets$presets$limitCountDaily$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Limit'
+	String get label => 'Limit';
+
+	/// en: 'Stay under a set number each day.'
+	String get description => 'Stay under a set number each day.';
+}
+
+// Path: targets.presets.limitDurationDaily
+class Translations$targets$presets$limitDurationDaily$en {
+	Translations$targets$presets$limitDurationDaily$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Time limit'
+	String get label => 'Time limit';
+
+	/// en: 'Stay under a set number of minutes a day.'
+	String get description => 'Stay under a set number of minutes a day.';
+}
+
 /// The flat map containing all translations for locale <en>.
 /// Only for edge cases! For simple maps, use the map function of this library.
 ///
@@ -4220,6 +4395,13 @@ class Translations$ai$coachPrompts$whatCanYouHelp$en {
 extension on Translations {
 	dynamic _flatMapFunction(String path) {
 		return switch (path) {
+			'macroTargets.sectionTitle' => 'Numeric target',
+			'macroTargets.none' => 'None',
+			'macroTargets.amountLabel' => 'Target amount',
+			'macroTargets.linkLabel' => 'Track with a habit',
+			'macroTargets.manual' => 'Manual',
+			'macroTargets.unitCount' => 'count',
+			'macroTargets.reached' => 'Reached',
 			'auth.continuePrivately' => 'Continue privately on this Mac',
 			'auth.signIn' => 'Log In',
 			'auth.register' => 'Sign Up',
@@ -4317,6 +4499,7 @@ extension on Translations {
 			'common.actions.edit' => 'Edit',
 			'common.actions.pick' => 'Pick',
 			'common.actions.gotIt' => 'Got it',
+			'common.actions.done' => 'Done',
 			'common.months.0' => 'January',
 			'common.months.1' => 'February',
 			'common.months.2' => 'March',
@@ -4724,6 +4907,8 @@ extension on Translations {
 			'stats.nextDayMoodTitle' => 'Next-day mood impact',
 			'stats.nextDayMoodSubtitle' => 'Mood & energy the day after',
 			'stats.nextDayAfterDone' => 'After doing it',
+			_ => null,
+		} ?? switch (path) {
 			'stats.nextDayAfterMissed' => 'After missing it',
 			'stats.nextDayMoodLift' => ({required Object value}) => '${value} mood lift',
 			'stats.streakHistoryTitle' => 'Streak history',
@@ -4732,8 +4917,6 @@ extension on Translations {
 			'habitsPage.today' => 'Today',
 			'habitsPage.subtitle' => 'Build your daily protocol and watch consistency over time.',
 			'habitsPage.tabProtocol' => 'Protocol',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.tabCalendar' => 'Calendar',
 			'habitsPage.deleteHabitTitle' => 'Delete habit',
 			'habitsPage.deleteHabitConfirm' => ({required Object title}) => 'Remove "${title}" from the protocol?',
@@ -5192,6 +5375,7 @@ extension on Translations {
 			'notif.windowsScheduling' => 'Windows schedules the next occurrence at each launch.',
 			'notif.morningBody' => 'Review today\'s habits and choose where to start.',
 			'notif.habitReminderBody' => 'It\'s time to complete your habit.',
+			'notif.limitReminderBody' => 'Staying within your limit today? Check in when you can.',
 			'notif.eveningBody' => 'Wrap up the day and update your progress.',
 			'biometricGate.appLocked' => 'App locked',
 			'biometricGate.unlockPrompt' => 'Unlock with local authentication to continue.',
@@ -5237,6 +5421,8 @@ extension on Translations {
 			'proModal.title' => 'Unlock Evolve Pro',
 			'proModal.subtitle' => 'Take your habit system to the next level',
 			'proModal.featuresHeader' => 'WHAT THE PRO PLAN INCLUDES',
+			_ => null,
+		} ?? switch (path) {
 			'proModal.aiCoachTitle' => 'AI Coach, with no setup',
 			'proModal.aiCoachDesc' => 'We run it on our key — no API key to fetch, no second account. Prefer your own OpenRouter account? That\'s free too.',
 			'proModal.statsTitle' => 'Habit-Specific Statistics',
@@ -5246,8 +5432,6 @@ extension on Translations {
 			'proModal.unlimitedTitle' => 'Unlimited Habits',
 			'proModal.unlimitedDesc' => 'Create and track all the habits you want without any limits.',
 			'proModal.maybeLater' => 'Maybe later',
-			_ => null,
-		} ?? switch (path) {
 			'proModal.viewPlans' => 'View Pro plans',
 			'appLogs.title' => 'App Logs',
 			'appLogs.copiedToClipboard' => 'Logs copied to clipboard',
@@ -5435,6 +5619,25 @@ extension on Translations {
 			'palette.footerOpen' => 'open',
 			'palette.footerMenu' => 'menu',
 			'palette.footerClose' => 'close',
+			'targets.sectionTitle' => 'Target',
+			'targets.none' => 'Simple',
+			'targets.atLeastLabel' => 'Reach',
+			'targets.atMostLabel' => 'Stay under',
+			'targets.presets.countDaily.label' => 'Count',
+			'targets.presets.countDaily.description' => 'Do it a set number of times a day.',
+			'targets.presets.durationDaily.label' => 'Duration',
+			'targets.presets.durationDaily.description' => 'Spend a set number of minutes a day.',
+			'targets.presets.limitCountDaily.label' => 'Limit',
+			'targets.presets.limitCountDaily.description' => 'Stay under a set number each day.',
+			'targets.presets.limitDurationDaily.label' => 'Time limit',
+			'targets.presets.limitDurationDaily.description' => 'Stay under a set number of minutes a day.',
+			'targets.units.min' => 'min',
+			'targets.units.hour' => 'h',
+			'targets.units.kcal' => 'kcal',
+			'targets.units.km' => 'km',
+			'targets.entry.keepGoing' => 'Keep going',
+			'targets.entry.withinLimit' => 'Within your limit',
+			'targets.entry.overLimit' => 'Over your limit',
 			_ => null,
 		};
 	}

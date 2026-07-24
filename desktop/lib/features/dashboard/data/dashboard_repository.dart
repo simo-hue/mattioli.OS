@@ -8,8 +8,10 @@ import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/core/desktop_private_db.dart';
 import 'package:evolve_desktop/core/secure_storage_utils.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
+import 'package:evolve_desktop/core/macro_targets_config.dart';
 import 'package:evolve_desktop/features/dashboard/data/private_dashboard_repository.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
+import 'package:evolve_desktop/features/dashboard/domain/macro_goal_progress.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
@@ -45,6 +47,21 @@ abstract class DashboardRepository {
   }
 
   Future<void> saveCheckIn(DateTime date, DailyCheckIn checkIn) async {}
+
+  /// Persists a quantitative habit's accumulated progress for a day AND the
+  /// verdict derived from it: writes/deletes the `goal_progress` row (the
+  /// number) and writes/deletes the `goal_logs` row ([derivedStatus] — already
+  /// evaluated by the controller via `evaluateTarget`/`TargetVerdict.logStatus`,
+  /// null ⇒ no verdict yet). [streak] is the controller's `computeStreak` result
+  /// for the day, written directly. Base is a no-op (used by the offline proxy
+  /// before the real repository resolves).
+  Future<void> setHabitProgress({
+    required String habitId,
+    required DateTime date,
+    required double amount,
+    required String? derivedStatus,
+    required int streak,
+  }) async {}
 
   Future<DashboardGoal> createGoal(DashboardGoal goal) async => goal;
 
@@ -151,6 +168,26 @@ class _PrivateRepositoryProxy extends DashboardRepository {
   }
 
   @override
+  Future<void> setHabitProgress({
+    required String habitId,
+    required DateTime date,
+    required double amount,
+    required String? derivedStatus,
+    required int streak,
+  }) async {
+    _inner ??= PrivateDashboardRepository(
+      ownerId: await DesktopPrivateDb.instance.ownerId,
+    );
+    await _inner!.setHabitProgress(
+      habitId: habitId,
+      date: date,
+      amount: amount,
+      derivedStatus: derivedStatus,
+      streak: streak,
+    );
+  }
+
+  @override
   Future<void> saveCheckIn(DateTime date, DailyCheckIn checkIn) async {
     _inner ??= PrivateDashboardRepository(
       ownerId: await DesktopPrivateDb.instance.ownerId,
@@ -221,6 +258,15 @@ class UnavailableDashboardRepository extends DashboardRepository {
   }) => _requireSession();
 
   @override
+  Future<void> setHabitProgress({
+    required String habitId,
+    required DateTime date,
+    required double amount,
+    required String? derivedStatus,
+    required int streak,
+  }) => _requireSession();
+
+  @override
   Future<void> saveCheckIn(DateTime date, DailyCheckIn checkIn) =>
       _requireSession();
 
@@ -280,12 +326,14 @@ class SupabaseDashboardRepository extends DashboardRepository {
             .eq('user_id', _userId)
             .order('created_at', ascending: true),
         _client.from('daily_moods').select().eq('user_id', _userId),
+        _client.from('goal_progress').select().eq('user_id', _userId),
       ]);
       _snapshot = _fromRemote(
         habitRows: _rows(responses[0]),
         logRows: _rows(responses[1]),
         goalRows: _rows(responses[2]),
         moodRows: _rows(responses[3]),
+        progressRows: _rows(responses[4]),
       );
       await _writeCache(_snapshot);
       return _snapshot;
@@ -327,6 +375,10 @@ class SupabaseDashboardRepository extends DashboardRepository {
     // every-day would keep the old days on the server and resurrect on the next
     // refetch. Write it explicitly (null clears the column).
     payload['frequency_days'] = habit.frequencyDays;
+    // Same omitted-column hazard for the target: write it explicitly so removing
+    // a habit's target actually clears the column (null) rather than leaving the
+    // stale target to resurrect on the next refetch.
+    payload['target'] = habit.targetColumnValue;
     await _runOrQueue(
       _PendingMutation.update('goals', payload, {'id': habit.id}),
       () => _client.from('goals').update(payload).eq('id', habit.id),
@@ -335,10 +387,36 @@ class SupabaseDashboardRepository extends DashboardRepository {
 
   @override
   Future<void> deleteHabit(String id) async {
+    // ACCOUNT-mode counterpart of the private repo's delete-time snapshot: before
+    // the delete cascades this habit's goal_progress away and the ON DELETE SET
+    // NULL FK un-links any macro goal it fed, freeze the derived total into each
+    // linked macro goal's progress_amount. Derived from the in-memory snapshot
+    // (which already holds every goal_progress row), so it needs no extra read
+    // and is a no-op — no round-trip — while the feature is dark and nothing is
+    // linked.
+    await _snapshotLinkedMacroGoals(id);
     await _runOrQueue(
       _PendingMutation.delete('goals', {'id': id}),
       () => _client.from('goals').delete().eq('id', id),
     );
+  }
+
+  Future<void> _snapshotLinkedMacroGoals(String habitId) async {
+    final snapshots = linkedMacroGoalSnapshots(
+      goals: _snapshot.goals,
+      habitProgress: _snapshot.habitProgress,
+      habitId: habitId,
+    );
+    for (final snap in snapshots) {
+      final payload = {'progress_amount': snap.total, 'linked_goal_id': null};
+      await _runOrQueue(
+        _PendingMutation.update('long_term_goals', payload, {'id': snap.goalId}),
+        () => _client
+            .from('long_term_goals')
+            .update(payload)
+            .eq('id', snap.goalId),
+      );
+    }
   }
 
   @override
@@ -400,6 +478,85 @@ class SupabaseDashboardRepository extends DashboardRepository {
   }
 
   @override
+  Future<void> setHabitProgress({
+    required String habitId,
+    required DateTime date,
+    required double amount,
+    required String? derivedStatus,
+    required int streak,
+  }) async {
+    final dateKey = dashboardDateKey(date);
+
+    // 1) The progress number (goal_progress). Deterministic id matches the
+    // private store's PrivateDbSchema.goalProgressId so the two backends can't
+    // mint different ids for one habit-day.
+    if (amount <= 0) {
+      final filters = {'user_id': _userId, 'goal_id': habitId, 'date': dateKey};
+      await _runOrQueue(
+        _PendingMutation.delete('goal_progress', filters),
+        () => _client
+            .from('goal_progress')
+            .delete()
+            .eq('user_id', _userId)
+            .eq('goal_id', habitId)
+            .eq('date', dateKey),
+      );
+    } else {
+      final payload = {
+        'id': '$habitId:$dateKey',
+        'user_id': _userId,
+        'goal_id': habitId,
+        'date': dateKey,
+        'amount': amount,
+        'source': 'manual',
+      };
+      await _runOrQueue(
+        _PendingMutation.upsert(
+          'goal_progress',
+          payload,
+          onConflict: 'goal_id,date',
+        ),
+        () => _client
+            .from('goal_progress')
+            .upsert(payload, onConflict: 'goal_id,date'),
+      );
+    }
+
+    // 2) The derived verdict (goal_logs) — set or clear. Never writes
+    // goal_logs.value: a manual count is not a health measurement.
+    if (derivedStatus == null) {
+      final filters = {'user_id': _userId, 'goal_id': habitId, 'date': dateKey};
+      await _runOrQueue(
+        _PendingMutation.delete('goal_logs', filters),
+        () => _client
+            .from('goal_logs')
+            .delete()
+            .eq('user_id', _userId)
+            .eq('goal_id', habitId)
+            .eq('date', dateKey),
+      );
+    } else {
+      final payload = {
+        'user_id': _userId,
+        'goal_id': habitId,
+        'date': dateKey,
+        'status': derivedStatus,
+        'streak': streak,
+      };
+      await _runOrQueue(
+        _PendingMutation.upsert(
+          'goal_logs',
+          payload,
+          onConflict: 'goal_id,date',
+        ),
+        () => _client
+            .from('goal_logs')
+            .upsert(payload, onConflict: 'goal_id,date'),
+      );
+    }
+  }
+
+  @override
   Future<void> saveCheckIn(DateTime date, DailyCheckIn checkIn) async {
     final payload = {
       'user_id': _userId,
@@ -432,6 +589,24 @@ class SupabaseDashboardRepository extends DashboardRepository {
   @override
   Future<void> updateGoal(DashboardGoal goal) async {
     final payload = goal.toRemoteJson()..remove('id');
+    // toRemoteJson OMITS the numeric-target columns when null, and an UPDATE
+    // leaves omitted columns untouched — so on its own it could never actively
+    // CLEAR a target or BREAK a link (reverting a numeric goal to boolean, or
+    // unlinking a habit). Force-write them explicitly so null clears the column,
+    // exactly as updateHabit force-writes `target`/`frequency_days`.
+    //
+    // Gated on the feature flag on purpose: the columns only exist after the
+    // (still-pending) macro-target Supabase migration, and clearing is only ever
+    // needed once the editor can set a target — which is itself flag-gated. While
+    // the feature is dark, a plain title/category edit keeps omitting them, so it
+    // can't fail against a pre-migration schema. INSERT (createGoal) stays
+    // conditional via toRemoteJson for the same pre-migration safety.
+    if (DesktopMacroTargetsConfig.enabled) {
+      payload['target_amount'] = goal.targetAmount;
+      payload['target_unit'] = goal.targetUnit;
+      payload['progress_amount'] = goal.progressAmount;
+      payload['linked_goal_id'] = goal.linkedGoalId;
+    }
     await _runOrQueue(
       _PendingMutation.update('long_term_goals', payload, {'id': goal.id}),
       () => _client.from('long_term_goals').update(payload).eq('id', goal.id),
@@ -585,12 +760,21 @@ class SupabaseDashboardRepository extends DashboardRepository {
     required List<Map<String, dynamic>> logRows,
     required List<Map<String, dynamic>> goalRows,
     required List<Map<String, dynamic>> moodRows,
+    required List<Map<String, dynamic>> progressRows,
   }) {
     final logs = <String, Map<String, String>>{};
     for (final row in logRows) {
       final date = row['date'] as String;
       final goalId = row['goal_id'] as String;
       logs.putIfAbsent(date, () => {})[goalId] = row['status'] as String;
+    }
+
+    final progress = <String, Map<String, double>>{};
+    for (final row in progressRows) {
+      final date = row['date'] as String;
+      final goalId = row['goal_id'] as String;
+      progress.putIfAbsent(date, () => {})[goalId] =
+          (row['amount'] as num).toDouble();
     }
 
     final now = DateTime.now();
@@ -629,6 +813,7 @@ class SupabaseDashboardRepository extends DashboardRepository {
       trend: const [],
       checkIn: moods[dashboardDateKey(now)] ?? const DailyCheckIn(),
       habitLogs: logs,
+      habitProgress: progress,
       moods: moods,
     );
     final trendDays = [
@@ -722,6 +907,7 @@ class SupabaseDashboardRepository extends DashboardRepository {
     ],
     'check_in': snapshot.checkIn.toJson(),
     'habit_logs': snapshot.habitLogs,
+    'habit_progress': snapshot.habitProgress,
     'moods': {
       for (final mood in snapshot.moods.entries) mood.key: mood.value.toJson(),
     },
@@ -746,6 +932,17 @@ class SupabaseDashboardRepository extends DashboardRepository {
         json['habit_logs'] as Map,
       ).entries)
         entry.key: Map<String, String>.from(entry.value as Map),
+    };
+    // `habit_progress` is absent from caches written by a pre-targets build, so
+    // default it to empty rather than assuming the key exists.
+    final progress = <String, Map<String, double>>{
+      for (final entry in Map<String, dynamic>.from(
+        (json['habit_progress'] as Map?) ?? const {},
+      ).entries)
+        entry.key: {
+          for (final e in (entry.value as Map).entries)
+            e.key as String: (e.value as num).toDouble(),
+        },
     };
     final moods = <String, DailyCheckIn>{
       for (final entry in Map<String, dynamic>.from(
@@ -774,6 +971,7 @@ class SupabaseDashboardRepository extends DashboardRepository {
         Map<String, dynamic>.from(json['check_in'] as Map),
       ),
       habitLogs: logs,
+      habitProgress: progress,
       moods: moods,
     );
   }

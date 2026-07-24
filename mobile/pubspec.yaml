@@ -61,6 +61,11 @@ dependencies:
   # reconcile/verdict engine, HealthKit + Screen Time bridge contracts).
   evolve_verification:
     path: ../packages/evolve_verification
+  # Quantitative habit targets (how much, over which period, in which direction,
+  # filled by whom) + the progress→verdict evaluation. Shared so "60 of 80"
+  # cannot mean two different things on the two apps.
+  evolve_targets:
+    path: ../packages/evolve_targets
   # The public legal + support URLs, defined once for both apps. These are App
   # Store compliance surfaces (Guidelines 1.5 and 3.1.2), not ordinary links.
   evolve_legal:

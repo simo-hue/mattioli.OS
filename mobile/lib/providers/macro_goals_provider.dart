@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/macro_goal.dart';
 import '../core/macro_goal_calendar.dart';
+import '../core/macro_targets_config.dart';
 import 'shared_prefs_provider.dart';
 import 'auth_provider.dart';
 import '../core/navigator_key.dart';
@@ -360,6 +361,88 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
           context,
           title: context.t.common.errorDuringUpdate,
           message: context.t.common.macroGoalCategorySaveFailed,
+          details: e.toString(),
+        );
+      }
+    }
+  }
+
+  /// Sets or clears a macro goal's NUMERIC target (amount + unit), stored manual
+  /// progress and/or its linked habit — the edit counterpart of creating one
+  /// with a target. Pass [clearTarget] to revert to a plain boolean goal, or
+  /// [clearLink] to detach the habit while keeping the target (pass a
+  /// [progressAmount] snapshot so the derived value survives as a manual one).
+  ///
+  /// On the Supabase UPDATE the numeric columns are FORCE-WRITTEN (null clears),
+  /// because [MacroGoal.toJson] only EMITS them when non-null and an UPDATE
+  /// leaves omitted columns untouched — so without this it could never actively
+  /// clear a target or break a link. Mirrors the habit `target` force-write and
+  /// desktop's updateGoal. The column write is gated on [MacroTargetsConfig]:
+  /// the columns exist only after the (pending) macro-target migration, so a
+  /// dark build never sends them.
+  Future<void> updateGoalTarget(
+    String id, {
+    double? targetAmount,
+    String? targetUnit,
+    String? linkedGoalId,
+    double? progressAmount,
+    bool clearTarget = false,
+    bool clearLink = false,
+  }) async {
+    if (_shouldIgnoreMissingGoalMutation(id, 'target update')) return;
+
+    final previousState = state;
+    final newGoals = state.goals.map((g) {
+      if (g.id != id) return g;
+      if (clearTarget) return g.copyWith(clearTarget: true);
+      return g.copyWith(
+        targetAmount: targetAmount,
+        targetUnit: targetUnit,
+        progressAmount: progressAmount,
+        linkedGoalId: linkedGoalId,
+        clearLink: clearLink,
+      );
+    }).toList();
+    state = state.copyWith(goals: newGoals);
+
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+      try {
+        final goal = newGoals.firstWhere((g) => g.id == id);
+        await ref.read(privateLocalDatabaseProvider).upsertMacroGoal(goal);
+      } catch (e, stack) {
+        AppLogger.error('[MacroGoals] Private target update error', e, stack);
+        state = previousState;
+        _showMacroGoalError(
+          t.common.errorDuringUpdate,
+          t.common.macroGoalSaveFailed,
+          e,
+        );
+      }
+      return;
+    }
+
+    _saveToCache(newGoals);
+
+    // Nothing to persist to the cloud while the feature is dark (the columns may
+    // not exist yet). The optimistic in-memory + cache write above still holds.
+    if (!MacroTargetsConfig.enabled) return;
+
+    try {
+      final goal = newGoals.firstWhere((g) => g.id == id);
+      await supabase.from('long_term_goals').update({
+        'target_amount': goal.targetAmount,
+        'target_unit': goal.targetUnit,
+        'progress_amount': goal.progressAmount,
+        'linked_goal_id': goal.linkedGoalId,
+      }).eq('id', id);
+    } catch (e, stack) {
+      AppLogger.error('[MacroGoals] Update target error', e, stack);
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        ErrorModal.show(
+          context,
+          title: context.t.common.errorDuringUpdate,
+          message: context.t.common.macroGoalSaveFailed,
           details: e.toString(),
         );
       }

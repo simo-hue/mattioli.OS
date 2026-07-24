@@ -1,4 +1,13 @@
 {
+  "macroTargets": {
+    "sectionTitle": "Obiettivo numerico",
+    "none": "Nessuno",
+    "amountLabel": "Valore obiettivo",
+    "linkLabel": "Collega un'abitudine",
+    "manual": "Manuale",
+    "unitCount": "conteggio",
+    "reached": "Raggiunto"
+  },
   "appTitle": "Evolve",
   "aiSistema": "AI & SISTEMA",
   "suggerimentiAi": "Suggerimenti AI",
@@ -429,6 +438,9 @@
     "habitReminderMessage13": "Dai valore al tuo tempo: è ora di \"{title}\".",
     "habitReminderMessage14": "Mettiti alla prova anche oggi con \"{title}\".",
     "habitReminderMessage15": "Solo un piccolo sforzo per completare \"{title}\".",
+    "limitReminderMessage1": "Come va oggi con il tuo limite di \"{title}\"?",
+    "limitReminderMessage2": "Stai rimanendo entro il tuo limite di \"{title}\" oggi?",
+    "limitReminderMessage3": "Controlla \"{title}\": occhio al tuo limite oggi.",
     "verificationHeader": "VERIFICA ABITUDINI",
     "verificationNudges": "Promemoria di verifica",
     "verificationNudgesSubtitle": "Chiedimi di confermare le abitudini non verificabili automaticamente",
@@ -1309,5 +1321,40 @@
     "deniedNote": "L'accesso a Tempo di utilizzo è disattivato. Per usarlo, apri Impostazioni, Tempo di utilizzo e consenti a Evolve.",
     "manageHint": "Puoi modificarlo o disattivarlo in qualsiasi momento nell'app Impostazioni di iOS.",
     "enabledNote": "La verifica con Tempo di utilizzo è attiva. Aggiungi un'abitudine di Tempo di utilizzo per iniziare."
+  },
+  "targets": {
+    "sectionTitle": "Obiettivo",
+    "none": "Semplice",
+    "atLeastLabel": "Raggiungi",
+    "atMostLabel": "Resta sotto",
+    "presets": {
+      "countDaily": {
+        "label": "Conteggio",
+        "description": "Fallo un certo numero di volte al giorno."
+      },
+      "durationDaily": {
+        "label": "Durata",
+        "description": "Dedica un certo numero di minuti al giorno."
+      },
+      "limitCountDaily": {
+        "label": "Limite",
+        "description": "Resta sotto un certo numero ogni giorno."
+      },
+      "limitDurationDaily": {
+        "label": "Limite di tempo",
+        "description": "Resta sotto un certo numero di minuti al giorno."
+      }
+    },
+    "units": {
+      "min": "min",
+      "hour": "h",
+      "kcal": "kcal",
+      "km": "km"
+    },
+    "entry": {
+      "keepGoing": "Continua così",
+      "withinLimit": "Entro il limite",
+      "overLimit": "Oltre il limite"
+    }
   }
 }

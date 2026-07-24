@@ -10,6 +10,7 @@ import 'package:evolve_desktop/features/dashboard/data/dashboard_repository.dart
 import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
 import 'package:evolve_desktop/features/settings/data/desktop_notification_service.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
+import 'package:evolve_targets/evolve_targets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -21,9 +22,15 @@ final dashboardControllerProvider =
 class DashboardController extends Notifier<DashboardSnapshot> {
   DashboardRepository get _repository => ref.read(dashboardRepositoryProvider);
 
+  /// Set once the notifier is torn down (data-mode switch, sign-out, test
+  /// teardown). The manual-target reconcile is a fire-and-forget async tail of
+  /// [refresh]; without this guard it can touch `state` after disposal and throw.
+  bool _disposed = false;
+
   @override
   DashboardSnapshot build() {
     final repository = ref.watch(dashboardRepositoryProvider);
+    ref.onDispose(() => _disposed = true);
     final snapshot = repository.load();
     // load() is only ever a synchronous best-effort cache: Supabase has nothing
     // until it hits the network, and the private proxy returns empty until
@@ -48,6 +55,18 @@ class DashboardController extends Notifier<DashboardSnapshot> {
         errorMessage: t.sync.syncFailed,
       );
     }
+    // Once the snapshot is in place (fresh or cached), resolve any manual-target
+    // days that closed while the app was shut — above all a limit habit's quiet
+    // successes. Fire-and-forget: a reconcile failure must not surface as a
+    // refresh error, and it is a no-op until a habit has a manual target.
+    unawaited(() async {
+      try {
+        if (_disposed) return;
+        await reconcileManualTargets();
+      } catch (error, stack) {
+        AppLogger.error('Manual-target reconcile failed', error, stack);
+      }
+    }());
   }
 
   Future<void> toggleHabit(String id) async {
@@ -117,6 +136,148 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     );
   }
 
+  /// Sets a quantitative habit's accumulated progress for [date] to [amount],
+  /// then DERIVES and applies the day's verdict — the desktop counterpart of
+  /// mobile's `HabitProgressNotifier.setProgress`. Optimistic + local-first like
+  /// [toggleHabitForDay]: updates the progress map, the logs map, the weekly
+  /// grid and the streak in one state write, saves locally, then syncs.
+  ///
+  /// Only manual targets are user-enterable — a measured target's ring is filled
+  /// by the verification pipeline, so this is a no-op for one. [now] is injectable
+  /// for tests.
+  Future<void> setHabitProgressForDay(
+    String id,
+    DateTime date,
+    double amount, {
+    DateTime? now,
+  }) async {
+    final habit = state.habits.firstWhere((habit) => habit.id == id);
+    final target = habit.displayTarget;
+    if (target == null || !target.isUserEnterable) return;
+
+    final clamped = amount < 0 ? 0.0 : amount;
+    final dateKey = dashboardDateKey(date);
+    final weekdayIndex = date.weekday - 1;
+
+    // Optimistic progress map (deep copy so the old state stays intact).
+    final progress = {
+      for (final entry in state.habitProgress.entries)
+        entry.key: Map<String, double>.from(entry.value),
+    };
+    if (clamped == 0) {
+      progress[dateKey]?.remove(id);
+      if (progress[dateKey]?.isEmpty ?? false) progress.remove(dateKey);
+    } else {
+      (progress[dateKey] ??= {})[id] = clamped;
+    }
+
+    // Derive the verdict. "Today" is an open period, so an atLeast day flips to
+    // done the moment the target is reached while a limit day stays pending; a
+    // past day resolves. The mapping to a goal_logs status lives in one place
+    // (TargetVerdict.logStatus).
+    final over = periodIsOver(target.period, date, now ?? DateTime.now());
+    final verdict = evaluateTarget(
+      target: target,
+      progress: clamped,
+      periodIsOver: over,
+    );
+    final derivedStatus = verdict.logStatus;
+
+    // Move the verdict (goal_logs) + weekly grid + streak, mirroring the toggle
+    // path but with the DERIVED status instead of the tri-state cycle.
+    final logs = {
+      for (final entry in state.habitLogs.entries)
+        entry.key: Map<String, String>.from(entry.value),
+    };
+    final dayLogs = logs.putIfAbsent(dateKey, () => {});
+    if (derivedStatus == null) {
+      dayLogs.remove(id);
+    } else {
+      dayLogs[id] = derivedStatus;
+    }
+    final nextStreak = derivedStatus == null
+        ? 0
+        : computeStreak(
+            habitId: id,
+            date: date,
+            logs: logs,
+            startDate: habit.startDate ?? date,
+            frequencyDays: habit.frequencyDays,
+          );
+    final habits = [
+      for (final item in state.habits)
+        if (item.id == id)
+          _setHabitForWeekday(
+            item,
+            weekdayIndex,
+            _isToday(date),
+            derivedStatus == 'done',
+            nextStreak,
+          )
+        else
+          item,
+    ];
+    state = state.copyWith(
+      habits: habits,
+      habitLogs: logs,
+      habitProgress: progress,
+    );
+    await _saveLocal();
+    await _syncRemote(
+      () => _repository.setHabitProgress(
+        habitId: id,
+        date: date,
+        amount: clamped,
+        derivedStatus: derivedStatus,
+        streak: nextStreak,
+      ),
+    );
+  }
+
+  /// End-of-day resolution for manual targets — the desktop counterpart of
+  /// mobile's `HabitProgressNotifier.reconcileManualTargets`. Materialises the
+  /// `goal_logs` verdict for every CLOSED day whose live-derived verdict never
+  /// caught up (a limit habit's quiet days above all). Reuses
+  /// [setHabitProgressForDay] as the applier, so each corrected day re-derives
+  /// and persists exactly as a live edit would. No-op when there are no manual
+  /// targets or nothing changed. [now] is injectable for tests.
+  ///
+  /// Runs on macOS too, deliberately: unlike verification (a device measurement
+  /// iOS owns), a manual target is plain local data already synced to the Mac,
+  /// so a Mac-primary user's limit habits must resolve here or they would look
+  /// perpetually unlogged.
+  Future<void> reconcileManualTargets({DateTime? now}) async {
+    final today = now ?? DateTime.now();
+    final changes = <TargetReconcileChange>[];
+    for (final habit in state.habits) {
+      final target = habit.target;
+      if (target == null || !target.isUserEnterable) continue;
+      changes.addAll(reconcileManualTargetDays(
+        goalId: habit.id,
+        target: target,
+        today: today,
+        start: habit.startDate ?? today,
+        isScheduled: habit.isScheduledOn,
+        progressFor: (dateKey) =>
+            state.habitProgress[dateKey]?[habit.id],
+        statusFor: (dateKey) => state.habitLogs[dateKey]?[habit.id],
+      ));
+    }
+    // Sequential so each day's streak builds on the last (setHabitProgressForDay
+    // recomputes from the running state). Bail if the notifier was torn down
+    // between awaits — this runs as a fire-and-forget tail of refresh().
+    for (final change in changes) {
+      if (_disposed) return;
+      final date = DateTime.parse(change.dateKey);
+      await setHabitProgressForDay(
+        change.goalId,
+        date,
+        change.amount,
+        now: today,
+      );
+    }
+  }
+
   /// Creates a habit. Returns `false` — without persisting — when the free-tier
   /// 5-habit cap is reached, so the caller (which has a BuildContext) can
   /// present the paywall. Private mode is always Pro via [desktopIsProProvider],
@@ -126,6 +287,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     required Color color,
     String? reminderTime,
     List<int>? frequencyDays,
+    HabitTarget? target,
   }) async {
     if (!ref.read(desktopIsProProvider) && state.habits.length >= 5) {
       return false;
@@ -140,6 +302,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
       reminderTime: reminderTime,
       frequencyDays: _canonicalFrequencyDays(frequencyDays),
       startDate: DateTime.now(),
+      target: target,
     );
     state = state.copyWith(habits: [...state.habits, draft]);
     await _saveLocal();
@@ -165,6 +328,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     required Color color,
     String? reminderTime,
     List<int>? frequencyDays,
+    HabitTarget? target,
   }) async {
     final canonicalDays = _canonicalFrequencyDays(frequencyDays);
     final habits = [
@@ -177,6 +341,8 @@ class DashboardController extends Notifier<DashboardSnapshot> {
             clearReminder: reminderTime == null,
             frequencyDays: canonicalDays,
             clearFrequencyDays: canonicalDays == null,
+            target: target,
+            clearTarget: target == null,
           )
         else
           habit,
@@ -288,6 +454,11 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     int? quarter,
     int? month,
     int? weekNumber,
+    // Optional cumulative NUMERIC target (behind DesktopMacroTargetsConfig).
+    // Null [targetAmount] ⇒ an ordinary boolean macro goal, exactly as today.
+    double? targetAmount,
+    String? targetUnit,
+    String? linkedGoalId,
   }) async {
     final now = DateTime.now();
     final draft = DashboardGoal(
@@ -310,6 +481,9 @@ class DashboardController extends Notifier<DashboardSnapshot> {
           ? (weekNumber ?? logicalWeekOfMonth(now))
           : null,
       createdAt: now,
+      targetAmount: targetAmount,
+      targetUnit: targetUnit,
+      linkedGoalId: linkedGoalId,
     );
     await _createGoalOptimistically(draft);
   }
@@ -320,17 +494,29 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     required String category,
     required Color color,
     String? categoryId,
+    // Numeric-target edit (behind DesktopMacroTargetsConfig). When [applyTarget]
+    // is false the goal's existing target is left untouched (a plain rename /
+    // recategorise). When true the caller is authoritative: a null [targetAmount]
+    // reverts to a boolean goal, else the amount/unit/link are set (a null
+    // [linkedGoalId] detaches to manual entry).
+    bool applyTarget = false,
+    double? targetAmount,
+    String? targetUnit,
+    String? linkedGoalId,
   }) async {
     final goals = [
       for (final goal in state.goals)
         if (goal.id == id)
-          goal.copyWith(
+          _applyGoalEdit(
+            goal,
             title: title,
             category: category,
             color: color,
             categoryId: categoryId,
-            clearCategory: category.isEmpty && categoryId == null,
-            clearCategoryId: categoryId == null,
+            applyTarget: applyTarget,
+            targetAmount: targetAmount,
+            targetUnit: targetUnit,
+            linkedGoalId: linkedGoalId,
           )
         else
           goal,
@@ -339,6 +525,40 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     await _saveLocal();
     await _syncRemote(
       () => _repository.updateGoal(goals.firstWhere((goal) => goal.id == id)),
+    );
+  }
+
+  DashboardGoal _applyGoalEdit(
+    DashboardGoal goal, {
+    required String title,
+    required String category,
+    required Color color,
+    String? categoryId,
+    required bool applyTarget,
+    double? targetAmount,
+    String? targetUnit,
+    String? linkedGoalId,
+  }) {
+    var updated = goal.copyWith(
+      title: title,
+      category: category,
+      color: color,
+      categoryId: categoryId,
+      clearCategory: category.isEmpty && categoryId == null,
+      clearCategoryId: categoryId == null,
+    );
+    if (!applyTarget) return updated;
+    if (targetAmount == null) {
+      // Revert to an ordinary boolean goal (target + unit + link all cleared).
+      return updated.copyWith(clearTarget: true);
+    }
+    return updated.copyWith(
+      targetAmount: targetAmount,
+      targetUnit: targetUnit,
+      linkedGoalId: linkedGoalId,
+      // A null link means manual: force it off so linked → manual detaches
+      // (copyWith otherwise keeps the existing link on a null argument).
+      clearLink: linkedGoalId == null,
     );
   }
 

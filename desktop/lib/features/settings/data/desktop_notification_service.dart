@@ -5,7 +5,9 @@ import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/desktop_private_db.dart';
 import 'package:evolve_desktop/core/streak_utils.dart';
+import 'package:evolve_desktop/core/targets_config.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -187,6 +189,10 @@ class DesktopNotificationService {
     final freq = (valid == null || valid.isEmpty) ? null : valid;
     final title = 'Evolve - ${habit.title}';
     final payload = 'habit|${habit.id}|${habit.title}';
+    // The recurring reminder's body is frozen at schedule time (there is no
+    // per-fire hook), so a LIMIT habit's copy must be chosen here — restraint,
+    // not achievement (see [reminderBody]).
+    final body = reminderBody(isLimit: habit.target?.isLimit ?? false);
 
     if (freq == null) {
       final id = habit.id.hashCode;
@@ -201,7 +207,7 @@ class DesktopNotificationService {
         id: id,
         time: reminderTime,
         title: title,
-        body: t.notif.habitReminderBody,
+        body: body,
         payload: payload,
         categoryId: _habitCategoryId,
       );
@@ -222,12 +228,35 @@ class DesktopNotificationService {
         weekday: weekday,
         time: reminderTime,
         title: title,
-        body: t.notif.habitReminderBody,
+        body: body,
         payload: payload,
         categoryId: _habitCategoryId,
       );
     }
   }
+
+  /// The (recurring) reminder body for a habit, target-aware and pure.
+  ///
+  /// A LIMIT target ("at most N") must NOT get achievement / "complete your
+  /// habit" copy: on a day the user is succeeding by consuming nothing, that
+  /// nudge inverts the goal. When the targets feature is live
+  /// ([DesktopTargetsConfig.enabled]) and [isLimit] is true we use
+  /// restraint-framed copy instead; while the feature is dark — or for a
+  /// count/duration target — every habit keeps the existing body, so behaviour
+  /// is unchanged. Static + pure so the branch is unit-testable. Mirrors mobile's
+  /// `NotificationService.reminderBody`.
+  ///
+  /// [featureEnabled] defaults to the compile-time [DesktopTargetsConfig.enabled]
+  /// flag, so production stays dark (the const default lets the limit branch
+  /// tree-shake); tests pass `true` to exercise the restraint branch directly.
+  @visibleForTesting
+  static String reminderBody({
+    required bool isLimit,
+    bool featureEnabled = DesktopTargetsConfig.enabled,
+  }) =>
+      (featureEnabled && isLimit)
+          ? t.notif.limitReminderBody
+          : t.notif.habitReminderBody;
 
   /// Stable per-(habit, weekday) notification id, distinct from the every-day id
   /// (`id.hashCode`) and from other habits'. Mirrors mobile's `_weekdayReminderId`.

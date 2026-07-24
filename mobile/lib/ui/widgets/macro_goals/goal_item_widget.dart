@@ -1,16 +1,22 @@
 import 'dart:async';
+import 'package:evolve_targets/evolve_targets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../core/macro_targets_config.dart';
 import '../../../core/theme.dart';
 import '../../../models/macro_goal.dart';
+import '../../../providers/goal_provider.dart';
 import '../../../providers/macro_goals_provider.dart';
+import '../../../providers/macro_goal_progress_provider.dart';
 import '../../../providers/macro_goal_categories_provider.dart';
 import '../../../core/haptics.dart';
 import '../../../providers/settings_provider.dart';
+import '../target_ring.dart';
 import 'category_picker_sheet.dart';
+import 'macro_target_field.dart';
 import '../pro_features_modal.dart';
 import '../../../i18n/translations.g.dart';
 import '../../kit/evolve_dialog.dart';
@@ -131,6 +137,18 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
 
   void _showEditDialog() {
     final ctrl = TextEditingController(text: widget.goal.title);
+    // Seed the target editor from the goal's current numeric target (null ⇒ a
+    // plain boolean goal). Only used behind the flag.
+    MacroTargetDraft? draft = widget.goal.hasNumericTarget
+        ? MacroTargetDraft(
+            amount: widget.goal.targetAmount!,
+            unit: TargetUnit.fromWire(widget.goal.targetUnit) ??
+                TargetUnit.count,
+            linkedGoalId: widget.goal.linkedGoalId,
+          )
+        : null;
+    final hadTarget = widget.goal.hasNumericTarget;
+
     showEvolveFormSheet<void>(
       context: context,
       title: context.t.macroGoals.editGoal,
@@ -143,10 +161,28 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
         emphasized: true,
         onPressed: () {
           final t = ctrl.text.trim();
+          final notifier = ref.read(macroGoalsProvider.notifier);
           if (t.isNotEmpty) {
-            ref
-                .read(macroGoalsProvider.notifier)
-                .updateTitle(widget.goal.id, t);
+            notifier.updateTitle(widget.goal.id, t);
+          }
+          if (MacroTargetsConfig.enabled) {
+            if (draft == null) {
+              // Reverted to a plain boolean goal (no-op if it never had one).
+              if (hadTarget) {
+                notifier.updateGoalTarget(widget.goal.id, clearTarget: true);
+              }
+            } else {
+              notifier.updateGoalTarget(
+                widget.goal.id,
+                targetAmount: draft!.amount,
+                targetUnit: draft!.unit.wireName,
+                linkedGoalId: draft!.linkedGoalId,
+                // A null link on the draft means "manual": force the link off so
+                // switching linked → manual actually detaches (copyWith keeps a
+                // null unless clearLink is set).
+                clearLink: draft!.linkedGoalId == null,
+              );
+            }
           }
           Navigator.pop(context);
         },
@@ -154,32 +190,51 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
       builder: (sheetContext) {
         return Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          child: Container(
-            decoration: BoxDecoration(
-              color: context.appColors.cardElevated,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: context.appColors.border),
-            ),
-            child: TextField(
-              controller: ctrl,
-              autofocus: true,
-              style: GoogleFonts.inter(
-                fontSize: 15,
-                color: context.appColors.foreground,
-              ),
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: context.appColors.cardElevated,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: context.appColors.border),
                 ),
-                border: InputBorder.none,
-                hintText: context.t.macroGoals.goalTitle,
-                hintStyle: GoogleFonts.inter(
-                  fontSize: 15,
-                  color: context.appColors.mutedForeground,
+                child: TextField(
+                  controller: ctrl,
+                  autofocus: true,
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    color: context.appColors.foreground,
+                  ),
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    border: InputBorder.none,
+                    hintText: context.t.macroGoals.goalTitle,
+                    hintStyle: GoogleFonts.inter(
+                      fontSize: 15,
+                      color: context.appColors.mutedForeground,
+                    ),
+                  ),
                 ),
               ),
-            ),
+              if (MacroTargetsConfig.enabled) ...[
+                const SizedBox(height: 18),
+                StatefulBuilder(
+                  builder: (context, setSheetState) => MacroTargetField(
+                    value: draft,
+                    habits: [
+                      for (final habit in ref.read(goalsProvider))
+                        MacroHabitOption(id: habit.id, title: habit.title),
+                    ],
+                    onChanged: (d) => setSheetState(() => draft = d),
+                  ),
+                ),
+              ],
+            ],
           ),
         );
       },
@@ -213,6 +268,84 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
             .updateCategory(widget.goal.id, categoryId);
         ref.hapticSelection();
       },
+    );
+  }
+
+  /// The accumulated-progress bar + "320 / 500 km" label for a NUMERIC macro
+  /// goal. The effective amount is resolved by [macroGoalProgressProvider]
+  /// (stored for manual goals, summed from the linked habit for linked ones);
+  /// the fraction/complete state come from [evaluateMacroGoalProgress] so every
+  /// surface reads the same numbers. Returns an empty box for a boolean goal.
+  Widget _buildProgressBar(
+    BuildContext context,
+    MacroGoal goal,
+    Color? catColor,
+  ) {
+    final colors = context.appColors;
+    final t = context.t;
+    final resolvedMap = ref.watch(macroGoalProgressProvider).value ?? const {};
+    // Fall back to the stored value while the async resolve is in flight so the
+    // bar never flashes empty for a manual goal.
+    final amount = resolvedMap[goal.id] ?? goal.progressAmount ?? 0;
+    final progress = evaluateMacroGoalProgress(
+      targetAmount: goal.targetAmount,
+      unit: TargetUnit.fromWire(goal.targetUnit),
+      isLinked: goal.isLinked,
+      storedAmount: amount,
+      linkedSum: amount,
+    );
+    if (progress == null) return const SizedBox.shrink();
+
+    final unitShort =
+        progress.unit == null ? '' : targetUnitShortLabel(t, progress.unit!);
+    final label = unitShort.isEmpty
+        ? '${formatTargetAmount(progress.amount)} / '
+            '${formatTargetAmount(progress.target)}'
+        : '${formatTargetAmount(progress.amount)} / '
+            '${formatTargetAmount(progress.target)} $unitShort';
+    final barColor = progress.isComplete
+        ? const Color(0xFF10B981)
+        : (catColor ?? Theme.of(context).colorScheme.primary);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 10, left: 32, right: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress.fraction,
+              minHeight: 6,
+              backgroundColor: colors.muted,
+              valueColor: AlwaysStoppedAnimation<Color>(barColor),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: colors.mutedForeground,
+                ),
+              ),
+              if (progress.isComplete)
+                Text(
+                  t.macroTargets.reached,
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF10B981),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -322,7 +455,10 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: borderColor, width: 1),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                 children: [
                   // Checkbox
                   Container(key: widget.checkboxKey, child: checkbox()),
@@ -385,6 +521,11 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
                     editKey: widget.editKey,
                     deleteKey: widget.deleteKey,
                   ),
+                ],
+                  ),
+                  // ── Numeric-target progress bar (dark until the flag flips) ─
+                  if (MacroTargetsConfig.enabled && goal.hasNumericTarget)
+                    _buildProgressBar(context, goal, catColor),
                 ],
               ),
             ),

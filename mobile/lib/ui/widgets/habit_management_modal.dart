@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:evolve_targets/evolve_targets.dart';
 import 'package:evolve_verification/evolve_verification.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -10,9 +11,11 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../core/theme.dart';
 import '../../core/app_logger.dart';
 import '../../core/haptics.dart';
+import '../../core/targets_config.dart';
 import '../../core/verification_config.dart';
 import '../../core/verification_providers.dart';
 import 'compound_conditions_field.dart';
+import 'target_field.dart';
 import 'verification_rule_field.dart';
 import '../../core/time_formatting.dart';
 import '../../models/goal.dart';
@@ -59,6 +62,10 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
   /// [_verificationRule] is a HealthKit rule and compound is enabled.
   List<VerificationRule> _additionalConditions = [];
   VerificationJoin _verificationJoin = VerificationJoin.or;
+
+  /// Quantitative target (count / duration / limit), or null for a plain
+  /// checkbox habit. Only surfaced when [TargetsConfig.enabled].
+  HabitTarget? _target;
 
   /// Weekly-schedule selection (ISO 1=Mon…7=Sun). Defaults to every day; an
   /// all-7 selection is persisted as `null` (every-day) via
@@ -218,6 +225,8 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
           clearAdditionalConditions: !hasCompound,
           verificationJoin: hasCompound ? _verificationJoin : null,
           clearVerificationJoin: !hasCompound,
+          target: _target,
+          clearTarget: _target == null,
         );
         ok = await ref.read(goalsProvider.notifier).updateHabit(updated);
       } else {
@@ -237,6 +246,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
           verificationRule: _verificationRule,
           additionalConditions: hasCompound ? _additionalConditions : null,
           verificationJoin: hasCompound ? _verificationJoin : null,
+          target: _target,
         );
         // addHabit returns the PERSISTED goal (its id is the server UUID in
         // cloud mode, not the throwaway temp id above).
@@ -281,6 +291,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       _verificationRule = null;
       _additionalConditions = [];
       _verificationJoin = VerificationJoin.or;
+      _target = null;
       _appsSelection = null;
       _verifyError = null;
       _nameError = null;
@@ -309,6 +320,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       _additionalConditions =
           List<VerificationRule>.from(habit.additionalConditions ?? const []);
       _verificationJoin = habit.verificationJoin ?? VerificationJoin.or;
+      _target = habit.target;
       // Mode A: rehydrate the picked selection from the device-local store. If
       // it isn't resolvable here (e.g. synced from another device), leave it
       // null so the habit reads as couldn't-verify until re-picked — never a
@@ -768,6 +780,17 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                           ),
                         ),
                       ),
+                      // Quantitative targets (count / duration / limit) —
+                      // rendered only when enabled; dark otherwise. A target and
+                      // a verification rule are orthogonal, so both fields can
+                      // show; the target is the manual number the user watches.
+                      if (TargetsConfig.enabled) ...[
+                        const SizedBox(height: 16),
+                        TargetField(
+                          target: _target,
+                          onChanged: (t) => setState(() => _target = t),
+                        ),
+                      ],
                       // Auto-verified habits (D5) — rendered only when the
                       // feature is enabled; dark otherwise.
                       if (VerificationConfig.enabled) ...[
@@ -911,6 +934,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                                   _verificationRule = null;
                                   _additionalConditions = [];
                                   _verificationJoin = VerificationJoin.or;
+                                  _target = null;
                                   _appsSelection = null;
                                   _verifyError = null;
                                   _nameError = null;

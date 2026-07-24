@@ -1,3 +1,4 @@
+import 'package:evolve_targets/evolve_targets.dart';
 import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
@@ -37,6 +38,22 @@ class Goal {
   /// manual habit.
   final VerificationJoin? verificationJoin;
 
+  /// The quantitative daily target (count / duration / limit), or null for an
+  /// ordinary boolean habit — which is every habit that predates this feature —
+  /// or for a target blob this build cannot decode (see [rawTargetBlob]).
+  /// Persisted via the `goals.target` JSON column (`package:evolve_targets`).
+  final HabitTarget? target;
+
+  /// The raw `goals.target` value exactly as stored, kept so a target written by
+  /// a NEWER client — one whose axis values this build cannot decode, so
+  /// [target] is null — is written back verbatim on an unrelated edit (title,
+  /// colour, schedule) instead of being silently nulled. Sync serializes whole
+  /// rows, so "newer device sets it, older device edits the title" is an
+  /// ordinary sequence, not an exotic one. Null when the column is empty; the
+  /// save layer prefers [target] when it is set, then a non-empty unreadable
+  /// blob, then null.
+  final String? rawTargetBlob;
+
   const Goal({
     required this.id,
     required this.title,
@@ -52,9 +69,24 @@ class Goal {
     this.verifyEffectiveFrom,
     this.additionalConditions,
     this.verificationJoin,
+    this.target,
+    this.rawTargetBlob,
   });
 
   bool get isVerified => verificationRule != null;
+
+  /// Whether this habit carries a quantitative target — one this build can read.
+  /// A habit with only an undecodable [rawTargetBlob] reports false, so it is
+  /// treated (and rendered) as an ordinary boolean habit rather than a broken
+  /// one, while the blob still round-trips on save.
+  bool get hasTarget => target != null;
+
+  /// The target to DISPLAY for this habit: an explicit manual [target] wins,
+  /// otherwise a single verification rule projects into one (so a verified
+  /// threshold and a manual count render as the same ring). Null for a plain
+  /// habit or a compound verified one. See `displayTargetFor`.
+  HabitTarget? get displayTarget =>
+      displayTargetFor(ownTarget: target, conditions: verificationConditions);
 
   /// All verification conditions in order — [verificationRule] (if any) followed
   /// by [additionalConditions]. Empty for a manual habit, length 1 for a single
@@ -130,6 +162,8 @@ class Goal {
     bool clearAdditionalConditions = false,
     VerificationJoin? verificationJoin,
     bool clearVerificationJoin = false,
+    HabitTarget? target,
+    bool clearTarget = false,
   }) {
     return Goal(
       id: id ?? this.id,
@@ -154,6 +188,14 @@ class Goal {
       verificationJoin: clearVerificationJoin
           ? null
           : (verificationJoin ?? this.verificationJoin),
+      // Setting a new target supersedes any preserved raw blob (a real edit is
+      // authoritative); clearing wipes both, so an undecodable old blob can't
+      // resurrect a target the user just removed. A copy that touches neither
+      // keeps both, so a title/colour edit preserves an unreadable newer-client
+      // target verbatim.
+      target: clearTarget ? null : (target ?? this.target),
+      rawTargetBlob:
+          clearTarget ? null : (target != null ? null : rawTargetBlob),
     );
   }
 
@@ -179,6 +221,10 @@ class Goal {
     final verification = readVerificationColumns(json);
     final conditions = verification?.conditions ?? const <VerificationRule>[];
 
+    // The target column: decode for use, and keep the raw blob so an
+    // undecodable newer-client target survives an edit here (see rawTargetBlob).
+    final rawTarget = json['target'] as String?;
+
     return Goal(
       id: json['id'] as String,
       title: json['title'] as String,
@@ -195,6 +241,8 @@ class Goal {
           conditions.length > 1 ? conditions.sublist(1) : null,
       verificationJoin: conditions.length > 1 ? verification!.op : null,
       verifyEffectiveFrom: parseDate(json['verify_effective_from']),
+      target: decodeHabitTarget(rawTarget),
+      rawTargetBlob: rawTarget,
     );
   }
 
@@ -241,7 +289,24 @@ class Goal {
       // manual habit has neither a rule nor an effective-from.
       if (verificationRule != null && verifyEffectiveFrom != null)
         'verify_effective_from': isoDate(verifyEffectiveFrom!),
+      // The quantitative target. Emitted only when there is something to write,
+      // so a plain habit's payload stays free of the column and does not depend
+      // on the v9 Supabase migration having been applied yet. A readable target
+      // is re-encoded (lossless — its unknown `extra` keys are preserved); an
+      // unreadable newer-client blob is written back verbatim so an edit here
+      // cannot strip it.
+      if (targetColumnValue != null) 'target': targetColumnValue,
     };
+  }
+
+  /// The value to write to the `goals.target` column: the live target encoded,
+  /// else a preserved unreadable blob verbatim, else null. Shared by the cloud
+  /// (`toJson`) and private (`_goalToRow`) write paths so they cannot disagree
+  /// about what an undecodable target round-trips to.
+  String? get targetColumnValue {
+    if (target != null) return target!.encode();
+    if (hasUnreadableTarget(rawTargetBlob)) return rawTargetBlob;
+    return null;
   }
 }
 

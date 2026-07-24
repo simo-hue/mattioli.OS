@@ -301,6 +301,9 @@ class DesktopBackupImportService {
         'verify_unit': g['verify_unit'],
         'verify_effective_from': g['verify_effective_from'],
         'verify_conditions': g['verify_conditions'],
+        // Quantitative target (v9) — a third column-allowlist that would
+        // silently strip a targeted habit back to a checkbox if omitted here.
+        'target': g['target'],
       });
     }
 
@@ -324,6 +327,24 @@ class DesktopBackupImportService {
         'created_at': l['created_at'],
         'updated_at': l['updated_at'],
         'streak': l['streak'],
+      });
+    }
+
+    // 3b. Process Goal Progress (quantitative-habit daily numbers) — passed
+    // through by natural key; the stores dedup by (goal_id, date) with a
+    // deterministic id and recompute nothing from it.
+    final processedProgress = <Map<String, dynamic>>[];
+    for (final raw in (rawData['goal_progress'] as List?) ?? []) {
+      if (raw is! Map) continue;
+      final p = Map<String, dynamic>.from(raw);
+      processedProgress.add({
+        'id': _sid(p['id']),
+        'goal_id': _sid(p['goal_id']),
+        'date': p['date']?.toString(),
+        'amount': p['amount'],
+        'source': p['source'],
+        'created_at': p['created_at'],
+        'updated_at': p['updated_at'],
       });
     }
 
@@ -356,6 +377,12 @@ class DesktopBackupImportService {
         'category_id': categoryId,
         'created_at': g['created_at'],
         'updated_at': g['updated_at'],
+        // Cumulative numeric macro goals (v10) — kept through processing so a
+        // restore preserves a goal's numeric target, stored progress and link.
+        'target_amount': g['target_amount'],
+        'target_unit': g['target_unit'],
+        'progress_amount': g['progress_amount'],
+        'linked_goal_id': g['linked_goal_id'],
       });
     }
 
@@ -377,6 +404,7 @@ class DesktopBackupImportService {
     return {
       kGoalsKey: processedGoals,
       kLogsKey: processedLogs,
+      kProgressKey: processedProgress,
       kMacrosKey: processedMacroGoals,
       kCategoriesKey: processedCategories,
       kMoodsKey: processedMoods,
@@ -412,6 +440,7 @@ class DesktopBackupImportService {
       return {
         'goals': _asList(data['habits']),
         'goal_logs': _normalizeLogs(data['habitLogs']),
+        'goal_progress': _asList(data['habitProgress']),
         'long_term_goals': _asList(data['macroGoals']),
         'macro_goal_categories': _asList(data['macroGoalCategories']),
         'daily_moods': _normalizeMoods(data['dailyMoods']),
@@ -422,6 +451,7 @@ class DesktopBackupImportService {
     return {
       'goals': _asList(data['goals']),
       'goal_logs': _normalizeLogs(data['goal_logs']),
+      'goal_progress': _asList(data['goal_progress']),
       'long_term_goals': _asList(data['long_term_goals']),
       'macro_goal_categories': _asList(data['macro_goal_categories']),
       'daily_moods': _normalizeMoods(data['daily_moods']),
@@ -602,6 +632,10 @@ class DesktopBackupImportService {
       for (final r in await fetch('goal_logs', 'id,goal_id,date,updated_at'))
         '${r['goal_id']}|${r['date']}': r,
     };
+    final existingProgress = {
+      for (final r in await fetch('goal_progress', 'id,goal_id,date,updated_at'))
+        '${r['goal_id']}|${r['date']}': r,
+    };
     final existingMoods = {
       for (final r in await fetch('daily_moods', 'id,date,updated_at'))
         r['date'] as String: r,
@@ -617,6 +651,7 @@ class DesktopBackupImportService {
       existingGoals: existingGoals,
       existingMacros: existingMacros,
       existingLogs: existingLogs,
+      existingProgress: existingProgress,
       existingMoods: existingMoods,
       newId: () => _uuid.v4(),
     );
@@ -643,12 +678,15 @@ class DesktopBackupImportService {
     await _bulkUpsert(client, 'goals', plan.goals);
     await _bulkUpsert(client, 'long_term_goals', plan.macros);
     await _bulkUpsert(client, 'goal_logs', plan.logs);
+    // Manual-only counts (never a health measurement), so upsert as-is.
+    await _bulkUpsert(client, 'goal_progress', plan.progress);
     await _bulkUpsert(client, 'daily_moods', plan.moods);
 
     if (replaceExisting) {
       // Remove this user's rows that aren't part of the backup, children before
       // parents so foreign keys resolve. Each table is pruned to exactly the
       // backup's rows without ever passing through an empty state.
+      await _deleteComplement(client, 'goal_progress', userId, plan.progress);
       await _deleteComplement(client, 'goal_logs', userId, plan.logs);
       await _deleteComplement(client, 'daily_moods', userId, plan.moods);
       await _deleteComplement(client, 'long_term_goals', userId, plan.macros);

@@ -20,6 +20,7 @@
 // Private-mode writes stay entirely on-device.
 
 import 'package:mattioli_os/core/import_merge_stats.dart';
+import 'package:mattioli_os/core/macro_goal_calendar.dart';
 import 'package:mattioli_os/core/private_data_store.dart';
 import 'package:mattioli_os/models/daily_mood.dart';
 import 'package:mattioli_os/models/goal.dart';
@@ -84,9 +85,39 @@ class FakePrivateDataStore implements PrivateDataStore {
     calls.add('deleteHabitLog');
   }
 
+  // ── Habit progress (quantitative targets) ────────────────────────────────
+  @override
+  Future<Map<String, Map<String, double>>> loadHabitProgress() async =>
+      <String, Map<String, double>>{};
+
+  @override
+  Future<void> setHabitProgress({
+    required String goalId,
+    required String date,
+    required double amount,
+    String source = 'manual',
+  }) async {
+    calls.add('setHabitProgress');
+  }
+
+  @override
+  Future<void> deleteHabitProgress({
+    required String goalId,
+    required String date,
+  }) async {
+    calls.add('deleteHabitProgress');
+  }
+
   // ── Macro goals ─────────────────────────────────────────────────────────
   @override
   Future<List<MacroGoal>> loadMacroGoals() async => <MacroGoal>[];
+
+  @override
+  Future<double> linkedHabitProgressSum(
+    String habitId,
+    MacroGoalDateRange? range,
+  ) async =>
+      0;
 
   @override
   Future<void> upsertMacroGoal(MacroGoal goal) async {

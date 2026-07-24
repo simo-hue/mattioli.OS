@@ -1,4 +1,13 @@
 {
+  "macroTargets": {
+    "sectionTitle": "Objetivo numérico",
+    "none": "Ninguno",
+    "amountLabel": "Valor objetivo",
+    "linkLabel": "Vincular un hábito",
+    "manual": "Manual",
+    "unitCount": "recuento",
+    "reached": "Alcanzado"
+  },
   "auth": {
     "continuePrivately": "Continúa en modo privado en este Mac",
     "signIn": "Iniciar sesión",
@@ -111,7 +120,8 @@
       "delete": "Eliminar",
       "edit": "Editar",
       "pick": "Elegir",
-      "gotIt": "Entendido"
+      "gotIt": "Entendido",
+      "done": "Hecho"
     },
     "months": [
       "Enero",
@@ -1076,6 +1086,7 @@
     "windowsScheduling": "Windows programa la próxima aparición en cada inicio.",
     "morningBody": "Revisa los hábitos de hoy y elige por dónde empezar.",
     "habitReminderBody": "Es hora de completar tu hábito.",
+    "limitReminderBody": "¿Te mantienes dentro de tu límite hoy? Revísalo cuando puedas.",
     "eveningBody": "Cierra el día y actualiza tu progreso."
   },
   "biometricGate": {
@@ -1335,5 +1346,40 @@
     "footerOpen": "abrir",
     "footerMenu": "menú",
     "footerClose": "cerrar"
+  },
+  "targets": {
+    "sectionTitle": "Objetivo",
+    "none": "Simple",
+    "atLeastLabel": "Alcanza",
+    "atMostLabel": "Mantente bajo",
+    "presets": {
+      "countDaily": {
+        "label": "Recuento",
+        "description": "Hazlo un número determinado de veces al día."
+      },
+      "durationDaily": {
+        "label": "Duración",
+        "description": "Dedica un número determinado de minutos al día."
+      },
+      "limitCountDaily": {
+        "label": "Límite",
+        "description": "Mantente por debajo de un número cada día."
+      },
+      "limitDurationDaily": {
+        "label": "Límite de tiempo",
+        "description": "Mantente bajo un número de minutos al día."
+      }
+    },
+    "units": {
+      "min": "min",
+      "hour": "h",
+      "kcal": "kcal",
+      "km": "km"
+    },
+    "entry": {
+      "keepGoing": "Sigue así",
+      "withinLimit": "Dentro de tu límite",
+      "overLimit": "Por encima de tu límite"
+    }
   }
 }

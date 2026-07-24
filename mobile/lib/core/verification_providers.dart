@@ -3,8 +3,6 @@ import 'dart:convert';
 import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path/path.dart' as p;
-import 'package:sqflite_sqlcipher/sqflite.dart';
 
 import '../providers/shared_prefs_provider.dart';
 import 'method_channel_health_kit_bridge.dart';
@@ -200,17 +198,7 @@ final verificationServiceProvider = Provider<VerificationService>(
 /// (D8). Opened lazily; tests override this provider with an in-memory store.
 final verificationStateStoreProvider =
     FutureProvider<VerificationStateStore>((ref) async {
-  final path = p.join(await getDatabasesPath(), 'verification_state.db');
-  final db = await openDatabase(
-    path,
-    version: 2,
-    onCreate: (db, _) => SqfliteVerificationStateStore.createTable(db),
-    onUpgrade: (db, oldVersion, _) async {
-      // v1 → v2 added the `nudged_at` column (couldn't-verify nudge de-dup).
-      if (oldVersion < 2) await SqfliteVerificationStateStore.migrateToV2(db);
-    },
-  );
-  // Idempotent — also creates the table for a DB opened at an existing version.
-  await SqfliteVerificationStateStore.createTable(db);
-  return SqfliteVerificationStateStore(db);
+  // Shared opener (also used by the notification manual-freeze path) so the two
+  // callers can never disagree about the DB's version/migrations/schema.
+  return SqfliteVerificationStateStore.open();
 });

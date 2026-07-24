@@ -39,6 +39,7 @@ class TranslationsAr extends Translations with BaseTranslations<AppLocale, Trans
 	TranslationsAr $copyWith({TranslationMetadata<AppLocale, Translations>? meta}) => TranslationsAr(meta: meta ?? this.$meta);
 
 	// Translations
+	@override late final _Translations$macroTargets$ar macroTargets = _Translations$macroTargets$ar._(_root);
 	@override late final _Translations$auth$ar auth = _Translations$auth$ar._(_root);
 	@override late final _Translations$privateData$ar privateData = _Translations$privateData$ar._(_root);
 	@override late final _Translations$icloudSync$ar icloudSync = _Translations$icloudSync$ar._(_root);
@@ -84,6 +85,23 @@ class TranslationsAr extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$coachSettings$ar coachSettings = _Translations$coachSettings$ar._(_root);
 	@override late final _Translations$tour$ar tour = _Translations$tour$ar._(_root);
 	@override late final _Translations$palette$ar palette = _Translations$palette$ar._(_root);
+	@override late final _Translations$targets$ar targets = _Translations$targets$ar._(_root);
+}
+
+// Path: macroTargets
+class _Translations$macroTargets$ar extends Translations$macroTargets$en {
+	_Translations$macroTargets$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get sectionTitle => 'هدف رقمي';
+	@override String get none => 'بدون';
+	@override String get amountLabel => 'القيمة المستهدفة';
+	@override String get linkLabel => 'الربط بعادة';
+	@override String get manual => 'يدوي';
+	@override String get unitCount => 'عدد';
+	@override String get reached => 'تم الوصول';
 }
 
 // Path: auth
@@ -1220,6 +1238,7 @@ class _Translations$notif$ar extends Translations$notif$en {
 	@override String get windowsScheduling => 'يجدول Windows الحدث التالي عند كل تشغيل.';
 	@override String get morningBody => 'راجع عادات اليوم واختر من أين تبدأ.';
 	@override String get habitReminderBody => 'حان وقت إتمام عادتك.';
+	@override String get limitReminderBody => 'هل تبقى ضمن حدّك اليوم؟ تفقّد الأمر عندما تستطيع.';
 	@override String get eveningBody => 'اختم يومك وحدّث تقدّمك.';
 }
 
@@ -1544,6 +1563,22 @@ class _Translations$palette$ar extends Translations$palette$en {
 	@override String get footerClose => 'إغلاق';
 }
 
+// Path: targets
+class _Translations$targets$ar extends Translations$targets$en {
+	_Translations$targets$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get sectionTitle => 'الهدف';
+	@override String get none => 'بسيط';
+	@override String get atLeastLabel => 'بلوغ';
+	@override String get atMostLabel => 'ابقَ تحت';
+	@override late final _Translations$targets$presets$ar presets = _Translations$targets$presets$ar._(_root);
+	@override late final _Translations$targets$units$ar units = _Translations$targets$units$ar._(_root);
+	@override late final _Translations$targets$entry$ar entry = _Translations$targets$entry$ar._(_root);
+}
+
 // Path: common.actions
 class _Translations$common$actions$ar extends Translations$common$actions$en {
 	_Translations$common$actions$ar._(TranslationsAr root) : this._root = root, super.internal(root);
@@ -1557,6 +1592,7 @@ class _Translations$common$actions$ar extends Translations$common$actions$en {
 	@override String get edit => 'تعديل';
 	@override String get pick => 'اختيار';
 	@override String get gotIt => 'حسناً';
+	@override String get done => 'تم';
 }
 
 // Path: common.calendarView
@@ -1740,6 +1776,44 @@ class _Translations$settingsPage$languageOptions$ar extends Translations$setting
 	@override String get arabic => 'العربية';
 }
 
+// Path: targets.presets
+class _Translations$targets$presets$ar extends Translations$targets$presets$en {
+	_Translations$targets$presets$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override late final _Translations$targets$presets$countDaily$ar countDaily = _Translations$targets$presets$countDaily$ar._(_root);
+	@override late final _Translations$targets$presets$durationDaily$ar durationDaily = _Translations$targets$presets$durationDaily$ar._(_root);
+	@override late final _Translations$targets$presets$limitCountDaily$ar limitCountDaily = _Translations$targets$presets$limitCountDaily$ar._(_root);
+	@override late final _Translations$targets$presets$limitDurationDaily$ar limitDurationDaily = _Translations$targets$presets$limitDurationDaily$ar._(_root);
+}
+
+// Path: targets.units
+class _Translations$targets$units$ar extends Translations$targets$units$en {
+	_Translations$targets$units$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get min => 'د';
+	@override String get hour => 'س';
+	@override String get kcal => 'سعرة';
+	@override String get km => 'كم';
+}
+
+// Path: targets.entry
+class _Translations$targets$entry$ar extends Translations$targets$entry$en {
+	_Translations$targets$entry$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get keepGoing => 'استمر';
+	@override String get withinLimit => 'ضمن حدك';
+	@override String get overLimit => 'تجاوزت حدك';
+}
+
 // Path: ai.coachPrompts.diagnoseWeakestHabit
 class _Translations$ai$coachPrompts$diagnoseWeakestHabit$ar extends Translations$ai$coachPrompts$diagnoseWeakestHabit$en {
 	_Translations$ai$coachPrompts$diagnoseWeakestHabit$ar._(TranslationsAr root) : this._root = root, super.internal(root);
@@ -1850,6 +1924,50 @@ class _Translations$ai$coachPrompts$whatCanYouHelp$ar extends Translations$ai$co
 	@override String get payload => 'بناءً على عاداتي وأهدافي في هذا التطبيق، أعطني ثلاثة أمثلة محدّدة على كيفية مساعدتك لي — لا نصائح عامة، بل أمور مرتبطة ببياناتي الفعلية.';
 }
 
+// Path: targets.presets.countDaily
+class _Translations$targets$presets$countDaily$ar extends Translations$targets$presets$countDaily$en {
+	_Translations$targets$presets$countDaily$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'عدد';
+	@override String get description => 'قم به عددًا محددًا من المرات يوميًا.';
+}
+
+// Path: targets.presets.durationDaily
+class _Translations$targets$presets$durationDaily$ar extends Translations$targets$presets$durationDaily$en {
+	_Translations$targets$presets$durationDaily$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'المدة';
+	@override String get description => 'اقضِ عددًا محددًا من الدقائق يوميًا.';
+}
+
+// Path: targets.presets.limitCountDaily
+class _Translations$targets$presets$limitCountDaily$ar extends Translations$targets$presets$limitCountDaily$en {
+	_Translations$targets$presets$limitCountDaily$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'حد';
+	@override String get description => 'ابقَ تحت عدد محدد كل يوم.';
+}
+
+// Path: targets.presets.limitDurationDaily
+class _Translations$targets$presets$limitDurationDaily$ar extends Translations$targets$presets$limitDurationDaily$en {
+	_Translations$targets$presets$limitDurationDaily$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'حد زمني';
+	@override String get description => 'ابقَ تحت عدد محدد من الدقائق يوميًا.';
+}
+
 /// The flat map containing all translations for locale <ar>.
 /// Only for edge cases! For simple maps, use the map function of this library.
 ///
@@ -1858,6 +1976,13 @@ class _Translations$ai$coachPrompts$whatCanYouHelp$ar extends Translations$ai$co
 extension on TranslationsAr {
 	dynamic _flatMapFunction(String path) {
 		return switch (path) {
+			'macroTargets.sectionTitle' => 'هدف رقمي',
+			'macroTargets.none' => 'بدون',
+			'macroTargets.amountLabel' => 'القيمة المستهدفة',
+			'macroTargets.linkLabel' => 'الربط بعادة',
+			'macroTargets.manual' => 'يدوي',
+			'macroTargets.unitCount' => 'عدد',
+			'macroTargets.reached' => 'تم الوصول',
 			'auth.continuePrivately' => 'المتابعة في الوضع الخاص على هذا الـ Mac',
 			'auth.signIn' => 'تسجيل الدخول',
 			'auth.register' => 'التسجيل',
@@ -1955,6 +2080,7 @@ extension on TranslationsAr {
 			'common.actions.edit' => 'تعديل',
 			'common.actions.pick' => 'اختيار',
 			'common.actions.gotIt' => 'حسناً',
+			'common.actions.done' => 'تم',
 			'common.months.0' => 'يناير',
 			'common.months.1' => 'فبراير',
 			'common.months.2' => 'مارس',
@@ -2362,6 +2488,8 @@ extension on TranslationsAr {
 			'stats.nextDayMoodTitle' => 'تأثير مزاج اليوم التالي',
 			'stats.nextDayMoodSubtitle' => 'المزاج والطاقة في اليوم التالي',
 			'stats.nextDayAfterDone' => 'بعد فعلها',
+			_ => null,
+		} ?? switch (path) {
 			'stats.nextDayAfterMissed' => 'بعد تفويتها',
 			'stats.nextDayMoodLift' => ({required Object value}) => '${value} تحسّن في المزاج',
 			'stats.streakHistoryTitle' => 'سجل السلاسل',
@@ -2370,8 +2498,6 @@ extension on TranslationsAr {
 			'habitsPage.today' => 'اليوم',
 			'habitsPage.subtitle' => 'ابنِ بروتوكولك اليومي وراقب الاتساق عبر الزمن.',
 			'habitsPage.tabProtocol' => 'البروتوكول',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.tabCalendar' => 'التقويم',
 			'habitsPage.deleteHabitTitle' => 'حذف العادة',
 			'habitsPage.deleteHabitConfirm' => ({required Object title}) => 'هل تريد إزالة "${title}" من البروتوكول؟',
@@ -2830,6 +2956,7 @@ extension on TranslationsAr {
 			'notif.windowsScheduling' => 'يجدول Windows الحدث التالي عند كل تشغيل.',
 			'notif.morningBody' => 'راجع عادات اليوم واختر من أين تبدأ.',
 			'notif.habitReminderBody' => 'حان وقت إتمام عادتك.',
+			'notif.limitReminderBody' => 'هل تبقى ضمن حدّك اليوم؟ تفقّد الأمر عندما تستطيع.',
 			'notif.eveningBody' => 'اختم يومك وحدّث تقدّمك.',
 			'biometricGate.appLocked' => 'التطبيق مقفل',
 			'biometricGate.unlockPrompt' => 'افتح القفل بالمصادقة المحلية للمتابعة.',
@@ -2875,6 +3002,8 @@ extension on TranslationsAr {
 			'proModal.title' => 'افتح Evolve Pro',
 			'proModal.subtitle' => 'ارتقِ بنظام عاداتك إلى المستوى التالي',
 			'proModal.featuresHeader' => 'ما الذي تتضمّنه خطة PRO',
+			_ => null,
+		} ?? switch (path) {
 			'proModal.aiCoachTitle' => 'AI Coach بلا إعداد',
 			'proModal.aiCoachDesc' => 'نشغّله نحن بمفتاحنا: لا مفتاح API تبحث عنه، ولا حساب ثانٍ. تفضّل حساب OpenRouter الخاص بك؟ هذا مجاني أيضًا.',
 			'proModal.statsTitle' => 'إحصاءات خاصة بكل عادة',
@@ -2884,8 +3013,6 @@ extension on TranslationsAr {
 			'proModal.unlimitedTitle' => 'عادات غير محدودة',
 			'proModal.unlimitedDesc' => 'أنشئ وتتبّع كل العادات التي تريدها دون أي حدود.',
 			'proModal.maybeLater' => 'ربما لاحقاً',
-			_ => null,
-		} ?? switch (path) {
 			'proModal.viewPlans' => 'عرض خطط Pro',
 			'appLogs.title' => 'سجلات التطبيق',
 			'appLogs.copiedToClipboard' => 'تم نسخ السجلات إلى الحافظة',
@@ -3073,6 +3200,25 @@ extension on TranslationsAr {
 			'palette.footerOpen' => 'فتح',
 			'palette.footerMenu' => 'قائمة',
 			'palette.footerClose' => 'إغلاق',
+			'targets.sectionTitle' => 'الهدف',
+			'targets.none' => 'بسيط',
+			'targets.atLeastLabel' => 'بلوغ',
+			'targets.atMostLabel' => 'ابقَ تحت',
+			'targets.presets.countDaily.label' => 'عدد',
+			'targets.presets.countDaily.description' => 'قم به عددًا محددًا من المرات يوميًا.',
+			'targets.presets.durationDaily.label' => 'المدة',
+			'targets.presets.durationDaily.description' => 'اقضِ عددًا محددًا من الدقائق يوميًا.',
+			'targets.presets.limitCountDaily.label' => 'حد',
+			'targets.presets.limitCountDaily.description' => 'ابقَ تحت عدد محدد كل يوم.',
+			'targets.presets.limitDurationDaily.label' => 'حد زمني',
+			'targets.presets.limitDurationDaily.description' => 'ابقَ تحت عدد محدد من الدقائق يوميًا.',
+			'targets.units.min' => 'د',
+			'targets.units.hour' => 'س',
+			'targets.units.kcal' => 'سعرة',
+			'targets.units.km' => 'كم',
+			'targets.entry.keepGoing' => 'استمر',
+			'targets.entry.withinLimit' => 'ضمن حدك',
+			'targets.entry.overLimit' => 'تجاوزت حدك',
 			_ => null,
 		};
 	}

@@ -15,6 +15,8 @@ import '../models/goal.dart';
 import '../models/macro_goal.dart';
 import '../models/daily_mood.dart';
 import 'app_logger.dart';
+import 'macro_goal_calendar.dart';
+import 'macro_goal_snapshot.dart';
 import 'import_merge.dart';
 import 'import_merge_stats.dart';
 import 'private_analytics.dart';
@@ -482,6 +484,12 @@ class PrivateLocalDatabase implements PrivateDataStore {
   @override
   Future<void> deleteGoal(String id) async {
     final db = await _database();
+    // Before the habit's goal_progress rows cascade away, snapshot the derived
+    // total into any macro goal it feeds so a "500 km" goal that reached 320 km
+    // keeps showing 320 as a now-manual value. The FK is ON DELETE SET NULL, so
+    // the un-link itself is automatic; this preserves the accumulated number,
+    // which would otherwise collapse to zero the moment the progress is gone.
+    await snapshotLinkedMacroGoals(db, id, now: _now());
     await db.delete('goals', where: 'id = ?', whereArgs: [id]);
     _notifyWrite();
   }
@@ -596,6 +604,77 @@ class PrivateLocalDatabase implements PrivateDataStore {
   }
 
   @override
+  Future<Map<String, Map<String, double>>> loadHabitProgress() async {
+    final db = await _database();
+    final owner = await ownerId();
+    final rows = await db.query(
+      'goal_progress',
+      where: 'user_id = ?',
+      whereArgs: [owner],
+    );
+    final result = <String, Map<String, double>>{};
+    for (final row in rows) {
+      final date = row['date'] as String;
+      final goalId = row['goal_id'] as String;
+      final amount = (row['amount'] as num).toDouble();
+      result.putIfAbsent(date, () => <String, double>{})[goalId] = amount;
+    }
+    return result;
+  }
+
+  @override
+  Future<void> setHabitProgress({
+    required String goalId,
+    required String date,
+    required double amount,
+    String source = 'manual',
+  }) async {
+    final db = await _database();
+    final owner = await ownerId();
+    final now = _now();
+    // Deterministic id (goalId:date) — the whole reason two devices can't mint
+    // rival rows for one habit-day. Reused on conflict so REPLACE rewrites the
+    // SAME primary key (no natural-key merge, no tombstone: the AFTER DELETE
+    // trigger does not fire on a REPLACE with recursive triggers off, exactly as
+    // setHabitLog relies on).
+    final id = PrivateDbSchema.goalProgressId(goalId, date);
+    final existing = await db.query(
+      'goal_progress',
+      columns: ['created_at'],
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+    await db.insert('goal_progress', {
+      'id': id,
+      'user_id': owner,
+      'goal_id': goalId,
+      'date': date,
+      'amount': amount,
+      'source': source,
+      'created_at': existing.isNotEmpty
+          ? existing.first['created_at'] as String
+          : now,
+      'updated_at': now,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+    _notifyWrite();
+  }
+
+  @override
+  Future<void> deleteHabitProgress({
+    required String goalId,
+    required String date,
+  }) async {
+    final db = await _database();
+    await db.delete(
+      'goal_progress',
+      where: 'goal_id = ? AND date = ?',
+      whereArgs: [goalId, date],
+    );
+    _notifyWrite();
+  }
+
+  @override
   Future<List<MacroGoal>> loadMacroGoals() async {
     final db = await _database();
     final owner = await ownerId();
@@ -606,6 +685,18 @@ class PrivateLocalDatabase implements PrivateDataStore {
       orderBy: 'created_at ASC',
     );
     return rows.map(_macroGoalFromRow).toList();
+  }
+
+  @override
+  Future<double> linkedHabitProgressSum(
+    String habitId,
+    MacroGoalDateRange? range,
+  ) async {
+    final db = await _database();
+    // Delegates to the shared, DB-pure summing query so this display read and
+    // the delete-time snapshot ([snapshotLinkedMacroGoals]) derive the exact
+    // same number from the exact same rows.
+    return sumLinkedHabitProgress(db, habitId, range);
   }
 
   @override
@@ -633,6 +724,13 @@ class PrivateLocalDatabase implements PrivateDataStore {
       'category_key': goal.categoryKey,
       'category_id': goal.categoryId,
       'updated_at': now,
+      // Cumulative numeric macro goals (v10). Written explicitly so an UPDATE
+      // can also CLEAR them (e.g. reverting a numeric goal to boolean, or
+      // snapshotting progress on unlink). Columns exist after the v10 migration.
+      'target_amount': goal.targetAmount,
+      'target_unit': goal.targetUnit,
+      'progress_amount': goal.progressAmount,
+      'linked_goal_id': goal.linkedGoalId,
     };
     // UPDATE-or-INSERT rather than INSERT OR REPLACE. `long_term_goals` has no
     // child rows today, but a REPLACE still needlessly DELETE+re-INSERTs (extra
@@ -905,6 +1003,7 @@ class PrivateLocalDatabase implements PrivateDataStore {
       orderBy: 'display_order ASC, created_at ASC',
     );
     final logs = await rows('goal_logs');
+    final progress = await rows('goal_progress');
     final macros = await rows('long_term_goals', orderBy: 'created_at ASC');
     final cats = await rows('macro_goal_categories', orderBy: 'created_at ASC');
     final moods = await rows('daily_moods');
@@ -947,6 +1046,9 @@ class PrivateLocalDatabase implements PrivateDataStore {
             'verify_effective_from': g['verify_effective_from'],
             // The compound conditions blob (Q4) round-trips too.
             'verify_conditions': g['verify_conditions'],
+            // The quantitative target (v9) — without this a backup→restore
+            // silently turns a targeted habit back into a plain checkbox.
+            'target': g['target'],
           },
       ],
       'habitLogs': [
@@ -960,6 +1062,21 @@ class PrivateLocalDatabase implements PrivateDataStore {
             'created_at': l['created_at'],
             'updated_at': l['updated_at'],
             'streak': l['streak'],
+          },
+      ],
+      // Quantitative-habit daily progress numbers (v9). Round-tripped so a
+      // restore keeps each target habit's rings, not just its done/missed
+      // verdicts (which live in habitLogs).
+      'habitProgress': [
+        for (final p in progress)
+          {
+            'id': p['id'],
+            'goal_id': p['goal_id'],
+            'date': p['date'],
+            'amount': p['amount'],
+            'source': p['source'],
+            'created_at': p['created_at'],
+            'updated_at': p['updated_at'],
           },
       ],
       'macroGoals': [
@@ -977,6 +1094,13 @@ class PrivateLocalDatabase implements PrivateDataStore {
             'category_id': g['category_id'],
             'created_at': g['created_at'],
             'updated_at': g['updated_at'],
+            // Cumulative numeric macro goals (v10) — round-tripped so a
+            // backup→restore keeps a goal's numeric target, stored progress and
+            // linked habit, not just its boolean status.
+            'target_amount': g['target_amount'],
+            'target_unit': g['target_unit'],
+            'progress_amount': g['progress_amount'],
+            'linked_goal_id': g['linked_goal_id'],
           },
       ],
       'macroGoalCategories': [
@@ -1185,6 +1309,10 @@ class PrivateLocalDatabase implements PrivateDataStore {
     final profileRow = await loadProfileRow();
     await db.transaction((txn) async {
       await txn.delete('goal_logs');
+      // Explicit, beside goal_logs, rather than leaning on the goals/profiles
+      // cascade: this method wipes every child table by name in FK-safe order,
+      // and an unlisted table is how a wipe silently leaves rows behind.
+      await txn.delete('goal_progress');
       await txn.delete('daily_moods');
       await txn.delete('long_term_goals');
       await txn.delete('macro_goal_categories');
@@ -1933,6 +2061,7 @@ class PrivateLocalDatabase implements PrivateDataStore {
       'verify_unit': row['verify_unit'],
       'verify_effective_from': row['verify_effective_from'],
       'verify_conditions': row['verify_conditions'],
+      'target': row['target'],
     };
     return Goal.fromJson(json);
   }
@@ -1964,6 +2093,11 @@ class PrivateLocalDatabase implements PrivateDataStore {
           goal.verificationRule != null && goal.verifyEffectiveFrom != null
               ? goal.verifyEffectiveFrom!.toIso8601String().substring(0, 10)
               : null,
+      // Written explicitly (like the verify_* columns) so ConflictAlgorithm
+      // .replace can't wipe it on an unrelated edit. Live target encoded, an
+      // unreadable newer-client blob preserved verbatim, else null. Column
+      // exists after the evolve_sync v9 migration (run automatically on open).
+      'target': goal.targetColumnValue,
     };
   }
 
@@ -1980,6 +2114,12 @@ class PrivateLocalDatabase implements PrivateDataStore {
       'category_key': row['category_key'],
       'category_id': row['category_id'],
       'created_at': row['created_at'],
+      // Cumulative numeric macro goals (v10). Columns exist after the evolve_sync
+      // v10 migration (run automatically on open).
+      'target_amount': row['target_amount'],
+      'target_unit': row['target_unit'],
+      'progress_amount': row['progress_amount'],
+      'linked_goal_id': row['linked_goal_id'],
     });
   }
 

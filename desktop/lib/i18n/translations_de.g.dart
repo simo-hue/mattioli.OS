@@ -39,6 +39,7 @@ class TranslationsDe extends Translations with BaseTranslations<AppLocale, Trans
 	TranslationsDe $copyWith({TranslationMetadata<AppLocale, Translations>? meta}) => TranslationsDe(meta: meta ?? this.$meta);
 
 	// Translations
+	@override late final _Translations$macroTargets$de macroTargets = _Translations$macroTargets$de._(_root);
 	@override late final _Translations$auth$de auth = _Translations$auth$de._(_root);
 	@override late final _Translations$privateData$de privateData = _Translations$privateData$de._(_root);
 	@override late final _Translations$icloudSync$de icloudSync = _Translations$icloudSync$de._(_root);
@@ -84,6 +85,23 @@ class TranslationsDe extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$coachSettings$de coachSettings = _Translations$coachSettings$de._(_root);
 	@override late final _Translations$tour$de tour = _Translations$tour$de._(_root);
 	@override late final _Translations$palette$de palette = _Translations$palette$de._(_root);
+	@override late final _Translations$targets$de targets = _Translations$targets$de._(_root);
+}
+
+// Path: macroTargets
+class _Translations$macroTargets$de extends Translations$macroTargets$en {
+	_Translations$macroTargets$de._(TranslationsDe root) : this._root = root, super.internal(root);
+
+	final TranslationsDe _root; // ignore: unused_field
+
+	// Translations
+	@override String get sectionTitle => 'Numerisches Ziel';
+	@override String get none => 'Keins';
+	@override String get amountLabel => 'Zielwert';
+	@override String get linkLabel => 'Mit einer Gewohnheit verknüpfen';
+	@override String get manual => 'Manuell';
+	@override String get unitCount => 'Anzahl';
+	@override String get reached => 'Erreicht';
 }
 
 // Path: auth
@@ -1220,6 +1238,7 @@ class _Translations$notif$de extends Translations$notif$en {
 	@override String get windowsScheduling => 'Windows plant das nächste Vorkommen bei jedem Start.';
 	@override String get morningBody => 'Sieh dir die heutigen Gewohnheiten an und wähle, wo du beginnst.';
 	@override String get habitReminderBody => 'Zeit, deine Gewohnheit zu erledigen.';
+	@override String get limitReminderBody => 'Bleibst du heute innerhalb deines Limits? Sieh kurz nach, wenn du kannst.';
 	@override String get eveningBody => 'Lass den Tag ausklingen und aktualisiere deinen Fortschritt.';
 }
 
@@ -1544,6 +1563,22 @@ class _Translations$palette$de extends Translations$palette$en {
 	@override String get footerClose => 'schließen';
 }
 
+// Path: targets
+class _Translations$targets$de extends Translations$targets$en {
+	_Translations$targets$de._(TranslationsDe root) : this._root = root, super.internal(root);
+
+	final TranslationsDe _root; // ignore: unused_field
+
+	// Translations
+	@override String get sectionTitle => 'Ziel';
+	@override String get none => 'Einfach';
+	@override String get atLeastLabel => 'Erreiche';
+	@override String get atMostLabel => 'Bleib unter';
+	@override late final _Translations$targets$presets$de presets = _Translations$targets$presets$de._(_root);
+	@override late final _Translations$targets$units$de units = _Translations$targets$units$de._(_root);
+	@override late final _Translations$targets$entry$de entry = _Translations$targets$entry$de._(_root);
+}
+
 // Path: common.actions
 class _Translations$common$actions$de extends Translations$common$actions$en {
 	_Translations$common$actions$de._(TranslationsDe root) : this._root = root, super.internal(root);
@@ -1557,6 +1592,7 @@ class _Translations$common$actions$de extends Translations$common$actions$en {
 	@override String get edit => 'Bearbeiten';
 	@override String get pick => 'Auswählen';
 	@override String get gotIt => 'Verstanden';
+	@override String get done => 'Fertig';
 }
 
 // Path: common.calendarView
@@ -1740,6 +1776,44 @@ class _Translations$settingsPage$languageOptions$de extends Translations$setting
 	@override String get arabic => 'Arabisch';
 }
 
+// Path: targets.presets
+class _Translations$targets$presets$de extends Translations$targets$presets$en {
+	_Translations$targets$presets$de._(TranslationsDe root) : this._root = root, super.internal(root);
+
+	final TranslationsDe _root; // ignore: unused_field
+
+	// Translations
+	@override late final _Translations$targets$presets$countDaily$de countDaily = _Translations$targets$presets$countDaily$de._(_root);
+	@override late final _Translations$targets$presets$durationDaily$de durationDaily = _Translations$targets$presets$durationDaily$de._(_root);
+	@override late final _Translations$targets$presets$limitCountDaily$de limitCountDaily = _Translations$targets$presets$limitCountDaily$de._(_root);
+	@override late final _Translations$targets$presets$limitDurationDaily$de limitDurationDaily = _Translations$targets$presets$limitDurationDaily$de._(_root);
+}
+
+// Path: targets.units
+class _Translations$targets$units$de extends Translations$targets$units$en {
+	_Translations$targets$units$de._(TranslationsDe root) : this._root = root, super.internal(root);
+
+	final TranslationsDe _root; // ignore: unused_field
+
+	// Translations
+	@override String get min => 'Min.';
+	@override String get hour => 'Std.';
+	@override String get kcal => 'kcal';
+	@override String get km => 'km';
+}
+
+// Path: targets.entry
+class _Translations$targets$entry$de extends Translations$targets$entry$en {
+	_Translations$targets$entry$de._(TranslationsDe root) : this._root = root, super.internal(root);
+
+	final TranslationsDe _root; // ignore: unused_field
+
+	// Translations
+	@override String get keepGoing => 'Weiter so';
+	@override String get withinLimit => 'Innerhalb des Limits';
+	@override String get overLimit => 'Über dem Limit';
+}
+
 // Path: ai.coachPrompts.diagnoseWeakestHabit
 class _Translations$ai$coachPrompts$diagnoseWeakestHabit$de extends Translations$ai$coachPrompts$diagnoseWeakestHabit$en {
 	_Translations$ai$coachPrompts$diagnoseWeakestHabit$de._(TranslationsDe root) : this._root = root, super.internal(root);
@@ -1850,6 +1924,50 @@ class _Translations$ai$coachPrompts$whatCanYouHelp$de extends Translations$ai$co
 	@override String get payload => 'Gib mir auf Basis meiner Gewohnheiten und Ziele in dieser App drei konkrete Beispiele, wie du mir helfen kannst — keine allgemeinen Ratschläge, sondern Dinge, die mit meinen echten Daten zu tun haben.';
 }
 
+// Path: targets.presets.countDaily
+class _Translations$targets$presets$countDaily$de extends Translations$targets$presets$countDaily$en {
+	_Translations$targets$presets$countDaily$de._(TranslationsDe root) : this._root = root, super.internal(root);
+
+	final TranslationsDe _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Anzahl';
+	@override String get description => 'Erledige es eine bestimmte Anzahl pro Tag.';
+}
+
+// Path: targets.presets.durationDaily
+class _Translations$targets$presets$durationDaily$de extends Translations$targets$presets$durationDaily$en {
+	_Translations$targets$presets$durationDaily$de._(TranslationsDe root) : this._root = root, super.internal(root);
+
+	final TranslationsDe _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Dauer';
+	@override String get description => 'Verbringe eine bestimmte Anzahl Minuten pro Tag.';
+}
+
+// Path: targets.presets.limitCountDaily
+class _Translations$targets$presets$limitCountDaily$de extends Translations$targets$presets$limitCountDaily$en {
+	_Translations$targets$presets$limitCountDaily$de._(TranslationsDe root) : this._root = root, super.internal(root);
+
+	final TranslationsDe _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Limit';
+	@override String get description => 'Bleib täglich unter einer bestimmten Anzahl.';
+}
+
+// Path: targets.presets.limitDurationDaily
+class _Translations$targets$presets$limitDurationDaily$de extends Translations$targets$presets$limitDurationDaily$en {
+	_Translations$targets$presets$limitDurationDaily$de._(TranslationsDe root) : this._root = root, super.internal(root);
+
+	final TranslationsDe _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Zeitlimit';
+	@override String get description => 'Bleib täglich unter einer bestimmten Minutenzahl.';
+}
+
 /// The flat map containing all translations for locale <de>.
 /// Only for edge cases! For simple maps, use the map function of this library.
 ///
@@ -1858,6 +1976,13 @@ class _Translations$ai$coachPrompts$whatCanYouHelp$de extends Translations$ai$co
 extension on TranslationsDe {
 	dynamic _flatMapFunction(String path) {
 		return switch (path) {
+			'macroTargets.sectionTitle' => 'Numerisches Ziel',
+			'macroTargets.none' => 'Keins',
+			'macroTargets.amountLabel' => 'Zielwert',
+			'macroTargets.linkLabel' => 'Mit einer Gewohnheit verknüpfen',
+			'macroTargets.manual' => 'Manuell',
+			'macroTargets.unitCount' => 'Anzahl',
+			'macroTargets.reached' => 'Erreicht',
 			'auth.continuePrivately' => 'Privat auf diesem Mac fortfahren',
 			'auth.signIn' => 'Anmelden',
 			'auth.register' => 'Registrieren',
@@ -1955,6 +2080,7 @@ extension on TranslationsDe {
 			'common.actions.edit' => 'Bearbeiten',
 			'common.actions.pick' => 'Auswählen',
 			'common.actions.gotIt' => 'Verstanden',
+			'common.actions.done' => 'Fertig',
 			'common.months.0' => 'Januar',
 			'common.months.1' => 'Februar',
 			'common.months.2' => 'März',
@@ -2362,6 +2488,8 @@ extension on TranslationsDe {
 			'stats.nextDayMoodTitle' => 'Stimmung am Folgetag',
 			'stats.nextDayMoodSubtitle' => 'Stimmung & Energie am nächsten Tag',
 			'stats.nextDayAfterDone' => 'Nach dem Erledigen',
+			_ => null,
+		} ?? switch (path) {
 			'stats.nextDayAfterMissed' => 'Nach dem Verpassen',
 			'stats.nextDayMoodLift' => ({required Object value}) => '${value} Stimmungsplus',
 			'stats.streakHistoryTitle' => 'Serienverlauf',
@@ -2370,8 +2498,6 @@ extension on TranslationsDe {
 			'habitsPage.today' => 'Heute',
 			'habitsPage.subtitle' => 'Baue dein tägliches Protokoll auf und beobachte die Konstanz im Zeitverlauf.',
 			'habitsPage.tabProtocol' => 'Protokoll',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.tabCalendar' => 'Kalender',
 			'habitsPage.deleteHabitTitle' => 'Gewohnheit löschen',
 			'habitsPage.deleteHabitConfirm' => ({required Object title}) => '„${title}“ aus dem Protokoll entfernen?',
@@ -2830,6 +2956,7 @@ extension on TranslationsDe {
 			'notif.windowsScheduling' => 'Windows plant das nächste Vorkommen bei jedem Start.',
 			'notif.morningBody' => 'Sieh dir die heutigen Gewohnheiten an und wähle, wo du beginnst.',
 			'notif.habitReminderBody' => 'Zeit, deine Gewohnheit zu erledigen.',
+			'notif.limitReminderBody' => 'Bleibst du heute innerhalb deines Limits? Sieh kurz nach, wenn du kannst.',
 			'notif.eveningBody' => 'Lass den Tag ausklingen und aktualisiere deinen Fortschritt.',
 			'biometricGate.appLocked' => 'App gesperrt',
 			'biometricGate.unlockPrompt' => 'Entsperre mit lokaler Authentifizierung, um fortzufahren.',
@@ -2875,6 +3002,8 @@ extension on TranslationsDe {
 			'proModal.title' => 'Evolve PRO freischalten',
 			'proModal.subtitle' => 'Bringen Sie Ihr Gewohnheitssystem auf die nächste Stufe',
 			'proModal.featuresHeader' => 'Was der PRO-Plan enthält',
+			_ => null,
+		} ?? switch (path) {
 			'proModal.aiCoachTitle' => 'AI Coach, ohne Einrichtung',
 			'proModal.aiCoachDesc' => 'Wir betreiben ihn mit unserem Schlüssel: kein API-Schlüssel zu besorgen, kein zweites Konto. Lieber dein eigenes OpenRouter-Konto? Das ist ebenfalls kostenlos.',
 			'proModal.statsTitle' => 'Gewohnheitsspezifische Statistiken',
@@ -2884,8 +3013,6 @@ extension on TranslationsDe {
 			'proModal.unlimitedTitle' => 'Unbegrenzte Gewohnheiten',
 			'proModal.unlimitedDesc' => 'Erstellen und verfolgen Sie alle gewünschten Gewohnheiten ohne Einschränkungen.',
 			'proModal.maybeLater' => 'Vielleicht später',
-			_ => null,
-		} ?? switch (path) {
 			'proModal.viewPlans' => 'Pro-Abos ansehen',
 			'appLogs.title' => 'App-Protokolle',
 			'appLogs.copiedToClipboard' => 'Protokolle in die Zwischenablage kopiert',
@@ -3073,6 +3200,25 @@ extension on TranslationsDe {
 			'palette.footerOpen' => 'öffnen',
 			'palette.footerMenu' => 'Menü',
 			'palette.footerClose' => 'schließen',
+			'targets.sectionTitle' => 'Ziel',
+			'targets.none' => 'Einfach',
+			'targets.atLeastLabel' => 'Erreiche',
+			'targets.atMostLabel' => 'Bleib unter',
+			'targets.presets.countDaily.label' => 'Anzahl',
+			'targets.presets.countDaily.description' => 'Erledige es eine bestimmte Anzahl pro Tag.',
+			'targets.presets.durationDaily.label' => 'Dauer',
+			'targets.presets.durationDaily.description' => 'Verbringe eine bestimmte Anzahl Minuten pro Tag.',
+			'targets.presets.limitCountDaily.label' => 'Limit',
+			'targets.presets.limitCountDaily.description' => 'Bleib täglich unter einer bestimmten Anzahl.',
+			'targets.presets.limitDurationDaily.label' => 'Zeitlimit',
+			'targets.presets.limitDurationDaily.description' => 'Bleib täglich unter einer bestimmten Minutenzahl.',
+			'targets.units.min' => 'Min.',
+			'targets.units.hour' => 'Std.',
+			'targets.units.kcal' => 'kcal',
+			'targets.units.km' => 'km',
+			'targets.entry.keepGoing' => 'Weiter so',
+			'targets.entry.withinLimit' => 'Innerhalb des Limits',
+			'targets.entry.overLimit' => 'Über dem Limit',
 			_ => null,
 		};
 	}

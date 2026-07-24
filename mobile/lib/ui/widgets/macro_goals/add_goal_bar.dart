@@ -5,11 +5,14 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme.dart';
 import '../../../core/haptics.dart';
+import '../../../core/macro_targets_config.dart';
 import '../../../models/macro_goal.dart';
+import '../../../providers/goal_provider.dart';
 import '../../../providers/macro_goals_provider.dart';
 import '../../../providers/macro_goal_categories_provider.dart';
 import '../../../providers/settings_provider.dart';
 import 'category_picker_sheet.dart';
+import 'macro_target_field.dart';
 import '../pro_features_modal.dart';
 import '../../../i18n/translations.g.dart';
 
@@ -25,6 +28,10 @@ class AddGoalBar extends ConsumerStatefulWidget {
 class _AddGoalBarState extends ConsumerState<AddGoalBar> {
   final _controller = TextEditingController();
   String? _selectedCategory;
+
+  /// The optional numeric target being configured for the next goal (behind
+  /// [MacroTargetsConfig.enabled]). Null ⇒ a plain boolean goal, as today.
+  MacroTargetDraft? _targetDraft;
 
   String get _placeholder {
     switch (widget.viewState.selectedType) {
@@ -60,6 +67,9 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
     final id =
         '${vs.selectedType.name}-${DateTime.now().millisecondsSinceEpoch}';
 
+    // Attach the numeric target only when the feature is live AND one was
+    // configured; otherwise the goal is exactly the boolean goal shipped today.
+    final draft = MacroTargetsConfig.enabled ? _targetDraft : null;
     final goal = MacroGoal(
       id: id,
       title: title,
@@ -77,11 +87,17 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
       weekNumber: vs.selectedType == GoalType.weekly ? vs.selectedWeek : null,
       categoryId: _selectedCategory,
       createdAt: DateTime.now(),
+      targetAmount: draft?.amount,
+      targetUnit: draft?.unit.wireName,
+      linkedGoalId: draft?.linkedGoalId,
     );
 
     ref.read(macroGoalsProvider.notifier).addGoal(goal);
     _controller.clear();
-    setState(() => _selectedCategory = null);
+    setState(() {
+      _selectedCategory = null;
+      _targetDraft = null;
+    });
     ref.hapticMedium();
   }
 
@@ -131,7 +147,10 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
         children: [
           // ── Text field ─────────────────────────────────────────────────
           Expanded(
@@ -223,6 +242,21 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
               ),
             ),
           ),
+        ],
+          ),
+          // ── Optional numeric target (dark until MacroTargetsConfig.enabled) ─
+          if (MacroTargetsConfig.enabled) ...[
+            const SizedBox(height: 14),
+            MacroTargetField(
+              value: _targetDraft,
+              habits: [
+                for (final habit in ref.watch(goalsProvider))
+                  MacroHabitOption(id: habit.id, title: habit.title),
+              ],
+              onChanged: (draft) => setState(() => _targetDraft = draft),
+            ),
+            const SizedBox(height: 4),
+          ],
         ],
       ),
     );

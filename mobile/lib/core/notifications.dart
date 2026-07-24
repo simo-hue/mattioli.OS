@@ -1,3 +1,4 @@
+import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -14,6 +15,9 @@ import 'navigator_key.dart';
 import 'private_local_database.dart';
 import 'secure_local_storage.dart';
 import 'supabase_config.dart';
+import 'targets_config.dart';
+import 'verification_config.dart';
+import 'verification_state_store.dart';
 import 'app_logger.dart';
 
 class NotificationService {
@@ -224,6 +228,14 @@ class NotificationService {
     final dateKey =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
+    // A notification Done/Skip is a MANUAL resolution — record the same D9
+    // manual freeze that goal_provider.cycleStatus does, so a later foreground
+    // reconcile leaves it alone instead of overwriting it with an auto verdict
+    // for an auto-verified habit (NOTIF/verification-provenance bug). Done first
+    // and awaited so the freeze survives even a cold background isolate being
+    // torn down right after the log write.
+    await _freezeManualForToday(habitId);
+
     if (await _isPrivateMode()) {
       try {
         // Compute the streak from history so a notification Done/Skip matches
@@ -266,6 +278,36 @@ class NotificationService {
     } catch (e, stack) {
       AppLogger.error('[Notifications] Error writing habit log', e, stack);
       await _enqueuePendingLog(habitId, dateKey, status);
+    }
+  }
+
+  /// Test seam for [_freezeManualForToday]: opens the local verification store.
+  /// Defaults to the shared, key-free opener (usable in any isolate); tests
+  /// override it with an in-memory store.
+  @visibleForTesting
+  static Future<VerificationStateStore> Function() verificationStoreOpener =
+      SqfliteVerificationStateStore.open;
+
+  /// Freezes TODAY as a manual resolution in the local verification store, so a
+  /// later foreground reconcile treats a notification-driven Done/Skip exactly
+  /// like an in-app check-in and never overwrites it (D9 parity with
+  /// `goal_provider.cycleStatus`).
+  ///
+  /// The freeze is recorded for every check-in regardless of the habit's own
+  /// verified flag: the reconcile only ever queries manual days for the CURRENT
+  /// verifiable goals (see `VerificationController.reconcile`), so a freeze on a
+  /// plain habit is harmless dead data — which lets this path skip loading the
+  /// goal (a Supabase round-trip) just to read `isVerified`. Gated on
+  /// [VerificationConfig.enabled] so it is inert when the feature is dark, and
+  /// fully try-caught so a store failure can never break the habit-log write.
+  Future<void> _freezeManualForToday(String habitId) async {
+    if (!VerificationConfig.enabled) return;
+    try {
+      final store = await verificationStoreOpener();
+      final now = DateTime.now();
+      await store.markManual(habitId, DateTime(now.year, now.month, now.day));
+    } catch (e, stack) {
+      AppLogger.error('[Notifications] manual-freeze write failed', e, stack);
     }
   }
 
@@ -411,6 +453,7 @@ class NotificationService {
     String title,
     String? reminderTime, {
     List<int>? frequencyDays,
+    bool isLimit = false,
   }) async {
     if (reminderTime == null) return;
 
@@ -441,6 +484,7 @@ class NotificationService {
         title: title,
         payload: payload,
         details: platformDetails,
+        isLimit: isLimit,
       );
       return;
     }
@@ -453,6 +497,7 @@ class NotificationService {
         title: title,
         payload: payload,
         details: platformDetails,
+        isLimit: isLimit,
       );
     }
   }
@@ -491,6 +536,7 @@ class NotificationService {
     required String title,
     required String payload,
     required NotificationDetails details,
+    bool isLimit = false,
   }) async {
     if (!await _canSchedule(notificationId)) {
       AppLogger.warning(
@@ -502,7 +548,7 @@ class NotificationService {
     await _notifications.zonedSchedule(
       id: notificationId,
       title: 'Evolve • $title',
-      body: _getHabitMessage(title),
+      body: _getHabitMessage(title, isLimit: isLimit),
       scheduledDate: scheduledDate,
       notificationDetails: details,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -610,29 +656,63 @@ class NotificationService {
     await _notifications.cancelAll();
   }
 
-  String _getHabitMessage(String title) {
-    final messages = [
-      t.notifications.habitReminderMessage1(title: title),
-      t.notifications.habitReminderMessage2(title: title),
-      t.notifications.habitReminderMessage3(title: title),
-      t.notifications.habitReminderMessage4(title: title),
-      t.notifications.habitReminderMessage5(title: title),
-      t.notifications.habitReminderMessage6(title: title),
-      t.notifications.habitReminderMessage7(title: title),
-      t.notifications.habitReminderMessage8(title: title),
-      t.notifications.habitReminderMessage9(title: title),
-      t.notifications.habitReminderMessage10(title: title),
-      t.notifications.habitReminderMessage11(title: title),
-      t.notifications.habitReminderMessage12(title: title),
-      t.notifications.habitReminderMessage13(title: title),
-      t.notifications.habitReminderMessage14(title: title),
-      t.notifications.habitReminderMessage15(title: title),
-    ];
+  String _getHabitMessage(String title, {bool isLimit = false}) {
+    final now = DateTime.now();
+    return reminderBody(
+      title,
+      isLimit: isLimit,
+      rotationSeed: title.hashCode + now.minute + now.hour,
+    );
+  }
 
-    final index =
-        (title.hashCode + DateTime.now().minute + DateTime.now().hour) %
-        messages.length;
-    return messages[index.abs()];
+  /// Picks the (recurring) reminder body for a habit, target-aware and pure.
+  ///
+  /// A LIMIT target ("at most N") must NOT get achievement / "do it!" copy: on a
+  /// day the user is succeeding by consuming nothing, a motivational "time to act
+  /// on {title}" nudge inverts the goal. When the targets feature is live
+  /// ([TargetsConfig.enabled]) and [isLimit] is true we use restraint-framed copy
+  /// instead. While the feature is dark — or for a count/duration target — every
+  /// habit keeps the existing motivational rotation, so behaviour is unchanged.
+  ///
+  /// The body is fixed at schedule time (the reminder is one OS-level recurring
+  /// registration with no per-fire hook), so [rotationSeed] — a time+title hash —
+  /// just picks which line of the rotation is frozen in. Extracted as a pure
+  /// static so the target-aware branch is unit-testable without a real schedule.
+  ///
+  /// [featureEnabled] defaults to the compile-time [TargetsConfig.enabled] flag,
+  /// so production stays dark (the const default lets the limit branch
+  /// tree-shake); tests pass `true` to exercise the restraint branch directly.
+  @visibleForTesting
+  static String reminderBody(
+    String title, {
+    required bool isLimit,
+    required int rotationSeed,
+    bool featureEnabled = TargetsConfig.enabled,
+  }) {
+    final messages = (featureEnabled && isLimit)
+        ? <String>[
+            t.notifications.limitReminderMessage1(title: title),
+            t.notifications.limitReminderMessage2(title: title),
+            t.notifications.limitReminderMessage3(title: title),
+          ]
+        : <String>[
+            t.notifications.habitReminderMessage1(title: title),
+            t.notifications.habitReminderMessage2(title: title),
+            t.notifications.habitReminderMessage3(title: title),
+            t.notifications.habitReminderMessage4(title: title),
+            t.notifications.habitReminderMessage5(title: title),
+            t.notifications.habitReminderMessage6(title: title),
+            t.notifications.habitReminderMessage7(title: title),
+            t.notifications.habitReminderMessage8(title: title),
+            t.notifications.habitReminderMessage9(title: title),
+            t.notifications.habitReminderMessage10(title: title),
+            t.notifications.habitReminderMessage11(title: title),
+            t.notifications.habitReminderMessage12(title: title),
+            t.notifications.habitReminderMessage13(title: title),
+            t.notifications.habitReminderMessage14(title: title),
+            t.notifications.habitReminderMessage15(title: title),
+          ];
+    return messages[rotationSeed.abs() % messages.length];
   }
 
   tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {

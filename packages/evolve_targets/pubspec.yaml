@@ -1,0 +1,35 @@
+name: evolve_targets
+description: >-
+  Pure-Dart core for quantitative habit targets on the Evolve apps (iOS
+  `mobile/` + macOS `desktop/`). Owns the target model (how much, of what,
+  over which period, in which direction), the curated preset catalog, the
+  progress→verdict evaluation and the projection that lets an auto-verified
+  threshold and a manually-counted target be displayed as ONE thing. Lives in
+  a package — rather than twice in the two apps, the way `streak_utils.dart`
+  does — so the meaning of "60 of 80" can never drift between platforms.
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: ^3.11.5
+  flutter: '>=3.0.0'
+
+dependencies:
+  # Only `@immutable` / foundation annotations — no material, no platform
+  # channels. This package is device-free and fully unit-testable.
+  flutter:
+    sdk: flutter
+
+  # The target axes REUSE this package's enums (comparator / unit /
+  # aggregation) rather than redeclaring them. Two parallel enums with the same
+  # wire names would be a silent drift hazard the day one of them gains a
+  # value: a rule and a target would then disagree about what 'lte' means.
+  # Direction of the dependency is deliberate and acyclic — a target may be
+  # projected FROM a verification rule; verification knows nothing of targets.
+  evolve_verification:
+    path: ../evolve_verification
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0

@@ -11,7 +11,11 @@ import 'package:evolve_desktop/features/settings/application/desktop_subscriptio
 import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
 import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
+import 'package:evolve_desktop/core/targets_config.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
+import 'package:evolve_desktop/features/habits/presentation/target_entry_dialog.dart';
+import 'package:evolve_desktop/shared/widgets/target_ring.dart';
+import 'package:evolve_targets/evolve_targets.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/coach_tutorial.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
@@ -946,13 +950,40 @@ class _HabitPanel extends ConsumerWidget {
             )
           else
             for (final habit in snapshot.todayHabits)
-              _HabitRow(
-                habit: habit,
-                status: snapshot.habitStatusFor(habit.id, DateTime.now()),
-                onTap: () => ref
-                    .read(dashboardControllerProvider.notifier)
-                    .toggleHabit(habit.id),
-              ),
+              Builder(builder: (context) {
+                final today = DateTime.now();
+                final target = DesktopTargetsConfig.enabled &&
+                        (habit.target?.isUserEnterable ?? false)
+                    ? habit.target
+                    : null;
+                final progressAmount =
+                    snapshot.habitProgressFor(habit.id, today) ?? 0;
+                final verdict = target == null
+                    ? null
+                    : evaluateTarget(
+                        target: target,
+                        progress: progressAmount,
+                        periodIsOver: periodIsOver(target.period, today, today),
+                      );
+                return _HabitRow(
+                  habit: habit,
+                  status: snapshot.habitStatusFor(habit.id, today),
+                  target: target,
+                  verdict: verdict,
+                  progressAmount: progressAmount,
+                  onOpenTarget: target == null
+                      ? null
+                      : () => TargetEntryDialog.show(
+                            context,
+                            habit: habit,
+                            target: target,
+                            date: today,
+                          ),
+                  onTap: () => ref
+                      .read(dashboardControllerProvider.notifier)
+                      .toggleHabit(habit.id),
+                );
+              }),
         ],
       ),
     );
@@ -960,7 +991,15 @@ class _HabitPanel extends ConsumerWidget {
 }
 
 class _HabitRow extends StatelessWidget {
-  const _HabitRow({required this.habit, required this.onTap, this.status});
+  const _HabitRow({
+    required this.habit,
+    required this.onTap,
+    this.status,
+    this.target,
+    this.verdict,
+    this.progressAmount = 0,
+    this.onOpenTarget,
+  });
 
   final DashboardHabit habit;
 
@@ -969,47 +1008,64 @@ class _HabitRow extends StatelessWidget {
   final String? status;
   final VoidCallback onTap;
 
+  /// A manual target for today (null ⇒ plain checkbox). When set the check
+  /// square is a progress ring opening the entry dialog via [onOpenTarget].
+  final HabitTarget? target;
+  final TargetVerdict? verdict;
+  final double progressAmount;
+  final VoidCallback? onOpenTarget;
+
   @override
   Widget build(BuildContext context) {
     final isDone = status == 'done';
     final isMissed = status == 'missed';
+    final hasTarget = target != null && verdict != null;
 
     return InkWell(
-      onTap: onTap,
+      onTap: hasTarget ? onOpenTarget : onTap,
       borderRadius: BorderRadius.circular(10),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 10),
         child: Row(
           children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 160),
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                color: isDone ? habit.color : Colors.transparent,
-                border: Border.all(
-                  color: isDone
-                      ? habit.color
-                      : isMissed
-                      ? EvolveColors.destructive
-                      : context.evolveColors.borderStrong,
+            if (hasTarget)
+              TargetRing(
+                target: target!,
+                verdict: verdict!,
+                size: 22,
+                strokeWidth: 2.5,
+                accent: habit.color,
+              )
+            else
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: isDone ? habit.color : Colors.transparent,
+                  border: Border.all(
+                    color: isDone
+                        ? habit.color
+                        : isMissed
+                        ? EvolveColors.destructive
+                        : context.evolveColors.borderStrong,
+                  ),
+                  borderRadius: BorderRadius.circular(7),
                 ),
-                borderRadius: BorderRadius.circular(7),
+                child: isDone
+                    ? const Icon(
+                        LucideIcons.check,
+                        color: Color(0xFF092113),
+                        size: 14,
+                      )
+                    : isMissed
+                    ? const Icon(
+                        LucideIcons.x,
+                        color: EvolveColors.destructive,
+                        size: 13,
+                      )
+                    : null,
               ),
-              child: isDone
-                  ? const Icon(
-                      LucideIcons.check,
-                      color: Color(0xFF092113),
-                      size: 14,
-                    )
-                  : isMissed
-                  ? const Icon(
-                      LucideIcons.x,
-                      color: EvolveColors.destructive,
-                      size: 13,
-                    )
-                  : null,
-            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

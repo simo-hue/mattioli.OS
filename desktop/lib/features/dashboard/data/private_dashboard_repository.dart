@@ -2,9 +2,11 @@ import 'dart:convert';
 
 import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/core/desktop_private_db.dart';
+import 'package:evolve_desktop/core/macro_goal_snapshot.dart';
 import 'package:evolve_desktop/core/streak_utils.dart';
 import 'package:evolve_desktop/features/dashboard/data/dashboard_repository.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
+import 'package:evolve_targets/evolve_targets.dart';
 import 'package:evolve_verification/evolve_verification.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:sqflite_sqlcipher/sqflite.dart';
@@ -57,12 +59,18 @@ class PrivateDashboardRepository extends DashboardRepository {
         where: 'user_id = ?',
         whereArgs: [ownerId],
       );
+      final progressRows = await db.query(
+        'goal_progress',
+        where: 'user_id = ?',
+        whereArgs: [ownerId],
+      );
 
       _snapshot = _buildSnapshot(
         habitRows: habitRows,
         logRows: logRows,
         goalRows: goalRows,
         moodRows: moodRows,
+        progressRows: progressRows,
       );
       return _snapshot;
     } catch (error, stack) {
@@ -104,6 +112,7 @@ class PrivateDashboardRepository extends DashboardRepository {
           habit.verificationRule != null && habit.verifyEffectiveFrom != null
               ? habit.verifyEffectiveFrom!.toIso8601String().substring(0, 10)
               : null,
+      'target': habit.targetColumnValue,
       'created_at': now,
       'updated_at': now,
     });
@@ -137,6 +146,9 @@ class PrivateDashboardRepository extends DashboardRepository {
             habit.verificationRule != null && habit.verifyEffectiveFrom != null
                 ? habit.verifyEffectiveFrom!.toIso8601String().substring(0, 10)
                 : null,
+        // Written explicitly (UPDATE leaves omitted columns untouched) so
+        // clearing a habit's target actually clears the column.
+        'target': habit.targetColumnValue,
         'updated_at': _now(),
       },
       where: 'id = ?',
@@ -148,6 +160,11 @@ class PrivateDashboardRepository extends DashboardRepository {
   @override
   Future<void> deleteHabit(String id) async {
     final db = await DesktopPrivateDb.instance.database;
+    // Snapshot the derived total into any macro goal this habit feeds before its
+    // goal_progress cascades away, so an unlinked "500 km" goal keeps the value
+    // it had reached. The ON DELETE SET NULL FK does the un-link itself; this is
+    // only about preserving the accumulated number.
+    await snapshotLinkedMacroGoals(db, id, now: _now());
     await db.delete('goals', where: 'id = ?', whereArgs: [id]);
     DesktopPrivateDb.notifyWrite();
   }
@@ -282,6 +299,98 @@ class PrivateDashboardRepository extends DashboardRepository {
   }
 
   @override
+  Future<void> setHabitProgress({
+    required String habitId,
+    required DateTime date,
+    required double amount,
+    required String? derivedStatus,
+    required int streak,
+  }) async {
+    final db = await DesktopPrivateDb.instance.database;
+    final dateKey = dashboardDateKey(date);
+    final now = _now();
+
+    // 1) The progress number. Deterministic id ('<goalId>:<date>', matching
+    // PrivateDbSchema.goalProgressId) with update-or-insert rather than INSERT OR
+    // REPLACE, so a UNIQUE conflict never fires the AFTER-DELETE sync-tombstone
+    // trigger (same reasoning as setHabitStatus).
+    if (amount <= 0) {
+      await db.delete(
+        'goal_progress',
+        where: 'goal_id = ? AND date = ?',
+        whereArgs: [habitId, dateKey],
+      );
+    } else {
+      final id = '$habitId:$dateKey';
+      final existing = await db.query(
+        'goal_progress',
+        columns: ['created_at'],
+        where: 'id = ?',
+        whereArgs: [id],
+        limit: 1,
+      );
+      if (existing.isNotEmpty) {
+        await db.update(
+          'goal_progress',
+          {'amount': amount, 'source': 'manual', 'updated_at': now},
+          where: 'id = ?',
+          whereArgs: [id],
+        );
+      } else {
+        await db.insert('goal_progress', {
+          'id': id,
+          'user_id': ownerId,
+          'goal_id': habitId,
+          'date': dateKey,
+          'amount': amount,
+          'source': 'manual',
+          'created_at': now,
+          'updated_at': now,
+        });
+      }
+    }
+
+    // 2) The derived verdict — set or clear the goal_logs row, same
+    // update-or-insert pattern as setHabitStatus. Streak comes from the
+    // controller's computeStreak; goal_logs.value is never written here.
+    if (derivedStatus == null) {
+      await db.delete(
+        'goal_logs',
+        where: 'goal_id = ? AND date = ?',
+        whereArgs: [habitId, dateKey],
+      );
+    } else {
+      final existing = await db.query(
+        'goal_logs',
+        columns: ['id'],
+        where: 'goal_id = ? AND date = ?',
+        whereArgs: [habitId, dateKey],
+        limit: 1,
+      );
+      if (existing.isNotEmpty) {
+        await db.update(
+          'goal_logs',
+          {'status': derivedStatus, 'streak': streak, 'updated_at': now},
+          where: 'goal_id = ? AND date = ?',
+          whereArgs: [habitId, dateKey],
+        );
+      } else {
+        await db.insert('goal_logs', {
+          'id': _uuid.v4(),
+          'user_id': ownerId,
+          'goal_id': habitId,
+          'date': dateKey,
+          'status': derivedStatus,
+          'streak': streak,
+          'created_at': now,
+          'updated_at': now,
+        });
+      }
+    }
+    DesktopPrivateDb.notifyWrite();
+  }
+
+  @override
   Future<void> saveCheckIn(DateTime date, DailyCheckIn checkIn) async {
     final db = await DesktopPrivateDb.instance.database;
     final now = _now();
@@ -338,6 +447,12 @@ class PrivateDashboardRepository extends DashboardRepository {
       'category_id': goal.categoryId,
       'created_at': (goal.createdAt ?? DateTime.now()).toIso8601String(),
       'updated_at': now,
+      // Cumulative numeric macro goals (v10). Columns exist after the evolve_sync
+      // v10 migration (run automatically on open).
+      'target_amount': goal.targetAmount,
+      'target_unit': goal.targetUnit,
+      'progress_amount': goal.progressAmount,
+      'linked_goal_id': goal.linkedGoalId,
     });
     DesktopPrivateDb.notifyWrite();
     return goal.copyWith(id: id);
@@ -359,6 +474,12 @@ class PrivateDashboardRepository extends DashboardRepository {
         'category_key': goal.category,
         'category_id': goal.categoryId,
         'updated_at': _now(),
+        // Cumulative numeric macro goals (v10). Written explicitly so an UPDATE
+        // can also CLEAR them (revert to boolean, or snapshot progress on unlink).
+        'target_amount': goal.targetAmount,
+        'target_unit': goal.targetUnit,
+        'progress_amount': goal.progressAmount,
+        'linked_goal_id': goal.linkedGoalId,
       },
       where: 'id = ?',
       whereArgs: [goal.id],
@@ -378,6 +499,7 @@ class PrivateDashboardRepository extends DashboardRepository {
     final db = await DesktopPrivateDb.instance.database;
     final batch = db.batch();
     batch.delete('goal_logs');
+    batch.delete('goal_progress');
     batch.delete('goals');
     batch.delete('long_term_goals');
     batch.delete('daily_moods');
@@ -396,12 +518,21 @@ class PrivateDashboardRepository extends DashboardRepository {
     required List<Map<String, dynamic>> logRows,
     required List<Map<String, dynamic>> goalRows,
     required List<Map<String, dynamic>> moodRows,
+    required List<Map<String, dynamic>> progressRows,
   }) {
     final logs = <String, Map<String, String>>{};
     for (final row in logRows) {
       final date = row['date'] as String;
       final goalId = row['goal_id'] as String;
       logs.putIfAbsent(date, () => {})[goalId] = row['status'] as String;
+    }
+
+    final progress = <String, Map<String, double>>{};
+    for (final row in progressRows) {
+      final date = row['date'] as String;
+      final goalId = row['goal_id'] as String;
+      progress.putIfAbsent(date, () => {})[goalId] =
+          (row['amount'] as num).toDouble();
     }
 
     final now = DateTime.now();
@@ -429,6 +560,7 @@ class PrivateDashboardRepository extends DashboardRepository {
       trend: const [],
       checkIn: moods[dashboardDateKey(now)] ?? const DailyCheckIn(),
       habitLogs: logs,
+      habitProgress: progress,
       moods: moods,
     );
 
@@ -503,6 +635,8 @@ class PrivateDashboardRepository extends DashboardRepository {
       // the forward-only boundary set on iOS.
       verifyEffectiveFrom:
           DateTime.tryParse(row['verify_effective_from'] as String? ?? ''),
+      target: decodeHabitTarget(row['target']),
+      rawTargetBlob: row['target'] as String?,
       isActive: true,
     );
   }

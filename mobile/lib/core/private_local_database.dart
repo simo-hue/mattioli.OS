@@ -1049,6 +1049,9 @@ class PrivateLocalDatabase implements PrivateDataStore {
             // The quantitative target (v9) — without this a backup→restore
             // silently turns a targeted habit back into a plain checkbox.
             'target': g['target'],
+            // The target's forward-only anchor (v11) rides along so a restore
+            // preserves the edit boundary, exactly like verify_effective_from.
+            'target_effective_from': g['target_effective_from'],
           },
       ],
       'habitLogs': [
@@ -2062,6 +2065,7 @@ class PrivateLocalDatabase implements PrivateDataStore {
       'verify_effective_from': row['verify_effective_from'],
       'verify_conditions': row['verify_conditions'],
       'target': row['target'],
+      'target_effective_from': row['target_effective_from'],
     };
     return Goal.fromJson(json);
   }
@@ -2098,6 +2102,13 @@ class PrivateLocalDatabase implements PrivateDataStore {
       // unreadable newer-client blob preserved verbatim, else null. Column
       // exists after the evolve_sync v9 migration (run automatically on open).
       'target': goal.targetColumnValue,
+      // Same reasoning: written explicitly (date-only) so replace can't wipe it.
+      // The forward-only target anchor rides with a written target (readable or
+      // preserved blob); null otherwise. Column exists after the v11 migration.
+      'target_effective_from':
+          goal.targetColumnValue != null && goal.targetEffectiveFrom != null
+              ? goal.targetEffectiveFrom!.toIso8601String().substring(0, 10)
+              : null,
     };
   }
 

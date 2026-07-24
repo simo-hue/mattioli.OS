@@ -3,7 +3,7 @@
 - [ ] settings in desktop implementation is really weird and not intuitive as it is in the mobile app
 - [ ] what happens if I modify manually an automatic habits?
 - [ ] Different habits & goals types, not only checkboxes like status,progress bar
-- [ ] 
+- [ ] While trying the macOS version in testflight everything was working as expected until when I quit the app with Command + Q and then I reopened it. The error was the fact that the local mode ( privacy mode ) need to be resetted to carry on as the db could not be encrypted even though before ( 30 seconds before ) it was working perfectly and it was also synchronized with iCloud.
 
 ---
 
@@ -28,40 +28,25 @@ flutter build ipa --release
 
 ---
 
-## 2026-07-21 — LM Studio launch parity: IMPLEMENTED, on-device QA pending
+## 2026-07-21 — LM Studio launch parity: IMPLEMENTED + on-device confirmed 2026-07-24
 
 The feature is built and green (`flutter analyze` clean, `flutter test` 512/512, `dart format`
-clean on every touched file, AppKit surface `swiftc -typecheck`'d). See `desktop/DOCUMENTATION.md`
-for the design and the implementation record.
+clean on every touched file, AppKit surface `swiftc -typecheck`'d) AND confirmed working on-device
+by the user (LM Studio 0.4.20). See `desktop/DOCUMENTATION.md` for the design and implementation
+record. Two error-path curls remain untested (below); neither blocks anything.
 
-**What could NOT be verified here**: the full macOS build (no Xcode on this Mac) and every runtime
-behaviour — **neither LM Studio nor Ollama is installed on this machine**. Three facts remain
-empirical. None of them blocks the build; each is a one-line fix if it comes back different.
+The user confirmed the feature works as expected on-device (LM Studio 0.4.20), and closed the
+build-time unknown. Two error-path constants remain untested — both non-blocking, one-line fixes.
 
-### Do this first (cheapest, and the only one that could break the happy path)
-- [ ] **Confirm the LM Studio bundle id on a live install.** The code uses
-      `ai.elementlabs.lmstudio`, triangulated from the Homebrew cask's `uninstall quit:` stanza,
-      the `brew` API JSON, and an independent Info.plist scrape of v0.2.6 — three independent
-      sources, but none of them this machine. A wrong id degrades rather than breaks: the
-      `/Applications/LM Studio.app` path fallback still resolves a default install, so Start works
-      — but `localAppRunning` matches by bundle id ONLY, so the "your server isn't enabled"
-      diagnosis would silently fall back to the generic timeout message.
-      **If it differs, change one line**: `bundleIds` in
-      `desktop/lib/features/ai_coach/domain/local_server_target.dart` (and the assertion in
-      `desktop/test/local_server_target_test.dart`). That constant is in Dart precisely so it is
-      one testable line and not a Swift constant no test can reach.
-      ```bash
-      osascript -e 'id of app "LM Studio"'
-      # belt and braces:
-      defaults read "/Applications/LM Studio.app/Contents/Info.plist" CFBundleIdentifier
-      ```
-      While you are there, grab the URL schemes — only `lmstudio://add_mcp` is documented, and
-      confirming there is no server-start deep link would close the last open door on that idea:
-      ```bash
-      plutil -p "/Applications/LM Studio.app/Contents/Info.plist" | grep -A5 URLSchemes
-      ```
+### Confirmed on-device 2026-07-24 (LM Studio 0.4.20)
+- [x] **Bundle id** — `osascript -e 'id of app "LM Studio"'` → `ai.elementlabs.lmstudio`, matching
+      the code exactly. No change needed; comment + test updated to record the confirmation.
+- [x] **URL schemes** — `plutil` shows only `lmstudio` is registered (no server-start action). The
+      "maybe a deep link can start the server" idea is closed for good.
+- [x] **Dummy `Bearer local` is harmless on a default install** — `GET /v1/models` returns
+      `200 OK` with the model list, so the happy path is confirmed on a real LM Studio.
 
-### Non-blocking — one-line fixes if they come back different
+### Still untested — non-blocking, one-line fixes if they come back different
 - [ ] **Does LM Studio withhold response headers during a cold model load?** Ollama does, which is
       the entire reason `openai_compatible_client.dart:204` bounds `send()` by `firstTokenTimeout`
       rather than `connectTimeout`. No LM Studio doc, changelog or issue states this either way.
@@ -73,12 +58,12 @@ empirical. None of them blocks the build; each is a one-line fix if it comes bac
         -H 'Content-Type: application/json' \
         -d '{"model":"<large-unloaded-model>","messages":[{"role":"user","content":"hi"}],"stream":true}'
       ```
-- [ ] **What does LM Studio return when "Require Authentication" is on?** The design maps 401/403
-      on a local backend to a "this server wants a token" message. LM Studio's official auth page
-      never mentions the OpenAI-compat `/v1/*` surface and never names a status code — the
-      `/v1/*`→401 claim is corroborated only by a generated wiki, not a primary source. If it
-      returns 403, or a 200 with an error body, the mapping misses. Enable
-      Developer → Server Settings → Require Authentication, then:
+- [ ] **What does LM Studio return when "Require Authentication" is ON?** The 2026-07-24 curl above
+      returned `200 OK` — but with authentication OFF, so it only proves the dummy bearer doesn't
+      break a default install. The design maps 401/403 on a local backend to a "this server wants a
+      token" message; if LM Studio returns 403, or a 200 with an error body, the mapping misses.
+      This is an error path most users never hit, so it's low priority. To close it, enable
+      Developer → Server Settings → Require Authentication, then re-run:
       ```bash
       curl -i -H 'Authorization: Bearer local' http://localhost:1234/v1/models
       ```
@@ -435,3 +420,11 @@ block the merge, but review before flipping the flags live:
 - [ ] (cosmetic) `reminderBody` rotation math changed to `seed.abs() % len`, so a
       habit whose title.hashCode is negative gets a different (still valid)
       motivational reminder line than before. No functional impact.
+
+## Habit classes — target_effective_from (v11) (2026-07-24)
+- [ ] **Apply the Supabase migration `migrations/20260724_add_goal_target_effective_from.sql`**
+      to production. Additive, nullable `goals.target_effective_from date` — safe for
+      existing clients. Same batch as the v9/v10 target migrations; apply it BEFORE
+      flipping the targets flag. Mirrors evolve_sync `PrivateDbSchema` v11.
+- NOTE: the private schema is now **v11**. The v6→v11 chain still deploys to iOS +
+      macOS TOGETHER (onDowngrade throws — no rollback). See `HABIT_CLASSES_PLAN.md` §5.

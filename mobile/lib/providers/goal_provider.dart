@@ -235,6 +235,13 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       previous: null,
       today: DateTime.now(),
     );
+    // A new target likewise takes effect today (v11, forward-only): stamp its
+    // anchor so the manual-target sweep can't rewrite pre-creation days.
+    habit = stampTargetEffectiveFrom(
+      habit,
+      previous: null,
+      today: DateTime.now(),
+    );
     // Snapshot for optimistic rollback if persistence fails.
     final previousGoals = state;
     final newGoals = [...state, habit];
@@ -354,9 +361,18 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     // (or was just enabled), it takes effect today; otherwise the prior anchor
     // is preserved so a title/colour/schedule edit never rewrites history.
     final priorMatches = state.where((h) => h.id == updatedHabit.id);
+    final previous = priorMatches.isEmpty ? null : priorMatches.first;
     updatedHabit = stampVerificationEffectiveFrom(
       updatedHabit,
-      previous: priorMatches.isEmpty ? null : priorMatches.first,
+      previous: previous,
+      today: DateTime.now(),
+    );
+    // Forward-only target edits (v11): if the target's content changed (or was
+    // just set), it takes effect today; otherwise the prior anchor is preserved
+    // so a non-target edit never re-derives past days against the new target.
+    updatedHabit = stampTargetEffectiveFrom(
+      updatedHabit,
+      previous: previous,
       today: DateTime.now(),
     );
     // Snapshot for optimistic rollback if persistence fails.
@@ -1361,6 +1377,7 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
         target: target,
         today: today,
         start: goal.startDate,
+        effectiveFrom: goal.targetEffectiveFrom,
         isScheduled: goal.isScheduledOn,
         progressFor: (dateKey) => state[dateKey]?[goal.id],
         statusFor: (dateKey) => logs[dateKey]?[goal.id],

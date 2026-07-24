@@ -11,6 +11,39 @@ enum GoalType { lifetime, annual, quarterly, monthly, weekly }
 
 enum CalendarViewMode { month, week, year, life }
 
+/// Stamps [updated]'s [DashboardHabit.targetEffectiveFrom] for a forward-only
+/// target edit (v11) — the desktop analogue of mobile's `stampTargetEffectiveFrom`
+/// on `Goal`. macOS CAN author manual targets (Number habits) and runs the local
+/// end-of-day sweep, so it must own this anchor exactly as iOS does, or editing a
+/// target's amount would rewrite past days. Semantics (identical to mobile):
+///
+/// - no target at all (readable or a preserved unreadable blob) ⇒ no anchor;
+/// - an undecodable newer-client blob rides through unchanged (not this build's
+///   edit, and it cannot evaluate it);
+/// - readable target unchanged vs [previous] ⇒ preserve the prior anchor (incl.
+///   null); newly set or changed ⇒ effective [today].
+DashboardHabit stampTargetEffectiveFrom(
+  DashboardHabit updated, {
+  required DashboardHabit? previous,
+  required DateTime today,
+}) {
+  if (updated.targetColumnValue == null) {
+    return updated.copyWith(clearTargetEffectiveFrom: true);
+  }
+  if (updated.target == null) {
+    return updated;
+  }
+  if (previous != null && previous.target == updated.target) {
+    final anchor = previous.targetEffectiveFrom;
+    return anchor == null
+        ? updated.copyWith(clearTargetEffectiveFrom: true)
+        : updated.copyWith(targetEffectiveFrom: anchor);
+  }
+  return updated.copyWith(
+    targetEffectiveFrom: DateTime(today.year, today.month, today.day),
+  );
+}
+
 class DashboardHabit {
   const DashboardHabit({
     required this.id,
@@ -32,6 +65,7 @@ class DashboardHabit {
     this.verificationJoin,
     this.target,
     this.rawTargetBlob,
+    this.targetEffectiveFrom,
     this.isActive = true,
   });
 
@@ -81,6 +115,13 @@ class DashboardHabit {
   /// is null) is written back verbatim on an unrelated edit instead of being
   /// nulled. Same forward-compat guard as mobile's `Goal.rawTargetBlob`.
   final String? rawTargetBlob;
+
+  /// The day the current [target] took effect (v11, forward-only target edits) —
+  /// the analogue of [verifyEffectiveFrom] for the quantitative target. Carried
+  /// through reads/writes so a desktop edit can't drop it; the manual-target
+  /// sweep (which does run on macOS for local targets) never rewrites days
+  /// before this date. Null ⇒ fall back to [startDate].
+  final DateTime? targetEffectiveFrom;
 
   final bool isActive;
 
@@ -168,6 +209,8 @@ class DashboardHabit {
     bool clearVerificationJoin = false,
     HabitTarget? target,
     bool clearTarget = false,
+    DateTime? targetEffectiveFrom,
+    bool clearTargetEffectiveFrom = false,
   }) {
     return DashboardHabit(
       id: id ?? this.id,
@@ -202,6 +245,9 @@ class DashboardHabit {
       target: clearTarget ? null : (target ?? this.target),
       rawTargetBlob:
           clearTarget ? null : (target != null ? null : rawTargetBlob),
+      targetEffectiveFrom: clearTargetEffectiveFrom
+          ? null
+          : (targetEffectiveFrom ?? this.targetEffectiveFrom),
       isActive: isActive ?? this.isActive,
     );
   }
@@ -237,6 +283,11 @@ class DashboardHabit {
     // path that must be able to CLEAR a target force-writes `targetColumnValue`
     // explicitly rather than relying on this (see SupabaseDashboardRepository).
     if (targetColumnValue != null) 'target': targetColumnValue,
+    // The target's effective-from day (v11), date-only, alongside a written
+    // target — the forward-only anchor mirrors verify_effective_from.
+    if (targetColumnValue != null && targetEffectiveFrom != null)
+      'target_effective_from':
+          targetEffectiveFrom!.toIso8601String().substring(0, 10),
   };
 
   factory DashboardHabit.fromRemoteJson(
@@ -274,6 +325,8 @@ class DashboardHabit {
           DateTime.tryParse(json['verify_effective_from'] as String? ?? ''),
       target: decodeHabitTarget(json['target']),
       rawTargetBlob: json['target'] as String?,
+      targetEffectiveFrom:
+          DateTime.tryParse(json['target_effective_from'] as String? ?? ''),
     );
   }
 }

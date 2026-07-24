@@ -113,6 +113,10 @@ class PrivateDashboardRepository extends DashboardRepository {
               ? habit.verifyEffectiveFrom!.toIso8601String().substring(0, 10)
               : null,
       'target': habit.targetColumnValue,
+      'target_effective_from':
+          habit.targetColumnValue != null && habit.targetEffectiveFrom != null
+              ? habit.targetEffectiveFrom!.toIso8601String().substring(0, 10)
+              : null,
       'created_at': now,
       'updated_at': now,
     });
@@ -149,6 +153,12 @@ class PrivateDashboardRepository extends DashboardRepository {
         // Written explicitly (UPDATE leaves omitted columns untouched) so
         // clearing a habit's target actually clears the column.
         'target': habit.targetColumnValue,
+        // Same reasoning for the forward-only anchor: write it explicitly so a
+        // target-clearing edit also clears the anchor (v11).
+        'target_effective_from':
+            habit.targetColumnValue != null && habit.targetEffectiveFrom != null
+                ? habit.targetEffectiveFrom!.toIso8601String().substring(0, 10)
+                : null,
         'updated_at': _now(),
       },
       where: 'id = ?',
@@ -637,6 +647,10 @@ class PrivateDashboardRepository extends DashboardRepository {
           DateTime.tryParse(row['verify_effective_from'] as String? ?? ''),
       target: decodeHabitTarget(row['target']),
       rawTargetBlob: row['target'] as String?,
+      // Read the target's forward-only anchor (v11) so a desktop edit or the
+      // local sweep round-trips it instead of wiping the boundary.
+      targetEffectiveFrom:
+          DateTime.tryParse(row['target_effective_from'] as String? ?? ''),
       isActive: true,
     );
   }

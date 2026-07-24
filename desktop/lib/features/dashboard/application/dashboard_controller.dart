@@ -257,6 +257,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
         target: target,
         today: today,
         start: habit.startDate ?? today,
+        effectiveFrom: habit.targetEffectiveFrom,
         isScheduled: habit.isScheduledOn,
         progressFor: (dateKey) =>
             state.habitProgress[dateKey]?[habit.id],
@@ -292,17 +293,23 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     if (!ref.read(desktopIsProProvider) && state.habits.length >= 5) {
       return false;
     }
-    final draft = DashboardHabit(
-      id: _newLocalId(),
-      title: title,
-      color: color,
-      streak: 0,
-      weeklyProgress: const [false, false, false, false, false, false, false],
-      state: HabitState.pending,
-      reminderTime: reminderTime,
-      frequencyDays: _canonicalFrequencyDays(frequencyDays),
-      startDate: DateTime.now(),
-      target: target,
+    // A new target takes effect today (v11, forward-only), so the local sweep
+    // never rewrites pre-creation days. Stamped centrally, never by the editor.
+    final draft = stampTargetEffectiveFrom(
+      DashboardHabit(
+        id: _newLocalId(),
+        title: title,
+        color: color,
+        streak: 0,
+        weeklyProgress: const [false, false, false, false, false, false, false],
+        state: HabitState.pending,
+        reminderTime: reminderTime,
+        frequencyDays: _canonicalFrequencyDays(frequencyDays),
+        startDate: DateTime.now(),
+        target: target,
+      ),
+      previous: null,
+      today: DateTime.now(),
     );
     state = state.copyWith(habits: [...state.habits, draft]);
     await _saveLocal();
@@ -331,18 +338,27 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     HabitTarget? target,
   }) async {
     final canonicalDays = _canonicalFrequencyDays(frequencyDays);
+    final priorMatches = state.habits.where((h) => h.id == id);
+    final previous = priorMatches.isEmpty ? null : priorMatches.first;
     final habits = [
       for (final habit in state.habits)
         if (habit.id == id)
-          habit.copyWith(
-            title: title,
-            color: color,
-            reminderTime: reminderTime,
-            clearReminder: reminderTime == null,
-            frequencyDays: canonicalDays,
-            clearFrequencyDays: canonicalDays == null,
-            target: target,
-            clearTarget: target == null,
+          // Forward-only target edit (v11): stamp the anchor to today when the
+          // target's content changed (or was just set), else preserve the prior
+          // anchor so a title/schedule edit can't re-derive past days.
+          stampTargetEffectiveFrom(
+            habit.copyWith(
+              title: title,
+              color: color,
+              reminderTime: reminderTime,
+              clearReminder: reminderTime == null,
+              frequencyDays: canonicalDays,
+              clearFrequencyDays: canonicalDays == null,
+              target: target,
+              clearTarget: target == null,
+            ),
+            previous: previous,
+            today: DateTime.now(),
           )
         else
           habit,

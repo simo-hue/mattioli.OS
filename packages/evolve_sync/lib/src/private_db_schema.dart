@@ -69,7 +69,15 @@ class PrivateDbSchema {
   ///   delete path first snapshots the derived total into `progress_amount` so a
   ///   "500 km" goal that reached 320 keeps showing 320 as a now-manual value.
   ///   Unconstrained (like `verify_*`/`target`) so a future unit round-trips.
-  static const int version = 10;
+  /// - v11: forward-only quantitative-target edits. Adds one nullable
+  ///   `goals.target_effective_from` date — the day the goal's current `target`
+  ///   took effect, the exact analogue of `verify_effective_from` (v7) for the
+  ///   verification rule. NULL ⇒ fall back to `start_date`. The manual-target
+  ///   end-of-day sweep never rewrites days before this date, so editing a
+  ///   target's amount (or changing a habit's tracking class) applies forward
+  ///   instead of retroactively re-deriving past `done`/`missed` verdicts.
+  ///   Additive and unconstrained for the same round-trip reason as `verify_*`.
+  static const int version = 11;
 
   /// The user-data tables whose rows sync to iCloud. Each gets dirty/tombstone
   /// triggers that maintain [syncStateTable]. (Order matters for nothing here,
@@ -232,6 +240,9 @@ class PrivateDbSchema {
     if (oldVersion < 10) {
       await _upgradeToV10(db);
     }
+    if (oldVersion < 11) {
+      await _upgradeToV11(db);
+    }
   }
 
   /// Fail closed on a schema downgrade. With NO onDowngrade, sqflite's default
@@ -298,6 +309,29 @@ CREATE TABLE user_settings (
     'progress_amount REAL',
     'linked_goal_id TEXT REFERENCES goals(id) ON DELETE SET NULL',
   ];
+
+  static Future<void> _upgradeToV11(DatabaseExecutor db) async {
+    // Forward-only quantitative-target edits: one nullable `target_effective_from`
+    // date on `goals`, the exact analogue of _upgradeToV7's verify_effective_from.
+    // Additive, so a plain ADD COLUMN; existing rows get NULL, and the sweep
+    // treats NULL as `start_date` — so upgraded databases keep their current
+    // behaviour until the target is next edited (no surprise re-freezing of
+    // history). Synced rows carry it automatically (whole-row serialization), so
+    // no push/pull code changes are required.
+    //
+    // Idempotent for the same reason as _upgradeToV7: a version round-trip (v11 →
+    // a downgrade silently stamps user_version to 10 → v11) re-enters this
+    // against a `goals` table that already has the column, and a bare ADD COLUMN
+    // would then raise "duplicate column name" and permanently fail every open.
+    final existing = <String>{
+      for (final row in await db.rawQuery('PRAGMA table_info(goals)'))
+        row['name'] as String,
+    };
+    if (existing.contains('target_effective_from')) return;
+    await db.execute(
+      'ALTER TABLE goals ADD COLUMN target_effective_from TEXT',
+    );
+  }
 
   static Future<void> _upgradeToV10(DatabaseExecutor db) async {
     // Cumulative numeric macro goals: four additive nullable columns on
@@ -758,7 +792,12 @@ CREATE TABLE goals (
   -- ordinary boolean habit, which is every habit that existed before v9.
   -- Unconstrained for the same reason as verify_*: a newer client's axis value
   -- must round-trip rather than be rejected. See `package:evolve_targets`.
-  target TEXT
+  target TEXT,
+  -- Forward-only target edit anchor (v11): the day the current `target` took
+  -- effect. NULL ⇒ fall back to start_date. The manual-target sweep never
+  -- rewrites days before this date, so editing a target's amount applies
+  -- forward. Direct analogue of verify_effective_from (v7) for targets.
+  target_effective_from TEXT
 )
 ''');
 

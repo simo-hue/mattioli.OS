@@ -18,10 +18,21 @@ import 'support/fake_private_data_store.dart';
 /// Records progress writes AND log writes/deletes, so a test can assert both the
 /// number that was stored and the verdict that was derived from it.
 class _RecordingStore extends FakePrivateDataStore {
+  _RecordingStore({this.seededGoals = const <Goal>[]});
+
+  /// Goals returned by [loadGoals] on init, so a test can start from a habit
+  /// whose target has been effective since a PAST date (a genuinely "started
+  /// days ago" habit). addHabit's forward-only create-stamp anchors a new
+  /// habit's target to today (v11), so it cannot express a backdated anchor.
+  final List<Goal> seededGoals;
+
   final List<Map<String, Object?>> progressWrites = [];
   final List<Map<String, Object?>> progressDeletes = [];
   final List<Map<String, Object?>> logWrites = [];
   final List<Map<String, Object?>> logDeletes = [];
+
+  @override
+  Future<List<Goal>> loadGoals() async => seededGoals;
 
   @override
   Future<void> setHabitProgress({
@@ -274,15 +285,17 @@ void main() {
     // A limit habit that started a few days ago and was never touched: its quiet
     // past days must be materialised into 'done', its today left pending.
     test('materialises a limit habit\'s quiet closed days as done', () async {
-      final store = _RecordingStore();
+      final store = _RecordingStore(seededGoals: [
+        _limitGoal().copyWith(
+          startDate: DateTime(2026, 7, 21),
+          targetEffectiveFrom: DateTime(2026, 7, 21),
+        ),
+      ]);
       final c = await container(store);
       c.read(goalsProvider.notifier);
       c.read(habitLogsProvider.notifier);
       final progress = c.read(habitProgressProvider.notifier);
       await settle();
-      await c.read(goalsProvider.notifier).addHabit(
-            _limitGoal().copyWith(startDate: DateTime(2026, 7, 21)),
-          );
 
       await progress.reconcileManualTargets(now: now);
 
@@ -295,15 +308,17 @@ void main() {
     });
 
     test('is idempotent — a second pass writes nothing new', () async {
-      final store = _RecordingStore();
+      final store = _RecordingStore(seededGoals: [
+        _limitGoal().copyWith(
+          startDate: DateTime(2026, 7, 22),
+          targetEffectiveFrom: DateTime(2026, 7, 22),
+        ),
+      ]);
       final c = await container(store);
       c.read(goalsProvider.notifier);
       c.read(habitLogsProvider.notifier);
       final progress = c.read(habitProgressProvider.notifier);
       await settle();
-      await c.read(goalsProvider.notifier).addHabit(
-            _limitGoal().copyWith(startDate: DateTime(2026, 7, 22)),
-          );
 
       await progress.reconcileManualTargets(now: now);
       final writesAfterFirst = store.logWrites.length;
@@ -314,15 +329,17 @@ void main() {
     });
 
     test('does not invent misses for an untouched count habit', () async {
-      final store = _RecordingStore();
+      final store = _RecordingStore(seededGoals: [
+        _countGoal().copyWith(
+          startDate: DateTime(2026, 7, 20),
+          targetEffectiveFrom: DateTime(2026, 7, 20),
+        ),
+      ]);
       final c = await container(store);
       c.read(goalsProvider.notifier);
       c.read(habitLogsProvider.notifier);
       final progress = c.read(habitProgressProvider.notifier);
       await settle();
-      await c.read(goalsProvider.notifier).addHabit(
-            _countGoal().copyWith(startDate: DateTime(2026, 7, 20)),
-          );
 
       await progress.reconcileManualTargets(now: now);
 
@@ -332,15 +349,17 @@ void main() {
     });
 
     test('resolves a partial count day left pending into a miss', () async {
-      final store = _RecordingStore();
+      final store = _RecordingStore(seededGoals: [
+        _countGoal().copyWith(
+          startDate: DateTime(2026, 7, 20),
+          targetEffectiveFrom: DateTime(2026, 7, 20),
+        ),
+      ]);
       final c = await container(store);
       c.read(goalsProvider.notifier);
       c.read(habitLogsProvider.notifier);
       final progress = c.read(habitProgressProvider.notifier);
       await settle();
-      await c.read(goalsProvider.notifier).addHabit(
-            _countGoal().copyWith(startDate: DateTime(2026, 7, 20)),
-          );
       // Simulate progress logged yesterday while it was still open (pending, no
       // verdict): 40 of 80 on the 23rd.
       await progress.setProgress(

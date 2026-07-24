@@ -304,6 +304,7 @@ class DesktopBackupImportService {
         // Quantitative target (v9) — a third column-allowlist that would
         // silently strip a targeted habit back to a checkbox if omitted here.
         'target': g['target'],
+        'target_effective_from': g['target_effective_from'],
       });
     }
 

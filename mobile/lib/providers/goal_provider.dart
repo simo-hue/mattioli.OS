@@ -412,6 +412,13 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       // path (private_local_database writes VerificationRule.nullColumns).
       if (updatedHabit.verificationRule == null) {
         payload.addAll(VerificationRule.nullColumns);
+        // An undecodable newer-client compound (>3 conditions) reads as rule ==
+        // null here but must NOT be treated as a cleared rule: toJson already put
+        // the blob in payload['verify_conditions'] and omitted verify_effective_
+        // from (leaving the server's untouched), so nulling either would strip
+        // the newer client's compound on the next sync.
+        final preservesCompound = updatedHabit.targetColumnValue == null &&
+            hasUnreadableVerifyConditions(updatedHabit.rawVerifyConditionsBlob);
         // Goal.toJson omits the verification columns when the rule is null; a
         // Supabase UPDATE leaves omitted columns untouched, so clear them
         // explicitly or a stale anchor / compound blob would linger and resurrect
@@ -425,7 +432,7 @@ class GoalsNotifier extends Notifier<List<Goal>> {
         // manual-habit edit (rename/recolour) with PGRST204 on an unknown column.
         // The flat verify_* nullColumns above come from the already-applied
         // 20260713 migration, so they stay ungated.
-        if (VerificationConfig.compoundVerificationEnabled) {
+        if (VerificationConfig.compoundVerificationEnabled && !preservesCompound) {
           payload['verify_effective_from'] = null;
           payload['verify_conditions'] = null;
         }

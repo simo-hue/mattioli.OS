@@ -38,6 +38,16 @@ class Goal {
   /// manual habit.
   final VerificationJoin? verificationJoin;
 
+  /// The raw `goals.verify_conditions` value exactly as stored, kept so a
+  /// compound written by a NEWER client — one with MORE than
+  /// `kMaxVerificationConditions` conditions, which this build decodes to null
+  /// (so [verificationRule] is null and it reads as manual) — is written back
+  /// verbatim on an unrelated edit instead of being stripped. The verify-side
+  /// twin of [rawTargetBlob]. Null for a single-rule or manual habit; a readable
+  /// compound re-encodes from its conditions, so this is consulted only when the
+  /// blob could not be decoded. See [verifyColumnValues].
+  final String? rawVerifyConditionsBlob;
+
   /// The quantitative daily target (count / duration / limit), or null for an
   /// ordinary boolean habit — which is every habit that predates this feature —
   /// or for a target blob this build cannot decode (see [rawTargetBlob]).
@@ -78,6 +88,7 @@ class Goal {
     this.verifyEffectiveFrom,
     this.additionalConditions,
     this.verificationJoin,
+    this.rawVerifyConditionsBlob,
     this.target,
     this.rawTargetBlob,
     this.targetEffectiveFrom,
@@ -172,6 +183,7 @@ class Goal {
     bool clearAdditionalConditions = false,
     VerificationJoin? verificationJoin,
     bool clearVerificationJoin = false,
+    String? rawVerifyConditionsBlob,
     HabitTarget? target,
     bool clearTarget = false,
     DateTime? targetEffectiveFrom,
@@ -200,6 +212,16 @@ class Goal {
       verificationJoin: clearVerificationJoin
           ? null
           : (verificationJoin ?? this.verificationJoin),
+      // Setting a NEW rule supersedes any preserved compound blob (the rule is
+      // authoritative). Otherwise preserve it — DELIBERATELY NOT tied to
+      // clearVerificationRule, so an unrelated edit that passes
+      // clearVerificationRule (the modal does, for a habit that reads as manual)
+      // can't strip a newer client's undecodable compound. The write path
+      // ([verifyColumnValues]) decides whether the preserved blob is actually
+      // emitted (only when still unreadable and target-free).
+      rawVerifyConditionsBlob: verificationRule != null
+          ? null
+          : (rawVerifyConditionsBlob ?? this.rawVerifyConditionsBlob),
       // Setting a new target supersedes any preserved raw blob (a real edit is
       // authoritative); clearing wipes both, so an undecodable old blob can't
       // resurrect a target the user just removed. A copy that touches neither
@@ -255,6 +277,9 @@ class Goal {
       additionalConditions:
           conditions.length > 1 ? conditions.sublist(1) : null,
       verificationJoin: conditions.length > 1 ? verification!.op : null,
+      // Keep the raw compound blob so an undecodable newer-client compound
+      // (which decodes to no conditions → reads as manual) survives an edit.
+      rawVerifyConditionsBlob: json['verify_conditions'] as String?,
       verifyEffectiveFrom: parseDate(json['verify_effective_from']),
       target: decodeHabitTarget(rawTarget),
       rawTargetBlob: rawTarget,
@@ -294,13 +319,15 @@ class Goal {
       if (endDate != null) 'end_date': endDate!.toIso8601String(),
       if (displayOrder != null) 'display_order': displayOrder,
       if (reminderTime != null) 'reminder_time': reminderTime,
-      // Only emitted for verified goals: keeps manual-habit writes free of the
-      // verification columns, so they don't depend on the Supabase migration
-      // having been applied yet. Single rule → flat verify_* columns; compound →
-      // verify_conditions JSON with the flat columns nulled (Q4).
-      if (verificationRule != null)
-        ...verificationColumnsFor(
-            verificationConditions, verificationJoin ?? VerificationJoin.or),
+      // Emitted for a real rule OR to preserve an undecodable newer-client
+      // compound blob (target-free); a plain manual habit stays column-free so
+      // its writes don't depend on the verify migrations. Single rule → flat
+      // verify_* columns; compound → verify_conditions JSON with the flat columns
+      // nulled (Q4); a preserved blob → that blob verbatim, flat nulled.
+      if (verificationRule != null ||
+          (targetColumnValue == null &&
+              hasUnreadableVerifyConditions(rawVerifyConditionsBlob)))
+        ...verifyColumnValues,
       // The rule's effective-from day (D10) rides alongside a live rule; a
       // manual habit has neither a rule nor an effective-from.
       if (verificationRule != null && verifyEffectiveFrom != null)
@@ -329,6 +356,34 @@ class Goal {
     if (target != null) return target!.encode();
     if (hasUnreadableTarget(rawTargetBlob)) return rawTargetBlob;
     return null;
+  }
+
+  /// The six `goals` verify_* columns to WRITE, preserving an undecodable
+  /// newer-client compound blob (a >[kMaxVerificationConditions] set this build
+  /// can't represent) when it couldn't be decoded into a rule — the verify-side
+  /// twin of [targetColumnValue]. Shared by the cloud (`toJson`) and private
+  /// (`_goalToRow`) write paths so they cannot disagree. See
+  /// [verificationColumnValues].
+  Map<String, Object?> get verifyColumnValues => verificationColumnValues(
+        conditions: verificationConditions,
+        op: verificationJoin ?? VerificationJoin.or,
+        rawConditionsBlob: rawVerifyConditionsBlob,
+        hasTarget: targetColumnValue != null,
+      );
+
+  /// The `verify_effective_from` (D10) date string to WRITE. The anchor rides
+  /// with a live rule OR a preserved undecodable compound blob — so the private
+  /// REPLACE write keeps it alongside the blob instead of nulling it (which
+  /// would strip the freeze anchor and let a higher-cap peer re-verify recent
+  /// days). Null for a plain / manual / target habit. Date-only (YYYY-MM-DD).
+  String? get verifyEffectiveFromColumnValue {
+    if (verifyEffectiveFrom == null) return null;
+    final hasVerification = verificationRule != null ||
+        (targetColumnValue == null &&
+            hasUnreadableVerifyConditions(rawVerifyConditionsBlob));
+    return hasVerification
+        ? verifyEffectiveFrom!.toIso8601String().substring(0, 10)
+        : null;
   }
 }
 

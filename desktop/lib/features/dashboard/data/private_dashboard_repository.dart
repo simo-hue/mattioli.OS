@@ -104,14 +104,11 @@ class PrivateDashboardRepository extends DashboardRepository {
       'end_date': habit.endDate?.toIso8601String(),
       'display_order': habit.displayOrder,
       'reminder_time': habit.reminderTime,
-      ...verificationColumnsFor(
-        habit.verificationConditions,
-        habit.verificationJoin ?? VerificationJoin.or,
-      ),
-      'verify_effective_from':
-          habit.verificationRule != null && habit.verifyEffectiveFrom != null
-              ? habit.verifyEffectiveFrom!.toIso8601String().substring(0, 10)
-              : null,
+      // Preserves an undecodable newer-client compound blob (verifyColumnValues)
+      // so a REPLACE-write can't strip it, exactly like targetColumnValue.
+      ...habit.verifyColumnValues,
+      // The D10 anchor rides with a live rule OR a preserved compound blob.
+      'verify_effective_from': habit.verifyEffectiveFromColumnValue,
       'target': habit.targetColumnValue,
       'target_effective_from':
           habit.targetColumnValue != null && habit.targetEffectiveFrom != null
@@ -142,14 +139,10 @@ class PrivateDashboardRepository extends DashboardRepository {
         'end_date': habit.endDate?.toIso8601String(),
         'display_order': habit.displayOrder,
         'reminder_time': habit.reminderTime,
-        ...verificationColumnsFor(
-          habit.verificationConditions,
-          habit.verificationJoin ?? VerificationJoin.or,
-        ),
-        'verify_effective_from':
-            habit.verificationRule != null && habit.verifyEffectiveFrom != null
-                ? habit.verifyEffectiveFrom!.toIso8601String().substring(0, 10)
-                : null,
+        // Preserves an undecodable newer-client compound blob (verifyColumnValues).
+        ...habit.verifyColumnValues,
+        // The D10 anchor rides with a live rule OR a preserved compound blob.
+        'verify_effective_from': habit.verifyEffectiveFromColumnValue,
         // Written explicitly (UPDATE leaves omitted columns untouched) so
         // clearing a habit's target actually clears the column.
         'target': habit.targetColumnValue,
@@ -641,6 +634,9 @@ class PrivateDashboardRepository extends DashboardRepository {
       additionalConditions:
           conditions.length > 1 ? conditions.sublist(1) : null,
       verificationJoin: conditions.length > 1 ? verification!.op : null,
+      // Keep the raw compound blob so a desktop edit round-trips an undecodable
+      // newer-client compound instead of stripping it (verify-side rawTargetBlob).
+      rawVerifyConditionsBlob: row['verify_conditions'] as String?,
       // Read the D10 anchor so a desktop edit round-trips it instead of wiping
       // the forward-only boundary set on iOS.
       verifyEffectiveFrom:

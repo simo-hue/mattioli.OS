@@ -63,6 +63,7 @@ class DashboardHabit {
     this.verifyEffectiveFrom,
     this.additionalConditions,
     this.verificationJoin,
+    this.rawVerifyConditionsBlob,
     this.target,
     this.rawTargetBlob,
     this.targetEffectiveFrom,
@@ -105,6 +106,13 @@ class DashboardHabit {
   /// manual habit.
   final VerificationJoin? verificationJoin;
 
+  /// The raw `goals.verify_conditions` value exactly as stored, kept so a
+  /// compound written by a NEWER client (MORE than kMaxVerificationConditions
+  /// conditions, which this build decodes to null → reads as manual) is written
+  /// back verbatim on an unrelated edit instead of being stripped. The verify-
+  /// side twin of [rawTargetBlob]. See [verifyColumnValues].
+  final String? rawVerifyConditionsBlob;
+
   /// The quantitative daily target (count / duration / limit), or null for an
   /// ordinary boolean habit or a target this build cannot decode (see
   /// [rawTargetBlob]). Persisted via the `goals.target` JSON column.
@@ -141,6 +149,29 @@ class DashboardHabit {
     if (target != null) return target!.encode();
     if (hasUnreadableTarget(rawTargetBlob)) return rawTargetBlob;
     return null;
+  }
+
+  /// The six `goals` verify_* columns to WRITE, preserving an undecodable
+  /// newer-client compound blob when it couldn't be decoded into a rule — the
+  /// verify-side twin of [targetColumnValue]. See [verificationColumnValues].
+  Map<String, Object?> get verifyColumnValues => verificationColumnValues(
+        conditions: verificationConditions,
+        op: verificationJoin ?? VerificationJoin.or,
+        rawConditionsBlob: rawVerifyConditionsBlob,
+        hasTarget: targetColumnValue != null,
+      );
+
+  /// The `verify_effective_from` (D10) date string to WRITE — rides with a live
+  /// rule OR a preserved compound blob, so the private REPLACE write keeps it
+  /// alongside the blob instead of stripping the freeze anchor. Null otherwise.
+  String? get verifyEffectiveFromColumnValue {
+    if (verifyEffectiveFrom == null) return null;
+    final hasVerification = verificationRule != null ||
+        (targetColumnValue == null &&
+            hasUnreadableVerifyConditions(rawVerifyConditionsBlob));
+    return hasVerification
+        ? verifyEffectiveFrom!.toIso8601String().substring(0, 10)
+        : null;
   }
 
   /// All verification conditions in order — [verificationRule] (if any) followed
@@ -207,6 +238,7 @@ class DashboardHabit {
     bool clearAdditionalConditions = false,
     VerificationJoin? verificationJoin,
     bool clearVerificationJoin = false,
+    String? rawVerifyConditionsBlob,
     HabitTarget? target,
     bool clearTarget = false,
     DateTime? targetEffectiveFrom,
@@ -240,6 +272,12 @@ class DashboardHabit {
       verificationJoin: clearVerificationJoin
           ? null
           : (verificationJoin ?? this.verificationJoin),
+      // Setting a NEW rule supersedes the preserved compound blob; otherwise keep
+      // it — NOT tied to clearVerificationRule, so an unrelated edit can't strip a
+      // newer client's undecodable compound. verifyColumnValues decides emission.
+      rawVerifyConditionsBlob: verificationRule != null
+          ? null
+          : (rawVerifyConditionsBlob ?? this.rawVerifyConditionsBlob),
       // A new target supersedes any preserved raw blob; clearing wipes both; a
       // copy touching neither preserves an unreadable newer-client target.
       target: clearTarget ? null : (target ?? this.target),
@@ -263,15 +301,14 @@ class DashboardHabit {
     if (endDate != null) 'end_date': endDate!.toIso8601String(),
     if (displayOrder != null) 'display_order': displayOrder,
     if (reminderTime != null) 'reminder_time': reminderTime,
-    // Only for verified goals — keeps manual-habit writes independent of whether
-    // the Supabase verify_* migration has been applied yet. Single rule → flat
-    // verify_* columns; compound → verify_conditions JSON with the flat columns
-    // nulled (Q4).
-    if (verificationRule != null)
-      ...verificationColumnsFor(
-        verificationConditions,
-        verificationJoin ?? VerificationJoin.or,
-      ),
+    // For a real rule OR to preserve an undecodable newer-client compound blob
+    // (target-free); a plain manual habit stays column-free so its writes don't
+    // depend on the verify migration. Single rule → flat verify_*; compound →
+    // verify_conditions JSON, flat nulled (Q4); preserved blob → that blob.
+    if (verificationRule != null ||
+        (targetColumnValue == null &&
+            hasUnreadableVerifyConditions(rawVerifyConditionsBlob)))
+      ...verifyColumnValues,
     // The rule's effective-from day (D10), date-only to match the Supabase
     // `date` column. Carried even though macOS never reconciles.
     if (verificationRule != null && verifyEffectiveFrom != null)
@@ -321,6 +358,9 @@ class DashboardHabit {
       additionalConditions:
           conditions.length > 1 ? conditions.sublist(1) : null,
       verificationJoin: conditions.length > 1 ? verification!.op : null,
+      // Keep the raw compound blob so an undecodable newer-client compound
+      // survives a desktop edit instead of being stripped.
+      rawVerifyConditionsBlob: json['verify_conditions'] as String?,
       verifyEffectiveFrom:
           DateTime.tryParse(json['verify_effective_from'] as String? ?? ''),
       target: decodeHabitTarget(json['target']),

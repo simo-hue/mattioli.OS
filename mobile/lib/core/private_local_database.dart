@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:evolve_sync/evolve_sync.dart';
-import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
@@ -2102,16 +2101,15 @@ class PrivateLocalDatabase implements PrivateDataStore {
       // Always write ALL verification columns (null when absent): upsertGoal uses
       // ConflictAlgorithm.replace, so an omitted column would be wiped to NULL on
       // every edit. Single rule → flat verify_*, compound → verify_conditions
-      // with the flat columns nulled (Q4). Columns exist after the evolve_sync
-      // v4/v8 migrations (run automatically on open).
-      ...verificationColumnsFor(goal.verificationConditions,
-          goal.verificationJoin ?? VerificationJoin.or),
+      // with the flat columns nulled (Q4); an undecodable newer-client compound
+      // is written back verbatim (verifyColumnValues) so replace can't strip it.
+      // Columns exist after the evolve_sync v4/v8 migrations (run on open).
+      ...goal.verifyColumnValues,
       // Same reasoning: written explicitly (date-only) so replace can't wipe it.
-      // Null for a manual habit or a rule not yet stamped (v7 migration column).
-      'verify_effective_from':
-          goal.verificationRule != null && goal.verifyEffectiveFrom != null
-              ? goal.verifyEffectiveFrom!.toIso8601String().substring(0, 10)
-              : null,
+      // The anchor rides with a live rule OR a preserved compound blob (so a
+      // preserved compound keeps its D10 freeze), else null. Matches the cloud
+      // path, which retains it via omission + the preservesCompound guard.
+      'verify_effective_from': goal.verifyEffectiveFromColumnValue,
       // Written explicitly (like the verify_* columns) so ConflictAlgorithm
       // .replace can't wipe it on an unrelated edit. Live target encoded, an
       // unreadable newer-client blob preserved verbatim, else null. Column

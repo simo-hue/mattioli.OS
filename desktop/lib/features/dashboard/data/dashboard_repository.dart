@@ -416,6 +416,13 @@ class SupabaseDashboardRepository extends DashboardRepository {
     // force-write clears a removed target correctly.
     if (DesktopTargetsConfig.enabled) {
       payload['target'] = habit.targetColumnValue;
+      // Force-write the forward-only anchor too (same omitted-column hazard):
+      // removing a target must clear its effective-from, or a stale anchor
+      // orphans on the server. Mirrors the private write and the mobile client.
+      payload['target_effective_from'] =
+          habit.targetColumnValue != null && habit.targetEffectiveFrom != null
+              ? habit.targetEffectiveFrom!.toIso8601String().substring(0, 10)
+              : null;
     }
     await _runOrQueue(
       _PendingMutation.update('goals', payload, {'id': habit.id}),

@@ -4,6 +4,7 @@
 // Runs in Private mode over a fake store, so Supabase is never touched.
 
 import 'package:evolve_targets/evolve_targets.dart';
+import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -92,6 +93,28 @@ Goal _limitGoal() => Goal(
       color: const Color(0xFF3B82F6),
       startDate: DateTime(2026, 7, 1),
       target: TargetPresetCatalog.limitCountDaily.targetWith(amount: 1),
+    );
+
+// A habit that carries BOTH a HealthKit verification rule AND a manual target —
+// the (legacy/synced) configuration the class picker prevents. Its goal_logs
+// verdict must be owned solely by the verification pipeline (one owner per
+// habit-day): the manual sweep and manual setProgress must never touch it.
+Goal _verifiedLimitGoal() => Goal(
+      id: 'gv',
+      title: 'Steps + coffee',
+      color: const Color(0xFF3B82F6),
+      startDate: DateTime(2026, 7, 1),
+      verificationRule: VerificationCatalog.steps.ruleWith(10000),
+      target: TargetPresetCatalog.limitCountDaily.targetWith(amount: 1),
+    );
+
+Goal _verifiedCountGoal() => Goal(
+      id: 'gv',
+      title: 'Steps + push-ups',
+      color: const Color(0xFF3B82F6),
+      startDate: DateTime(2026, 7, 1),
+      verificationRule: VerificationCatalog.steps.ruleWith(10000),
+      target: TargetPresetCatalog.countDaily.targetWith(amount: 80, step: 20),
     );
 
 void main() {
@@ -374,6 +397,56 @@ void main() {
       await progress.reconcileManualTargets(now: now);
 
       expect(c.read(habitLogsProvider)['2026-07-23']?['g1'], 'missed');
+    });
+
+    test('a verified habit is NOT swept even with a manual target (one owner)',
+        () async {
+      final store = _RecordingStore(seededGoals: [
+        _verifiedLimitGoal().copyWith(
+          startDate: DateTime(2026, 7, 21),
+          targetEffectiveFrom: DateTime(2026, 7, 21),
+        ),
+      ]);
+      final c = await container(store);
+      c.read(goalsProvider.notifier);
+      c.read(habitLogsProvider.notifier);
+      final progress = c.read(habitProgressProvider.notifier);
+      await settle();
+
+      await progress.reconcileManualTargets(now: now);
+
+      // The verification pipeline owns this habit's goal_logs — the manual sweep
+      // must write nothing, or the two fight and flip the day's status.
+      expect(store.logWrites, isEmpty);
+      expect(c.read(habitLogsProvider)['2026-07-22']?['gv'], isNull);
+    });
+
+    test(
+        'setProgress on a verified habit stores the number but writes NO verdict',
+        () async {
+      final store = _RecordingStore(seededGoals: [_verifiedCountGoal()]);
+      final c = await container(store);
+      c.read(goalsProvider.notifier);
+      c.read(habitLogsProvider.notifier);
+      final progress = c.read(habitProgressProvider.notifier);
+      await settle();
+
+      // 80 of 80 would derive 'done' for a plain count habit and overwrite the
+      // goal_logs row; here the verification pipeline owns it.
+      await progress.setProgress(
+        dateKey: '2026-07-23',
+        goalId: 'gv',
+        amount: 80,
+        target: _verifiedCountGoal().target!,
+        now: now,
+      );
+
+      // The number is persisted (goal_progress) ...
+      expect(store.progressWrites.any((w) => w['goalId'] == 'gv'), isTrue);
+      // ... but no verdict was derived, so a sensor-earned status is never
+      // clobbered or deleted by the manual path.
+      expect(store.logWrites, isEmpty);
+      expect(store.logDeletes, isEmpty);
     });
   });
 }

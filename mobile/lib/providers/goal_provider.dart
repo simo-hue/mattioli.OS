@@ -417,8 +417,18 @@ class GoalsNotifier extends Notifier<List<Goal>> {
         // explicitly or a stale anchor / compound blob would linger and resurrect
         // on sync. (A compound→single transition is safe without this: toJson
         // then emits verify_conditions: null alongside the flat columns.)
-        payload['verify_effective_from'] = null;
-        payload['verify_conditions'] = null;
+        //
+        // GATED behind the compound flag — which only flips AFTER the still-open
+        // 20260723 migrations (verify_effective_from = v7, verify_conditions = v8)
+        // are applied — exactly like the `target` write below. Ungated, these two
+        // explicit nulls make a pre-migration Supabase project reject EVERY
+        // manual-habit edit (rename/recolour) with PGRST204 on an unknown column.
+        // The flat verify_* nullColumns above come from the already-applied
+        // 20260713 migration, so they stay ungated.
+        if (VerificationConfig.compoundVerificationEnabled) {
+          payload['verify_effective_from'] = null;
+          payload['verify_conditions'] = null;
+        }
       }
       // Goal.toJson OMITS frequency_days when null (every-day), and an UPDATE
       // leaves omitted columns untouched — so clearing a restricted schedule to
@@ -436,6 +446,16 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       // unknown column and lose the edit. Inert while dark; correct once live.
       if (TargetsConfig.enabled) {
         payload['target'] = updatedHabit.targetColumnValue;
+        // Force-write the anchor too (same omitted-column hazard as `target`):
+        // removing a target must clear its effective-from, or a stale anchor
+        // orphans on the server. Mirrors the private write and the sibling
+        // verify_effective_from clear. Same flag gate — the v11 column exists
+        // only after the migration that the flag flip depends on.
+        payload['target_effective_from'] = updatedHabit.targetColumnValue !=
+                    null &&
+                updatedHabit.targetEffectiveFrom != null
+            ? updatedHabit.targetEffectiveFrom!.toIso8601String().substring(0, 10)
+            : null;
       }
       await supabase.from('goals').update(payload).eq('id', updatedHabit.id);
 
@@ -1335,6 +1355,17 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
       return;
     }
 
+    // One owner of goal_logs.status per habit-day: a verified habit's verdict is
+    // owned by the verification pipeline. Store the manual number (done above) but
+    // do NOT derive a target verdict into goal_logs — a manual 'pending' would
+    // delete a sensor-earned 'done' and the two pipelines would oscillate. (Only
+    // reachable for a habit that carries both a target and a rule — legacy/synced
+    // data; the class picker keeps them mutually exclusive going forward.)
+    final goalMatches = ref.read(goalsProvider).where((g) => g.id == goalId);
+    if (goalMatches.isNotEmpty && goalMatches.first.verificationRule != null) {
+      return;
+    }
+
     // Move the verdict to match the new number. "Today" is not a closed period,
     // so an atLeast day flips to done the moment the target is reached while a
     // limit day stays pending (no row) until it closes; a past day resolves.
@@ -1370,8 +1401,16 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
     for (final goal in ref.read(goalsProvider)) {
       final target = goal.target;
       // Only own MANUAL targets: a projected verification rule is resolved by the
-      // reconcile pass, not here.
-      if (target == null || !target.isUserEnterable) continue;
+      // reconcile pass, not here. And a VERIFIED habit's goal_logs verdict is
+      // owned by the verification pipeline (one owner per habit-day) — never sweep
+      // it here, or the two pipelines fight and flip the day's status every
+      // foreground. (A habit carries both a target and a rule only via legacy or
+      // synced data; the class picker keeps them mutually exclusive.)
+      if (target == null ||
+          !target.isUserEnterable ||
+          goal.verificationRule != null) {
+        continue;
+      }
       changes.addAll(reconcileManualTargetDays(
         goalId: goal.id,
         target: target,

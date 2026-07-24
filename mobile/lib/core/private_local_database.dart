@@ -174,6 +174,21 @@ class PrivateLocalDatabase implements PrivateDataStore {
       version: PrivateDbSchema.version,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
+        // QA diagnostic (visible in the in-app log viewer): the DB's stored
+        // schema version vs the code's target at open. onConfigure fires BEFORE
+        // onCreate/onUpgrade, so `stored` is the pre-migration value — so a
+        // device coming from v6 logs "stored=6, code=11" right before the
+        // v6→v11 chain runs, confirming which legs execute on real data.
+        try {
+          final rows = await db.rawQuery('PRAGMA user_version');
+          final stored = rows.isEmpty ? null : rows.first.values.first;
+          AppLogger.info(
+            '[PrivateDB] open: stored user_version=$stored, '
+            'code PrivateDbSchema.version=${PrivateDbSchema.version}',
+          );
+        } catch (_) {
+          // A diagnostic must never block opening the DB.
+        }
       },
       onCreate: PrivateDbSchema.onCreate,
       onUpgrade: PrivateDbSchema.onUpgrade,

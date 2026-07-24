@@ -730,6 +730,30 @@ class PrivacySettingsScreen extends ConsumerWidget {
         if (rows.length < kGoalLogsSyncPageSize) break;
       }
 
+      // Quantitative-target daily numbers ride in the backup under 'habitProgress'
+      // (the key the import side already reads) so a Replace-import can't wipe
+      // goal_progress by finding an empty keep-set. Degrades to empty if the table
+      // isn't there yet — the v9 migration lands before the targets flag flips, so
+      // a pre-migration export still succeeds instead of failing whole.
+      final habitProgress = <Map<String, dynamic>>[];
+      try {
+        for (var offset = 0; ; offset += kGoalLogsSyncPageSize) {
+          final page = await supabase
+              .from('goal_progress')
+              .select()
+              .eq('user_id', userId)
+              .order('date', ascending: true)
+              .order('id', ascending: true)
+              .range(offset, offset + kGoalLogsSyncPageSize - 1);
+          final rows = List<Map<String, dynamic>>.from(page);
+          habitProgress.addAll(rows);
+          if (rows.length < kGoalLogsSyncPageSize) break;
+        }
+      } catch (e, stack) {
+        AppLogger.error(
+            '[Export] goal_progress read skipped (pre-migration?)', e, stack);
+      }
+
       String colorToHex(Color c) =>
           '#${c.toARGB32().toRadixString(16).substring(2)}';
 
@@ -766,6 +790,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
         },
         'habits': goals.map((g) => g.toJson()).toList(),
         'habitLogs': habitLogs,
+        'habitProgress': habitProgress,
         'macroGoals': macroGoals.map((g) => g.toJson()).toList(),
         'macroGoalCategories': categories
             .map(

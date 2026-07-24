@@ -153,7 +153,17 @@ class DashboardController extends Notifier<DashboardSnapshot> {
   }) async {
     final habit = state.habits.firstWhere((habit) => habit.id == id);
     final target = habit.displayTarget;
-    if (target == null || !target.isUserEnterable) return;
+    // A verified habit's goal_logs verdict is owned by the verification pipeline
+    // (one owner per habit-day) — never let a manual increment derive/overwrite
+    // it. A purely-verified habit already returns here (its displayTarget is the
+    // measured projection, not user-enterable); this also covers a synced habit
+    // carrying BOTH a manual target and a rule. macOS can't author rules, and the
+    // class picker keeps the two mutually exclusive.
+    if (target == null ||
+        !target.isUserEnterable ||
+        habit.verificationRule != null) {
+      return;
+    }
 
     final clamped = amount < 0 ? 0.0 : amount;
     final dateKey = dashboardDateKey(date);
@@ -251,7 +261,14 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     final changes = <TargetReconcileChange>[];
     for (final habit in state.habits) {
       final target = habit.target;
-      if (target == null || !target.isUserEnterable) continue;
+      // A verified habit is owned by the verification pipeline — never sweep it
+      // here, or the two pipelines fight over goal_logs.status. (Both set only via
+      // legacy/synced data; the class picker keeps them mutually exclusive.)
+      if (target == null ||
+          !target.isUserEnterable ||
+          habit.verificationRule != null) {
+        continue;
+      }
       changes.addAll(reconcileManualTargetDays(
         goalId: habit.id,
         target: target,

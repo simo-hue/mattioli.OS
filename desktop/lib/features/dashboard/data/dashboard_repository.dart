@@ -9,6 +9,7 @@ import 'package:evolve_desktop/core/desktop_private_db.dart';
 import 'package:evolve_desktop/core/secure_storage_utils.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/core/macro_targets_config.dart';
+import 'package:evolve_desktop/core/targets_config.dart';
 import 'package:evolve_desktop/features/dashboard/data/private_dashboard_repository.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/features/dashboard/domain/macro_goal_progress.dart';
@@ -312,6 +313,15 @@ class SupabaseDashboardRepository extends DashboardRepository {
 
     try {
       await _flushPendingMutations();
+      // `goal_progress` is a NEW table (schema v9 / the 20260724 migration). Its
+      // read is isolated in its own try/catch (below) and NOT part of this
+      // Future.wait: if the migration has not been applied to this project yet,
+      // `from('goal_progress')` returns "relation does not exist", and a rejected
+      // member of Future.wait would sink the ENTIRE dashboard refresh — leaving
+      // every account-mode desktop user on a permanent "sync failed" empty state,
+      // for existing goals/logs/moods too. Kicked off concurrently, awaited after.
+      // Mirrors mobile, which degrades progress to empty on the same failure.
+      final progressFuture = _fetchProgressRows();
       final responses = await Future.wait([
         _client
             .from('goals')
@@ -326,14 +336,13 @@ class SupabaseDashboardRepository extends DashboardRepository {
             .eq('user_id', _userId)
             .order('created_at', ascending: true),
         _client.from('daily_moods').select().eq('user_id', _userId),
-        _client.from('goal_progress').select().eq('user_id', _userId),
       ]);
       _snapshot = _fromRemote(
         habitRows: _rows(responses[0]),
         logRows: _rows(responses[1]),
         goalRows: _rows(responses[2]),
         moodRows: _rows(responses[3]),
-        progressRows: _rows(responses[4]),
+        progressRows: await progressFuture,
       );
       await _writeCache(_snapshot);
       return _snapshot;
@@ -343,6 +352,27 @@ class SupabaseDashboardRepository extends DashboardRepository {
         DashboardRefreshException(cachedSnapshot: cached, cause: error),
         stack,
       );
+    }
+  }
+
+  /// Fetches `goal_progress` rows, degrading to an empty list on ANY error
+  /// rather than failing the whole refresh — so a pre-migration project (the
+  /// table doesn't exist yet) still loads goals/logs/moods normally. Matches the
+  /// mobile client's isolation of the same new-table read.
+  Future<List<Map<String, dynamic>>> _fetchProgressRows() async {
+    try {
+      final res = await _client
+          .from('goal_progress')
+          .select()
+          .eq('user_id', _userId);
+      return _rows(res);
+    } catch (error, stack) {
+      AppLogger.error(
+        'goal_progress fetch failed (pre-migration?) — degrading to empty',
+        error,
+        stack,
+      );
+      return const [];
     }
   }
 
@@ -376,9 +406,17 @@ class SupabaseDashboardRepository extends DashboardRepository {
     // refetch. Write it explicitly (null clears the column).
     payload['frequency_days'] = habit.frequencyDays;
     // Same omitted-column hazard for the target: write it explicitly so removing
-    // a habit's target actually clears the column (null) rather than leaving the
-    // stale target to resurrect on the next refetch.
-    payload['target'] = habit.targetColumnValue;
+    // a habit's target actually clears the column rather than leaving the stale
+    // target to resurrect on the next refetch. GATED behind the flag (matching
+    // the macro force-write below and the mobile client): `goals.target` exists
+    // only after the v9 migration, and an UNGATED explicit `target: null` on
+    // every plain-habit edit would make PostgREST reject the unknown column and
+    // LOSE the edit on any pre-migration project. While dark, plain edits stay
+    // column-free and migration-independent; once live (migration applied) the
+    // force-write clears a removed target correctly.
+    if (DesktopTargetsConfig.enabled) {
+      payload['target'] = habit.targetColumnValue;
+    }
     await _runOrQueue(
       _PendingMutation.update('goals', payload, {'id': habit.id}),
       () => _client.from('goals').update(payload).eq('id', habit.id),

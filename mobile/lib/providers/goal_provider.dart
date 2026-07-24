@@ -10,6 +10,7 @@ import 'settings_provider.dart';
 import '../core/notifications.dart';
 import '../core/navigator_key.dart';
 import '../core/app_logger.dart';
+import '../core/targets_config.dart';
 import '../core/verification_config.dart';
 import '../core/verification_providers.dart';
 import '../core/secure_storage_utils.dart';
@@ -409,6 +410,17 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       // next sync. Write it explicitly (null clears the column) — same reasoning
       // as the verify_* columns above.
       payload['frequency_days'] = updatedHabit.frequencyDays;
+      // Same omitted-column hazard for the quantitative target: Goal.toJson emits
+      // `target` only when non-null, and a Supabase UPDATE leaves an omitted
+      // column untouched — so REMOVING a habit's target would leave the stale one
+      // on the server to resurrect on the next sync. Force-write it (null clears)
+      // — but GATED behind the flag, exactly like the desktop client: `goals.target`
+      // exists only after the v9 migration, so an ungated explicit `target: null`
+      // on every plain-habit edit would make a pre-migration project reject the
+      // unknown column and lose the edit. Inert while dark; correct once live.
+      if (TargetsConfig.enabled) {
+        payload['target'] = updatedHabit.targetColumnValue;
+      }
       await supabase.from('goals').update(payload).eq('id', updatedHabit.id);
 
       // Schedule the reminder(s); cancel → schedule is sequenced inside.

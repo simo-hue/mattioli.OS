@@ -3,6 +3,7 @@
 - [ ] settings in desktop implementation is really weird and not intuitive as it is in the mobile app
 - [ ] what happens if I modify manually an automatic habits?
 - [ ] Different habits & goals types, not only checkboxes like status,progress bar
+- [ ] 
 
 ---
 
@@ -401,3 +402,36 @@ targets/macro-goal work:
       `MissingPluginException(setLogLevel)` platform-channel artifact under parallel
       load (last touched by commit e87db2e, unrelated).
       Worth a separate hardening pass (explicit pumps / channel mock / --concurrency).
+
+## Pre-merge review — GO_WITH_FIXES → fixed; go-live checklist (2026-07-24)
+
+An adversarial pre-merge review found 2 blocking deploy-order defects (both in
+desktop dashboard_repository.dart, both now FIXED + re-verified green): the
+goal_progress SELECT is now isolated (degrades to [] pre-migration), and the
+updateHabit target force-write is now flag-gated (mobile made consistent). The
+remaining confirmed findings are LOW / dark-gated — fix opportunistically, none
+block the merge, but review before flipping the flags live:
+
+- [ ] `reconcileManualTargets` runs on app resume UNGATED (`mobile/lib/main.dart`
+      ~478). Harmless in a pure-dark fleet, but during a STAGED rollout a target
+      authored on a flag-on device round-trips to a still-dark device whose resume
+      sweep then writes 'done' verdicts / can overwrite a manual past-day toggle.
+      Semantically correct + re-syncs; no data loss. Consider gating it behind
+      TargetsConfig.enabled once you decide the rollout strategy.
+- [ ] Habit delete does `snapshotLinkedMacroGoals` then `delete('goals')` as TWO
+      awaits, not one `db.transaction` (`mobile/lib/core/private_local_database.dart`
+      ~492, `desktop/.../private_dashboard_repository.dart` ~167). A process kill in
+      the tiny window leaves a macro goal snapshotted+unlinked while its habit
+      survives. Recoverable; trivial fix = wrap each pair in a transaction.
+- [ ] PRIVATE/CloudKit: a two-device create-then-delete race can leave a macro
+      goal's `linked_goal_id` dangling at a deleted habit (sync apply runs with
+      `PRAGMA foreign_keys=OFF`, so ON DELETE SET NULL never fires on the PULLING
+      device; only the originating device's snapshot un-links). Account mode
+      self-heals via the real Postgres FK. Only matters once the flag is live.
+- [ ] Desktop account-mode delete-snapshot derives the frozen total from the
+      IN-MEMORY dashboard snapshot (`dashboard_repository.dart` deleteHabit) rather
+      than a live Supabase SUM like mobile — a stale desktop snapshot could freeze
+      a partial value. Single-device flows are fine.
+- [ ] (cosmetic) `reminderBody` rotation math changed to `seed.abs() % len`, so a
+      habit whose title.hashCode is negative gets a different (still valid)
+      motivational reminder line than before. No functional impact.

@@ -1183,19 +1183,52 @@ class _HabitListItem extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              habit.title,
-              style: TextStyle(
-                color: context.appColors.foreground,
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  habit.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: context.appColors.foreground,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                // Auto-verified habits carry their indicator on a quiet second
+                // line (plain icon + muted text, no pill) so the name keeps the
+                // full row-1 width instead of collapsing into it.
+                if (habit.isVerified) ...[
+                  const SizedBox(height: 2),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        LucideIcons.shieldCheck,
+                        size: 12,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          context.t.verification.autoVerified,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: context.appColors.mutedForeground,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
             ),
           ),
-          if (habit.isVerified) ...[
-            const VerificationBadge(),
-            const SizedBox(width: 4),
-          ],
           IconButton(
             onPressed: onEdit,
             icon: Icon(

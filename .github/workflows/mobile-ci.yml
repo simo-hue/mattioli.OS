@@ -1,13 +1,23 @@
 name: Mobile CI
 
-# Gate the Flutter app on a green analyzer + passing tests.
-# Scoped to changes under mobile/ so it doesn't run on web-only commits.
+# Gate the Flutter app AND the shared Dart packages on a green analyzer +
+# passing tests. Runs on changes under mobile/, the shared packages, or the SQL
+# migrations — the schema guard lives in mobile/test/schema_drift_test.dart, so a
+# packages/ or migrations/ change no longer sails through with zero CI.
 on:
   push:
     branches: [main, master]
-    paths: ['mobile/**', '.github/workflows/mobile-ci.yml']
+    paths:
+      - 'mobile/**'
+      - 'packages/**'
+      - 'migrations/**'
+      - '.github/workflows/mobile-ci.yml'
   pull_request:
-    paths: ['mobile/**', '.github/workflows/mobile-ci.yml']
+    paths:
+      - 'mobile/**'
+      - 'packages/**'
+      - 'migrations/**'
+      - '.github/workflows/mobile-ci.yml'
 
 jobs:
   analyze-and-test:
@@ -36,6 +46,38 @@ jobs:
 
       - name: Generate localizations (slang outputs are git-ignored)
         run: dart run slang
+
+      - name: Analyze (fail on any issue, including info-level lints)
+        run: flutter analyze --fatal-infos --fatal-warnings
+
+      - name: Test
+        run: flutter test
+
+  # Shared pure-Dart packages (schema, verification, targets). Previously ran
+  # ZERO CI, so a migration or reconcile bug could land unguarded. This includes
+  # the evolve_sync schema-migration tests (private_db_schema_v*_test.dart) and
+  # the evolve_targets reconcile/freeze tests.
+  packages:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [evolve_verification, evolve_targets, evolve_sync]
+    defaults:
+      run:
+        working-directory: packages/${{ matrix.package }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
 
       - name: Analyze (fail on any issue, including info-level lints)
         run: flutter analyze --fatal-infos --fatal-warnings

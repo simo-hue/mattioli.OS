@@ -1381,5 +1381,12 @@
       "withinLimit": "Innerhalb des Limits",
       "overLimit": "Über dem Limit"
     }
+  },
+  "trackingMode": {
+    "title": "Wie wird es erfasst?",
+    "checkbox": "Häkchen",
+    "number": "Zahl",
+    "automatic": "Automatisch",
+    "automaticLocked": "Verifiziert — auf dem iPhone bearbeiten"
   }
 }

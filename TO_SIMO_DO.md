@@ -428,3 +428,17 @@ block the merge, but review before flipping the flags live:
       flipping the targets flag. Mirrors evolve_sync `PrivateDbSchema` v11.
 - NOTE: the private schema is now **v11**. The v6→v11 chain still deploys to iOS +
       macOS TOGETHER (onDowngrade throws — no rollback). See `HABIT_CLASSES_PLAN.md` §5.
+
+## Habit classes — class picker + i18n review (2026-07-24)
+- [ ] **Arabic (ar) native review** of the new `trackingMode` strings on BOTH apps
+      (`title` / `checkbox` / `number` / `automatic`, plus desktop `automaticLocked`).
+      They are machine MSA — same review batch as the earlier `targets.*` /
+      `verification.compound.*` ar strings.
+- [ ] **On-device QA of the class picker** (needs the Xcode Mac + a device):
+      create a Checkbox, a Number (count/duration/limit), and an Automatic habit;
+      switch an existing habit between classes and confirm history is frozen
+      (target_effective_from); on macOS confirm a synced verified habit shows the
+      locked "Verified — edit on iPhone" row and a desktop edit never wipes its rule.
+      NOTE: shipping the picker changes the LIVE single-metric verification creation
+      UX (the inline "Auto-verify" switch becomes the "Automatic" segment) — QA that
+      flow specifically since HealthKit verification is already live.

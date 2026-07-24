@@ -86,6 +86,7 @@ class TranslationsDe extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$tour$de tour = _Translations$tour$de._(_root);
 	@override late final _Translations$palette$de palette = _Translations$palette$de._(_root);
 	@override late final _Translations$targets$de targets = _Translations$targets$de._(_root);
+	@override late final _Translations$trackingMode$de trackingMode = _Translations$trackingMode$de._(_root);
 }
 
 // Path: macroTargets
@@ -1577,6 +1578,20 @@ class _Translations$targets$de extends Translations$targets$en {
 	@override late final _Translations$targets$presets$de presets = _Translations$targets$presets$de._(_root);
 	@override late final _Translations$targets$units$de units = _Translations$targets$units$de._(_root);
 	@override late final _Translations$targets$entry$de entry = _Translations$targets$entry$de._(_root);
+}
+
+// Path: trackingMode
+class _Translations$trackingMode$de extends Translations$trackingMode$en {
+	_Translations$trackingMode$de._(TranslationsDe root) : this._root = root, super.internal(root);
+
+	final TranslationsDe _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Wie wird es erfasst?';
+	@override String get checkbox => 'Häkchen';
+	@override String get number => 'Zahl';
+	@override String get automatic => 'Automatisch';
+	@override String get automaticLocked => 'Verifiziert — auf dem iPhone bearbeiten';
 }
 
 // Path: common.actions
@@ -3219,6 +3234,11 @@ extension on TranslationsDe {
 			'targets.entry.keepGoing' => 'Weiter so',
 			'targets.entry.withinLimit' => 'Innerhalb des Limits',
 			'targets.entry.overLimit' => 'Über dem Limit',
+			'trackingMode.title' => 'Wie wird es erfasst?',
+			'trackingMode.checkbox' => 'Häkchen',
+			'trackingMode.number' => 'Zahl',
+			'trackingMode.automatic' => 'Automatisch',
+			'trackingMode.automaticLocked' => 'Verifiziert — auf dem iPhone bearbeiten',
 			_ => null,
 		};
 	}

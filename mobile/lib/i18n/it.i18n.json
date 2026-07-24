@@ -1327,6 +1327,13 @@
     "none": "Semplice",
     "atLeastLabel": "Raggiungi",
     "atMostLabel": "Resta sotto",
+    "trackingMode": {
+      "title": "Come viene monitorata?",
+      "checkbox": "Spunta",
+      "number": "Numero",
+      "automatic": "Automatica",
+      "locked": "Non modificabile in questa versione"
+    },
     "presets": {
       "countDaily": {
         "label": "Conteggio",

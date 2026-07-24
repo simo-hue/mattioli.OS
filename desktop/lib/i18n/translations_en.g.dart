@@ -104,6 +104,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$tour$en tour = Translations$tour$en.internal(_root);
 	late final Translations$palette$en palette = Translations$palette$en.internal(_root);
 	late final Translations$targets$en targets = Translations$targets$en.internal(_root);
+	late final Translations$trackingMode$en trackingMode = Translations$trackingMode$en.internal(_root);
 }
 
 // Path: macroTargets
@@ -3770,6 +3771,30 @@ class Translations$targets$en {
 	late final Translations$targets$entry$en entry = Translations$targets$entry$en.internal(_root);
 }
 
+// Path: trackingMode
+class Translations$trackingMode$en {
+	Translations$trackingMode$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'How is this tracked?'
+	String get title => 'How is this tracked?';
+
+	/// en: 'Checkbox'
+	String get checkbox => 'Checkbox';
+
+	/// en: 'Number'
+	String get number => 'Number';
+
+	/// en: 'Automatic'
+	String get automatic => 'Automatic';
+
+	/// en: 'Verified — edit on iPhone'
+	String get automaticLocked => 'Verified — edit on iPhone';
+}
+
 // Path: common.actions
 class Translations$common$actions$en {
 	Translations$common$actions$en.internal(this._root);
@@ -5638,6 +5663,11 @@ extension on Translations {
 			'targets.entry.keepGoing' => 'Keep going',
 			'targets.entry.withinLimit' => 'Within your limit',
 			'targets.entry.overLimit' => 'Over your limit',
+			'trackingMode.title' => 'How is this tracked?',
+			'trackingMode.checkbox' => 'Checkbox',
+			'trackingMode.number' => 'Number',
+			'trackingMode.automatic' => 'Automatic',
+			'trackingMode.automaticLocked' => 'Verified — edit on iPhone',
 			_ => null,
 		};
 	}

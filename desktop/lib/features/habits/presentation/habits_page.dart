@@ -38,6 +38,13 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 enum _HabitSurface { protocol, calendar }
 
+/// How a habit's daily completion is recorded — the desktop twin of mobile's
+/// tracking-mode picker. macOS can author only [checkbox] and [number]; it can
+/// display a synced iPhone-verified habit as [automatic] but never author or
+/// change one, so the editor surfaces [automatic] as a locked, read-only state
+/// (a Mac edit must never wipe an iPhone-authored HealthKit / Screen Time rule).
+enum HabitTrackingMode { checkbox, number, automatic }
+
 class HabitsPage extends ConsumerStatefulWidget {
   const HabitsPage({super.key});
 
@@ -2316,6 +2323,11 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
   /// Quantitative target draft (only surfaced when [DesktopTargetsConfig.enabled]).
   HabitTarget? _target;
 
+  /// How this habit is tracked. Derived from the edited habit: a verification
+  /// rule ⇒ [HabitTrackingMode.automatic] (locked read-only), else a target ⇒
+  /// [HabitTrackingMode.number], else [HabitTrackingMode.checkbox].
+  late HabitTrackingMode _trackingMode;
+
   @override
   void initState() {
     super.initState();
@@ -2330,6 +2342,11 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
         ? [1, 2, 3, 4, 5, 6, 7]
         : (List<int>.from(freq)..sort());
     _target = widget.habit?.target;
+    _trackingMode = widget.habit?.verificationRule != null
+        ? HabitTrackingMode.automatic
+        : (widget.habit?.target != null
+            ? HabitTrackingMode.number
+            : HabitTrackingMode.checkbox);
   }
 
   @override
@@ -2379,14 +2396,48 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
               selectedDays: _selectedDays,
               onChanged: (days) => setState(() => _selectedDays = days),
             ),
-            if (DesktopTargetsConfig.enabled) ...[
+            // Tracking mode. A synced iPhone-verified habit shows a LOCKED
+            // read-only "Automatic" row — macOS can display such a rule but
+            // never author or change one, so the picker is withheld and the
+            // save path leaves the verification rule untouched. A plain habit
+            // gets the Checkbox / Number picker, and Number is only offered when
+            // targets ship ([DesktopTargetsConfig.enabled]); while targets are
+            // dark a plain habit stays a checkbox with no picker at all.
+            if (_trackingMode == HabitTrackingMode.automatic) ...[
               const SizedBox(height: 20),
-              EvolveFieldLabel(t.targets.sectionTitle),
+              EvolveFieldLabel(t.trackingMode.title),
               const SizedBox(height: 10),
-              TargetField(
-                target: _target,
-                onChanged: (value) => setState(() => _target = value),
+              const _LockedAutomaticRow(),
+            ] else if (DesktopTargetsConfig.enabled) ...[
+              const SizedBox(height: 20),
+              EvolveFieldLabel(t.trackingMode.title),
+              const SizedBox(height: 10),
+              EvolveSegmentedControl<HabitTrackingMode>(
+                segments: {
+                  HabitTrackingMode.checkbox: t.trackingMode.checkbox,
+                  HabitTrackingMode.number: t.trackingMode.number,
+                },
+                selected: _trackingMode,
+                onSelected: (mode) => setState(() {
+                  _trackingMode = mode;
+                  // Number always carries a numeric preset; Checkbox clears it.
+                  if (mode == HabitTrackingMode.checkbox) {
+                    _target = null;
+                  } else {
+                    _target ??= TargetPresetCatalog.countDaily.targetWith();
+                  }
+                }),
               ),
+              if (_trackingMode == HabitTrackingMode.number) ...[
+                const SizedBox(height: 12),
+                // The segmented control owns the checkbox-vs-number choice, so
+                // the field hides its "Simple" chip (Number can't clear to null).
+                TargetField(
+                  target: _target,
+                  showNone: false,
+                  onChanged: (value) => setState(() => _target = value),
+                ),
+              ],
             ],
             const SizedBox(height: 16),
             EvolveFieldLabel(t.habitsPage.optionalReminder),
@@ -2447,6 +2498,47 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
           child: Text(t.common.actions.save),
         ),
       ],
+    );
+  }
+}
+
+/// The read-only "Automatic" state shown in the habit editor for an
+/// iPhone-verified habit (`verificationRule != null`). macOS can display such a
+/// habit but cannot author or change its HealthKit / Screen Time rule, so the
+/// tracking-mode picker is replaced by this locked indicator; the save path
+/// leaves the rule untouched, so a Mac edit can never wipe an iPhone-authored
+/// verification.
+class _LockedAutomaticRow extends StatelessWidget {
+  const _LockedAutomaticRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.evolveColors;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: colors.panelSoft,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: colors.border),
+      ),
+      child: Row(
+        children: [
+          Icon(LucideIcons.shieldCheck, size: 16, color: context.evolveAccent),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              t.trackingMode.automaticLocked,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: colors.muted,
+              ),
+            ),
+          ),
+          Icon(LucideIcons.lock, size: 13, color: colors.subtle),
+        ],
+      ),
     );
   }
 }

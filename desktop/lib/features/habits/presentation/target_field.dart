@@ -13,10 +13,17 @@ class TargetField extends StatelessWidget {
     super.key,
     required this.target,
     required this.onChanged,
+    this.showNone = true,
   });
 
   final HabitTarget? target;
   final ValueChanged<HabitTarget?> onChanged;
+
+  /// Whether to render the "Simple" (no-target) chip. The habit editor's
+  /// tracking-mode picker owns the checkbox-vs-number choice, so it hides this
+  /// chip (in Number mode the field only picks among numeric presets); every
+  /// other use keeps it so a target can still be cleared inline.
+  final bool showNone;
 
   TargetPreset? get _selectedPreset =>
       target == null ? null : TargetPresetCatalog.forTarget(target!);
@@ -33,11 +40,12 @@ class TargetField extends StatelessWidget {
           spacing: 8,
           runSpacing: 8,
           children: [
-            _Chip(
-              label: t.targets.none,
-              selected: target == null,
-              onTap: () => onChanged(null),
-            ),
+            if (showNone)
+              _Chip(
+                label: t.targets.none,
+                selected: target == null,
+                onTap: () => onChanged(null),
+              ),
             for (final preset in TargetPresetCatalog.all)
               _Chip(
                 label: _presetLabel(preset),

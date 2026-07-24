@@ -1381,5 +1381,12 @@
       "withinLimit": "Entro il limite",
       "overLimit": "Oltre il limite"
     }
+  },
+  "trackingMode": {
+    "title": "Come viene monitorata?",
+    "checkbox": "Spunta",
+    "number": "Numero",
+    "automatic": "Automatica",
+    "automaticLocked": "Verificata — modifica su iPhone"
   }
 }

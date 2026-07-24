@@ -2530,3 +2530,7 @@ iCloud Sync core is implemented, unit-tested (160), and iOS-compiling. Remaining
   - *Tech Notes*: Keeps pubspec version name in sync with Xcode `MARKETING_VERSION`.
 
 
+
+- [2026-07-24]: App Store Metadata Update
+  - *Details*: Updated the application name to "Evolve: Habits & Goals Tracker" across all languages.
+  - *Tech Notes*: Modified `name.txt` files in all language subdirectories within `mobile/metadata` to ensure consistency in the App Store listing.

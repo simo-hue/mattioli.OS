@@ -238,6 +238,17 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
             if (tpls.isNotEmpty) {
               _verificationRule =
                   tpls.first.ruleWith(tpls.first.defaultThreshold);
+              // Offer the metric's label as a default name, matching the old
+              // inline Auto-verify switch (which routed through
+              // VerificationRuleField.onChanged) — the seed path bypasses that
+              // handler, so replicate its auto-fill here. Only while the name is
+              // empty or still an untouched auto-fill, so a typed name survives.
+              if (_nameController.text.trim().isEmpty || _nameAutoFilled) {
+                _nameController.text = verificationTemplateLabel(
+                    context.t, _verificationRule!.metricKey);
+                _nameAutoFilled = true;
+                _nameError = null;
+              }
             }
           }
       }
@@ -353,6 +364,17 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       final hasCompound = _verificationRule != null &&
           _verificationRule!.isHealthKit &&
           _additionalConditions.isNotEmpty;
+      // A target this build can't decode (a newer-client target) reads as
+      // _target == null and classifies as Checkbox — NOT the locked row, since
+      // Checkbox is always enabled. Passing clearTarget:true on an unrelated edit
+      // (rename/schedule) would wipe its rawTargetBlob and strip the newer
+      // client's target for good, defeating the forward-compat guard. Preserve
+      // the blob unless the user actually moved off a target (set a real target,
+      // or switched to Automatic).
+      final keepsUnreadableTarget = isEditing &&
+          _target == null &&
+          _verificationRule == null &&
+          hasUnreadableTarget(_editingHabit!.rawTargetBlob);
       if (isEditing) {
         final updated = _editingHabit!.copyWith(
           title: name,
@@ -368,7 +390,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
           verificationJoin: hasCompound ? _verificationJoin : null,
           clearVerificationJoin: !hasCompound,
           target: _target,
-          clearTarget: _target == null,
+          clearTarget: _target == null && !keepsUnreadableTarget,
         );
         ok = await ref.read(goalsProvider.notifier).updateHabit(updated);
       } else {

@@ -372,7 +372,14 @@ class DashboardController extends Notifier<DashboardSnapshot> {
               frequencyDays: canonicalDays,
               clearFrequencyDays: canonicalDays == null,
               target: target,
-              clearTarget: target == null,
+              // A newer-client target this build can't decode reads as
+              // target == null and shows as Checkbox — clearTarget:true would
+              // wipe its rawTargetBlob and strip the target for good. Preserve
+              // the blob on an unrelated edit; only clear when a real target is
+              // set (target != null) or the habit isn't a preserved-blob one.
+              clearTarget: target == null &&
+                  !(habit.verificationRule == null &&
+                      hasUnreadableTarget(habit.rawTargetBlob)),
             ),
             previous: previous,
             today: DateTime.now(),

@@ -1,4 +1,6 @@
+import 'package:evolve_targets/evolve_targets.dart';
 import 'package:evolve_verification/evolve_verification.dart';
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 
 class Goal {
@@ -17,6 +19,41 @@ class Goal {
   /// through the `verify_*` columns; verification itself runs only on iOS.
   final VerificationRule? verificationRule;
 
+  /// The day the current [verificationRule] took effect (D10, forward-only rule
+  /// edits). Null ⇒ fall back to [startDate]. Reconcile never rewrites days
+  /// before this date, so editing a rule doesn't silently re-derive recent
+  /// history. Owned by the save path (stamped on rule create/change), never set
+  /// by the creation UI.
+  final DateTime? verifyEffectiveFrom;
+
+  /// Extra conditions (2nd, 3rd) of a compound verifiable habit, joined by
+  /// [verificationJoin] (Q1–Q5). Null/empty ⇒ an ordinary single-rule habit
+  /// ([verificationRule] is the whole rule). When set, [verificationRule] is the
+  /// first condition and every condition is HealthKit (the v1 restriction, Q2).
+  /// Persisted via the `verify_conditions` JSON column; the flat `verify_*`
+  /// columns are then null.
+  final List<VerificationRule>? additionalConditions;
+
+  /// How a compound habit's conditions combine (Q1). Null for a single-rule or
+  /// manual habit.
+  final VerificationJoin? verificationJoin;
+
+  /// The quantitative daily target (count / duration / limit), or null for an
+  /// ordinary boolean habit — which is every habit that predates this feature —
+  /// or for a target blob this build cannot decode (see [rawTargetBlob]).
+  /// Persisted via the `goals.target` JSON column (`package:evolve_targets`).
+  final HabitTarget? target;
+
+  /// The raw `goals.target` value exactly as stored, kept so a target written by
+  /// a NEWER client — one whose axis values this build cannot decode, so
+  /// [target] is null — is written back verbatim on an unrelated edit (title,
+  /// colour, schedule) instead of being silently nulled. Sync serializes whole
+  /// rows, so "newer device sets it, older device edits the title" is an
+  /// ordinary sequence, not an exotic one. Null when the column is empty; the
+  /// save layer prefers [target] when it is set, then a non-empty unreadable
+  /// blob, then null.
+  final String? rawTargetBlob;
+
   const Goal({
     required this.id,
     required this.title,
@@ -29,9 +66,47 @@ class Goal {
     this.displayOrder,
     this.reminderTime,
     this.verificationRule,
+    this.verifyEffectiveFrom,
+    this.additionalConditions,
+    this.verificationJoin,
+    this.target,
+    this.rawTargetBlob,
   });
 
   bool get isVerified => verificationRule != null;
+
+  /// Whether this habit carries a quantitative target — one this build can read.
+  /// A habit with only an undecodable [rawTargetBlob] reports false, so it is
+  /// treated (and rendered) as an ordinary boolean habit rather than a broken
+  /// one, while the blob still round-trips on save.
+  bool get hasTarget => target != null;
+
+  /// The target to DISPLAY for this habit: an explicit manual [target] wins,
+  /// otherwise a single verification rule projects into one (so a verified
+  /// threshold and a manual count render as the same ring). Null for a plain
+  /// habit or a compound verified one. See `displayTargetFor`.
+  HabitTarget? get displayTarget =>
+      displayTargetFor(ownTarget: target, conditions: verificationConditions);
+
+  /// All verification conditions in order — [verificationRule] (if any) followed
+  /// by [additionalConditions]. Empty for a manual habit, length 1 for a single
+  /// rule, 2..3 for a compound habit.
+  List<VerificationRule> get verificationConditions => [
+        ?verificationRule,
+        ...?additionalConditions,
+      ];
+
+  /// Whether this habit combines more than one verification condition (Q4/Q5).
+  bool get isCompoundVerified =>
+      additionalConditions != null && additionalConditions!.isNotEmpty;
+
+  /// Whether [other] has the same verification *meaning* — the same ordered
+  /// conditions AND operator. Drives the D10 re-stamp decision so that changing
+  /// any condition, adding/removing one, or flipping the operator counts as a
+  /// rule edit.
+  bool sameVerificationAs(Goal other) =>
+      listEquals(verificationConditions, other.verificationConditions) &&
+      verificationJoin == other.verificationJoin;
 
   /// Whether the habit's active *range* covers [date] (start ≤ date ≤ end),
   /// ignoring the weekly schedule. Use [isScheduledOn] for day-view display —
@@ -81,6 +156,14 @@ class Goal {
     bool clearReminderTime = false,
     VerificationRule? verificationRule,
     bool clearVerificationRule = false,
+    DateTime? verifyEffectiveFrom,
+    bool clearVerifyEffectiveFrom = false,
+    List<VerificationRule>? additionalConditions,
+    bool clearAdditionalConditions = false,
+    VerificationJoin? verificationJoin,
+    bool clearVerificationJoin = false,
+    HabitTarget? target,
+    bool clearTarget = false,
   }) {
     return Goal(
       id: id ?? this.id,
@@ -96,6 +179,23 @@ class Goal {
       verificationRule: clearVerificationRule
           ? null
           : (verificationRule ?? this.verificationRule),
+      verifyEffectiveFrom: clearVerifyEffectiveFrom
+          ? null
+          : (verifyEffectiveFrom ?? this.verifyEffectiveFrom),
+      additionalConditions: clearAdditionalConditions
+          ? null
+          : (additionalConditions ?? this.additionalConditions),
+      verificationJoin: clearVerificationJoin
+          ? null
+          : (verificationJoin ?? this.verificationJoin),
+      // Setting a new target supersedes any preserved raw blob (a real edit is
+      // authoritative); clearing wipes both, so an undecodable old blob can't
+      // resurrect a target the user just removed. A copy that touches neither
+      // keeps both, so a title/colour edit preserves an unreadable newer-client
+      // target verbatim.
+      target: clearTarget ? null : (target ?? this.target),
+      rawTargetBlob:
+          clearTarget ? null : (target != null ? null : rawTargetBlob),
     );
   }
 
@@ -115,6 +215,16 @@ class Goal {
     DateTime? parseDate(dynamic value) =>
         value is String ? DateTime.tryParse(value) : null;
 
+    // Read precedence (Q4): a compound habit's `verify_conditions` JSON wins;
+    // otherwise the flat `verify_*` columns describe a single rule (or a manual
+    // habit when both are absent).
+    final verification = readVerificationColumns(json);
+    final conditions = verification?.conditions ?? const <VerificationRule>[];
+
+    // The target column: decode for use, and keep the raw blob so an
+    // undecodable newer-client target survives an edit here (see rawTargetBlob).
+    final rawTarget = json['target'] as String?;
+
     return Goal(
       id: json['id'] as String,
       title: json['title'] as String,
@@ -126,7 +236,13 @@ class Goal {
       endDate: parseDate(json['end_date']),
       displayOrder: json['display_order'] as int?,
       reminderTime: json['reminder_time'] as String?,
-      verificationRule: VerificationRule.fromColumns(json),
+      verificationRule: conditions.isEmpty ? null : conditions.first,
+      additionalConditions:
+          conditions.length > 1 ? conditions.sublist(1) : null,
+      verificationJoin: conditions.length > 1 ? verification!.op : null,
+      verifyEffectiveFrom: parseDate(json['verify_effective_from']),
+      target: decodeHabitTarget(rawTarget),
+      rawTargetBlob: rawTarget,
     );
   }
 
@@ -145,6 +261,11 @@ class Goal {
 
   Map<String, dynamic> toJson() {
     String toHex(Color c) => '#${c.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
+    // Date-only (YYYY-MM-DD) to match the Supabase `date` column and the
+    // day-keyed reconcile logic.
+    String isoDate(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
+        '${d.month.toString().padLeft(2, '0')}-'
+        '${d.day.toString().padLeft(2, '0')}';
 
     return {
       if (id.isNotEmpty) 'id': id,
@@ -158,9 +279,71 @@ class Goal {
       if (displayOrder != null) 'display_order': displayOrder,
       if (reminderTime != null) 'reminder_time': reminderTime,
       // Only emitted for verified goals: keeps manual-habit writes free of the
-      // verify_* columns, so they don't depend on the Supabase migration having
-      // been applied yet. The private (SQLite) path always writes them.
-      if (verificationRule != null) ...verificationRule!.toColumns(),
+      // verification columns, so they don't depend on the Supabase migration
+      // having been applied yet. Single rule → flat verify_* columns; compound →
+      // verify_conditions JSON with the flat columns nulled (Q4).
+      if (verificationRule != null)
+        ...verificationColumnsFor(
+            verificationConditions, verificationJoin ?? VerificationJoin.or),
+      // The rule's effective-from day (D10) rides alongside a live rule; a
+      // manual habit has neither a rule nor an effective-from.
+      if (verificationRule != null && verifyEffectiveFrom != null)
+        'verify_effective_from': isoDate(verifyEffectiveFrom!),
+      // The quantitative target. Emitted only when there is something to write,
+      // so a plain habit's payload stays free of the column and does not depend
+      // on the v9 Supabase migration having been applied yet. A readable target
+      // is re-encoded (lossless — its unknown `extra` keys are preserved); an
+      // unreadable newer-client blob is written back verbatim so an edit here
+      // cannot strip it.
+      if (targetColumnValue != null) 'target': targetColumnValue,
     };
   }
+
+  /// The value to write to the `goals.target` column: the live target encoded,
+  /// else a preserved unreadable blob verbatim, else null. Shared by the cloud
+  /// (`toJson`) and private (`_goalToRow`) write paths so they cannot disagree
+  /// about what an undecodable target round-trips to.
+  String? get targetColumnValue {
+    if (target != null) return target!.encode();
+    if (hasUnreadableTarget(rawTargetBlob)) return rawTargetBlob;
+    return null;
+  }
+}
+
+/// Stamps [updated]'s [Goal.verifyEffectiveFrom] for a forward-only rule edit
+/// (D10). The save layer calls this so the anchor is owned centrally and never
+/// by the creation UI:
+///
+/// - manual habit (no rule) ⇒ no anchor;
+/// - rule content unchanged vs [previous] ⇒ preserve the previous anchor
+///   verbatim, **including null** — a title/colour/schedule edit must never
+///   retroactively freeze a habit that predates the anchor;
+/// - rule newly set, or its content changed ⇒ the rule takes effect [today], so
+///   reconcile won't rewrite days before the edit.
+///
+/// "Rule content" is the full verification meaning — the ordered conditions AND
+/// the operator ([Goal.sameVerificationAs]) — so changing any condition's
+/// threshold/metric, adding or removing a condition, or flipping OR↔AND all
+/// count as an edit.
+Goal stampVerificationEffectiveFrom(
+  Goal updated, {
+  required Goal? previous,
+  required DateTime today,
+}) {
+  // Manual habit (no conditions) ⇒ no anchor.
+  if (updated.verificationRule == null) {
+    return updated.copyWith(clearVerifyEffectiveFrom: true);
+  }
+  // Same verification meaning ⇒ preserve the prior anchor verbatim (incl. null):
+  // a title/colour/schedule edit must never retroactively freeze history.
+  if (previous != null && previous.sameVerificationAs(updated)) {
+    final anchor = previous.verifyEffectiveFrom;
+    return anchor == null
+        ? updated.copyWith(clearVerifyEffectiveFrom: true)
+        : updated.copyWith(verifyEffectiveFrom: anchor);
+  }
+  // Newly verified, or the conditions/operator changed ⇒ effective from today.
+  return updated.copyWith(
+    verifyEffectiveFrom: DateTime(today.year, today.month, today.day),
+  );
 }

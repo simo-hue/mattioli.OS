@@ -358,9 +358,8 @@ class _HabitSelectorCard extends StatelessWidget {
       color: colors.foreground,
     );
 
-    final currentValue = isHabitScope && selectedHabit != null
-        ? selectedHabit!.id
-        : '_global';
+    final isHabitSelected = isHabitScope && selectedHabit != null;
+    final currentValue = isHabitSelected ? selectedHabit!.id : '_global';
 
     return EvolvePanel(
       color: colors.panel.withValues(alpha: 0.5),
@@ -392,12 +391,17 @@ class _HabitSelectorCard extends StatelessWidget {
               onChanged: onHabitChanged,
             ),
           ),
-          const SizedBox(width: 12),
-          const StatusPill(
-            label: 'Evolve Pro',
-            color: EvolveColors.amber,
-            icon: LucideIcons.sparkles,
-          ),
+          // Per-habit statistics are the Pro feature, so the badge is only
+          // relevant once a specific habit is selected. In the global scope
+          // (all habits) the stats are free, so no badge is shown.
+          if (isHabitSelected) ...[
+            const SizedBox(width: 12),
+            const StatusPill(
+              label: 'Evolve Pro',
+              color: EvolveColors.amber,
+              icon: LucideIcons.sparkles,
+            ),
+          ],
         ],
       ),
     );

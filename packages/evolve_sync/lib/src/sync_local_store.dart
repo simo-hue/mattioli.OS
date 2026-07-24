@@ -66,6 +66,13 @@ class SyncLocalStore {
   /// therefore cannot arbitrate them — [applyUpsert] resolves on these instead.
   static const Map<String, List<String>> naturalKeys = {
     'goal_logs': ['goal_id', 'date'],
+    // Belt-and-braces: `goal_progress` ids are deterministic
+    // ([PrivateDbSchema.goalProgressId]), so two devices cannot mint rival rows
+    // for one habit-day and this key should never fire. It is registered anyway
+    // so a row that somehow acquired a random id — a hand-repaired database, a
+    // future write path that forgets the helper — still converges instead of
+    // sitting forever as a duplicate the UNIQUE constraint rejects on apply.
+    'goal_progress': ['goal_id', 'date'],
     'daily_moods': ['user_id', 'date'],
     'macro_goal_categories': ['user_id', 'name'],
     // Seeded once per profile by both apps (_ensureProfile), so a second

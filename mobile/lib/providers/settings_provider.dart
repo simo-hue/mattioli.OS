@@ -1179,6 +1179,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
             goal.title,
             goal.reminderTime,
             frequencyDays: goal.frequencyDays,
+            isLimit: goal.target?.isLimit ?? false,
           );
         }
       }

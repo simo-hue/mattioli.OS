@@ -1,4 +1,5 @@
 import 'package:evolve_verification/evolve_verification.dart';
+import 'package:path/path.dart' as p;
 import 'package:sqflite_sqlcipher/sqflite.dart';
 
 /// On-device, **unsynced**, data-mode-independent implementation of
@@ -19,6 +20,35 @@ class SqfliteVerificationStateStore implements VerificationStateStore {
 
   static const String _manual = 'manual';
   static const String _cnv = 'could_not_verify';
+
+  /// The on-disk filename for the dedicated verification-state database.
+  static const String dbFileName = 'verification_state.db';
+
+  /// Opens (creating / migrating as needed) the dedicated `verification_state.db`
+  /// and returns a store over it.
+  ///
+  /// This database is **unencrypted** and exists in BOTH data modes (D8): it
+  /// holds only local verification bookkeeping (manual freezes + couldn't-verify
+  /// markers), never synced or private user data, so it needs no cipher key —
+  /// which is exactly what lets it be reopened from a cold background
+  /// notification isolate, where the encrypted app DB's key is unavailable.
+  /// `sqflite` caches by path (single-instance), so a second call in the same
+  /// isolate returns the already-open connection rather than a competing handle.
+  static Future<SqfliteVerificationStateStore> open() async {
+    final path = p.join(await getDatabasesPath(), dbFileName);
+    final db = await openDatabase(
+      path,
+      version: 2,
+      onCreate: (db, _) => createTable(db),
+      onUpgrade: (db, oldVersion, _) async {
+        // v1 → v2 added the `nudged_at` column (couldn't-verify nudge de-dup).
+        if (oldVersion < 2) await migrateToV2(db);
+      },
+    );
+    // Idempotent — also creates the table for a DB opened at an existing version.
+    await createTable(db);
+    return SqfliteVerificationStateStore(db);
+  }
 
   /// Creates the table + index. Idempotent, so it is safe to call on every open.
   static Future<void> createTable(DatabaseExecutor db) async {

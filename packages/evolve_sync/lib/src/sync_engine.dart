@@ -185,6 +185,11 @@ class SyncEngine {
     'macro_goal_categories': 1,
     'goal_category_settings': 1,
     'goal_logs': 2,
+    // Child of both profiles and goals (v9), so it lands with the other
+    // second-level rows. Explicit rather than relying on the `?? 9` fallback:
+    // the fallback happens to be FK-safe today only because every parent has a
+    // lower number, which is a coincidence, not a guarantee.
+    'goal_progress': 2,
     'long_term_goals': 2,
     'daily_moods': 2,
     // Child of profiles, so it must not land before its parent.

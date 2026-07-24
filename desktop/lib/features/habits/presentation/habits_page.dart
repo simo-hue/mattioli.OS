@@ -4,12 +4,15 @@ import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/core/performance_color.dart';
+import 'package:evolve_desktop/core/targets_config.dart';
 import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/auth/application/desktop_profile_controller.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/features/habits/application/protocol_reorder.dart';
+import 'package:evolve_desktop/features/habits/presentation/target_entry_dialog.dart';
+import 'package:evolve_desktop/features/habits/presentation/target_field.dart';
 import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
 import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
@@ -22,7 +25,9 @@ import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_period_switcher.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_weekday_selector.dart';
+import 'package:evolve_desktop/shared/widgets/target_ring.dart';
 import 'package:evolve_desktop/shared/widgets/verified_habit_badge.dart';
+import 'package:evolve_targets/evolve_targets.dart';
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/gestures.dart';
@@ -356,6 +361,7 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
         color: draft.color,
         reminderTime: draft.reminderTime,
         frequencyDays: draft.frequencyDays,
+        target: draft.target,
       );
       if (!added && mounted) {
         // Free-tier 5-habit cap reached → present the paywall (mobile parity).
@@ -368,6 +374,7 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
         color: draft.color,
         reminderTime: draft.reminderTime,
         frequencyDays: draft.frequencyDays,
+        target: draft.target,
       );
     }
   }
@@ -656,6 +663,26 @@ class _ProtocolPanelState extends State<_ProtocolPanel> {
                         final habit = habits[index];
                         // Only the first row carries the tour spotlight keys.
                         final isFirst = index == 0;
+                        final today = DateTime.now();
+                        // A MANUAL target: the check square becomes a progress
+                        // ring that opens the entry dialog. A measured/projected
+                        // rule keeps the checkbox (its value lives in
+                        // goal_logs.value, so its ring would read empty).
+                        final target = DesktopTargetsConfig.enabled &&
+                                (habit.target?.isUserEnterable ?? false)
+                            ? habit.target
+                            : null;
+                        final progressAmount =
+                            widget.snapshot.habitProgressFor(habit.id, today) ??
+                                0;
+                        final verdict = target == null
+                            ? null
+                            : evaluateTarget(
+                                target: target,
+                                progress: progressAmount,
+                                periodIsOver:
+                                    periodIsOver(target.period, today, today),
+                              );
                         return _HabitRow(
                           key: ValueKey(habit.id),
                           habit: habit,
@@ -663,6 +690,17 @@ class _ProtocolPanelState extends State<_ProtocolPanel> {
                           metrics: metrics,
                           checkoffKey: isFirst ? widget.checkoffKey : null,
                           streakKey: isFirst ? widget.streakKey : null,
+                          target: target,
+                          verdict: verdict,
+                          progressAmount: progressAmount,
+                          onOpenTarget: target == null
+                              ? null
+                              : () => TargetEntryDialog.show(
+                                    context,
+                                    habit: habit,
+                                    target: target,
+                                    date: today,
+                                  ),
                           onToggle: () => widget.onToggle(habit.id),
                           onEdit: () => widget.onEdit(habit),
                           onDelete: () => widget.onDelete(habit),
@@ -852,6 +890,10 @@ class _HabitRow extends StatefulWidget {
     this.dragHandle,
     this.checkoffKey,
     this.streakKey,
+    this.target,
+    this.verdict,
+    this.progressAmount = 0,
+    this.onOpenTarget,
     super.key,
   });
 
@@ -862,6 +904,13 @@ class _HabitRow extends StatefulWidget {
   final VoidCallback onToggle;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+
+  /// A manual target for today (null ⇒ plain checkbox habit). When set the check
+  /// square is a progress ring and [onOpenTarget] opens the entry dialog.
+  final HabitTarget? target;
+  final TargetVerdict? verdict;
+  final double progressAmount;
+  final VoidCallback? onOpenTarget;
 
   /// Habits-tour spotlight targets: the check-off square and the streak/heatmap
   /// stat cluster. Non-null only on the first row while the tour is active.
@@ -920,39 +969,58 @@ class _HabitRowState extends State<_HabitRow> {
                 alignment: AlignmentDirectional.centerStart,
                 child: KeyedSubtree(
                   key: widget.checkoffKey,
-                  child: InkWell(
-                    onTap: widget.onToggle,
-                    borderRadius: BorderRadius.circular(8),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 160),
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        color: completed ? habit.color : missed ? EvolveColors.destructive.withValues(alpha: 0.2) : Colors.transparent,
-                        border: Border.all(
-                          color: completed
-                              ? habit.color
-                              : missed
-                                  ? EvolveColors.destructive.withValues(alpha: 0.4)
-                                  : context.evolveColors.borderStrong,
+                  child: widget.target != null && widget.verdict != null
+                      ? Semantics(
+                          button: true,
+                          label: '${habit.title}, '
+                              '${formatTargetAmount(widget.progressAmount)} / '
+                              '${formatTargetAmount(widget.target!.amount)}'
+                              '${targetUnitShortLabel(widget.target!.unit).isEmpty ? '' : ' ${targetUnitShortLabel(widget.target!.unit)}'}',
+                          child: InkWell(
+                            onTap: widget.onOpenTarget,
+                            borderRadius: BorderRadius.circular(11),
+                            child: TargetRing(
+                              target: widget.target!,
+                              verdict: widget.verdict!,
+                              size: 22,
+                              strokeWidth: 2.5,
+                              accent: habit.color,
+                            ),
+                          ),
+                        )
+                      : InkWell(
+                          onTap: widget.onToggle,
+                          borderRadius: BorderRadius.circular(8),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 160),
+                            width: 22,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              color: completed ? habit.color : missed ? EvolveColors.destructive.withValues(alpha: 0.2) : Colors.transparent,
+                              border: Border.all(
+                                color: completed
+                                    ? habit.color
+                                    : missed
+                                        ? EvolveColors.destructive.withValues(alpha: 0.4)
+                                        : context.evolveColors.borderStrong,
+                              ),
+                              borderRadius: BorderRadius.circular(7),
+                            ),
+                            child: completed
+                                ? const Icon(
+                                    LucideIcons.check,
+                                    color: Color(0xFF092113),
+                                    size: 14,
+                                  )
+                                : missed
+                                    ? const Icon(
+                                        LucideIcons.x,
+                                        color: EvolveColors.destructive,
+                                        size: 14,
+                                      )
+                                    : null,
+                          ),
                         ),
-                        borderRadius: BorderRadius.circular(7),
-                      ),
-                      child: completed
-                          ? const Icon(
-                              LucideIcons.check,
-                              color: Color(0xFF092113),
-                              size: 14,
-                            )
-                          : missed
-                              ? const Icon(
-                                  LucideIcons.x,
-                                  color: EvolveColors.destructive,
-                                  size: 14,
-                                )
-                              : null,
-                    ),
-                  ),
                 ),
               ),
             ),
@@ -2245,6 +2313,9 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
   /// by the controller's canonicalizer on save. Never empty — the picker keeps ≥1.
   late List<int> _selectedDays;
 
+  /// Quantitative target draft (only surfaced when [DesktopTargetsConfig.enabled]).
+  HabitTarget? _target;
+
   @override
   void initState() {
     super.initState();
@@ -2258,6 +2329,7 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
     _selectedDays = (freq == null || freq.isEmpty)
         ? [1, 2, 3, 4, 5, 6, 7]
         : (List<int>.from(freq)..sort());
+    _target = widget.habit?.target;
   }
 
   @override
@@ -2307,6 +2379,15 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
               selectedDays: _selectedDays,
               onChanged: (days) => setState(() => _selectedDays = days),
             ),
+            if (DesktopTargetsConfig.enabled) ...[
+              const SizedBox(height: 20),
+              EvolveFieldLabel(t.targets.sectionTitle),
+              const SizedBox(height: 10),
+              TargetField(
+                target: _target,
+                onChanged: (value) => setState(() => _target = value),
+              ),
+            ],
             const SizedBox(height: 16),
             EvolveFieldLabel(t.habitsPage.optionalReminder),
             const SizedBox(height: 8),
@@ -2359,6 +2440,7 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
                     ? null
                     : _reminder.text.trim(),
                 frequencyDays: _selectedDays,
+                target: _target,
               ),
             );
           },
@@ -2394,6 +2476,7 @@ class _HabitDraft {
     required this.color,
     required this.frequencyDays,
     this.reminderTime,
+    this.target,
   });
 
   final String title;
@@ -2403,6 +2486,9 @@ class _HabitDraft {
   /// Selected weekdays (ISO 1-7), non-empty. The controller collapses an all-7
   /// selection to null (every-day) via `_canonicalFrequencyDays` on save.
   final List<int> frequencyDays;
+
+  /// Quantitative target, or null for a plain checkbox habit.
+  final HabitTarget? target;
 }
 
 double _completionFor(DashboardSnapshot snapshot, DateTime date) {

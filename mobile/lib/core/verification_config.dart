@@ -42,4 +42,12 @@ abstract final class VerificationConfig {
   /// Master switch — true when any provider is on. Gates the creation UI, the
   /// reconcile-on-foreground hook and the manual-freeze bookkeeping.
   static const bool enabled = healthKitEnabled || screenTimeEnabled;
+
+  /// Compound verifiable habits (Q1–Q5): combine 2–3 HealthKit conditions with
+  /// OR/AND ("10k steps OR 30 min exercise"). Ships **dark** until on-device QA;
+  /// gated independently of [healthKitEnabled] so the single-metric feature is
+  /// unaffected. When off: the "+ Add condition" UI is hidden and the reconcile
+  /// wiring skips any compound goal synced from a device where it is on.
+  /// Requires [healthKitEnabled] to do anything (every condition is HealthKit).
+  static const bool compoundVerificationEnabled = false;
 }

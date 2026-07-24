@@ -258,6 +258,10 @@ class BackupImportService {
       for (final r in await fetch('goal_logs', 'id,goal_id,date,updated_at'))
         '${r['goal_id']}|${r['date']}': r,
     };
+    final existingProgress = {
+      for (final r in await fetch('goal_progress', 'id,goal_id,date,updated_at'))
+        '${r['goal_id']}|${r['date']}': r,
+    };
     final existingMoods = {
       for (final r in await fetch('daily_moods', 'id,date,updated_at'))
         r['date'] as String: r,
@@ -273,6 +277,7 @@ class BackupImportService {
       existingGoals: existingGoals,
       existingMacros: existingMacros,
       existingLogs: existingLogs,
+      existingProgress: existingProgress,
       existingMoods: existingMoods,
       newId: () => _uuid.v4(),
     );
@@ -302,12 +307,17 @@ class BackupImportService {
         backupGoals: canonical[kGoalsKey],
       ),
     );
+    // goal_progress carries manual counts only (source 'manual'), never a health
+    // measurement, so no stripping is needed — it is user content that belongs
+    // in the account, exactly like a mood or a habit title.
+    await _bulkUpsert(client, 'goal_progress', plan.progress);
     await _bulkUpsert(client, 'daily_moods', plan.moods);
 
     if (replaceExisting) {
       // Remove this user's rows that aren't part of the backup, children before
       // parents so foreign keys resolve. Each table is pruned to exactly the
       // backup's rows without ever passing through an empty state.
+      await _deleteComplement(client, 'goal_progress', userId, plan.progress);
       await _deleteComplement(client, 'goal_logs', userId, plan.logs);
       await _deleteComplement(client, 'daily_moods', userId, plan.moods);
       await _deleteComplement(client, 'long_term_goals', userId, plan.macros);

@@ -63,6 +63,29 @@ enum VerificationCategory {
   screenTime,
 }
 
+/// How the conditions of a compound verifiable habit combine (post-v1 feature).
+///
+/// [or] = pass if *any* condition is met (inclusive disjunction — "10k steps OR
+/// 30 min exercise"); [and] = pass only if *all* are met (conjunction). A
+/// single-condition habit has no meaningful operator; [or] is the harmless
+/// default. The [wireName]s are persisted inside the `goals.verify_conditions`
+/// JSON, so they must stay stable.
+enum VerificationJoin {
+  or,
+  and;
+
+  String get wireName => switch (this) {
+        VerificationJoin.or => 'or',
+        VerificationJoin.and => 'and',
+      };
+
+  static VerificationJoin? fromWire(String? value) => switch (value) {
+        'or' => VerificationJoin.or,
+        'and' => VerificationJoin.and,
+        _ => null,
+      };
+}
+
 /// Physical unit of a metric, used for threshold formatting + display. Distance
 /// is stored canonically in kilometers; the UI may localise to miles.
 enum VerificationUnit {

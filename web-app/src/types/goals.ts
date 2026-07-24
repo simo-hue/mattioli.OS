@@ -22,6 +22,8 @@ export interface Goal {
     verify_comparator?: VerificationComparator | null;
     verify_threshold?: number | null;
     verify_unit?: string | null; // "count" | "minutes" | "hours" | "kilocalories" | "kilometers"
+    verify_effective_from?: string | null; // date (YYYY-MM-DD) the current rule took effect (D10, forward-only edits)
+    verify_conditions?: string | null; // compound verifiable habit JSON {v,op,conditions:[...]} (Q1-Q5); when set the flat verify_* columns are null
     created_at: string;
     updated_at: string;
 }

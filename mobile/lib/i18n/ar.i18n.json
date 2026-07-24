@@ -1,4 +1,13 @@
 {
+  "macroTargets": {
+    "sectionTitle": "هدف رقمي",
+    "none": "بدون",
+    "amountLabel": "القيمة المستهدفة",
+    "linkLabel": "الربط بعادة",
+    "manual": "يدوي",
+    "unitCount": "عدد",
+    "reached": "تم الوصول"
+  },
   "appTitle": "Evolve",
   "aiSistema": "AI والنظام",
   "suggerimentiAi": "اقتراحات AI",
@@ -429,6 +438,9 @@
     "habitReminderMessage13": "قدّر وقتك: حان وقت \"{title}\".",
     "habitReminderMessage14": "تحدَّ نفسك مجدداً اليوم مع \"{title}\".",
     "habitReminderMessage15": "جهد بسيط فقط لإكمال \"{title}\".",
+    "limitReminderMessage1": "كيف حال حدّك اليومي لـ \"{title}\"؟",
+    "limitReminderMessage2": "هل تبقى ضمن حدّك لـ \"{title}\" اليوم؟",
+    "limitReminderMessage3": "تفقّد \"{title}\" وانتبه إلى حدّك اليوم.",
     "verificationHeader": "التحقق من العادات",
     "verificationNudges": "تذكيرات التحقق",
     "verificationNudgesSubtitle": "اطلب مني تأكيد العادات التي تعذّر التحقق منها تلقائيًا",
@@ -1224,6 +1236,15 @@
     "couldNotVerifyTapToResolve": "تعذّر التحقق — اضغط للحل",
     "needsAppleWatch": "يتطلب Apple Watch للتحقق التلقائي",
     "grantHealthAccess": "متابعة",
+    "compound": {
+      "anyOfThese": "أيٌّ منها",
+      "allOfThese": "كلّها",
+      "anyHelper": "يُحتسب مكتملاً إذا تحقّق أيٌّ منها.",
+      "allHelper": "يُحتسب مكتملاً فقط إذا تحقّقت كلّها.",
+      "addCondition": "إضافة شرط",
+      "addSheetTitle": "إضافة شرط",
+      "add": "إضافة"
+    },
     "templates": {
       "steps": "الخطوات",
       "exerciseMinutes": "دقائق التمرين",
@@ -1300,5 +1321,40 @@
     "deniedNote": "الوصول إلى وقت الشاشة مُعطّل. لاستخدامه، افتح الإعدادات، وقت الشاشة، واسمح لـ Evolve.",
     "manageHint": "يمكنك تغيير ذلك أو إيقافه في أي وقت من تطبيق الإعدادات في iOS.",
     "enabledNote": "التحقق عبر وقت الشاشة مُفعّل. أضف عادة لوقت الشاشة لبدء التتبع."
+  },
+  "targets": {
+    "sectionTitle": "الهدف",
+    "none": "بسيط",
+    "atLeastLabel": "بلوغ",
+    "atMostLabel": "ابقَ تحت",
+    "presets": {
+      "countDaily": {
+        "label": "عدد",
+        "description": "قم به عددًا محددًا من المرات يوميًا."
+      },
+      "durationDaily": {
+        "label": "المدة",
+        "description": "اقضِ عددًا محددًا من الدقائق يوميًا."
+      },
+      "limitCountDaily": {
+        "label": "حد",
+        "description": "ابقَ تحت عدد محدد كل يوم."
+      },
+      "limitDurationDaily": {
+        "label": "حد زمني",
+        "description": "ابقَ تحت عدد محدد من الدقائق يوميًا."
+      }
+    },
+    "units": {
+      "min": "د",
+      "hour": "س",
+      "kcal": "سعرة",
+      "km": "كم"
+    },
+    "entry": {
+      "keepGoing": "استمر",
+      "withinLimit": "ضمن حدك",
+      "overLimit": "تجاوزت حدك"
+    }
   }
 }

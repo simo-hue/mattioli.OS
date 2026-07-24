@@ -30,6 +30,7 @@ const _uuid = Uuid();
 /// Canonical keys the merge engine consumes. Both source shapes map onto these.
 const kGoalsKey = 'goals';
 const kLogsKey = 'goal_logs';
+const kProgressKey = 'goal_progress';
 const kMacrosKey = 'long_term_goals';
 const kCategoriesKey = 'macro_goal_categories';
 const kMoodsKey = 'daily_moods';
@@ -113,6 +114,9 @@ Map<String, dynamic> _normalizeWeb(Map<String, dynamic> raw) {
       'verify_comparator': g['verify_comparator'],
       'verify_threshold': g['verify_threshold'],
       'verify_unit': g['verify_unit'],
+      'verify_effective_from': g['verify_effective_from'],
+      'verify_conditions': g['verify_conditions'],
+      'target': g['target'],
     });
   }
 
@@ -145,6 +149,12 @@ Map<String, dynamic> _normalizeWeb(Map<String, dynamic> raw) {
       'category_id': slug != null ? colorSlugToId[slug] : null,
       'created_at': g['created_at'],
       'updated_at': g['updated_at'],
+      // Cumulative numeric macro goals (v10). Present on a native backup; a web
+      // export simply omits them (they read back as null).
+      'target_amount': g['target_amount'],
+      'target_unit': g['target_unit'],
+      'progress_amount': g['progress_amount'],
+      'linked_goal_id': g['linked_goal_id'],
     });
   }
 
@@ -163,11 +173,28 @@ Map<String, dynamic> _normalizeWeb(Map<String, dynamic> raw) {
   return {
     kGoalsKey: goals,
     kLogsKey: logs,
+    kProgressKey: _normalizeProgressRows(raw['goal_progress']),
     kMacrosKey: macros,
     kCategoriesKey: categories,
     kMoodsKey: moods,
   };
 }
+
+/// Canonicalises `goal_progress` rows (the quantitative-habit daily numbers)
+/// from either source shape — same fields on both, so one helper. Absent ⇒ an
+/// empty list (a pre-targets backup has no progress).
+List<Map<String, dynamic>> _normalizeProgressRows(Object? raw) => [
+      for (final p in _asList(raw))
+        {
+          'id': p['id'],
+          'goal_id': p['goal_id'],
+          'date': p['date'],
+          'amount': p['amount'],
+          'source': p['source'],
+          'created_at': p['created_at'],
+          'updated_at': p['updated_at'],
+        },
+    ];
 
 /// The app's own export shape. Colors are already hex and categories are real
 /// rows. Tolerates BOTH the current export (logs/moods as lists of full rows,
@@ -193,6 +220,9 @@ Map<String, dynamic> _normalizeNative(Map<String, dynamic> raw) {
       'verify_comparator': g['verify_comparator'],
       'verify_threshold': g['verify_threshold'],
       'verify_unit': g['verify_unit'],
+      'verify_effective_from': g['verify_effective_from'],
+      'verify_conditions': g['verify_conditions'],
+      'target': g['target'],
     });
   }
 
@@ -246,6 +276,11 @@ Map<String, dynamic> _normalizeNative(Map<String, dynamic> raw) {
       'category_id': g['category_id'],
       'created_at': g['created_at'],
       'updated_at': g['updated_at'],
+      // Cumulative numeric macro goals (v10).
+      'target_amount': g['target_amount'],
+      'target_unit': g['target_unit'],
+      'progress_amount': g['progress_amount'],
+      'linked_goal_id': g['linked_goal_id'],
     });
   }
 
@@ -291,6 +326,10 @@ Map<String, dynamic> _normalizeNative(Map<String, dynamic> raw) {
   return {
     kGoalsKey: goals,
     kLogsKey: logs,
+    // The app's own export uses `habitProgress`; a raw table dump would use
+    // `goal_progress`. Accept either.
+    kProgressKey:
+        _normalizeProgressRows(raw['habitProgress'] ?? raw['goal_progress']),
     kMacrosKey: macros,
     kCategoriesKey: categories,
     kMoodsKey: moods,
@@ -511,6 +550,12 @@ ValidatedBackup validateCanonical(Map<String, dynamic> canonical) {
       'verify_comparator': _str(g['verify_comparator']),
       'verify_threshold': (g['verify_threshold'] as num?)?.toDouble(),
       'verify_unit': _str(g['verify_unit']),
+      'verify_effective_from': _str(g['verify_effective_from']),
+      'verify_conditions': _str(g['verify_conditions']),
+      // Opaque JSON string, validated in the client (decodeHabitTarget) exactly
+      // like verify_conditions — a target from a newer client round-trips rather
+      // than being dropped here.
+      'target': _str(g['target']),
     });
   }
 
@@ -538,6 +583,30 @@ ValidatedBackup validateCanonical(Map<String, dynamic> canonical) {
     });
   }
 
+  // Goal progress (quantitative-habit daily numbers). A malformed row is DROPPED
+  // but NOT surfaced as a user-facing "skipped" count — progress is a sub-detail
+  // of a habit-day, not a top-level entity the summary reports on; the verdict in
+  // goal_logs is what the user sees. Requires a positive amount (a 0/negative or
+  // missing amount is not a meaningful progress record).
+  final progress = <Map<String, dynamic>>[];
+  for (final p in _asList(canonical[kProgressKey])) {
+    final goalId = _str(p['goal_id']);
+    final date = _str(p['date']);
+    final amount = _num(p['amount']);
+    if (goalId == null || date == null || amount == null || amount <= 0) {
+      continue;
+    }
+    progress.add({
+      'id': _str(p['id']),
+      'goal_id': goalId,
+      'date': date,
+      'amount': amount,
+      'source': _str(p['source']) ?? 'manual',
+      'created_at': _str(p['created_at']),
+      'updated_at': _str(p['updated_at']),
+    });
+  }
+
   final macros = <Map<String, dynamic>>[];
   for (final g in _asList(canonical[kMacrosKey])) {
     final title = _str(g['title']);
@@ -557,6 +626,13 @@ ValidatedBackup validateCanonical(Map<String, dynamic> canonical) {
       drop('macroGoals');
       continue;
     }
+    // Cumulative numeric macro goals (v10). A non-positive/absent target_amount
+    // is nulled (⇒ the goal reads as an ordinary boolean one) rather than
+    // dropping the whole goal — the same forgiving posture the client's
+    // evaluateMacroGoalProgress takes. linked_goal_id is passed through as a
+    // string here; its referential validity (does the habit exist?) is enforced
+    // at merge time against knownGoalIds, since the FK would otherwise abort.
+    final targetAmount = _num(g['target_amount']);
     macros.add({
       'id': _str(g['id']),
       'title': title,
@@ -570,6 +646,11 @@ ValidatedBackup validateCanonical(Map<String, dynamic> canonical) {
       'category_id': _str(g['category_id']),
       'created_at': _str(g['created_at']),
       'updated_at': _str(g['updated_at']),
+      'target_amount':
+          (targetAmount != null && targetAmount > 0) ? targetAmount : null,
+      'target_unit': _str(g['target_unit']),
+      'progress_amount': _num(g['progress_amount']),
+      'linked_goal_id': _str(g['linked_goal_id']),
     });
   }
 
@@ -599,6 +680,7 @@ ValidatedBackup validateCanonical(Map<String, dynamic> canonical) {
   return ValidatedBackup({
     kGoalsKey: goals,
     kLogsKey: logs,
+    kProgressKey: progress,
     kMacrosKey: macros,
     kCategoriesKey: categories,
     kMoodsKey: moods,
@@ -639,11 +721,13 @@ Future<ImportMergeStats> applyPrivateImportMerge({
   final categories = _asList(canonical[kCategoriesKey]);
   final goals = _asList(canonical[kGoalsKey]);
   final logs = _asList(canonical[kLogsKey]);
+  final progress = _asList(canonical[kProgressKey]);
   final macros = _asList(canonical[kMacrosKey]);
   final moods = _asList(canonical[kMoodsKey]);
 
   if (replaceExisting) {
     await txn.delete('goal_logs');
+    await txn.delete('goal_progress');
     await txn.delete('daily_moods');
     await txn.delete('long_term_goals');
     await txn.delete('macro_goal_categories');
@@ -788,11 +872,17 @@ Future<ImportMergeStats> applyPrivateImportMerge({
         : (catRemap[importedCatId] ?? importedCatId);
     final categoryId =
         (remapped != null && validCatIds.contains(remapped)) ? remapped : null;
+    // Null a linked_goal_id whose habit is absent (would dangle the FK). The FK
+    // is ON DELETE SET NULL, so a live-but-later-deleted habit already un-links
+    // itself; this handles the import-time case where the habit was never here.
+    final rawLinked = g['linked_goal_id'] as String?;
+    final linkedGoalId =
+        (rawLinked != null && knownGoalIds.contains(rawLinked)) ? rawLinked : null;
     final existing = existingMacros[id];
     if (existing == null) {
       final rid = await txn.insert(
           'long_term_goals',
-          _macroRow(g, id, owner, categoryId,
+          _macroRow(g, id, owner, categoryId, linkedGoalId,
               (g['created_at'] as String?) ?? now, now),
           conflictAlgorithm: ConflictAlgorithm.ignore);
       if (rid != 0) {
@@ -803,7 +893,7 @@ Future<ImportMergeStats> applyPrivateImportMerge({
         existing: existing['updated_at'] as String?)) {
       final n = await txn.update(
           'long_term_goals',
-          _macroRow(g, id, owner, categoryId,
+          _macroRow(g, id, owner, categoryId, linkedGoalId,
               existing['created_at'] as String? ?? now, now),
           where: 'id = ?',
           whereArgs: [id]);
@@ -870,6 +960,53 @@ Future<ImportMergeStats> applyPrivateImportMerge({
       }
     } else {
       stats.logs.unchanged++;
+    }
+  }
+
+  // ── Goal progress: identity by (goal_id, date), LWW — the same shape as goal
+  // logs. Orphan rows (no matching goal) are skipped for the FK. Folded into the
+  // habits flow with no separate stats counter (progress is a sub-detail, not a
+  // reported entity); the streak recompute above is unaffected — progress never
+  // feeds a streak. ──
+  final existingProgress = replaceExisting
+      ? const <String, Map<String, Object?>>{}
+      : {
+          for (final r in await txn.query('goal_progress',
+              columns: ['id', 'goal_id', 'date', 'updated_at'],
+              where: 'user_id = ?',
+              whereArgs: [owner]))
+            '${r['goal_id']}|${r['date']}': r,
+        };
+
+  for (final p in progress) {
+    final goalId = p['goal_id'] as String?;
+    final date = p['date'] as String?;
+    if (goalId == null || date == null || !knownGoalIds.contains(goalId)) {
+      continue;
+    }
+    final key = '$goalId|$date';
+    final existing = existingProgress[key];
+    if (existing == null) {
+      // Deterministic id (goalId:date), matching the write path, so a re-import
+      // can't mint a rival row for the same habit-day.
+      await txn.insert('goal_progress', {
+        'id': '$goalId:$date',
+        'user_id': owner,
+        'goal_id': goalId,
+        'date': date,
+        'amount': p['amount'],
+        'source': p['source'] ?? 'manual',
+        'created_at': p['created_at'] ?? now,
+        'updated_at': p['updated_at'] ?? now,
+      }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    } else if (incomingWins(
+        incoming: p['updated_at'] as String?,
+        existing: existing['updated_at'] as String?)) {
+      await txn.update('goal_progress', {
+        'amount': p['amount'],
+        'source': p['source'] ?? 'manual',
+        'updated_at': p['updated_at'] ?? now,
+      }, where: 'id = ?', whereArgs: [existing['id']]);
     }
   }
 
@@ -954,6 +1091,11 @@ Map<String, Object?> _goalRow(
     'verify_comparator': g['verify_comparator'],
     'verify_threshold': g['verify_threshold'],
     'verify_unit': g['verify_unit'],
+    'verify_effective_from': g['verify_effective_from'],
+    'verify_conditions': g['verify_conditions'],
+    // Quantitative target (v9): round-tripped so a backup→restore doesn't
+    // silently turn a targeted habit back into a plain checkbox.
+    'target': g['target'],
   };
 }
 
@@ -962,6 +1104,7 @@ Map<String, Object?> _macroRow(
   String id,
   String owner,
   String? categoryId,
+  String? linkedGoalId,
   String createdAt,
   String updatedAt,
 ) {
@@ -979,6 +1122,14 @@ Map<String, Object?> _macroRow(
     'category_id': categoryId,
     'created_at': createdAt,
     'updated_at': g['updated_at'] ?? updatedAt,
+    // Cumulative numeric macro goals (v10). [linkedGoalId] is the caller's
+    // FK-validated value (null when the referenced habit is neither in the
+    // backup nor already present) — writing a dangling ref would abort the
+    // insert under the ON-DELETE-SET-NULL foreign key.
+    'target_amount': g['target_amount'],
+    'target_unit': g['target_unit'],
+    'progress_amount': g['progress_amount'],
+    'linked_goal_id': linkedGoalId,
   };
 }
 
@@ -1054,6 +1205,7 @@ class CloudImportPlan {
   final List<Map<String, dynamic>> goals;
   final List<Map<String, dynamic>> macros;
   final List<Map<String, dynamic>> logs;
+  final List<Map<String, dynamic>> progress;
   final List<Map<String, dynamic>> moods;
 
   /// Existing categories to fill an `archived_at` on (id -> archived_at). Applied
@@ -1068,6 +1220,7 @@ class CloudImportPlan {
     required this.goals,
     required this.macros,
     required this.logs,
+    this.progress = const [],
     required this.moods,
     required this.categoryArchiveFills,
     required this.affectedGoals,
@@ -1088,6 +1241,7 @@ CloudImportPlan planCloudImport({
   required Map<String, String?> existingMacros, // id -> updated_at
   required Map<String, Map<String, dynamic>> existingLogs, // gid|date -> {id,updated_at}
   required Map<String, Map<String, dynamic>> existingMoods, // date -> {id,updated_at}
+  Map<String, Map<String, dynamic>> existingProgress = const {}, // gid|date -> {id,updated_at}
   required String Function() newId,
 }) {
   final stats = ImportMergeStats(replaced: replaceExisting);
@@ -1174,6 +1328,20 @@ CloudImportPlan planCloudImport({
       'created_at': g['created_at'] ?? now,
       'updated_at': g['updated_at'] ?? now,
       'reminder_time': g['reminder_time'],
+      // Carry the verification rule into the cloud upsert — otherwise a
+      // cloud-mode (account) import silently strips auto-verification from every
+      // habit. Mirrors the private merge (_goalRow), the live writer
+      // (Goal.toJson), and the desktop cloud plan.
+      'verify_provider': g['verify_provider'],
+      'verify_metric': g['verify_metric'],
+      'verify_comparator': g['verify_comparator'],
+      'verify_threshold': g['verify_threshold'],
+      'verify_unit': g['verify_unit'],
+      'verify_effective_from': g['verify_effective_from'],
+      'verify_conditions': g['verify_conditions'],
+      // Quantitative target (v9) — without it a cloud import strips a habit's
+      // target, reverting it to a checkbox. Mirrors the private merge.
+      'target': g['target'],
     });
     has ? stats.habits.updated++ : stats.habits.added++;
   }
@@ -1188,6 +1356,9 @@ CloudImportPlan planCloudImport({
         : (catRemap[importedCatId] ?? importedCatId);
     final categoryId =
         (remapped != null && validCatIds.contains(remapped)) ? remapped : null;
+    final rawLinked = g['linked_goal_id'] as String?;
+    final linkedGoalId =
+        (rawLinked != null && knownGoalIds.contains(rawLinked)) ? rawLinked : null;
     final has = existingMacros.containsKey(id);
     if (has &&
         !incomingWins(
@@ -1210,6 +1381,12 @@ CloudImportPlan planCloudImport({
       'category_id': categoryId,
       'created_at': g['created_at'] ?? now,
       'updated_at': g['updated_at'] ?? now,
+      // Cumulative numeric macro goals (v10). linked_goal_id FK-validated against
+      // knownGoalIds so a cloud upsert can't dangle it.
+      'target_amount': g['target_amount'],
+      'target_unit': g['target_unit'],
+      'progress_amount': g['progress_amount'],
+      'linked_goal_id': linkedGoalId,
     });
     has ? stats.macroGoals.updated++ : stats.macroGoals.added++;
   }
@@ -1264,6 +1441,39 @@ CloudImportPlan planCloudImport({
     }
   }
 
+  // ── Goal progress: natural key (goal_id, date); deterministic id, so the same
+  // habit-day converges. Folded in with no stats counter (a sub-detail, not a
+  // reported entity). Orphans skipped for the FK; intra-file dups dropped. ──
+  final progress = _asList(canonical[kProgressKey]);
+  final progressToWrite = <Map<String, dynamic>>[];
+  final seenProgressKeys = <String>{};
+  for (final p in progress) {
+    final goalId = p['goal_id'] as String?;
+    final date = p['date'] as String?;
+    if (goalId == null || date == null || !knownGoalIds.contains(goalId)) {
+      continue;
+    }
+    final key = '$goalId|$date';
+    if (!seenProgressKeys.add(key)) continue; // intra-file dup
+    final existing = existingProgress[key];
+    if (existing != null &&
+        !incomingWins(
+            incoming: p['updated_at'] as String?,
+            existing: existing['updated_at'] as String?)) {
+      continue;
+    }
+    progressToWrite.add({
+      'id': '$goalId:$date',
+      'user_id': userId,
+      'goal_id': goalId,
+      'date': date,
+      'amount': p['amount'],
+      'source': p['source'] ?? 'manual',
+      'created_at': p['created_at'] ?? now,
+      'updated_at': p['updated_at'] ?? now,
+    });
+  }
+
   // ── Daily moods: natural key date; reuse existing id on update. ──
   final moodsToWrite = <Map<String, dynamic>>[];
   final seenNewMoodDates = <String>{};
@@ -1306,6 +1516,7 @@ CloudImportPlan planCloudImport({
     goals: goalsToWrite,
     macros: macrosToWrite,
     logs: logsToWrite,
+    progress: progressToWrite,
     moods: moodsToWrite,
     categoryArchiveFills: catArchiveFills,
     affectedGoals: affectedGoals,

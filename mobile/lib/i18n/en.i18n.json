@@ -1,4 +1,13 @@
 {
+  "macroTargets": {
+    "sectionTitle": "Numeric target",
+    "none": "None",
+    "amountLabel": "Target amount",
+    "linkLabel": "Track with a habit",
+    "manual": "Manual",
+    "unitCount": "count",
+    "reached": "Reached"
+  },
   "appTitle": "Evolve",
   "aiSistema": "AI & SYSTEM",
   "suggerimentiAi": "AI Suggestions",
@@ -429,6 +438,9 @@
     "habitReminderMessage13": "Value your time: it is time for \"{title}\".",
     "habitReminderMessage14": "Challenge yourself again today with \"{title}\".",
     "habitReminderMessage15": "Just a small effort to complete \"{title}\".",
+    "limitReminderMessage1": "How's your \"{title}\" limit holding up today?",
+    "limitReminderMessage2": "Staying within your \"{title}\" limit today?",
+    "limitReminderMessage3": "Check in on \"{title}\" — mind your limit today.",
     "verificationHeader": "HABIT VERIFICATION",
     "verificationNudges": "Couldn't-verify nudges",
     "verificationNudgesSubtitle": "Ask me to confirm habits we couldn't auto-verify",
@@ -1224,6 +1236,15 @@
     "couldNotVerifyTapToResolve": "Couldn't verify — tap to resolve",
     "needsAppleWatch": "Needs an Apple Watch to auto-verify",
     "grantHealthAccess": "Continue",
+    "compound": {
+      "anyOfThese": "Any of these",
+      "allOfThese": "All of these",
+      "anyHelper": "Counts as done if any one of these is met.",
+      "allHelper": "Counts as done only if all of these are met.",
+      "addCondition": "Add condition",
+      "addSheetTitle": "Add a condition",
+      "add": "Add"
+    },
     "templates": {
       "steps": "Steps",
       "exerciseMinutes": "Exercise minutes",
@@ -1300,5 +1321,40 @@
     "deniedNote": "Screen Time access is turned off. To use it, open Settings, Screen Time, and allow Evolve.",
     "manageHint": "You can change or turn this off anytime in the iOS Settings app.",
     "enabledNote": "Screen Time verification is on. Add a Screen Time habit to start tracking."
+  },
+  "targets": {
+    "sectionTitle": "Target",
+    "none": "Simple",
+    "atLeastLabel": "Reach",
+    "atMostLabel": "Stay under",
+    "presets": {
+      "countDaily": {
+        "label": "Count",
+        "description": "Do it a set number of times a day."
+      },
+      "durationDaily": {
+        "label": "Duration",
+        "description": "Spend a set number of minutes a day."
+      },
+      "limitCountDaily": {
+        "label": "Limit",
+        "description": "Stay under a set number each day."
+      },
+      "limitDurationDaily": {
+        "label": "Time limit",
+        "description": "Stay under a set number of minutes a day."
+      }
+    },
+    "units": {
+      "min": "min",
+      "hour": "h",
+      "kcal": "kcal",
+      "km": "km"
+    },
+    "entry": {
+      "keepGoing": "Keep going",
+      "withinLimit": "Within your limit",
+      "overLimit": "Over your limit"
+    }
   }
 }

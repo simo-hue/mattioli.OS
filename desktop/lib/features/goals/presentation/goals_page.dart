@@ -2,8 +2,12 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/macro_goal_calendar.dart';
+import 'package:evolve_desktop/core/macro_targets_config.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
+import 'package:evolve_desktop/features/dashboard/domain/macro_goal_progress.dart';
+import 'package:evolve_desktop/shared/widgets/target_ring.dart';
+import 'package:evolve_targets/evolve_targets.dart';
 import 'package:evolve_desktop/features/goals/application/goal_categories_controller.dart';
 import 'package:evolve_desktop/features/goals/application/goals_page_command.dart';
 import 'package:evolve_desktop/features/search/application/goal_nav_target.dart';
@@ -703,6 +707,9 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
         categories: categories,
         goal: goal,
         initialCategory: category,
+        habits: DesktopMacroTargetsConfig.enabled
+            ? ref.read(dashboardControllerProvider).habits
+            : const [],
       ),
     );
     if (draft == null) return;
@@ -714,6 +721,12 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
           category: draft.category.key ?? '',
           color: draft.category.color,
           categoryId: draft.category.id,
+          // The editor is authoritative about the numeric target only when the
+          // feature is live; otherwise leave any synced-in target untouched.
+          applyTarget: DesktopMacroTargetsConfig.enabled,
+          targetAmount: draft.targetAmount,
+          targetUnit: draft.targetUnit,
+          linkedGoalId: draft.linkedGoalId,
         );
   }
 
@@ -2189,14 +2202,51 @@ class _GoalItemState extends State<_GoalItem> {
             ),
           ),
         ),
-        child: _rowLayout(
-          context,
-          category: category,
-          currentState: currentState,
-          completed: completed,
-          failed: failed,
-          statusColor: statusColor,
-        ),
+        child: DesktopMacroTargetsConfig.enabled && goal.hasNumericTarget
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _rowLayout(
+                    context,
+                    category: category,
+                    currentState: currentState,
+                    completed: completed,
+                    failed: failed,
+                    statusColor: statusColor,
+                  ),
+                  // Accumulated-progress bar for a numeric macro goal. The
+                  // effective amount is derived from the dashboard snapshot's
+                  // in-memory progress map (stored for a manual goal, summed from
+                  // the linked habit for a linked one) — see macroGoalProgressFor.
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final habitProgress = ref.watch(
+                        dashboardControllerProvider
+                            .select((s) => s.habitProgress),
+                      );
+                      final progress =
+                          macroGoalProgressFor(goal, habitProgress);
+                      if (progress == null) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 10, left: 44),
+                        child: _MacroGoalProgressBar(
+                          progress: progress,
+                          color: statusColor,
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              )
+            : _rowLayout(
+                context,
+                category: category,
+                currentState: currentState,
+                completed: completed,
+                failed: failed,
+                statusColor: statusColor,
+              ),
       ),
     );
     if (!widget.highlight) return row;
@@ -2232,6 +2282,67 @@ class _GoalItemState extends State<_GoalItem> {
         ),
       ),
       child: row,
+    );
+  }
+}
+
+/// The accumulated-progress bar + "320 / 500 km" label for a numeric macro
+/// goal. Colour follows the goal's status colour; a reached target turns green
+/// and shows a "Reached" tag. Fraction/complete come from [MacroGoalProgress]
+/// (evolve_targets) so every surface reads the same numbers.
+class _MacroGoalProgressBar extends StatelessWidget {
+  const _MacroGoalProgressBar({required this.progress, required this.color});
+
+  final MacroGoalProgress progress;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final unitShort =
+        progress.unit == null ? '' : targetUnitShortLabel(progress.unit!);
+    final label = unitShort.isEmpty
+        ? '${formatTargetAmount(progress.amount)} / '
+            '${formatTargetAmount(progress.target)}'
+        : '${formatTargetAmount(progress.amount)} / '
+            '${formatTargetAmount(progress.target)} $unitShort';
+    final barColor = progress.isComplete ? EvolveColors.success : color;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: progress.fraction,
+            minHeight: 6,
+            backgroundColor: context.evolveColors.panelSoft,
+            valueColor: AlwaysStoppedAnimation<Color>(barColor),
+          ),
+        ),
+        const SizedBox(height: 5),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: context.evolveColors.muted,
+              ),
+            ),
+            if (progress.isComplete)
+              Text(
+                t.macroTargets.reached,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: EvolveColors.success,
+                ),
+              ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -2315,11 +2426,16 @@ class _GoalEditorDialog extends StatefulWidget {
     required this.categories,
     this.goal,
     this.initialCategory,
+    this.habits = const [],
   });
 
   final List<_GoalCategory> categories;
   final DashboardGoal? goal;
   final _GoalCategory? initialCategory;
+
+  /// The user's habits, for the "track with a habit" link picker (behind the
+  /// macro-target flag). Empty when the feature is dark.
+  final List<DashboardHabit> habits;
 
   @override
   State<_GoalEditorDialog> createState() => _GoalEditorDialogState();
@@ -2327,13 +2443,27 @@ class _GoalEditorDialog extends StatefulWidget {
 
 class _GoalEditorDialogState extends State<_GoalEditorDialog> {
   final _title = TextEditingController();
+  final _amount = TextEditingController();
   late final List<_GoalCategory> _options;
   late _GoalCategory _category;
+
+  TargetUnit? _targetUnit;
+  String? _linkedGoalId;
+
+  static const _kNoTarget = '__evolve_no_target__';
+  static const _kManual = '__evolve_manual__';
 
   @override
   void initState() {
     super.initState();
     _title.text = widget.goal?.title ?? '';
+    // Seed the numeric-target editor from the goal's current target.
+    final goal = widget.goal;
+    if (goal != null && goal.hasNumericTarget) {
+      _targetUnit = TargetUnit.fromWire(goal.targetUnit) ?? TargetUnit.count;
+      _amount.text = formatTargetAmount(goal.targetAmount ?? 0);
+      _linkedGoalId = goal.linkedGoalId;
+    }
     // The goal's resolved category may not be part of the picker list: it can be
     // a fallback derived from the goal itself when its own category was archived
     // or removed, and the list can even be empty (categories start empty and are
@@ -2352,7 +2482,86 @@ class _GoalEditorDialogState extends State<_GoalEditorDialog> {
   @override
   void dispose() {
     _title.dispose();
+    _amount.dispose();
     super.dispose();
+  }
+
+  String _unitLabel(TargetUnit unit) => unit == TargetUnit.count
+      ? t.macroTargets.unitCount
+      : targetUnitShortLabel(unit);
+
+  Widget _targetSection(BuildContext context) {
+    if (!DesktopMacroTargetsConfig.enabled) return const SizedBox.shrink();
+    final fill = context.evolveColors.background.withValues(alpha: 0.5);
+    final unitSet = _targetUnit != null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 18),
+        EvolveFieldLabel(t.macroTargets.sectionTitle),
+        const SizedBox(height: 8),
+        EvolveSelect<String>(
+          value: _targetUnit?.wireName ?? _kNoTarget,
+          expand: true,
+          height: 46,
+          fillColor: fill,
+          options: [
+            EvolveSelectOption(value: _kNoTarget, label: t.macroTargets.none),
+            for (final unit in TargetUnit.values)
+              EvolveSelectOption(value: unit.wireName, label: _unitLabel(unit)),
+          ],
+          onChanged: (value) => setState(() {
+            _targetUnit =
+                value == _kNoTarget ? null : TargetUnit.fromWire(value);
+            if (_targetUnit == null) _linkedGoalId = null;
+          }),
+        ),
+        if (unitSet) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _amount,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration:
+                      InputDecoration(hintText: t.macroTargets.amountLabel),
+                ),
+              ),
+              if (_unitLabel(_targetUnit!).isNotEmpty) ...[
+                const SizedBox(width: 10),
+                Text(
+                  _unitLabel(_targetUnit!),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: context.evolveColors.foreground,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 12),
+          EvolveFieldLabel(t.macroTargets.linkLabel),
+          const SizedBox(height: 8),
+          EvolveSelect<String>(
+            value: _linkedGoalId ?? _kManual,
+            expand: true,
+            height: 46,
+            fillColor: fill,
+            options: [
+              EvolveSelectOption(value: _kManual, label: t.macroTargets.manual),
+              for (final habit in widget.habits)
+                EvolveSelectOption(value: habit.id, label: habit.title),
+            ],
+            onChanged: (value) => setState(
+              () => _linkedGoalId = value == _kManual ? null : value,
+            ),
+          ),
+        ],
+      ],
+    );
   }
 
   @override
@@ -2366,6 +2575,7 @@ class _GoalEditorDialogState extends State<_GoalEditorDialog> {
         width: 430,
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             TextField(
               controller: _title,
@@ -2392,6 +2602,7 @@ class _GoalEditorDialogState extends State<_GoalEditorDialog> {
               ],
               onChanged: (value) => setState(() => _category = value),
             ),
+            _targetSection(context),
           ],
         ),
       ),
@@ -2404,9 +2615,21 @@ class _GoalEditorDialogState extends State<_GoalEditorDialog> {
           onPressed: () {
             final title = _title.text.trim();
             if (title.isEmpty) return;
+            final unit = DesktopMacroTargetsConfig.enabled ? _targetUnit : null;
+            final typed =
+                double.tryParse(_amount.text.trim().replaceAll(',', '.'));
+            final amount = unit == null
+                ? null
+                : (typed == null || typed <= 0 ? 1.0 : typed);
             Navigator.pop(
               context,
-              _GoalDraft(title: title, category: _category),
+              _GoalDraft(
+                title: title,
+                category: _category,
+                targetAmount: amount,
+                targetUnit: unit?.wireName,
+                linkedGoalId: unit == null ? null : _linkedGoalId,
+              ),
             );
           },
           child: Text(
@@ -2497,10 +2720,21 @@ class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
 }
 
 class _GoalDraft {
-  const _GoalDraft({required this.title, required this.category});
+  const _GoalDraft({
+    required this.title,
+    required this.category,
+    this.targetAmount,
+    this.targetUnit,
+    this.linkedGoalId,
+  });
 
   final String title;
   final _GoalCategory category;
+
+  // Numeric target the editor resolved (null [targetAmount] ⇒ a boolean goal).
+  final double? targetAmount;
+  final String? targetUnit;
+  final String? linkedGoalId;
 }
 
 class _GoalCategory {

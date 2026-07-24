@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:evolve_targets/evolve_targets.dart';
 import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -9,17 +10,25 @@ import 'settings_provider.dart';
 import '../core/notifications.dart';
 import '../core/navigator_key.dart';
 import '../core/app_logger.dart';
+import '../core/targets_config.dart';
 import '../core/verification_config.dart';
 import '../core/verification_providers.dart';
 import '../core/secure_storage_utils.dart';
 import '../core/data_mode.dart';
 import '../core/private_local_database.dart';
 import '../core/streak_utils.dart';
+import '../core/supabase_macro_goal_progress.dart';
 import '../ui/widgets/error_modal.dart';
+import 'macro_goals_provider.dart';
 import '../i18n/translations.g.dart';
 
 final initialGoalsProvider = Provider<String>((ref) => '[]');
 final initialLogsProvider = Provider<String>((ref) => '{}');
+
+/// The prewarmed `goal_progress_cache` blob (quantitative-habit daily numbers),
+/// overridden at startup exactly like [initialLogsProvider]. Parallel to the
+/// logs cache because progress is a parallel table, read and synced on its own.
+final initialProgressProvider = Provider<String>((ref) => '{}');
 
 /// The Supabase `user.id` the offline caches ('goals_cache' / 'goal_logs_cache')
 /// currently belong to. Used to refuse overwriting one account's populated cache
@@ -219,6 +228,13 @@ class GoalsNotifier extends Notifier<List<Goal>> {
   /// Mode-A Screen Time selection blob). Failures already surface their own
   /// error modal + optimistic rollback here.
   Future<Goal?> addHabit(Goal habit) async {
+    // A new rule takes effect today (D10, forward-only): stamp the effective-from
+    // anchor centrally so reconcile can't retroactively verify pre-creation days.
+    habit = stampVerificationEffectiveFrom(
+      habit,
+      previous: null,
+      today: DateTime.now(),
+    );
     // Snapshot for optimistic rollback if persistence fails.
     final previousGoals = state;
     final newGoals = [...state, habit];
@@ -234,6 +250,7 @@ class GoalsNotifier extends Notifier<List<Goal>> {
               habit.title,
               habit.reminderTime,
               frequencyDays: habit.frequencyDays,
+              isLimit: habit.target?.isLimit ?? false,
             ),
           );
         }
@@ -294,6 +311,7 @@ class GoalsNotifier extends Notifier<List<Goal>> {
             realGoal.title,
             realGoal.reminderTime,
             frequencyDays: realGoal.frequencyDays,
+            isLimit: realGoal.target?.isLimit ?? false,
           ),
         );
       }
@@ -326,11 +344,21 @@ class GoalsNotifier extends Notifier<List<Goal>> {
         habit.title,
         habit.reminderTime,
         frequencyDays: habit.frequencyDays,
+        isLimit: habit.target?.isLimit ?? false,
       );
     }
   }
 
   Future<bool> updateHabit(Goal updatedHabit) async {
+    // Forward-only rule edits (D10): if the rule's verifiable content changed
+    // (or was just enabled), it takes effect today; otherwise the prior anchor
+    // is preserved so a title/colour/schedule edit never rewrites history.
+    final priorMatches = state.where((h) => h.id == updatedHabit.id);
+    updatedHabit = stampVerificationEffectiveFrom(
+      updatedHabit,
+      previous: priorMatches.isEmpty ? null : priorMatches.first,
+      today: DateTime.now(),
+    );
     // Snapshot for optimistic rollback if persistence fails.
     final previousGoals = state;
     final newGoals = state
@@ -368,6 +396,13 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       // path (private_local_database writes VerificationRule.nullColumns).
       if (updatedHabit.verificationRule == null) {
         payload.addAll(VerificationRule.nullColumns);
+        // Goal.toJson omits the verification columns when the rule is null; a
+        // Supabase UPDATE leaves omitted columns untouched, so clear them
+        // explicitly or a stale anchor / compound blob would linger and resurrect
+        // on sync. (A compound→single transition is safe without this: toJson
+        // then emits verify_conditions: null alongside the flat columns.)
+        payload['verify_effective_from'] = null;
+        payload['verify_conditions'] = null;
       }
       // Goal.toJson OMITS frequency_days when null (every-day), and an UPDATE
       // leaves omitted columns untouched — so clearing a restricted schedule to
@@ -375,6 +410,17 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       // next sync. Write it explicitly (null clears the column) — same reasoning
       // as the verify_* columns above.
       payload['frequency_days'] = updatedHabit.frequencyDays;
+      // Same omitted-column hazard for the quantitative target: Goal.toJson emits
+      // `target` only when non-null, and a Supabase UPDATE leaves an omitted
+      // column untouched — so REMOVING a habit's target would leave the stale one
+      // on the server to resurrect on the next sync. Force-write it (null clears)
+      // — but GATED behind the flag, exactly like the desktop client: `goals.target`
+      // exists only after the v9 migration, so an ungated explicit `target: null`
+      // on every plain-habit edit would make a pre-migration project reject the
+      // unknown column and lose the edit. Inert while dark; correct once live.
+      if (TargetsConfig.enabled) {
+        payload['target'] = updatedHabit.targetColumnValue;
+      }
       await supabase.from('goals').update(payload).eq('id', updatedHabit.id);
 
       // Schedule the reminder(s); cancel → schedule is sequenced inside.
@@ -420,6 +466,26 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     _saveToCache(newGoals);
 
     try {
+      // ACCOUNT-mode counterpart of the private store's delete-time snapshot:
+      // before the habit row is deleted (its goal_progress cascades away and the
+      // ON DELETE SET NULL FK un-links any macro goal it fed), snapshot the
+      // derived total into each linked macro goal's progress_amount so a "500 km"
+      // goal that reached 320 keeps 320 as a now-manual value. Only runs when a
+      // loaded macro goal is actually linked to this habit — so it is a no-op
+      // (no extra round-trip) while the feature is dark and no links exist. Its
+      // failure must not block the delete (the FK still un-links server-side).
+      final user = supabase.auth.currentUser;
+      final hasLinkedMacroGoal = ref
+          .read(macroGoalsProvider)
+          .goals
+          .any((g) => g.linkedGoalId == id);
+      if (user != null && hasLinkedMacroGoal) {
+        try {
+          await snapshotCloudLinkedMacroGoals(supabase, user.id, id);
+        } catch (e, stack) {
+          AppLogger.error('[Goals] Linked macro-goal snapshot failed', e, stack);
+        }
+      }
       await supabase.from('goals').delete().eq('id', id);
       // Cancella promemoria
       unawaited(NotificationService().cancelHabitReminder(id));
@@ -914,6 +980,93 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
     }
   }
 
+  /// Moves a habit-day's VERDICT to match a target's evaluation: sets the
+  /// `goal_logs` row to [status] ('done'|'missed'), or DELETES it when [status]
+  /// is null (the day is pending — a partial count, or a limit day not yet
+  /// closed). The progress NUMBER lives in `goal_progress` and is owned by
+  /// [HabitProgressNotifier]; this only ever moves the verdict, so streaks,
+  /// heatmaps and the analytics RPCs keep seeing an ordinary done/missed row.
+  ///
+  /// Never writes `goal_logs.value`: a manual target's number is not a health
+  /// measurement and does not belong on the verdict row. Idempotent — a no-op
+  /// when the stored status already matches, so the reconcile/increment paths
+  /// can call it freely.
+  Future<void> setDerivedStatus({
+    required String goalId,
+    required String dateKey,
+    required String? status,
+  }) async {
+    final isPrivateMode =
+        ref.read(activeDataModeProvider) == AppDataMode.private;
+    final user = isPrivateMode ? null : supabase.auth.currentUser;
+    if (!isPrivateMode && user == null) return;
+
+    if (state[dateKey]?[goalId] == status) return; // already correct
+
+    final previousState = state;
+    final newState = Map<String, Map<String, String>>.from(state);
+    final dayLogs = Map<String, String>.from(newState[dateKey] ?? {});
+    if (status != null) {
+      dayLogs[goalId] = status;
+    } else {
+      dayLogs.remove(goalId);
+    }
+    newState[dateKey] = dayLogs;
+    state = newState;
+
+    final goal =
+        ref.read(goalsProvider).where((g) => g.id == goalId).firstOrNull;
+    final parsedDate = DateTime.tryParse(dateKey) ?? DateTime.now();
+    final newStreak = status == null
+        ? 0
+        : computeStreak(
+            habitId: goalId,
+            date: parsedDate,
+            logs: newState,
+            startDate: goal?.startDate ?? parsedDate,
+            frequencyDays: goal?.frequencyDays,
+          );
+
+    try {
+      if (isPrivateMode) {
+        if (status != null) {
+          await ref.read(privateLocalDatabaseProvider).setHabitLog(
+                goalId: goalId,
+                date: dateKey,
+                status: status,
+                streak: newStreak,
+              );
+        } else {
+          await ref
+              .read(privateLocalDatabaseProvider)
+              .deleteHabitLog(goalId: goalId, date: dateKey);
+        }
+      } else {
+        _saveToCache(newState);
+        if (status != null) {
+          await supabase.from('goal_logs').upsert({
+            'user_id': user!.id,
+            'goal_id': goalId,
+            'date': dateKey,
+            'status': status,
+            'streak': newStreak,
+          }, onConflict: 'goal_id, date');
+        } else {
+          await supabase
+              .from('goal_logs')
+              .delete()
+              .eq('goal_id', goalId)
+              .eq('date', dateKey);
+        }
+      }
+      ref.invalidate(habitStatsProvider);
+    } catch (e, stack) {
+      AppLogger.error('[HabitLogs] setDerivedStatus error', e, stack);
+      state = previousState; // roll back the optimistic in-memory update
+      if (!isPrivateMode) _saveToCache(previousState);
+    }
+  }
+
   void clearAll() {
     state = {};
     if (ref.read(activeDataModeProvider) != AppDataMode.private) {
@@ -924,6 +1077,324 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
 
 final habitLogsProvider = NotifierProvider<HabitLogsNotifier, HabitLogsMap>(
   HabitLogsNotifier.new,
+);
+
+// ─── Habit Progress Provider (quantitative targets) ─────────────────────────
+
+/// `dateKey ('YYYY-MM-DD') -> goalId -> accumulated amount` for the day.
+///
+/// The parallel of [HabitLogsMap] for the `goal_progress` table: the raw number
+/// a quantitative habit reached that day. Deliberately a SEPARATE map, not a
+/// field folded into the log entry — a partial day has a number but no verdict,
+/// the two tables sync independently, and keeping them apart means the ~96
+/// call sites that read the verdict string never had to change.
+typedef HabitProgressMap = Map<String, Map<String, double>>;
+
+/// Folds paginated `{goal_id, date, amount}` rows into a [HabitProgressMap].
+/// Mirrors [fetchGoalLogsPaginated] so the cloud progress history is fetched
+/// past PostgREST's row cap the same way the logs history is.
+Future<HabitProgressMap> fetchGoalProgressPaginated(
+  GoalLogPageFetcher fetchPage, {
+  int pageSize = kGoalLogsSyncPageSize,
+}) async {
+  final HabitProgressMap progress = {};
+  var offset = 0;
+  while (true) {
+    final page = await fetchPage(offset, pageSize);
+    for (final row in page) {
+      final date = row['date'] as String;
+      final goalId = row['goal_id'] as String;
+      final amount = (row['amount'] as num).toDouble();
+      (progress[date] ??= <String, double>{})[goalId] = amount;
+    }
+    if (page.length < pageSize) break;
+    offset += pageSize;
+  }
+  return progress;
+}
+
+class HabitProgressNotifier extends Notifier<HabitProgressMap> {
+  static const String _cacheKey = 'goal_progress_cache';
+  static const Duration _cacheWriteDebounce = Duration(seconds: 2);
+
+  Timer? _cacheWriteTimer;
+  HabitProgressMap? _pendingCacheWrite;
+  bool _serverStateApplied = false;
+
+  @override
+  HabitProgressMap build() {
+    final dataMode = ref.watch(activeDataModeProvider);
+    ref.onDispose(_flushCache);
+
+    if (dataMode == AppDataMode.private) {
+      _loadFromPrivateStore();
+      return {};
+    }
+
+    _serverStateApplied = false;
+    ref.listen(authProvider, (previous, next) {
+      if (next.isLoggedIn && next.user != null) {
+        _syncFromSupabase();
+      } else if (!next.isLoggedIn) {
+        state = {};
+      }
+    });
+
+    final authState = ref.read(authProvider);
+    final user = authState.user;
+    if (authState.isLoggedIn && user != null) {
+      _seedFromCache(user.id);
+      _syncFromSupabase();
+    }
+    return {};
+  }
+
+  Future<void> _seedFromCache(String userId) async {
+    if (!await cacheSeedAllowed(userId)) return;
+    if (!ref.mounted ||
+        _serverStateApplied ||
+        supabase.auth.currentUser?.id != userId) {
+      return;
+    }
+    final cached = _loadFromCache();
+    if (cached.isEmpty) return;
+    state = cached;
+  }
+
+  Future<void> _loadFromPrivateStore() async {
+    try {
+      state = await ref.read(privateLocalDatabaseProvider).loadHabitProgress();
+    } catch (e, stack) {
+      AppLogger.error('[HabitProgress] Private load error', e, stack);
+      state = {};
+    }
+  }
+
+  HabitProgressMap _loadFromCache() {
+    final cache = ref.read(initialProgressProvider);
+    if (cache == '{}') return {};
+    try {
+      final Map<String, dynamic> jsonMap = jsonDecode(cache);
+      final HabitProgressMap result = {};
+      jsonMap.forEach((dateKey, habitsData) {
+        result[dateKey] = {
+          for (final e in (habitsData as Map).entries)
+            e.key as String: (e.value as num).toDouble(),
+        };
+      });
+      return result;
+    } catch (e, stack) {
+      AppLogger.error('[HabitProgress] Cache parsing error', e, stack);
+      return {};
+    }
+  }
+
+  void _saveToCache(HabitProgressMap progress) {
+    _pendingCacheWrite = progress;
+    _cacheWriteTimer?.cancel();
+    _cacheWriteTimer = Timer(_cacheWriteDebounce, _flushCache);
+  }
+
+  void _flushCache() {
+    _cacheWriteTimer?.cancel();
+    _cacheWriteTimer = null;
+    final progress = _pendingCacheWrite;
+    if (progress == null) return;
+    _pendingCacheWrite = null;
+    unawaited(_writeCache(jsonEncode(progress), isEmpty: progress.isEmpty));
+  }
+
+  Future<void> _writeCache(String blob, {required bool isEmpty}) async {
+    await SecureStorageUtils.tryWrite(
+      _cacheKey,
+      blob,
+      context: '[HabitProgress] cache',
+    );
+    if (isEmpty) return;
+    final userId = supabase.auth.currentUser?.id;
+    if (userId != null) await rememberCacheOwner(userId);
+  }
+
+  Future<void> _syncFromSupabase() async {
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) return;
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+    try {
+      final newProgress = await fetchGoalProgressPaginated((offset, limit) async {
+        final page = await supabase
+            .from('goal_progress')
+            .select('goal_id, date, amount')
+            .eq('user_id', user.id)
+            .order('date', ascending: true)
+            .order('id', ascending: true)
+            .range(offset, offset + limit - 1);
+        return List<Map<String, dynamic>>.from(page);
+      });
+      _serverStateApplied = true;
+      state = newProgress;
+      if (await cacheOverwriteAllowed(user.id,
+          isEmptyResult: newProgress.isEmpty)) {
+        _saveToCache(newProgress);
+      }
+    } catch (e, stack) {
+      AppLogger.error('[HabitProgress] Sync error', e, stack);
+    }
+  }
+
+  /// Records [amount] as the day's accumulated progress for [goalId], persists
+  /// it to the active backend, and moves the day's VERDICT to match by handing
+  /// the evaluated status to [HabitLogsNotifier.setDerivedStatus].
+  ///
+  /// [target] is the habit's target (needed to evaluate the verdict); [now] is
+  /// injectable for tests. A [amount] of zero removes the progress row and, for
+  /// most targets, clears the verdict too. Only ever writes a `'manual'` source
+  /// — a measured target's number never flows through here.
+  Future<void> setProgress({
+    required String dateKey,
+    required String goalId,
+    required double amount,
+    required HabitTarget target,
+    DateTime? now,
+  }) async {
+    final isPrivateMode =
+        ref.read(activeDataModeProvider) == AppDataMode.private;
+    final user = isPrivateMode ? null : supabase.auth.currentUser;
+    if (!isPrivateMode && user == null) return;
+
+    final clamped = amount < 0 ? 0.0 : amount;
+    final previousState = state;
+    final newState = <String, Map<String, double>>{
+      for (final e in state.entries) e.key: Map<String, double>.from(e.value),
+    };
+    if (clamped == 0) {
+      newState[dateKey]?.remove(goalId);
+      if (newState[dateKey]?.isEmpty ?? false) newState.remove(dateKey);
+    } else {
+      (newState[dateKey] ??= <String, double>{})[goalId] = clamped;
+    }
+    state = newState;
+
+    try {
+      if (isPrivateMode) {
+        if (clamped == 0) {
+          await ref
+              .read(privateLocalDatabaseProvider)
+              .deleteHabitProgress(goalId: goalId, date: dateKey);
+        } else {
+          await ref.read(privateLocalDatabaseProvider).setHabitProgress(
+                goalId: goalId,
+                date: dateKey,
+                amount: clamped,
+                source: TargetFillSource.manual.wireName,
+              );
+        }
+      } else {
+        _saveToCache(newState);
+        if (clamped == 0) {
+          await supabase
+              .from('goal_progress')
+              .delete()
+              .eq('goal_id', goalId)
+              .eq('date', dateKey);
+        } else {
+          await supabase.from('goal_progress').upsert({
+            // The SAME deterministic id the private store mints
+            // (PrivateDbSchema.goalProgressId) — inlined rather than importing
+            // evolve_sync into the provider for one pure string. Kept identical
+            // on purpose: a divergent spelling would let the two backends mint
+            // different ids for one habit-day and defeat the whole point.
+            'id': '$goalId:$dateKey',
+            'user_id': user!.id,
+            'goal_id': goalId,
+            'date': dateKey,
+            'amount': clamped,
+            'source': TargetFillSource.manual.wireName,
+          }, onConflict: 'goal_id, date');
+        }
+      }
+    } catch (e, stack) {
+      AppLogger.error('[HabitProgress] setProgress error', e, stack);
+      state = previousState; // roll back the optimistic update
+      if (!isPrivateMode) _saveToCache(previousState);
+      return;
+    }
+
+    // Move the verdict to match the new number. "Today" is not a closed period,
+    // so an atLeast day flips to done the moment the target is reached while a
+    // limit day stays pending (no row) until it closes; a past day resolves.
+    final parsedDate = DateTime.tryParse(dateKey);
+    final over = parsedDate == null
+        ? false
+        : periodIsOver(target.period, parsedDate, now ?? DateTime.now());
+    final verdict = evaluateTarget(
+      target: target,
+      progress: clamped,
+      periodIsOver: over,
+    );
+    await ref.read(habitLogsProvider.notifier).setDerivedStatus(
+          goalId: goalId,
+          dateKey: dateKey,
+          status: verdict.logStatus,
+        );
+  }
+
+  /// End-of-day resolution for manual targets: materialises the `goal_logs`
+  /// verdict for every CLOSED day whose live-derived verdict never caught up —
+  /// above all a limit habit's quiet days, which are successes only knowable
+  /// once the day is over. Call on foreground; a no-op when there are no manual
+  /// targets or nothing changed.
+  ///
+  /// Reuses [setProgress] as the applier (one write path), so each corrected day
+  /// re-derives and persists exactly as a live edit would, streaks included.
+  /// [now] is injectable for tests.
+  Future<void> reconcileManualTargets({DateTime? now}) async {
+    final today = now ?? DateTime.now();
+    final logs = ref.read(habitLogsProvider);
+    final changes = <TargetReconcileChange>[];
+    for (final goal in ref.read(goalsProvider)) {
+      final target = goal.target;
+      // Only own MANUAL targets: a projected verification rule is resolved by the
+      // reconcile pass, not here.
+      if (target == null || !target.isUserEnterable) continue;
+      changes.addAll(reconcileManualTargetDays(
+        goalId: goal.id,
+        target: target,
+        today: today,
+        start: goal.startDate,
+        isScheduled: goal.isScheduledOn,
+        progressFor: (dateKey) => state[dateKey]?[goal.id],
+        statusFor: (dateKey) => logs[dateKey]?[goal.id],
+      ));
+    }
+    if (changes.isEmpty) return;
+
+    // Sequential: each setProgress recomputes the streak from the running state,
+    // so applying in date order builds streaks correctly rather than racing.
+    final byGoal = {for (final g in ref.read(goalsProvider)) g.id: g};
+    for (final change in changes) {
+      final target = byGoal[change.goalId]?.target;
+      if (target == null) continue;
+      await setProgress(
+        dateKey: change.dateKey,
+        goalId: change.goalId,
+        amount: change.amount,
+        target: target,
+        now: today,
+      );
+    }
+  }
+
+  void clearAll() {
+    state = {};
+    if (ref.read(activeDataModeProvider) != AppDataMode.private) {
+      _saveToCache({});
+    }
+  }
+}
+
+final habitProgressProvider =
+    NotifierProvider<HabitProgressNotifier, HabitProgressMap>(
+  HabitProgressNotifier.new,
 );
 
 final habitStatsProvider = FutureProvider<List<Map<String, dynamic>>>((

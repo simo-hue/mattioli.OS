@@ -19,21 +19,52 @@ import 'verification_providers.dart';
 
 // ── Pure builders (unit-tested in isolation) ────────────────────────────────
 
+/// `max(startDate, verifyEffectiveFrom)` — the forward-only rule-edit anchor
+/// (D10). Null `edited` (pre-v7 habits, or rules not yet re-stamped) ⇒
+/// `startDate`. Clamped so a stray earlier edit-date can never pull evaluation
+/// before the habit's own start.
+DateTime _ruleEffectiveFrom(DateTime startDate, DateTime? edited) {
+  if (edited == null) return startDate;
+  return edited.isAfter(startDate) ? edited : startDate;
+}
+
 /// The verifiable goals to reconcile, honoring the per-provider feature flags
-/// and skipping manual habits. `effectiveFrom` is the goal's start date
-/// (forward-only rule edits would move this once edit-dates are tracked, D10);
+/// and skipping manual habits. `effectiveFrom` is `max(startDate,
+/// verifyEffectiveFrom)` — the forward-only rule-edit anchor (D10): reconcile
+/// never rewrites days before the current rule took effect. A null
+/// `verifyEffectiveFrom` (a habit that predates the v7 column, or one not yet
+/// re-stamped) falls back to `startDate`, preserving the pre-D10 behavior.
 /// `frequency_days` becomes the scheduled-days set (D6).
 List<VerifiableGoal> verifiableGoalsFrom(
   List<Goal> goals, {
   required bool healthKitEnabled,
   required bool screenTimeAppsEnabled,
   required bool screenTimeTotalEnabled,
+  bool compoundEnabled = false,
   String? Function(String goalId)? screenTimeSelectionFor,
 }) {
   final out = <VerifiableGoal>[];
   for (final g in goals) {
     final rule = g.verificationRule;
     if (rule == null) continue;
+
+    // Compound habits (Q1–Q5): every condition is HealthKit, so gate on both the
+    // compound flag and HealthKit. Skipped entirely when either is off — e.g. a
+    // compound goal synced from a device where the feature is live must not
+    // half-verify here. No Screen Time machinery applies.
+    if (g.isCompoundVerified) {
+      if (!compoundEnabled || !healthKitEnabled) continue;
+      out.add(VerifiableGoal(
+        goalId: g.id,
+        rule: rule,
+        additionalConditions: g.additionalConditions ?? const [],
+        join: g.verificationJoin ?? VerificationJoin.or,
+        effectiveFrom: _ruleEffectiveFrom(g.startDate, g.verifyEffectiveFrom),
+        activeWeekdays: g.frequencyDays?.toSet() ?? const {},
+      ));
+      continue;
+    }
+
     if (rule.isHealthKit && !healthKitEnabled) continue;
     if (rule.isScreenTime) {
       // Per-template gating so Mode A can be live while Mode B stays dark. An
@@ -57,7 +88,7 @@ List<VerifiableGoal> verifiableGoalsFrom(
     out.add(VerifiableGoal(
       goalId: g.id,
       rule: rule,
-      effectiveFrom: g.startDate,
+      effectiveFrom: _ruleEffectiveFrom(g.startDate, g.verifyEffectiveFrom),
       activeWeekdays: g.frequencyDays?.toSet() ?? const {},
       screenTimeSelectionMissing: selectionMissing,
     ));
@@ -113,6 +144,7 @@ final couldNotVerifyDaysProvider =
     healthKitEnabled: VerificationConfig.healthKitEnabled,
     screenTimeAppsEnabled: VerificationConfig.screenTimeAppsEnabled,
     screenTimeTotalEnabled: VerificationConfig.screenTimeTotalEnabled,
+    compoundEnabled: VerificationConfig.compoundVerificationEnabled,
     screenTimeSelectionFor: (id) =>
         ref.watch(screenTimeSelectionsProvider)[id]?.blob,
   );
@@ -425,6 +457,7 @@ Future<ReconcileReport> runVerificationReconcile(WidgetRef ref) async {
     healthKitEnabled: VerificationConfig.healthKitEnabled,
     screenTimeAppsEnabled: VerificationConfig.screenTimeAppsEnabled,
     screenTimeTotalEnabled: VerificationConfig.screenTimeTotalEnabled,
+    compoundEnabled: VerificationConfig.compoundVerificationEnabled,
     screenTimeSelectionFor: (id) =>
         ref.read(screenTimeSelectionsProvider)[id]?.blob,
   );

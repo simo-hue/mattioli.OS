@@ -75,6 +75,15 @@ CREATE TABLE public.goals (
     verify_comparator text,
     verify_threshold numeric,
     verify_unit text,
+    -- Forward-only rule-edit anchor (private schema v7): the day the current
+    -- verification rule took effect. NULL => fall back to start_date.
+    verify_effective_from date,
+    -- Compound verifiable habits (v8): JSON {v,op,conditions:[...]} joining 2-3
+    -- conditions. When set, the flat verify_* columns above are NULL.
+    verify_conditions text,
+    -- Quantitative target (v9): JSON {v,src,dir,per,agg,amount,unit,step,input}
+    -- (package:evolve_targets). NULL => ordinary boolean habit.
+    target text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -94,6 +103,29 @@ CREATE TABLE public.goal_logs (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT goal_logs_goal_id_date_key UNIQUE (goal_id, date)
 );
+
+--
+-- Table: public.goal_progress
+--
+-- One accumulated progress number per habit-day for quantitative habits.
+-- `goal_logs` stays the VERDICT record; this table is the raw number, so a
+-- partially-completed day renders without entering any completion-rate
+-- denominator. `id` is deterministic ('<goal_id>:<date>') so two devices cannot
+-- mint rival rows for one habit-day.
+--
+CREATE TABLE public.goal_progress (
+    id text NOT NULL PRIMARY KEY,
+    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    goal_id uuid REFERENCES public.goals(id) ON DELETE CASCADE NOT NULL,
+    date date NOT NULL,
+    amount numeric NOT NULL,
+    source text NOT NULL DEFAULT 'manual',
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT goal_progress_goal_id_date_key UNIQUE (goal_id, date)
+);
+
+CREATE INDEX idx_goal_progress_user_date ON public.goal_progress (user_id, date DESC);
 
 --
 -- Enum: public.long_term_goal_type
@@ -123,6 +155,17 @@ CREATE TABLE public.long_term_goals (
     week_number integer CHECK (week_number >= 1 AND week_number <= 53),
     quarter integer CHECK (quarter >= 1 AND quarter <= 4),
     color text DEFAULT null,
+    -- Cumulative numeric macro goals (private schema v10). NULL target_amount =>
+    -- an ordinary boolean macro goal. Progress is DERIVED (summed from the
+    -- linked habit's goal_progress over this goal's period) when linked_goal_id
+    -- is set, else STORED in progress_amount. target_unit is a TargetUnit wire
+    -- name (count/minutes/hours/kilocalories/kilometers), unconstrained so a
+    -- newer client's unit round-trips. linked_goal_id is ON DELETE SET NULL:
+    -- deleting the linked habit un-links (never deletes) this goal.
+    target_amount numeric,
+    target_unit text,
+    progress_amount numeric,
+    linked_goal_id uuid REFERENCES public.goals(id) ON DELETE SET NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -147,6 +190,7 @@ ALTER TABLE public.reading_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.goals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.goal_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.goal_progress ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.long_term_goals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.goal_category_settings ENABLE ROW LEVEL SECURITY;
 
@@ -174,6 +218,12 @@ CREATE POLICY "Users can insert their own goal logs" ON public.goal_logs FOR INS
 CREATE POLICY "Users can update their own goal logs" ON public.goal_logs FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete their own goal logs" ON public.goal_logs FOR DELETE USING (auth.uid() = user_id);
 
+-- goal_progress
+CREATE POLICY "Users can view their own goal progress" ON public.goal_progress FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert their own goal progress" ON public.goal_progress FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their own goal progress" ON public.goal_progress FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own goal progress" ON public.goal_progress FOR DELETE USING (auth.uid() = user_id);
+
 -- long_term_goals
 CREATE POLICY "Users can view their own long term goals" ON public.long_term_goals FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert their own long term goals" ON public.long_term_goals FOR INSERT WITH CHECK (auth.uid() = user_id);
@@ -191,6 +241,7 @@ CREATE TRIGGER update_reading_logs_updated_at BEFORE UPDATE ON public.reading_lo
 CREATE TRIGGER update_user_settings_updated_at BEFORE UPDATE ON public.user_settings FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_goals_updated_at BEFORE UPDATE ON public.goals FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_goal_logs_updated_at BEFORE UPDATE ON public.goal_logs FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_goal_progress_updated_at BEFORE UPDATE ON public.goal_progress FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_long_term_goals_updated_at BEFORE UPDATE ON public.long_term_goals FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_goal_category_settings_updated_at BEFORE UPDATE ON public.goal_category_settings FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 

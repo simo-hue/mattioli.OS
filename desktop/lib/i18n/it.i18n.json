@@ -1,4 +1,13 @@
 {
+  "macroTargets": {
+    "sectionTitle": "Obiettivo numerico",
+    "none": "Nessuno",
+    "amountLabel": "Valore obiettivo",
+    "linkLabel": "Collega un'abitudine",
+    "manual": "Manuale",
+    "unitCount": "conteggio",
+    "reached": "Raggiunto"
+  },
   "auth": {
     "continuePrivately": "Continua in modalità privata su questo Mac",
     "signIn": "Accedi",
@@ -111,7 +120,8 @@
       "delete": "Elimina",
       "edit": "Modifica",
       "pick": "Scegli",
-      "gotIt": "Ho capito"
+      "gotIt": "Ho capito",
+      "done": "Fatto"
     },
     "months": [
       "Gennaio",
@@ -1076,6 +1086,7 @@
     "windowsScheduling": "Windows pianifica la prossima occorrenza a ogni avvio.",
     "morningBody": "Rivedi le abitudini di oggi e scegli da dove iniziare.",
     "habitReminderBody": "È il momento di completare la tua abitudine.",
+    "limitReminderBody": "Stai rimanendo entro il tuo limite oggi? Fai un controllo quando puoi.",
     "eveningBody": "Consolida la giornata e aggiorna i progressi."
   },
   "biometricGate": {
@@ -1335,5 +1346,40 @@
     "footerOpen": "apri",
     "footerMenu": "menu",
     "footerClose": "chiudi"
+  },
+  "targets": {
+    "sectionTitle": "Obiettivo",
+    "none": "Semplice",
+    "atLeastLabel": "Raggiungi",
+    "atMostLabel": "Resta sotto",
+    "presets": {
+      "countDaily": {
+        "label": "Conteggio",
+        "description": "Fallo un certo numero di volte al giorno."
+      },
+      "durationDaily": {
+        "label": "Durata",
+        "description": "Dedica un certo numero di minuti al giorno."
+      },
+      "limitCountDaily": {
+        "label": "Limite",
+        "description": "Resta sotto un certo numero ogni giorno."
+      },
+      "limitDurationDaily": {
+        "label": "Limite di tempo",
+        "description": "Resta sotto un certo numero di minuti al giorno."
+      }
+    },
+    "units": {
+      "min": "min",
+      "hour": "h",
+      "kcal": "kcal",
+      "km": "km"
+    },
+    "entry": {
+      "keepGoing": "Continua così",
+      "withinLimit": "Entro il limite",
+      "overLimit": "Oltre il limite"
+    }
   }
 }

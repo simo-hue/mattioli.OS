@@ -1,4 +1,13 @@
 {
+  "macroTargets": {
+    "sectionTitle": "هدف رقمي",
+    "none": "بدون",
+    "amountLabel": "القيمة المستهدفة",
+    "linkLabel": "الربط بعادة",
+    "manual": "يدوي",
+    "unitCount": "عدد",
+    "reached": "تم الوصول"
+  },
   "auth": {
     "continuePrivately": "المتابعة في الوضع الخاص على هذا الـ Mac",
     "signIn": "تسجيل الدخول",
@@ -111,7 +120,8 @@
       "delete": "حذف",
       "edit": "تعديل",
       "pick": "اختيار",
-      "gotIt": "حسناً"
+      "gotIt": "حسناً",
+      "done": "تم"
     },
     "months": [
       "يناير",
@@ -1076,6 +1086,7 @@
     "windowsScheduling": "يجدول Windows الحدث التالي عند كل تشغيل.",
     "morningBody": "راجع عادات اليوم واختر من أين تبدأ.",
     "habitReminderBody": "حان وقت إتمام عادتك.",
+    "limitReminderBody": "هل تبقى ضمن حدّك اليوم؟ تفقّد الأمر عندما تستطيع.",
     "eveningBody": "اختم يومك وحدّث تقدّمك."
   },
   "biometricGate": {
@@ -1335,5 +1346,40 @@
     "footerOpen": "فتح",
     "footerMenu": "قائمة",
     "footerClose": "إغلاق"
+  },
+  "targets": {
+    "sectionTitle": "الهدف",
+    "none": "بسيط",
+    "atLeastLabel": "بلوغ",
+    "atMostLabel": "ابقَ تحت",
+    "presets": {
+      "countDaily": {
+        "label": "عدد",
+        "description": "قم به عددًا محددًا من المرات يوميًا."
+      },
+      "durationDaily": {
+        "label": "المدة",
+        "description": "اقضِ عددًا محددًا من الدقائق يوميًا."
+      },
+      "limitCountDaily": {
+        "label": "حد",
+        "description": "ابقَ تحت عدد محدد كل يوم."
+      },
+      "limitDurationDaily": {
+        "label": "حد زمني",
+        "description": "ابقَ تحت عدد محدد من الدقائق يوميًا."
+      }
+    },
+    "units": {
+      "min": "د",
+      "hour": "س",
+      "kcal": "سعرة",
+      "km": "كم"
+    },
+    "entry": {
+      "keepGoing": "استمر",
+      "withinLimit": "ضمن حدك",
+      "overLimit": "تجاوزت حدك"
+    }
   }
 }

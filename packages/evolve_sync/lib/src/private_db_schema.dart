@@ -30,7 +30,46 @@ class PrivateDbSchema {
   ///   record under row-level last-write-wins: changing accent on one device and
   ///   language on the other inside a sync window silently reverted one of them.
   ///   Per-key records make that structurally impossible.
-  static const int version = 6;
+  /// - v7: add `goals.verify_effective_from` — the day the goal's current
+  ///   verification rule took effect (D10, forward-only rule edits). Nullable;
+  ///   null ⇒ fall back to `start_date`, so habits that predate this column keep
+  ///   their existing behavior until the rule is next edited. Reconcile never
+  ///   rewrites days before this date, so editing a threshold no longer silently
+  ///   re-derives recent history.
+  /// - v8: add `goals.verify_conditions` — a JSON `{v,op,conditions:[...]}`
+  ///   joining 2–3 conditions for a compound verifiable habit (steps OR/AND
+  ///   exercise, …). When set, the flat `verify_*` columns are NULL, so a
+  ///   pre-compound client reads the habit as manual and never mis-verifies it.
+  ///   Null ⇒ an ordinary single-rule or manual habit (the flat columns rule).
+  /// - v9: quantitative habit targets. Adds `goals.target` (a versioned JSON
+  ///   `{v,src,dir,per,agg,amount,unit,step,input}` envelope — see
+  ///   `package:evolve_targets`) and the new `goal_progress` table holding ONE
+  ///   accumulated number per habit-day.
+  ///
+  ///   Progress deliberately does NOT live on `goal_logs`. Two hard reasons:
+  ///   `goal_logs.status` is CHECK-constrained to ('done','missed','skipped') in
+  ///   both backends, so a part-done day has no honest status to carry — and
+  ///   `goal_logs.value` is nulled by three separate guards, one of which
+  ///   (mobile's REPLACE-based setHabitLog) clears it intentionally on every
+  ///   manual toggle. Keeping progress in its own table means `goal_logs` stays
+  ///   exactly what it is — the VERDICT record — so all 11 Supabase analytics
+  ///   objects, both Dart mirrors, every heatmap and every older client keep
+  ///   working untouched, and a half-finished day stays out of every rate
+  ///   denominator while still rendering its ring.
+  /// - v10: cumulative numeric macro goals. Adds four nullable columns to
+  ///   `long_term_goals`: `target_amount` (the number to reach), `target_unit`
+  ///   (a `TargetUnit` wire name — count/minutes/…), `progress_amount` (the
+  ///   STORED value for a manual-entry numeric goal) and `linked_goal_id` (the
+  ///   habit whose daily `goal_progress` feeds this goal, **ON DELETE SET
+  ///   NULL**). Null `target_amount` ⇒ today's ordinary boolean macro goal, so
+  ///   every pre-v10 row reads unchanged. Progress is DERIVED (summed from the
+  ///   linked habit over the goal's period) when `linked_goal_id` is set, and
+  ///   STORED (`progress_amount`) otherwise. SET NULL rather than CASCADE so
+  ///   deleting the linked habit un-links the goal instead of destroying it; the
+  ///   delete path first snapshots the derived total into `progress_amount` so a
+  ///   "500 km" goal that reached 320 keeps showing 320 as a now-manual value.
+  ///   Unconstrained (like `verify_*`/`target`) so a future unit round-trips.
+  static const int version = 10;
 
   /// The user-data tables whose rows sync to iCloud. Each gets dirty/tombstone
   /// triggers that maintain [syncStateTable]. (Order matters for nothing here,
@@ -39,6 +78,7 @@ class PrivateDbSchema {
     'profiles',
     'goals',
     'goal_logs',
+    'goal_progress',
     'long_term_goals',
     'daily_moods',
     'goal_category_settings',
@@ -180,6 +220,18 @@ class PrivateDbSchema {
     if (oldVersion < 6) {
       await _upgradeToV6(db);
     }
+    if (oldVersion < 7) {
+      await _upgradeToV7(db);
+    }
+    if (oldVersion < 8) {
+      await _upgradeToV8(db);
+    }
+    if (oldVersion < 9) {
+      await _upgradeToV9(db);
+    }
+    if (oldVersion < 10) {
+      await _upgradeToV10(db);
+    }
   }
 
   /// Fail closed on a schema downgrade. With NO onDowngrade, sqflite's default
@@ -228,6 +280,177 @@ CREATE TABLE user_settings (
   UNIQUE(user_id, key)
 )
 ''';
+
+  // ── v10 migration ─────────────────────────────────────────────────────────
+
+  /// The four columns v10 adds to `long_term_goals`, in DDL form. Declared once
+  /// so the fresh-install DDL ([_longTermGoalsTableDdl]) and this additive
+  /// migration cannot drift on type or FK behaviour.
+  ///
+  /// `linked_goal_id` carries a `REFERENCES goals(id) ON DELETE SET NULL` clause
+  /// even when added via `ALTER TABLE ADD COLUMN` — SQLite permits a REFERENCES
+  /// clause on an added column precisely because its default is NULL, so no
+  /// existing row can violate it. SET NULL (not CASCADE): deleting the linked
+  /// habit un-links the goal, it does not delete it.
+  static const List<String> _macroTargetColumnsDdl = [
+    'target_amount REAL',
+    'target_unit TEXT',
+    'progress_amount REAL',
+    'linked_goal_id TEXT REFERENCES goals(id) ON DELETE SET NULL',
+  ];
+
+  static Future<void> _upgradeToV10(DatabaseExecutor db) async {
+    // Cumulative numeric macro goals: four additive nullable columns on
+    // `long_term_goals`. Existing rows get NULL and read as ordinary boolean
+    // macro goals (null target_amount). Synced rows carry the columns
+    // automatically (the engine serializes whole rows), so no push/pull change.
+    //
+    // `long_term_goals` is a core table present since v1, so in the field it is
+    // always here. Guard for its absence anyway (like _upgradeToV5 guards
+    // sync_meta): a migration that ASSUMES its predecessor's side effects is
+    // exactly how an upgrade chain becomes unrecoverable — and ALTERing a missing
+    // table throws and would wedge every future open. When it is absent
+    // createCoreTables declares these columns inline, so the table is born with
+    // them and nothing is lost by skipping here.
+    final tables = await db.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+      ['long_term_goals'],
+    );
+    if (tables.isEmpty) return;
+
+    // Idempotent for the same version-round-trip reason as _upgradeToV4: a
+    // downgrade silently stamps user_version back, so a re-entered migration
+    // must be a harmless no-op rather than a "duplicate column name" that wedges
+    // every future open.
+    final existing = <String>{
+      for (final row in await db.rawQuery('PRAGMA table_info(long_term_goals)'))
+        row['name'] as String,
+    };
+    for (final col in _macroTargetColumnsDdl) {
+      if (existing.contains(col.split(' ').first)) continue;
+      await db.execute('ALTER TABLE long_term_goals ADD COLUMN $col');
+    }
+  }
+
+  // ── v9 migration ──────────────────────────────────────────────────────────
+
+  /// DDL for the per-habit-day progress table. Shared between [createCoreTables]
+  /// and the v9 upgrade so a fresh install and a migrated database cannot drift.
+  ///
+  /// `id` is DETERMINISTIC — `'<goal_id>:<date>'`, the same trick `user_settings`
+  /// uses. That is not cosmetic. With random ids, two devices logging progress
+  /// for the same habit-day mint two rows for one natural key, and the pull's
+  /// natural-key merge resolves that by DELETING the loser and tombstoning it.
+  /// A shared id makes the collision an ordinary row-level last-write-wins
+  /// instead: still lossy for simultaneous edits (see below), but never a
+  /// deletion, and never a tombstone that races back to the authoring device.
+  ///
+  /// `amount` is the total accumulated for the period so far, not a delta. The
+  /// engine is a whole-row last-write-wins with no column-aware merge, so two
+  /// devices incrementing the same day inside one sync window keep the later
+  /// write rather than summing — documented and accepted for v1; the increment
+  /// affordance is single-device by design.
+  ///
+  /// `source` is unconstrained by deliberate policy, matching `verify_provider`:
+  /// a fill source added by a newer client must round-trip through this device
+  /// rather than be rejected, because a rejected row is quarantined and the
+  /// user's number would simply vanish until they upgrade.
+  static const String _goalProgressTableDdl = '''
+CREATE TABLE goal_progress (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  goal_id TEXT NOT NULL REFERENCES goals(id) ON DELETE CASCADE,
+  date TEXT NOT NULL,
+  amount REAL NOT NULL,
+  source TEXT NOT NULL DEFAULT 'manual',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE(goal_id, date)
+)
+''';
+
+  static const List<String> _goalProgressIndexes = [
+    'CREATE INDEX idx_goal_progress_user_date ON goal_progress (user_id, date DESC)',
+  ];
+
+  /// The deterministic `goal_progress.id` for a habit-day. Declared HERE, beside
+  /// the DDL, so both apps and the sync layer cannot disagree about it — a
+  /// second spelling would reintroduce exactly the rival-row merge this format
+  /// exists to prevent.
+  static String goalProgressId(String goalId, String date) => '$goalId:$date';
+
+  static Future<void> _upgradeToV9(DatabaseExecutor db) async {
+    // Both halves are additive and independently idempotent, for the same
+    // version-round-trip reason as _upgradeToV4: a downgrade silently stamps
+    // user_version back, and a re-entered migration must be a harmless no-op
+    // rather than a "duplicate column name" that wedges every future open.
+    final existing = <String>{
+      for (final row in await db.rawQuery('PRAGMA table_info(goals)'))
+        row['name'] as String,
+    };
+    if (!existing.contains('target')) {
+      await db.execute('ALTER TABLE goals ADD COLUMN target TEXT');
+    }
+
+    final tables = await db.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+      ['goal_progress'],
+    );
+    if (tables.isEmpty) {
+      await db.execute(_goalProgressTableDdl);
+      for (final ddl in _goalProgressIndexes) {
+        await db.execute(ddl);
+      }
+      // `goal_progress` is in [syncedTables], so it needs the dirty/tombstone
+      // trigger set. Installed for THIS table alone — createSyncTriggers would
+      // fail re-creating the ones that already exist. Mirrors the v6 path that
+      // introduced `user_settings`, including the consequence that a peer still
+      // on v8 quarantines these records until it upgrades, at which point the
+      // `sync_meta.schema_version` increase re-fetches them.
+      await _createTriggersFor(db, 'goal_progress');
+    }
+  }
+
+  // ── v8 migration ──────────────────────────────────────────────────────────
+
+  static Future<void> _upgradeToV8(DatabaseExecutor db) async {
+    // Compound verifiable habits: one nullable JSON `verify_conditions` column on
+    // `goals`. Additive, so a plain ADD COLUMN; existing rows get NULL and read
+    // as single/manual via the flat verify_* columns — the compound-aware read
+    // path only prefers verify_conditions when it is present and valid. Synced
+    // rows carry it automatically (whole-row serialization), so no push/pull
+    // change. Idempotent for the same version-round-trip reason as _upgradeToV4.
+    final existing = <String>{
+      for (final row in await db.rawQuery('PRAGMA table_info(goals)'))
+        row['name'] as String,
+    };
+    if (existing.contains('verify_conditions')) return;
+    await db.execute('ALTER TABLE goals ADD COLUMN verify_conditions TEXT');
+  }
+
+  // ── v7 migration ──────────────────────────────────────────────────────────
+
+  static Future<void> _upgradeToV7(DatabaseExecutor db) async {
+    // Forward-only verification-rule edits (D10): one nullable `effective_from`
+    // date on `goals`. Additive, so a plain ADD COLUMN; existing rows get NULL,
+    // and the wiring treats NULL as `start_date` — so upgraded databases keep
+    // their current behavior until the rule is next edited (no surprise
+    // re-freezing of history). Synced rows carry it automatically (the engine
+    // serializes whole rows), so no push/pull code changes are required.
+    //
+    // Idempotent for the same reason as _upgradeToV4: a version round-trip (v7 →
+    // a downgrade silently stamps user_version to 6 → v7) re-enters this against
+    // a `goals` table that already has the column, and a bare ADD COLUMN would
+    // then raise "duplicate column name" and permanently fail every open.
+    final existing = <String>{
+      for (final row in await db.rawQuery('PRAGMA table_info(goals)'))
+        row['name'] as String,
+    };
+    if (existing.contains('verify_effective_from')) return;
+    await db.execute(
+      'ALTER TABLE goals ADD COLUMN verify_effective_from TEXT',
+    );
+  }
 
   static Future<void> _upgradeToV6(DatabaseExecutor db) async {
     // Idempotent: a version round-trip must not wedge every future open.
@@ -437,7 +660,20 @@ CREATE TABLE long_term_goals (
   category_key TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
-  category_id TEXT REFERENCES macro_goal_categories(id) ON DELETE SET NULL
+  category_id TEXT REFERENCES macro_goal_categories(id) ON DELETE SET NULL,
+  -- Cumulative numeric macro goals (v10). NULL target_amount ⇒ an ordinary
+  -- boolean macro goal (every row before v10). Progress is DERIVED (summed from
+  -- the linked habit's goal_progress over this goal's period) when
+  -- linked_goal_id is set, else STORED in progress_amount. target_unit is a
+  -- TargetUnit wire name (count/minutes/hours/kilocalories/kilometers), left
+  -- unconstrained so a newer client's unit round-trips. linked_goal_id is
+  -- ON DELETE SET NULL: deleting the linked habit un-links (does not delete)
+  -- this goal — the delete path snapshots the derived total into
+  -- progress_amount first so the accumulated value survives as a manual one.
+  target_amount REAL,
+  target_unit TEXT,
+  progress_amount REAL,
+  linked_goal_id TEXT REFERENCES goals(id) ON DELETE SET NULL
 )
 ''';
 
@@ -508,7 +744,21 @@ CREATE TABLE goals (
   verify_metric TEXT,
   verify_comparator TEXT,
   verify_threshold REAL,
-  verify_unit TEXT
+  verify_unit TEXT,
+  -- Forward-only rule edit anchor (v7): the day the current verification rule
+  -- took effect. NULL ⇒ fall back to start_date. Reconcile never rewrites days
+  -- before this date.
+  verify_effective_from TEXT,
+  -- Compound verifiable habits (v8): JSON {v,op,conditions:[...]} joining 2..3
+  -- conditions. When set, the flat verify_* columns above are NULL. NULL here ⇒
+  -- an ordinary single-rule or manual habit.
+  verify_conditions TEXT,
+  -- Quantitative target (v9): a versioned JSON envelope describing how much, of
+  -- what, over which period, in which direction, filled by whom. NULL ⇒ an
+  -- ordinary boolean habit, which is every habit that existed before v9.
+  -- Unconstrained for the same reason as verify_*: a newer client's axis value
+  -- must round-trip rather than be rejected. See `package:evolve_targets`.
+  target TEXT
 )
 ''');
 
@@ -526,6 +776,8 @@ CREATE TABLE goal_logs (
   UNIQUE(goal_id, date)
 )
 ''');
+
+    await db.execute(_goalProgressTableDdl);
 
     await db.execute(_longTermGoalsTableDdl);
 
@@ -580,6 +832,9 @@ CREATE TABLE macro_goal_categories (
     await db.execute(
       'CREATE INDEX idx_goal_logs_user_date ON goal_logs (user_id, date DESC)',
     );
+    for (final ddl in _goalProgressIndexes) {
+      await db.execute(ddl);
+    }
     for (final ddl in _longTermGoalsIndexes) {
       await db.execute(ddl);
     }

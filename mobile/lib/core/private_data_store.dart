@@ -2,6 +2,7 @@ import '../models/goal.dart';
 import '../models/macro_goal.dart';
 import '../models/daily_mood.dart';
 import 'import_merge_stats.dart';
+import 'macro_goal_calendar.dart';
 
 /// Abstraction over the on-device Private-mode store.
 ///
@@ -46,7 +47,42 @@ abstract interface class PrivateDataStore {
     required String date,
   });
 
+  /// Every `goal_progress` row for the local owner as `date -> goalId -> amount`
+  /// — the accumulated number for a quantitative habit-day. Parallel to
+  /// [loadHabitLogs] (which loads the verdict) and deliberately separate: a
+  /// partial day has a progress number but no log row, and the two tables are
+  /// read, written and synced independently.
+  Future<Map<String, Map<String, double>>> loadHabitProgress();
+
+  /// Upserts the accumulated [amount] for a habit-day. [source] is the fill
+  /// source's wire name (always `'manual'` in v1 — a measured target's number
+  /// comes from the verification pipeline, never from this table). Uses the
+  /// deterministic `goal_progress` id so two devices cannot mint rival rows.
+  Future<void> setHabitProgress({
+    required String goalId,
+    required String date,
+    required double amount,
+    String source,
+  });
+
+  /// Removes a habit-day's progress row (the number returned to zero, or the
+  /// habit's target was cleared). Separate from clearing the verdict — the
+  /// caller updates the `goal_logs` row through its own path.
+  Future<void> deleteHabitProgress({
+    required String goalId,
+    required String date,
+  });
+
   Future<List<MacroGoal>> loadMacroGoals();
+
+  /// Sum of a linked habit's `goal_progress.amount` over [range] (null ⇒ all
+  /// history) — the derived current progress of a LINKED cumulative macro goal.
+  /// The display path calls this for each linked numeric goal; the delete-time
+  /// snapshot uses the same underlying query, so the two can never disagree.
+  Future<double> linkedHabitProgressSum(
+    String habitId,
+    MacroGoalDateRange? range,
+  );
 
   Future<void> upsertMacroGoal(MacroGoal goal);
 

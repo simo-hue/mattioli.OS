@@ -11,6 +11,7 @@ library;
 export 'src/day_verdict.dart';
 export 'src/health_kit_bridge.dart';
 export 'src/screen_time_bridge.dart';
+export 'src/verification_conditions.dart';
 export 'src/verification_controller.dart';
 export 'src/verification_log_writer.dart';
 export 'src/verification_provider.dart';

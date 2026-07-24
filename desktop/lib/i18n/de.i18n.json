@@ -1,4 +1,13 @@
 {
+  "macroTargets": {
+    "sectionTitle": "Numerisches Ziel",
+    "none": "Keins",
+    "amountLabel": "Zielwert",
+    "linkLabel": "Mit einer Gewohnheit verknüpfen",
+    "manual": "Manuell",
+    "unitCount": "Anzahl",
+    "reached": "Erreicht"
+  },
   "auth": {
     "continuePrivately": "Privat auf diesem Mac fortfahren",
     "signIn": "Anmelden",
@@ -111,7 +120,8 @@
       "delete": "Löschen",
       "edit": "Bearbeiten",
       "pick": "Auswählen",
-      "gotIt": "Verstanden"
+      "gotIt": "Verstanden",
+      "done": "Fertig"
     },
     "months": [
       "Januar",
@@ -1076,6 +1086,7 @@
     "windowsScheduling": "Windows plant das nächste Vorkommen bei jedem Start.",
     "morningBody": "Sieh dir die heutigen Gewohnheiten an und wähle, wo du beginnst.",
     "habitReminderBody": "Zeit, deine Gewohnheit zu erledigen.",
+    "limitReminderBody": "Bleibst du heute innerhalb deines Limits? Sieh kurz nach, wenn du kannst.",
     "eveningBody": "Lass den Tag ausklingen und aktualisiere deinen Fortschritt."
   },
   "biometricGate": {
@@ -1335,5 +1346,40 @@
     "footerOpen": "öffnen",
     "footerMenu": "Menü",
     "footerClose": "schließen"
+  },
+  "targets": {
+    "sectionTitle": "Ziel",
+    "none": "Einfach",
+    "atLeastLabel": "Erreiche",
+    "atMostLabel": "Bleib unter",
+    "presets": {
+      "countDaily": {
+        "label": "Anzahl",
+        "description": "Erledige es eine bestimmte Anzahl pro Tag."
+      },
+      "durationDaily": {
+        "label": "Dauer",
+        "description": "Verbringe eine bestimmte Anzahl Minuten pro Tag."
+      },
+      "limitCountDaily": {
+        "label": "Limit",
+        "description": "Bleib täglich unter einer bestimmten Anzahl."
+      },
+      "limitDurationDaily": {
+        "label": "Zeitlimit",
+        "description": "Bleib täglich unter einer bestimmten Minutenzahl."
+      }
+    },
+    "units": {
+      "min": "Min.",
+      "hour": "Std.",
+      "kcal": "kcal",
+      "km": "km"
+    },
+    "entry": {
+      "keepGoing": "Weiter so",
+      "withinLimit": "Innerhalb des Limits",
+      "overLimit": "Über dem Limit"
+    }
   }
 }

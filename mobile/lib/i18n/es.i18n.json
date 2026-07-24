@@ -1,4 +1,13 @@
 {
+  "macroTargets": {
+    "sectionTitle": "Objetivo numérico",
+    "none": "Ninguno",
+    "amountLabel": "Valor objetivo",
+    "linkLabel": "Vincular un hábito",
+    "manual": "Manual",
+    "unitCount": "recuento",
+    "reached": "Alcanzado"
+  },
   "appTitle": "Evolve",
   "aiSistema": "IA Y SISTEMA",
   "suggerimentiAi": "Sugerencias de IA",
@@ -429,6 +438,9 @@
     "habitReminderMessage13": "Valora tu tiempo: es hora de \"{title}\".",
     "habitReminderMessage14": "Ponte a prueba nuevamente hoy con \"{title}\".",
     "habitReminderMessage15": "Sólo un pequeño esfuerzo para completar \"{title}\".",
+    "limitReminderMessage1": "¿Cómo va hoy tu límite de \"{title}\"?",
+    "limitReminderMessage2": "¿Te mantienes dentro de tu límite de \"{title}\" hoy?",
+    "limitReminderMessage3": "Revisa \"{title}\": cuida tu límite hoy.",
     "verificationHeader": "VERIFICACIÓN DE HÁBITOS",
     "verificationNudges": "Avisos de verificación",
     "verificationNudgesSubtitle": "Pídeme confirmar los hábitos que no pudimos verificar automáticamente",
@@ -1224,6 +1236,15 @@
     "couldNotVerifyTapToResolve": "No se pudo verificar — toca para resolver",
     "needsAppleWatch": "Requiere un Apple Watch para la verificación automática",
     "grantHealthAccess": "Continuar",
+    "compound": {
+      "anyOfThese": "Cualquiera de estas",
+      "allOfThese": "Todas estas",
+      "anyHelper": "Cuenta como hecho si se cumple al menos una.",
+      "allHelper": "Cuenta como hecho solo si se cumplen todas.",
+      "addCondition": "Añadir condición",
+      "addSheetTitle": "Añadir una condición",
+      "add": "Añadir"
+    },
     "templates": {
       "steps": "Pasos",
       "exerciseMinutes": "Minutos de ejercicio",
@@ -1300,5 +1321,40 @@
     "deniedNote": "El acceso a Tiempo de pantalla está desactivado. Para usarlo, abre Ajustes, Tiempo de pantalla y permite Evolve.",
     "manageHint": "Puedes cambiarlo o desactivarlo cuando quieras en la app Ajustes de iOS.",
     "enabledNote": "La verificación con Tiempo de pantalla está activada. Añade un hábito de Tiempo de pantalla para empezar."
+  },
+  "targets": {
+    "sectionTitle": "Objetivo",
+    "none": "Simple",
+    "atLeastLabel": "Alcanza",
+    "atMostLabel": "Mantente bajo",
+    "presets": {
+      "countDaily": {
+        "label": "Recuento",
+        "description": "Hazlo un número determinado de veces al día."
+      },
+      "durationDaily": {
+        "label": "Duración",
+        "description": "Dedica un número determinado de minutos al día."
+      },
+      "limitCountDaily": {
+        "label": "Límite",
+        "description": "Mantente por debajo de un número cada día."
+      },
+      "limitDurationDaily": {
+        "label": "Límite de tiempo",
+        "description": "Mantente bajo un número de minutos al día."
+      }
+    },
+    "units": {
+      "min": "min",
+      "hour": "h",
+      "kcal": "kcal",
+      "km": "km"
+    },
+    "entry": {
+      "keepGoing": "Sigue así",
+      "withinLimit": "Dentro de tu límite",
+      "overLimit": "Por encima de tu límite"
+    }
   }
 }

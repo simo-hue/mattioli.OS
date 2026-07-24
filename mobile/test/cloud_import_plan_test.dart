@@ -147,4 +147,46 @@ void main() {
     expect(p.stats.moods.added, 1);
     expect(p.stats.habits.updated, 0);
   });
+
+  test('verification columns (single + compound) survive the cloud plan', () {
+    // Regression: the cloud upsert row must carry the verification rule, or a
+    // cloud-mode import silently strips auto-verification from every habit.
+    final p = plan(
+      data: canonical(goals: [
+        {
+          'id': 'gsingle',
+          'title': 'Steps',
+          'color': '#3B82F6',
+          'start_date': '2026-01-01',
+          'updated_at': now,
+          'verify_provider': 'healthkit',
+          'verify_metric': 'steps',
+          'verify_comparator': 'gte',
+          'verify_threshold': 10000,
+          'verify_unit': 'count',
+          'verify_effective_from': '2026-06-15',
+        },
+        {
+          'id': 'gcompound',
+          'title': 'Move',
+          'color': '#3B82F6',
+          'start_date': '2026-01-01',
+          'updated_at': now,
+          // Compound: flat columns null, the JSON blob carries the conditions.
+          'verify_conditions':
+              '{"v":1,"op":"and","conditions":[{"provider":"healthkit","metric":"steps","comparator":"gte","threshold":10000,"unit":"count"},{"provider":"healthkit","metric":"exercise_minutes","comparator":"gte","threshold":30,"unit":"minutes"}]}',
+        },
+      ]),
+      replace: true,
+    );
+
+    final single = p.goals.firstWhere((g) => g['id'] == 'gsingle');
+    expect(single['verify_metric'], 'steps');
+    expect(single['verify_threshold'], 10000);
+    expect(single['verify_effective_from'], '2026-06-15');
+
+    final compound = p.goals.firstWhere((g) => g['id'] == 'gcompound');
+    expect(compound['verify_conditions'], isNotNull);
+    expect(compound['verify_provider'], isNull);
+  });
 }

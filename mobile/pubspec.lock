@@ -239,6 +239,13 @@ packages:
       relative: true
     source: path
     version: "1.0.0"
+  evolve_targets:
+    dependency: "direct main"
+    description:
+      path: "../packages/evolve_targets"
+      relative: true
+    source: path
+    version: "1.0.0"
   evolve_verification:
     dependency: "direct main"
     description:

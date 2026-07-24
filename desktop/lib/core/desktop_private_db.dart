@@ -423,6 +423,7 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
       orderBy: 'display_order ASC, created_at ASC',
     );
     final logs = await rows('goal_logs');
+    final progress = await rows('goal_progress');
     final macros = await rows('long_term_goals', orderBy: 'created_at ASC');
     final cats = await rows('macro_goal_categories', orderBy: 'created_at ASC');
     final moods = await rows('daily_moods');
@@ -466,6 +467,10 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
             'verify_comparator': g['verify_comparator'],
             'verify_threshold': g['verify_threshold'],
             'verify_unit': g['verify_unit'],
+            'verify_effective_from': g['verify_effective_from'],
+            'verify_conditions': g['verify_conditions'],
+            // Round-trip the quantitative target so a restore keeps it.
+            'target': g['target'],
           },
       ],
       'habitLogs': [
@@ -479,6 +484,20 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
             'created_at': l['created_at'],
             'updated_at': l['updated_at'],
             'streak': l['streak'],
+          },
+      ],
+      // Quantitative-habit daily progress numbers (v9), so a restore keeps the
+      // rings, not just the done/missed verdicts in habitLogs.
+      'habitProgress': [
+        for (final p in progress)
+          {
+            'id': p['id'],
+            'goal_id': p['goal_id'],
+            'date': p['date'],
+            'amount': p['amount'],
+            'source': p['source'],
+            'created_at': p['created_at'],
+            'updated_at': p['updated_at'],
           },
       ],
       'macroGoals': [
@@ -496,6 +515,12 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
             'category_id': g['category_id'],
             'created_at': g['created_at'],
             'updated_at': g['updated_at'],
+            // Cumulative numeric macro goals (v10) — round-tripped so a restore
+            // keeps a goal's numeric target, stored progress and linked habit.
+            'target_amount': g['target_amount'],
+            'target_unit': g['target_unit'],
+            'progress_amount': g['progress_amount'],
+            'linked_goal_id': g['linked_goal_id'],
           },
       ],
       'macroGoalCategories': [
@@ -1050,6 +1075,7 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
       // triggers queue a tombstone per row — deliberate: replace-mode deletions
       // must propagate to the other devices on the next sync.
       await txn.delete('goal_logs');
+      await txn.delete('goal_progress');
       await txn.delete('daily_moods');
       await txn.delete('long_term_goals');
       await txn.delete('macro_goal_categories');
@@ -1199,6 +1225,13 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
       final categoryId = (remapped != null && validCatIds.contains(remapped))
           ? remapped
           : null;
+      // Null a linked_goal_id whose habit is absent (would dangle the ON DELETE
+      // SET NULL foreign key and abort the insert).
+      final rawLinked = g['linked_goal_id'] as String?;
+      final linkedGoalId =
+          (rawLinked != null && knownGoalIds.contains(rawLinked))
+              ? rawLinked
+              : null;
       final existing = existingMacros[id];
       if (existing == null) {
         final rid = await txn.insert(
@@ -1208,6 +1241,7 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
             id,
             owner,
             categoryId,
+            linkedGoalId,
             (g['created_at'] as String?) ?? now,
             now,
           ),
@@ -1227,6 +1261,7 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
             id,
             owner,
             categoryId,
+            linkedGoalId,
             existing['created_at'] as String? ?? now,
             now,
           ),
@@ -1304,6 +1339,57 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
         }
       } else {
         stats.logs.unchanged++;
+      }
+    }
+
+    // ── Goal progress: identity by (goal_id, date), LWW — same shape as logs.
+    // Deterministic id (goalId:date). Orphans skipped for the FK. Folded in with
+    // no stats counter (a sub-detail, not a reported entity). ──
+    final existingProgress = replaceExisting
+        ? const <String, Map<String, Object?>>{}
+        : {
+            for (final r in await txn.query(
+              'goal_progress',
+              columns: ['id', 'goal_id', 'date', 'updated_at'],
+              where: 'user_id = ?',
+              whereArgs: [owner],
+            ))
+              '${r['goal_id']}|${r['date']}': r,
+          };
+
+    for (final p in _listOf(backupData['goal_progress'])) {
+      final goalId = p['goal_id'] as String?;
+      final date = p['date'] as String?;
+      if (goalId == null || date == null || !knownGoalIds.contains(goalId)) {
+        continue;
+      }
+      final key = '$goalId|$date';
+      final existing = existingProgress[key];
+      if (existing == null) {
+        await txn.insert('goal_progress', {
+          'id': '$goalId:$date',
+          'user_id': owner,
+          'goal_id': goalId,
+          'date': date,
+          'amount': p['amount'],
+          'source': p['source'] ?? 'manual',
+          'created_at': p['created_at'] ?? now,
+          'updated_at': p['updated_at'] ?? now,
+        }, conflictAlgorithm: ConflictAlgorithm.ignore);
+      } else if (incomingWins(
+        incoming: p['updated_at'] as String?,
+        existing: existing['updated_at'] as String?,
+      )) {
+        await txn.update(
+          'goal_progress',
+          {
+            'amount': p['amount'],
+            'source': p['source'] ?? 'manual',
+            'updated_at': p['updated_at'] ?? now,
+          },
+          where: 'id = ?',
+          whereArgs: [existing['id']],
+        );
       }
     }
 
@@ -1486,18 +1572,24 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
       'verify_comparator': g['verify_comparator'],
       'verify_threshold': g['verify_threshold'],
       'verify_unit': g['verify_unit'],
+      'verify_effective_from': g['verify_effective_from'],
+      'verify_conditions': g['verify_conditions'],
+      'target': g['target'],
       'created_at': createdAt,
       'updated_at': g['updated_at'] ?? updatedAt,
     };
   }
 
   /// Full `long_term_goals` row from a canonical backup record; [categoryId]
-  /// is the already-remapped (and FK-safe) category reference.
+  /// is the already-remapped (and FK-safe) category reference, and
+  /// [linkedGoalId] the already-validated linked-habit reference (null when the
+  /// habit is absent, since a dangling ref would abort the insert).
   static Map<String, Object?> _macroRow(
     Map<String, dynamic> g,
     String id,
     String owner,
     String? categoryId,
+    String? linkedGoalId,
     String createdAt,
     String updatedAt,
   ) {
@@ -1515,6 +1607,11 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
       'category_id': categoryId,
       'created_at': createdAt,
       'updated_at': g['updated_at'] ?? updatedAt,
+      // Cumulative numeric macro goals (v10).
+      'target_amount': g['target_amount'],
+      'target_unit': g['target_unit'],
+      'progress_amount': g['progress_amount'],
+      'linked_goal_id': linkedGoalId,
     };
   }
 

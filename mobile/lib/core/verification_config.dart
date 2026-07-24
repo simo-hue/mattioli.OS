@@ -49,5 +49,10 @@ abstract final class VerificationConfig {
   /// unaffected. When off: the "+ Add condition" UI is hidden and the reconcile
   /// wiring skips any compound goal synced from a device where it is on.
   /// Requires [healthKitEnabled] to do anything (every condition is HealthKit).
-  static const bool compoundVerificationEnabled = false;
+  ///
+  /// LIVE since 2026-07-24 (Phase 3 go-live). REQUIRES the queued Supabase
+  /// migrations (`verify_conditions`, `verify_effective_from`) applied FIRST —
+  /// with this true the Account-mode verify-column writes are no longer
+  /// flag-gated. See TO_SIMO_DO.md for the deploy order.
+  static const bool compoundVerificationEnabled = true;
 }

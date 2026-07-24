@@ -11,6 +11,10 @@
 /// exactly as the verification columns do. Only the UI is gated.
 abstract final class DesktopTargetsConfig {
   /// Master switch — gates the editor's target picker, the habit-row progress
-  /// ring, and the entry dialog. Kept `const` so the dark path tree-shakes.
-  static const bool enabled = false;
+  /// ring, and the entry dialog. Kept `const` so the disabled path tree-shakes.
+  ///
+  /// LIVE since 2026-07-24 (Phase 3 go-live), flipped together with mobile.
+  /// REQUIRES the queued Supabase migrations applied FIRST (the Account-mode
+  /// target write is no longer flag-gated). See TO_SIMO_DO.md for deploy order.
+  static const bool enabled = true;
 }

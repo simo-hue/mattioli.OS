@@ -429,6 +429,22 @@ block the merge, but review before flipping the flags live:
 - NOTE: the private schema is now **v11**. The v6→v11 chain still deploys to iOS +
       macOS TOGETHER (onDowngrade throws — no rollback). See `HABIT_CLASSES_PLAN.md` §5.
 
+## ⚠️ Habit classes — FLAGS ARE NOW ON IN CODE (2026-07-24, Phase 3)
+`TargetsConfig.enabled`, `DesktopTargetsConfig.enabled` and
+`VerificationConfig.compoundVerificationEnabled` are all **`true`** on `main`.
+That means **any build from this commit ships quantitative targets + compound
+verification LIVE**, and the Account-mode `target` / `verify_conditions` /
+`verify_effective_from` writes are **no longer flag-gated**. So before this build
+reaches ANY device or Supabase project (on-device QA included):
+- [ ] **Apply ALL queued Supabase migrations FIRST**, in order:
+      `20260723_add_goal_verify_effective_from`, `20260723_add_goal_verify_conditions`,
+      `20260724_add_goal_targets_and_progress`, `20260724_add_goal_target_effective_from`
+      (and `20260724_add_macro_goal_targets`, harmless — macro UI stays dark).
+      A pre-migration project will now reject target/compound edits (PGRST204).
+- [ ] **Deploy iOS + macOS together** on schema **v11** (`onDowngrade` throws — no
+      rollback). See `HABIT_CLASSES_PLAN.md` §5.
+- `MacroTargetsConfig` / `DesktopMacroTargetsConfig` remain **false** (macro deferred).
+
 ## Habit classes — class picker + i18n review (2026-07-24)
 - [ ] **Arabic (ar) native review** of the new `trackingMode` strings on BOTH apps
       (`title` / `checkbox` / `number` / `automatic`, plus desktop `automaticLocked`).

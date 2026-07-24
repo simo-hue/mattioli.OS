@@ -14,6 +14,12 @@
 abstract final class TargetsConfig {
   /// Master switch — gates the creation field, the progress ring / entry sheet
   /// on the day-details card, and (via the UI) whether a user can create a
-  /// target at all. Kept `const` so the dark path tree-shakes.
-  static const bool enabled = false;
+  /// target at all. Kept `const` so the disabled path tree-shakes.
+  ///
+  /// LIVE since 2026-07-24 (Phase 3 go-live). REQUIRES the queued Supabase
+  /// migrations (`goal_targets_and_progress`, `target_effective_from`) applied
+  /// FIRST — with this true the Account-mode target writes are no longer
+  /// flag-gated, so a pre-migration project would reject them. See TO_SIMO_DO.md
+  /// for the deploy order (migrations → v11 build → on-device QA → release).
+  static const bool enabled = true;
 }

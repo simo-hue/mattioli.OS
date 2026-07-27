@@ -20,7 +20,6 @@ import 'package:evolve_desktop/features/settings/application/desktop_synced_sett
 import 'package:evolve_desktop/features/settings/presentation/settings_page.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
-import 'package:evolve_sync/evolve_sync.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

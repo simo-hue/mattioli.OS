@@ -428,13 +428,11 @@ class _AuthDivider extends StatelessWidget {
 
 class _SocialAuthButton extends StatelessWidget {
   const _SocialAuthButton({
-    this.icon,
     this.imageAsset,
     required this.label,
     required this.onPressed,
   });
 
-  final IconData? icon;
   final String? imageAsset;
   final String label;
   final VoidCallback? onPressed;
@@ -461,9 +459,6 @@ class _SocialAuthButton extends StatelessWidget {
               children: [
                 if (imageAsset != null) ...[
                   Image.asset(imageAsset!, width: 24, height: 24),
-                  const SizedBox(width: 12),
-                ] else if (icon != null) ...[
-                  Icon(icon, size: 18, color: colors.foreground),
                   const SizedBox(width: 12),
                 ],
                 Text(

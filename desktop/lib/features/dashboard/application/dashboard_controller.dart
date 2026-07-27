@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
+import 'package:evolve_desktop/core/clock.dart';
 import 'package:evolve_desktop/core/streak_utils.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/macro_goal_calendar.dart';
@@ -21,6 +22,11 @@ final dashboardControllerProvider =
 
 class DashboardController extends Notifier<DashboardSnapshot> {
   DashboardRepository get _repository => ref.read(dashboardRepositoryProvider);
+
+  /// The app's clock. Defaults to `DateTime.now` (see core/clock.dart); tests
+  /// override it so the unawaited reconcile tail of [refresh] resolves days
+  /// against the same date the test asserts on.
+  DateTime _now() => ref.read(clockProvider)();
 
   /// Set once the notifier is torn down (data-mode switch, sign-out, test
   /// teardown). The manual-target reconcile is a fire-and-forget async tail of
@@ -70,7 +76,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
   }
 
   Future<void> toggleHabit(String id) async {
-    await toggleHabitForDay(id, DateTime.now());
+    await toggleHabitForDay(id, _now());
   }
 
   Future<void> toggleHabitForDay(String id, DateTime date) async {
@@ -185,7 +191,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     // done the moment the target is reached while a limit day stays pending; a
     // past day resolves. The mapping to a goal_logs status lives in one place
     // (TargetVerdict.logStatus).
-    final over = periodIsOver(target.period, date, now ?? DateTime.now());
+    final over = periodIsOver(target.period, date, now ?? _now());
     final verdict = evaluateTarget(
       target: target,
       progress: clamped,
@@ -257,7 +263,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
   /// so a Mac-primary user's limit habits must resolve here or they would look
   /// perpetually unlogged.
   Future<void> reconcileManualTargets({DateTime? now}) async {
-    final today = now ?? DateTime.now();
+    final today = now ?? _now();
     final changes = <TargetReconcileChange>[];
     for (final habit in state.habits) {
       final target = habit.target;
@@ -322,11 +328,11 @@ class DashboardController extends Notifier<DashboardSnapshot> {
         state: HabitState.pending,
         reminderTime: reminderTime,
         frequencyDays: _canonicalFrequencyDays(frequencyDays),
-        startDate: DateTime.now(),
+        startDate: _now(),
         target: target,
       ),
       previous: null,
-      today: DateTime.now(),
+      today: _now(),
     );
     state = state.copyWith(habits: [...state.habits, draft]);
     await _saveLocal();
@@ -382,7 +388,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
                       hasUnreadableTarget(habit.rawTargetBlob)),
             ),
             previous: previous,
-            today: DateTime.now(),
+            today: _now(),
           )
         else
           habit,
@@ -473,10 +479,10 @@ class DashboardController extends Notifier<DashboardSnapshot> {
   Future<void> updateCheckIn({required int mood, required int energy}) async {
     final checkIn = DailyCheckIn(mood: mood, energy: energy);
     final moods = Map<String, DailyCheckIn>.from(state.moods)
-      ..[dashboardDateKey(DateTime.now())] = checkIn;
+      ..[dashboardDateKey(_now())] = checkIn;
     state = state.copyWith(checkIn: checkIn, moods: moods);
     await _saveLocal();
-    await _syncRemote(() => _repository.saveCheckIn(DateTime.now(), checkIn));
+    await _syncRemote(() => _repository.saveCheckIn(_now(), checkIn));
   }
 
   Future<void> completeGoal(String id) async {
@@ -500,7 +506,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     String? targetUnit,
     String? linkedGoalId,
   }) async {
-    final now = DateTime.now();
+    final now = _now();
     final draft = DashboardGoal(
       id: _newLocalId(),
       title: title,
@@ -641,7 +647,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
       quarter: next.quarter,
       month: next.month,
       weekNumber: next.weekNumber,
-      createdAt: DateTime.now(),
+      createdAt: _now(),
     );
     await _createGoalOptimistically(draft);
   }
@@ -754,14 +760,14 @@ class DashboardController extends Notifier<DashboardSnapshot> {
   }
 
   bool _isToday(DateTime date) {
-    final now = DateTime.now();
+    final now = _now();
     return date.year == now.year &&
         date.month == now.month &&
         date.day == now.day;
   }
 
   bool _isCurrentWeek(DateTime date) {
-    final now = DateTime.now();
+    final now = _now();
     final monday = DateTime(
       now.year,
       now.month,
@@ -773,10 +779,10 @@ class DashboardController extends Notifier<DashboardSnapshot> {
   }
 
   _GoalPeriod _nextGoalPeriod(DashboardGoal goal) {
-    var year = goal.year ?? DateTime.now().year;
-    var month = goal.month ?? DateTime.now().month;
+    var year = goal.year ?? _now().year;
+    var month = goal.month ?? _now().month;
     var quarter = goal.quarter ?? ((month - 1) ~/ 3) + 1;
-    var weekNumber = goal.weekNumber ?? ((DateTime.now().day - 1) ~/ 7) + 1;
+    var weekNumber = goal.weekNumber ?? ((_now().day - 1) ~/ 7) + 1;
 
     switch (goal.type) {
       case GoalType.lifetime:

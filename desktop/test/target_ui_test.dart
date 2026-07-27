@@ -1,7 +1,6 @@
 // Desktop target UI: the create/edit preset picker (TargetField) and the
 // increment entry dialog (TargetEntryDialog) driving the real controller.
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
-import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/data/dashboard_repository.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/features/habits/presentation/target_entry_dialog.dart';
@@ -149,6 +148,10 @@ void main() {
         });
       }
 
+      // The documented replacement (RendererBinding.rootPipelineOwner) exposes
+      // no semanticsOwner in the test binding, so this stays until the
+      // semantics API settles.
+      // ignore: deprecated_member_use
       visit(tester.binding.pipelineOwner.semanticsOwner!.rootSemanticsNode!);
       expect(inc, isTrue);
       expect(dec, isTrue);

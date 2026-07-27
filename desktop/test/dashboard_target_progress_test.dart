@@ -5,6 +5,7 @@
 // repository, so no Supabase / private DB is touched.
 
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
+import 'package:evolve_desktop/core/clock.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/data/dashboard_repository.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
@@ -64,12 +65,20 @@ void main() {
   final count = TargetPresetCatalog.countDaily.targetWith(amount: 80, step: 20);
   final limit = TargetPresetCatalog.limitCountDaily.targetWith(amount: 1);
   final now = DateTime(2026, 7, 24);
-  const pastDay = '2026-07-10';
 
   (ProviderContainer, _RecordingRepository) build(DashboardHabit habit) {
     final repo = _RecordingRepository(_snapshotWith(habit));
     final container = ProviderContainer(
-      overrides: [dashboardRepositoryProvider.overrideWithValue(repo)],
+      overrides: [
+        dashboardRepositoryProvider.overrideWithValue(repo),
+        // Pin the clock. Without this the suite is a time bomb: building the
+        // controller fires an unawaited refresh(), whose tail fires an
+        // unawaited reconcileManualTargets() that this test never calls and so
+        // cannot pass `now:` to. That sweep read the real wall clock, agreed
+        // with [now] only on 2026-07-24, and from 2026-07-25 resolved 07-24 as
+        // a CLOSED day — overwriting the verdicts asserted below.
+        clockProvider.overrideWithValue(() => now),
+      ],
     );
     addTearDown(container.dispose);
     return (container, repo);

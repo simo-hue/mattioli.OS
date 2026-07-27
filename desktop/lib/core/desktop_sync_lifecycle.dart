@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:evolve_sync/evolve_sync.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

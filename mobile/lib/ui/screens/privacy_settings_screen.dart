@@ -704,9 +704,10 @@ class PrivacySettingsScreen extends ConsumerWidget {
       // file through normalizeBackup's lossless branch instead of its lossy
       // legacy-Map branch.
       //
-      // `select()` names no columns on purpose: the deployed table carries
-      // columns absent from schema.sql (e.g. `streak`, written on every cloud
-      // check-in), so an explicit list would silently drop whatever it omits.
+      // `select()` names no columns on purpose: an explicit list would silently
+      // drop whatever it omits, and the deployed table may legitimately run
+      // ahead of the checked-in snapshot. (`streak` was the concrete case; it is
+      // now declared in schema.sql.)
       //
       // Paged for the reason kGoalLogsSyncPageSize documents: a single
       // unbounded PostgREST select is capped by the project's db-max-rows and

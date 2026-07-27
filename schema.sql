@@ -84,6 +84,11 @@ CREATE TABLE public.goals (
     -- Quantitative target (v9): JSON {v,src,dir,per,agg,amount,unit,step,input}
     -- (package:evolve_targets). NULL => ordinary boolean habit.
     target text,
+    -- Local daily reminder, 'HH:MM' (NULL => no reminder). Written by BOTH apps
+    -- (Goal.toJson / DashboardHabit.toRemoteJson) and emitted UNCONDITIONALLY by
+    -- the cloud-restore upsert, so a project bootstrapped without this column
+    -- fails every habit write with PGRST204.
+    reminder_time text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -99,6 +104,12 @@ CREATE TABLE public.goal_logs (
     status text NOT NULL CHECK (status IN ('done', 'missed', 'skipped')),
     notes text,
     value numeric,
+    -- Signed run length at this day, recomputed client-side by computeStreak
+    -- (positive = consecutive 'done', negative = consecutive 'missed'). Written
+    -- on EVERY cloud check-in and read by the habit_stats view
+    -- (migrations/20260622_add_habit_stats_view.sql), which cannot be created
+    -- without it.
+    streak integer DEFAULT 0,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT goal_logs_goal_id_date_key UNIQUE (goal_id, date)
@@ -148,13 +159,35 @@ CREATE TABLE public.long_term_goals (
     id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
     user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     title text NOT NULL,
+    -- LEGACY, DEAD: residue of the retired src/ web client, kept only because
+    -- prod still carries it and dropping a live column buys nothing. NOTHING in
+    -- either Flutter app or any RPC reads or writes it — completion flows
+    -- through `status` below. Same posture as reading_logs / user_settings.
     is_completed boolean DEFAULT false NOT NULL,
+    -- The real completion state. Written by MacroGoal.toJson and filtered on by
+    -- get_macro_goals_stats + check_and_fail_expired_goals; mirrors the closed
+    -- Dart `GoalStatus` enum.
+    status text NOT NULL DEFAULT 'active'
+        CHECK (status IN ('active', 'completed', 'failed')),
     type public.long_term_goal_type NOT NULL,
     year integer,
     month integer CHECK (month >= 1 AND month <= 12),
+    -- Kept at 1..53 deliberately. The app writes a logical week-of-month (1..6,
+    -- see MacroGoal.weekNumber) and mobile_schema.sql declared 1..6, but the
+    -- private SQLite mirror pins 1..53 to match this file
+    -- (private_db_schema.dart). 1..53 accepts everything 1..6 does, so the wider
+    -- bound is the safe one to keep; tightening it could reject live rows.
     week_number integer CHECK (week_number >= 1 AND week_number <= 53),
     quarter integer CHECK (quarter >= 1 AND quarter <= 4),
     color text DEFAULT null,
+    -- Built-in category slug ('lavoro', 'salute', ...). Mutually exclusive in
+    -- practice with category_id, which points at a user-defined category.
+    category_key text,
+    -- User-defined category. The FK to public.macro_goal_categories is added by
+    -- migrations/20260727_complete_bootstrap_chain.sql, not here: that table is
+    -- created by a LATER migration (20260623_add_macro_goal_categories.sql), so
+    -- this file cannot reference it yet.
+    category_id uuid,
     -- Cumulative numeric macro goals (private schema v10). NULL target_amount =>
     -- an ordinary boolean macro goal. Progress is DERIVED (summed from the
     -- linked habit's goal_progress over this goal's period) when linked_goal_id

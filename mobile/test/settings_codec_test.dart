@@ -80,8 +80,8 @@ void main() {
     // settings the device is already showing, and three of those assignments
     // bypass `SettingsCodec` — which exists precisely so that an unparseable
     // value falls back instead of being invented. `profiles` has no CHECK
-    // constraint on any of them (mobile_schema.sql), so nothing upstream
-    // guarantees they parse.
+    // constraint on any of them (migrations/20260623_add_profiles.sql), so
+    // nothing upstream guarantees they parse.
     //
     // This is the LIVE site. The same shape in `_applySyncedSettings` is inert:
     // its base is always `_privateBaseSettings()` -> `_defaultSettings()`, whose

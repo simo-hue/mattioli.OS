@@ -945,13 +945,15 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
   ///
   /// Every value that has a [SettingsCodec] parser goes through it. For the
   /// three columns `profiles` does NOT constrain — `accent_color`,
-  /// `morning_brief_time`, `evening_review_time` (mobile_schema.sql:56, 84, 85,
-  /// none of which carries a CHECK) — a value the parser rejects leaves
-  /// [current] standing, because nothing upstream guarantees they parse and
-  /// inventing a value there destroys the user's.
+  /// `morning_brief_time`, `evening_review_time` (see
+  /// migrations/20260623_add_profiles.sql; none of the three carries a CHECK) —
+  /// a value the parser rejects leaves [current] standing, because nothing
+  /// upstream guarantees they parse and inventing a value there destroys the
+  /// user's.
   ///
   /// `theme_mode` is the exception and stays as it is: it DOES have a CHECK
-  /// (mobile_schema.sql:55) so it cannot arrive corrupt, and
+  /// (`theme_mode IN ('dark','light','system')`, same migration) so it cannot
+  /// arrive corrupt, and
   /// [SettingsCodec.normalizeThemeMode] has no "reject" answer by design — it
   /// folds anything unrecognised to `'system'`, exactly as [_applySyncedSettings]
   /// does. Routing it through the codec here only removes the last raw

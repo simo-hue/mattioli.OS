@@ -7,9 +7,31 @@ macOS) and BOTH sync modes (Account/Cloud + Private)._
 ---
 
 ## 1. Verified current state
-- All three "new habit" features are **built, committed (`main` == `origin/main`), and DARK** behind `const false` flags. That is the entire reason the creation UI is invisible — the flags tree‑shake the widgets out.
-- Committed private‑DB schema = **v10**. Last **deployed** build on devices = **v6**; the v7→v10 legs pass unit tests (evolve_sync 229 green) but have **never executed on a real SQLCipher file with real data**.
-- Flags today: `healthKitEnabled=true`, `screenTimeAppsEnabled=true` (verification LIVE); `compoundVerificationEnabled=false`, `TargetsConfig.enabled=false`, `MacroTargetsConfig.enabled=false` (dark).
+
+> **RE‑VERIFIED 2026‑07‑27.** The section below was written on 2026‑07‑24 and is
+> now WRONG in both of its load‑bearing claims. Phases 1–4 have since landed. Read
+> this box, not the struck‑through text.
+>
+> - Committed private‑DB schema = **v11**, not v10 (`PrivateDbSchema.version`).
+>   Phase 1 (`target_effective_from`) landed in `53a7a50`.
+> - The flags are **ON**, not dark: `TargetsConfig.enabled = true` (mobile),
+>   `DesktopTargetsConfig.enabled = true`, `compoundVerificationEnabled = true`.
+>   Only `MacroTargetsConfig.enabled` is still `false`.
+> - Phase 2 (class picker) is **implemented** — `EvolveSegmentedControl<HabitTrackingMode>`
+>   in `habit_management_modal.dart`, with mutually‑exclusive rendering and the
+>   `targets.trackingMode.*` i18n keys in all 5 locales.
+> - Phase 4 (CI) is **done**, and went further than planned — see §Phase 4.
+>
+> Consequence for sequencing: **Phase 0 was supposed to gate Phases 1–3 and did
+> not run.** The both‑flags‑on world it was written to de‑risk is therefore not a
+> pre‑ship hypothetical any more — it is live in committed code. Phase 0 is now a
+> post‑hoc audit of shipped behaviour, which raises its priority rather than
+> lowering it. Field devices are still on **v6**, so the v6→v11 chain remains
+> unexecuted against real encrypted data.
+
+~~- All three "new habit" features are **built, committed (`main` == `origin/main`), and DARK** behind `const false` flags. That is the entire reason the creation UI is invisible — the flags tree‑shake the widgets out.~~
+~~- Committed private‑DB schema = **v10**. Last **deployed** build on devices = **v6**; the v7→v10 legs pass unit tests (evolve_sync 229 green) but have **never executed on a real SQLCipher file with real data**.~~
+~~- Flags today: `healthKitEnabled=true`, `screenTimeAppsEnabled=true` (verification LIVE); `compoundVerificationEnabled=false`, `TargetsConfig.enabled=false`, `MacroTargetsConfig.enabled=false` (dark).~~
 
 ## 2. Scope (locked)
 - **IN:** compound OR/AND (condition‑level, HealthKit‑only); quantitative targets (count / duration / limit).

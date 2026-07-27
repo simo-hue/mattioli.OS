@@ -1636,6 +1636,27 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
       onConfigure: (db) async {
         await PrivateDbSchema.onConfigure(db);
         await db.execute('PRAGMA foreign_keys = ON;');
+        // QA diagnostic (visible in the in-app log viewer): the DB's stored
+        // schema version vs the code's target at open. `onConfigure` fires
+        // BEFORE onCreate/onUpgrade, so `stored` is the PRE-migration value — a
+        // Mac coming from v6 logs "stored=6, code=11" immediately before the
+        // v6→v11 chain runs, which is the only way to confirm from a shipped
+        // build which legs actually executed against real encrypted data.
+        //
+        // Mobile has carried this since the chain landed; desktop had not, which
+        // left the platform where schema problems are most likely (macOS ships
+        // independently of iOS, and users keep old .app bundles around) as the
+        // one with no way to report its own schema version.
+        try {
+          final rows = await db.rawQuery('PRAGMA user_version');
+          final stored = rows.isEmpty ? null : rows.first.values.first;
+          AppLogger.info(
+            '[PrivateDB] open: stored user_version=$stored, '
+            'code PrivateDbSchema.version=${PrivateDbSchema.version}',
+          );
+        } catch (_) {
+          // A diagnostic must never block opening the DB.
+        }
       },
       onCreate: PrivateDbSchema.onCreate,
       onUpgrade: PrivateDbSchema.onUpgrade,

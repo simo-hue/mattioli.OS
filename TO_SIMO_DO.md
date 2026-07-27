@@ -124,12 +124,17 @@ release build must carry schema v11 + the Supabase migrations applied.
       future enhancement, not a fix.
 
 ## Pre-existing test flakes surfaced during verification (NOT feature bugs)
-Two desktop test files intermittently fail under full-suite PARALLEL load and pass
-in isolation / on retry — independently confirmed as pre-existing, unrelated to the
-targets/macro-goal work:
+One remains. The second turned out not to be a flake at all — see below; that is worth
+remembering before filing the next one, because "passes in isolation, fails in the suite"
+is also exactly what an unguarded async tail looks like.
 - [ ] `desktop/test/evolve_controls_test.dart` — borderline pumpAndSettle timing on
       a few tap/render tests.
-- [ ] `desktop/test/subscription_entitlement_scope_test.dart` — a `purchases_flutter`
-      `MissingPluginException(setLogLevel)` platform-channel artifact under parallel
-      load (last touched by commit e87db2e, unrelated).
-      Worth a separate hardening pass (explicit pumps / channel mock / --concurrency).
+- [x] ~~`desktop/test/subscription_entitlement_scope_test.dart`~~ **FIXED 2026-07-27 —
+      and it was never a flake.** `DesktopRevenueCatConfig.appleApiKey` has a committed
+      `defaultValue`, so `isConfigured` is TRUE under `flutter test`, the RevenueCat gate
+      passes and `_configure()` really does call `Purchases.setLogLevel`, which throws
+      MissingPluginException. The throw was caught and logged — but the catch then wrote
+      `state` on a Ref the test had already disposed, and that is what failed. An
+      unguarded async tail, the same defect class as the reconcile date bomb, not a
+      parallel-load artifact. `refresh()` now checks `ref.mounted` after its awaits.
+      Three consecutive full-suite runs clean.

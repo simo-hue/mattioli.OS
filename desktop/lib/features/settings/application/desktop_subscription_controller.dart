@@ -267,6 +267,12 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
       // test`), the outer catch leaves the offline-first seeded isPro untouched
       // — the guarantee subscription_entitlement_scope_test pins.
       final customerInfo = await Purchases.getCustomerInfo();
+      // Several awaits have passed since this refresh began (configure, the
+      // offering fetch, the customer-info fetch), and refresh() is called
+      // fire-and-forget from build(). The notifier can therefore be gone by now
+      // — a data-mode switch, a sign-out, or simply a widget test finishing —
+      // and writing `state` on a disposed Ref throws.
+      if (!ref.mounted) return;
       state = state.copyWith(
         isLoading: false,
         isPro: _hasActiveProAccess(customerInfo),
@@ -275,6 +281,13 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
       await _persistProStatus(state.isPro);
     } catch (error, stack) {
       AppLogger.error('Unable to refresh subscription state', error, stack);
+      // Same guard on the failure path, and it is the one that actually bit:
+      // `Purchases.setLogLevel` throws MissingPluginException under
+      // `flutter test` (the RevenueCat key has a committed defaultValue, so
+      // `isConfigured` is true and the plugin IS reached), the catch ran after
+      // the test had disposed its container, and the resulting "Ref used after
+      // dispose" was misfiled for weeks as a parallel-load flake.
+      if (!ref.mounted) return;
       state = state.copyWith(
         isLoading: false,
         message: t.subscriptionCtrl.loadOffersFailed,

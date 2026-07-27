@@ -7,9 +7,16 @@
 // so these tests pin the direction it has to fail in: keep Pro for the account
 // that paid, never hand it to another.
 //
-// RevenueCat is unconfigured under `flutter test` (no API key dart-define), so
-// `refresh()` short-circuits in `_canUseRevenueCat()` and no plugin channel is
-// touched — the same shape as the offline case this guards.
+// NOTE, corrected 2026-07-27: the previous comment here claimed RevenueCat is
+// unconfigured under `flutter test` so no plugin channel is touched. That was
+// FALSE and it hid a real defect. `DesktopRevenueCatConfig.appleApiKey` has a
+// committed `defaultValue`, so `isConfigured` is true, `_canUseRevenueCat()`
+// passes, and `_configure()` really does call `Purchases.setLogLevel` — which
+// throws MissingPluginException under test. The throw was caught and logged, but
+// the catch then wrote `state` on a Ref this test had already disposed, and THAT
+// is what failed. It was misfiled for weeks as a "parallel-load flake"; it is an
+// unguarded async tail, the same defect class as the reconcile date-bomb.
+// `refresh()` now checks `ref.mounted` after its awaits.
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';

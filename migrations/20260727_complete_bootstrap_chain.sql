@@ -1,14 +1,18 @@
 -- Completes the fresh-bootstrap chain (schema.sql + migrations/*.sql in date
--- order). Two objects existed ONLY in the now-deleted mobile/mobile_schema.sql,
--- so a project provisioned from this repo got a `profiles` table nothing ever
--- populated, and a `long_term_goals.category_id` with no referential integrity.
+-- order). Three objects existed ONLY in the now-deleted mobile/mobile_schema.sql,
+-- so a project provisioned from this repo got a `long_term_goals.category_id`
+-- with no referential integrity, a `profiles` table nothing ever populated, and
+-- a `profiles.updated_at` that never advanced (silently breaking any
+-- last-write-wins comparison over the settings row).
 --
 -- EVERY statement here is GUARDED so that re-running it against the live
--- production database is a strict no-op. Production already has both objects
+-- production database is a strict no-op. Production already has these objects
 -- (signup works and categories resolve), so this migration must not replace or
 -- redefine them — replacing a live SECURITY DEFINER function with a version
 -- reconstructed from a stale snapshot is exactly how signup breaks. It creates
 -- them only where they are ABSENT.
+--
+-- APPLIED to the live project on 2026-07-27; all six objects verified present.
 
 -- ---------------------------------------------------------------------------
 -- 1. long_term_goals.category_id -> macro_goal_categories.id

@@ -79,13 +79,27 @@ streak rule — never as a preset.
 
 ## 4. Work breakdown (phased)
 
-### Phase 0 — Adversarial audit of the existing foundation (audit‑first)
-Multi‑agent Workflow; each finding adversarially verified; fix confirmed bugs **before** Phase 1. Dimensions:
+### Phase 0 — Adversarial audit of the existing foundation — **RUN 2026‑07‑27, all findings FIXED**
+> **Outcome:** 6 lenses, 26 agents, every finding independently refuted‑or‑confirmed —
+> **20 raised, 10 confirmed, 10 refuted.** All 10 fixed in `5fe0ed5`, `648ec76`, `174976d`,
+> each verified by reverting the fix and watching its test fail. Two were BLOCKERS (the
+> manual‑target sweep deleting recorded `goal_progress`), one was a PRIVACY defect (desktop
+> cloud import uploading HealthKit‑measured values to Supabase), and two were silent data
+> loss in the Private‑mode recovery.
+>
+> **Note the sequencing failure, and do not repeat it:** this phase was written to GATE
+> Phases 1–3. It did not run; they landed anyway. So it audited SHIPPED behaviour, and four
+> of the ten findings were live data loss rather than pre‑ship hypotheticals.
+>
+> The macOS Command‑Q lockout was NOT root‑caused — three theories were refuted. What was
+> fixed is that the recovery afterwards was more destructive than intended.
+
+Dimensions audited:
 - **Reconcile conflict** — the never‑exercised **both‑flags‑on** world: a habit carrying both a target and a verification rule → manual‑target sweep vs verification pipeline both writing `goal_logs.status`.
 - **Cloud/Private parity** — every new column + the `goal_progress` table round‑trips through **Supabase AND** the private‑DB/CloudKit path; import/backup allowlists on both apps.
-- **Migration chain** — v6→v10 correctness on a real encrypted file (idempotency, downgrade guards, the three‑legs‑in‑one‑open case).
+- **Migration chain** — v6→**v11** correctness on a real encrypted file (idempotency, downgrade guards, the three‑legs‑in‑one‑open case). Still UNVERIFIED against real encrypted data — that is Phase 5.
 - **Import/backup round‑trips** — `target`, `goal_progress`, `verify_conditions`, `verify_effective_from`.
-- Add a one‑line debug log of `PrivateDbSchema.version` + the DB's actual `user_version` at open, so Simone can read the real on‑device schema version from the device console.
+- ~~Add a one‑line debug log of `PrivateDbSchema.version` + the DB's actual `user_version` at open~~ **DONE** (`e2bd2b9`). Mobile already had it; desktop did not, which left macOS — where schema trouble is likeliest — unable to report its own schema version from a shipped build. Both now log `[PrivateDB] open: stored user_version=N, code PrivateDbSchema.version=M` BEFORE the migration runs.
 
 ### Phase 1 — `target_effective_from` (v11 forward‑only freeze)
 - Private schema **v10→v11** `_upgradeToV11`: `ALTER TABLE goals ADD COLUMN target_effective_from TEXT` (nullable, idempotent guard, same pattern as `_upgradeToV7`).
@@ -112,16 +126,18 @@ Multi‑agent Workflow; each finding adversarially verified; fix confirmed bugs 
 
 i18n for the picker labels across all 5 locales.
 
-### Phase 3 — Flip flags (in the release build, after QA)
-- `compoundVerificationEnabled = true`, `TargetsConfig.enabled = true`. Keep `MacroTargetsConfig = false`.
+### Phase 3 — Flip flags — **ALREADY DONE** (verified 2026‑07‑27)
+- ~~`compoundVerificationEnabled = true`, `TargetsConfig.enabled = true`. Keep `MacroTargetsConfig = false`.~~
+- The flags were flipped BEFORE the QA this phase said to gate them on: `TargetsConfig.enabled`, `DesktopTargetsConfig.enabled` and `compoundVerificationEnabled` are all `true` on `main` today. `MacroTargetsConfig.enabled` is correctly still `false`.
+- Nothing to do here. The consequence is recorded in Phase 0: these paths shipped unaudited, which is what made the audit's findings live defects.
 
 ### Phase 4 — Rigor
 - ~~Widen the CI paths filter so changes under `packages/evolve_sync`, `packages/evolve_targets`, `migrations/` run their tests + `schema_drift_test.dart`.~~ **DONE.** Extended again on 2026‑07‑27: `desktop/**` + `schema.sql` added to the paths filter, a **`desktop` job** added (84 test files that had been running on nothing), and `evolve_legal` added to the packages matrix. Phase 2 edits `desktop/lib/.../habits_page.dart`, so that surface is now guarded *before* the class‑picker work lands on it.
 - Arabic native review of new i18n (`targets.*`, `verification.compound.*`, picker labels) — machine MSA now, flagged.
 
 ### Phase 5 — Ops (Simone's Mac; I have no Xcode here)
-- Apply the **5** Supabase migrations, in order: `verify_effective_from`, `verify_conditions`, `goal_targets_and_progress`, `macro_goal_targets`, `target_effective_from`.
-- Build v11 for both platforms with flags on.
+- ~~Apply the **5** Supabase migrations~~ — plus a 6th, `20260727_complete_bootstrap_chain`, which Simone **applied on 2026‑07‑27** (all six objects verified present). Confirm the earlier five are applied too, in order: `verify_effective_from`, `verify_conditions`, `goal_targets_and_progress`, `macro_goal_targets`, `target_effective_from`.
+- Build v11 for both platforms (the flags are already on — see Phase 3).
 - On‑device QA (§6), both modes.
 - **Simultaneous** iOS + macOS release. **Never** publish a pre‑v11 build afterward (`onDowngrade` throws → brick).
 

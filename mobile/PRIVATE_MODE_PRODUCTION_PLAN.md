@@ -42,7 +42,7 @@ The private and Supabase data spaces must remain completely separate forever. Th
 - AI features in Private mode require explicit opt-in before sending selected private data to an external AI provider.
 - AI chat persistence is not required.
 - Local schema mirrors production Supabase user-data tables except `ai_insights`.
-- `mobile_schema.sql` should be updated to reflect production schema, but not used to change Supabase unless migrations are explicitly run.
+- **SUPERSEDED 2026-07-27:** `mobile_schema.sql` no longer exists — it was a second, drifting bootstrap snapshot and was deleted. The single source of truth is the repo-root `schema.sql` plus `migrations/*.sql` applied in date order; `mobile/test/schema_drift_test.dart` now fails the build if a rival snapshot reappears. Neither is used to change Supabase unless a migration is explicitly run.
 
 ## Production Schema To Mirror Locally
 
@@ -414,7 +414,7 @@ Acceptance criteria:
 
 Tasks:
 
-- Update `mobile_schema.sql` to match production schema verified on 2026-06-17.
+- ~~Update `mobile_schema.sql` to match production schema verified on 2026-06-17.~~ **DONE differently (2026-07-27):** that file was deleted and its contents folded into the repo-root `schema.sql` + `migrations/20260727_complete_bootstrap_chain.sql`. Update `schema.sql` instead.
 - Include:
   - `macro_goal_categories`
   - `long_term_goals.category_id`

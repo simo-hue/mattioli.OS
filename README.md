@@ -63,7 +63,7 @@ And because this repo is source-available, **self-hosting the Cloud mode against
 | **Macro goals** | Lifetime → annual → quarterly → monthly → weekly planning, with historical performance and multi-year trends |
 | **Statistics** | Completion trends, improvement alerts, per-day-of-week performance, habit correlations, yearly heatmaps |
 | **Mood & energy** | A daily check-in that surfaces how your habits actually affect how you feel |
-| **AI coach** | Context-aware coaching over your own history. Desktop runs it against a **local Ollama** model, so it never leaves your machine |
+| **AI coach** | Context-aware coaching over your own history. Desktop can run it entirely on-device against a **local Ollama or LM Studio** model, so it never leaves your machine |
 | **Privacy** | Local SQLCipher encryption, E2E-encrypted CloudKit sync (AES-GCM), biometric lock, no ads, no tracking |
 | **Localised** | English, Italian, Spanish, German, Arabic — including full RTL |
 
@@ -130,7 +130,9 @@ mattioli.OS/
 ├── web-app/           React + Vite — website + browser tracker
 ├── packages/
 │   ├── evolve_sync/          E2E-encrypted CloudKit sync core (AES-GCM)
-│   └── evolve_verification/  Habit auto-verification engine
+│   ├── evolve_verification/  Habit auto-verification engine
+│   ├── evolve_targets/       Quantitative habit targets (count / duration / limit)
+│   └── evolve_legal/         The public legal + support URLs, defined once
 ├── schema.sql         Postgres schema — the single source of truth
 ├── migrations/        Versioned SQL migrations (shared by all clients)
 ├── supabase/          Edge functions — RevenueCat webhook, Apple token revocation

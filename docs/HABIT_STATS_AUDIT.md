@@ -10,6 +10,8 @@ _Generated 2026-07-14 by a 38-agent audit (9 stat-groups × deep formula derivat
 
 ## Confirmed issues (ranked)
 
+**Fix-status caveat (re-verified 2026-07-27):** the `Fix status` column below — and the matching `*Fix status:*` lines under "Issue detail" — was only PARTIALLY updated when the remediation in "Fixes applied (2026-07-14)" landed. The four desktop rows (3, 10, 16, 17) already read `FIXED (desktop)` and are still accurate; the rows that read "group A" or "group D" are not. The shared Dart DST edge is fixed on BOTH clients: `_daysBetween` / `_shiftDays` now back `total_active_days` (→ `rate`), `avg_recovery_days`, the yearly-grid date walk and the critical/best-habits windows (`mobile/lib/core/private_analytics.dart:75,83`; `desktop/lib/features/statistics/data/private_analytics.dart:79,88`), so rows 6, 8, 11, 12 and 13 are FIXED. Row 9's mobile string-sort bug is fixed — the sort is now numeric on the int days (`mobile/lib/ui/widgets/statistics/global_alerts_tab_widget.dart:288`). Rows 4 and 5 do have their migration written (`migrations/20260714_fix_get_global_trend_year_all.sql`), but it is still recorded as pending review + deploy. Genuinely still open: rows 1 and 2 (web client never persists `goal_logs.streak`, and the web app is abandoned), rows 4 and 5 (migration undeployed) and row 14 (`migrations/20260622_add_get_habit_correlations.sql:30` still rounds through `::float`, i.e. half-to-even).
+
 | # | Severity | Stat | Parity | Correct impl | Fix status |
 |---|---|---|---|---|---|
 | 1 | 🔴 high | habit_stats.current_streak | DIVERGE | Mobile Dart / Desktop Dart (computeStreak persisted to goal_ | OPEN — web client fails to persist the streak column (group  |

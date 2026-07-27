@@ -83,7 +83,7 @@ State, per item: fixed / not fixed / not-a-defect-and-here-is-why.
 - **`packages/evolve_sync/` is a shared contract.** Both apps must agree with it,
   and devices in the field run older builds. A change there is a wire-format
   change — treat it as such.
-- **Schema is v6.** Any migration must be idempotent AND must not assume its
+- **Schema is v11.** Any migration must be idempotent AND must not assume its
   predecessor's side effects (see `createSyncTriggers`, which skips
   not-yet-existing tables for exactly that reason).
 - **`goals` is HABITS. `long_term_goals` is macro GOALS.** Every grep for
@@ -115,9 +115,10 @@ A bare `flutter test` on desktop reports **one** failure **by design** — a
 security test asserting that Supabase config comes from build-time defines. Do
 not "fix" it by weakening the assertion.
 
-Pre-existing analyze warnings that are not yours: `unused_element_parameter` in
-`desktop/lib/features/auth/presentation/auth_page.dart`, and an unused import in
-`app_logs_dialog.dart`.
+Both apps' `flutter analyze` are clean as of 2026-07-27 — the findings that used
+to be pre-existing here (the `unused_element_parameter` in
+`desktop/lib/features/auth/presentation/auth_page.dart` among them) were cleared
+when CI started gating desktop. Treat any analyzer output as yours.
 
 ## Project conventions
 

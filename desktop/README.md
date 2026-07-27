@@ -1,8 +1,9 @@
 # Evolve Desktop
 
-Native Flutter desktop client for Evolve. The desktop client depends on two
-local packages under `../packages/` (`evolve_sync` and `evolve_verification`)
-and supports two data modes: in Cloud mode it uses the production Supabase
+Native Flutter desktop client for Evolve. The desktop client depends on
+four local packages under `../packages/` (`evolve_sync`,
+`evolve_verification`, `evolve_targets` and `evolve_legal`) and supports
+two data modes: in Cloud mode it uses the production Supabase
 backend directly, while in Private mode it stores data in a local
 SQLCipher-encrypted database with optional CloudKit/iCloud sync on macOS.
 
@@ -64,7 +65,7 @@ The tracked `.env.example` documents the required keys:
 EVOLVE_SUPABASE_URL=
 EVOLVE_SUPABASE_PUBLISHABLE_KEY=
 EVOLVE_DESKTOP_OAUTH_REDIRECT_URL=http://127.0.0.1:39876/auth/callback
-EVOLVE_DESKTOP_NATIVE_APPLE_SIGN_IN=false
+EVOLVE_DESKTOP_NATIVE_APPLE_SIGN_IN=true
 ```
 
 Then run:

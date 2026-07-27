@@ -3,7 +3,7 @@
 - [ ] Today's protocol da MacOS i pallini degli habits devono essere riguardanti la settimana scorsa ( 6 giorni precedenti a quello corrente in modo tale da poter vedere il proprio contributo nell'ultimo pallino disponibile, il giorno corrente )
 - [ ] settings in desktop implementation is really weird and not intuitive as it is in the mobile app
 - [ ] what happens if I modify manually an automatic habits?
-- [ ] Different habits & goals types, not only checkboxes like status,progress bar
+- [ ] Macro goals still need a numeric target + progress bar (status already cycles active/completed/failed). Habits are DONE — the Checkbox / Number / Automatic picker and quantitative targets are live; MacroTargetsConfig.enabled is still false on both apps.
 - [ ] While trying the macOS version in testflight everything was working as expected until when I quit the app with Command + Q and then I reopened it. The error was the fact that the local mode ( privacy mode ) need to be resetted to carry on as the db could not be encrypted even though before ( 30 seconds before ) it was working perfectly and it was also synchronized with iCloud.
 
 ---
@@ -36,15 +36,16 @@ schema drift fixed, CI widened to desktop + all 4 packages, drift guard extended
 `migrations/20260727_complete_bootstrap_chain.sql` applied to Supabase by Simone
 on 2026-07-27. No outstanding manual actions for this workstream.
 
-## Quantitative targets — mobile UI (dark) (2026-07-24)
+## Quantitative targets — mobile UI (LIVE since 2026-07-24; QA still owed)
 
-The mobile UI shipped DARK behind `TargetsConfig.enabled` (mobile/lib/core/
-targets_config.dart, currently false). Flip it to true only AFTER the on-device
-QA below, and only in a build where schema v9 + the Supabase migrations are live.
+The mobile UI is LIVE: `TargetsConfig.enabled` (mobile/lib/core/
+targets_config.dart) and `DesktopTargetsConfig.enabled` are both true. They were
+flipped BEFORE the on-device QA below, which is therefore still owed — and the
+release build must carry schema v11 + the Supabase migrations applied.
 
 ### Manual actions
-- [ ] **On-device QA (needs the Xcode Mac + a device), then flip the flag.** Set
-      `TargetsConfig.enabled = true` and verify on a device: create a "80 push-ups,
+- [ ] **On-device QA (needs the Xcode Mac + a device).** The flag is already
+      `true`, so verify on a device: create a "80 push-ups,
       +20" count habit and a "≤1 coffee" limit habit; the create sheet's Target
       chips + amount stepper work; the day-details card shows a ring + "40 / 80"
       and tapping opens the entry sheet; the −/+ stepper updates the ring live;

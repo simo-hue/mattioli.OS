@@ -164,7 +164,7 @@ Swift is a thin pass-through over `CKContainer(identifier:).privateCloudDatabase
 | `deleteRecords` | `[recordName]` | `{deleted:[recordName], errors:[...]}` |
 | `deleteZone` | — | ok / error |
 
-- `saveRecords` uses `CKModifyRecordsOperation`, chunked ≤ 380 records/op, save policy `.ifServerRecordUnchanged`; a `serverRecordChanged` error returns the record in `conflicts` (with the server `updatedAt`) for Dart to LWW-resolve.
+- `saveRecords` uses `CKModifyRecordsOperation`, chunked ≤ 400 records/op (plus a cumulative payload-byte cap), save policy ~~`.ifServerRecordUnchanged`~~ `.allKeys`; a `serverRecordChanged` error still returns the record in `conflicts` (with the server `updatedAt`), and the engine leaves that record dirty for the next sync to LWW-resolve. _(Superseded 2026-07-27: `.ifServerRecordUnchanged` was reverted to `.allKeys` to fix bug #4 in `ICLOUD_SYNC_PRIVACY_BUGS.md` — each push builds a fresh `CKRecord` with no server change tag, so the server rejected every update to an already-synced record as `serverRecordChanged` and edits never propagated. The Dart engine does authoritative LWW itself (pull before push + `updatedAt`), so server-side change-tag gating is redundant here. Do not restore it on this path; the `.ifServerRecordUnchanged` in `claimSentinel` is a separate atomic create-if-absent for the first-mint race.)_
 - `fetchChanges` uses `CKFetchRecordZoneChangesOperation` with the saved `serverChangeToken`; loops `moreComing` internally or surfaces it for Dart to re-call.
 - Avatars: Dart writes encrypted bytes to a temp file → `assetPath`; Swift wraps as `CKAsset`. On fetch, Swift returns the downloaded (still-encrypted) asset temp path; Dart reads + decrypts.
 
@@ -183,6 +183,8 @@ Swift is a thin pass-through over `CKContainer(identifier:).privateCloudDatabase
 6. Persist `syncEnabled = true` (a synced-but-also-local flag; sync is per-device opt-in, so store in `sync_meta`/prefs, **not** iCloud Keychain).
 
 ### 7.2 `syncNow()` (core loop, also the trigger target)
+
+_(Superseded 2026-07-27: the shipped engine runs **pull before push**, not the push-then-pull order below — see `packages/evolve_sync/lib/src/sync_engine.dart:465-466`. The swap is half of the bug #4 fix in `ICLOUD_SYNC_PRIVACY_BUGS.md`: pulling first overwrites a stale local copy and clears its dirty flag, so an older edit is never pushed over a newer cloud record. Steps 2 and 3 below read in the original order.)_
 1. If `pending_zone_wipe` → `deleteZone()`, clear flag, return.
 2. **Push:** read dirty rows from `sync_state`. For each, load the row (or build a tombstone), `RowCodec.encode` → JSON → `SyncCrypto.encrypt` → record; `saveRecords` in chunks.
    - On `saved` → `dirty=0, last_synced_at=now`.

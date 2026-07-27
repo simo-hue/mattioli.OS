@@ -603,18 +603,20 @@ Apple-like control kit COMPLETE (analyze clean, 140/140 tests green, tree left u
     and habits `_HabitRow` when `habit.verificationRule != null`. Still wants a
     visual pass on device (badge copy/placement).
 
-### Current Status
+### Status at the end of the 2026-07-14 parity pass (superseded)
 **Full mobile↔desktop under-the-hood parity port COMPLETE** — all 4 tranches +
 the three owner-approved finishers (#12/#29/#25). Of the 32 audited divergences,
-the only two NOT changed are #9 (a MOBILE-side fix; desktop already correct) and
-#28 (a documented shared-design limitation, no code). Code-verified: `analyze
-lib` → 0 errors (1 pre-existing warning); `flutter test` → **216 pass / 1
-pre-existing fail** (`icloud_sync_card_test`, confirmed RED without any of these
-changes). Tree uncommitted for review — NOTE it also contains the concurrent
-AI-coach feature + i18n regen, so commit the parity files separately. Only
-remaining: on-device QA on the Xcode machine (TO_SIMO_DO.md) — visual pass on the
-verified badge + smoke test of notifications / biometric re-lock / Pro gates,
-plus the earlier DB-reset / backup-exclusion checks.
+the only two NOT changed were #9 (a MOBILE-side fix; desktop already correct) and
+#28 (a documented shared-design limitation, no code); #28 was itself closed on
+2026-07-27, when `toggleHabitForDay` began refusing habits that are verified or
+carry a user-enterable target (`dashboard_controller.dart:82-99`). Code-verified
+at the time: `analyze lib` → 0 errors (1 pre-existing warning); `flutter test` →
+**216 pass / 1 fail** (`icloud_sync_card_test`, confirmed RED without any of
+these changes) — that file is green today (13/13), and the whole desktop suite
+now runs on a macos-latest CI runner (`.github/workflows/mobile-ci.yml`). The
+tree has since been committed. Still open: on-device QA on the Xcode machine —
+visual pass on the verified badge + smoke test of notifications / biometric
+re-lock / Pro gates, plus the earlier DB-reset / backup-exclusion checks.
 
 - [2026-07-14]: HOTFIX — reverted the device-local `first_unlock_this_device` pin (it was a lockout regression)
   - *Symptom*: on-device import of a real iOS backup threw `Bad state: Private

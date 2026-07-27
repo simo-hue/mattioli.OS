@@ -174,8 +174,10 @@ Unchanged and deliberately untouched by this pass.
   field run older builds. Note the pattern from §0: a guarantee that holds only
   because every current sender behaves is not a guarantee. Enforce it on the
   receiving side.
-- **Schema is v6.** Migrations must be idempotent AND must not assume their
-  predecessor's side effects.
+- **Schema is v11 in this repo; the field is behind it.** Devices still run
+  builds at v6 or older, so the v6→v11 chain is unexecuted on real data.
+  Migrations must be idempotent AND must not assume their predecessor's side
+  effects.
 - **`SyncEngine` takes an injectable `clock`** (production never passes it). The
   skew guard's correctness is entirely about the passage of time and is untestable
   against a clock that only reads "now".

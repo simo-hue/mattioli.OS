@@ -47,7 +47,7 @@ Gestisce le modalità di distribuzione e il prezzo iniziale di download.
 Questo è il pannello più insidioso e spesso causa di rigetti se non compilato correttamente. Apple richiede trasparenza assoluta su come i dati vengono gestiti tramite i tuoi servizi (Supabase per database/auth e Sentry per i crash).
 
 ### Step 1: Inserimento degli URL
-*   **Privacy Policy URL**: Inserisci `https://simo-hue.github.io/mattioli.OS/` (assicurati che sia online e contenga i dettagli descritti nel file `TO_SIMO_DO.md`!).
+*   **Privacy Policy URL**: Inserisci `https://simo-hue.github.io/evolve/privacy.html` — è lo stesso identico valore per tutte le localizzazioni, già gestito via fastlane in `mobile/metadata/<locale>/privacy_url.txt` e in `mobile/ios/Deliverfile`. _(Corretto 2026-07-27: questa riga indicava `https://simo-hue.github.io/mattioli.OS/`, che è il tracker web abbandonato e non il sito legale dell'app. Le build già sullo Store hardcodano `evolve/privacy.html` — vedi `packages/evolve_legal/lib/src/legal_urls.dart`. Anche l'**URL di Supporto** al §4.B è sbagliato: va usato `https://simo-hue.github.io/evolve/support.html`, la pagina che `LegalUrls.support` designa come Support URL per la Guideline 1.5.)_
 *   **User Privacy Choices URL**: Opzionale. Puoi inserire lo stesso URL della Privacy Policy.
 
 ### Step 2: Questionario sulla Raccolta Dati (Data Collection)
@@ -153,7 +153,7 @@ Poiché l'app richiede un'autenticazione per funzionare, **DEVI** fornire ad App
 > **La linea guida 2.1 (App Completeness) di Apple vieta esplicitamente pulsanti o sezioni dichiarate come "Coming Soon" o "Under Construction"**, e il reviewer potrebbe rifiutare l'app vedendo il popup di blocco.
 >
 > **La Soluzione di Ingegneria Geniale (Bypass tramite Supabase):**
-> Non devi cambiare una sola riga del codice Flutter! Il tuo `SettingsProvider` carica lo stato `isPro` direttamente dal database Supabase (`data['is_pro'] ?? state.isPro`).
+> _(Superseded 2026-07-27: questo bypass non funziona più — i passi 1-3 e le voci di "Il Risultato" qui sotto restano solo come storico. RevenueCat è ora la fonte di verità e ha deliberatamente l'ultima parola: `_syncAccount` esegue `_syncFromSupabase(userId)` e POI `subscriptionService.init(userId)`, che termina con `checkAndSyncStatus()` e riallinea `isPro` alle entitlement RevenueCat (`settings_provider.dart:315-324`, `subscription_service.dart:109-110`). Il provider non fa nemmeno più il merge citato qui sopra: oggi legge `isPro: data['is_pro'] ?? false` (`settings_provider.dart:998`). Un account con `profiles.is_pro = true` ma senza entitlement viene quindi riportato a free e il reviewer finisce comunque sul paywall. Per sbloccare la review, concedi l'entitlement "Evolve Pro" all'app-user-id del tester dalla dashboard RevenueCat, oppure fornisci un account Sandbox con l'abbonamento attivo.)_
 > 1. Registra l'account di test `apple-tester@evolve.com` all'interno della tua app (o crealo da Supabase).
 > 2. Vai sul tuo **Supabase Dashboard** > **Table Editor** > seleziona la tabella `profiles`.
 > 3. Cerca la riga corrispondente a `apple-tester@evolve.com` e imposta il valore della colonna **`is_pro` su `true`**.

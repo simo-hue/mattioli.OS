@@ -1,5 +1,6 @@
 # TO_SIMO_DO.md
 - [ ] Widget for iPhone & MacOS
+- [ ] Today's protocol da MacOS i pallini degli habits devono essere riguardanti la settimana scorsa ( 6 giorni precedenti a quello corrente in modo tale da poter vedere il proprio contributo nell'ultimo pallino disponibile, il giorno corrente )
 - [ ] settings in desktop implementation is really weird and not intuitive as it is in the mobile app
 - [ ] what happens if I modify manually an automatic habits?
 - [ ] Different habits & goals types, not only checkboxes like status,progress bar

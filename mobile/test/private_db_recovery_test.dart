@@ -104,8 +104,8 @@ void main() {
   });
 
   test(
-    'resetLockedDatabase deletes the db file, its -wal/-shm sidecars, the '
-    'avatar folder and the key remnant, leaving the store unlocked',
+    'resetLockedDatabase MOVES the db aside instead of deleting it, keeps its '
+    'key, and still clears the avatar folder + live key',
     () async {
       await dbFile().writeAsString('enc');
       await File('${dbFile().path}-wal').writeAsString('wal');
@@ -124,8 +124,128 @@ void main() {
       expect(await avatarDir.exists(), isFalse);
       expect(keychain.containsKey(keyStorageKey), isFalse);
       expect(await db.isDatabaseLocked(), isFalse);
+
+      // NOT destroyed: every common cause of "can't open" leaves the ciphertext
+      // intact and merely separated from its key, so a delete would make a
+      // recoverable situation permanent.
+      final aside = await db.lockedAsideCopy();
+      expect(aside, isNotNull,
+          reason: 'the encrypted database must still exist somewhere');
+      expect(await File(aside!.path).readAsString(), 'enc');
     },
   );
+
+  test(
+    'the aside copy keeps its KEY — preserving ciphertext while destroying the '
+    'key that opens it would preserve something nobody can ever read',
+    () async {
+      await dbFile().writeAsString('enc');
+      final key = 'k' * 64;
+      keychain[keyStorageKey] = key;
+
+      await db.resetLockedDatabase();
+
+      expect(keychain.containsKey(keyStorageKey), isFalse);
+      expect(keychain['private_mode_db_password_v1.aside'], key,
+          reason: 'the aside copy must remain decryptable');
+    },
+  );
+
+  test('deleting the aside copy also removes its parked key', () async {
+    await dbFile().writeAsString('enc');
+    keychain[keyStorageKey] = 'k' * 64;
+    await db.resetLockedDatabase();
+
+    await db.deleteLockedAsideCopy();
+
+    expect(await db.lockedAsideCopy(), isNull);
+    expect(keychain.containsKey('private_mode_db_password_v1.aside'), isFalse);
+  });
+
+  group('the primitives cannot be turned against intact data', () {
+    test(
+      'restoreStashedDatabase with NO stash present leaves the live database '
+      'untouched — it used to delete it unconditionally and restore nothing',
+      () async {
+        await dbFile().writeAsString('healthy-and-in-use');
+        keychain[keyStorageKey] = 'k' * 64;
+
+        // The recovery's catch-all calls this blind on any failure.
+        await db.restoreStashedDatabase();
+
+        expect(await dbFile().exists(), isTrue,
+            reason: 'a healthy database must survive a no-op restore');
+        expect(await dbFile().readAsString(), 'healthy-and-in-use');
+        expect(keychain[keyStorageKey], 'k' * 64,
+            reason: 'and its key must survive with it');
+      },
+    );
+
+    test(
+      'stashLockedDatabase ABORTS when clearing the key fails, leaving the '
+      'database where it is — the old order renamed first and swallowed the '
+      'key failure, which is exactly how a wrongly-keyed database is made',
+      () async {
+        await dbFile().writeAsString('enc');
+        keychain[keyStorageKey] = 'short';
+        messenger.setMockMethodCallHandler(secureChannel, (call) async {
+          if (call.method == 'delete') {
+            throw PlatformException(code: '-25300', message: 'keychain error');
+          }
+          final args = (call.arguments as Map?)?.cast<String, dynamic>() ?? {};
+          final key = args['key'] as String?;
+          if (call.method == 'read') return key == null ? null : keychain[key];
+          return null;
+        });
+
+        final stashed = await db.stashLockedDatabase();
+
+        expect(stashed, isFalse);
+        expect(await dbFile().exists(), isTrue,
+            reason: 'nothing may move once the key could not be parked');
+      },
+    );
+
+    test(
+      'stashLockedDatabase refuses to clobber an existing stash — that stash is '
+      'the only copy of an earlier attempt\'s data',
+      () async {
+        await File('${dbFile().path}.recovery-bak')
+            .writeAsString('earlier-attempt');
+        await dbFile().writeAsString('current');
+        keychain[keyStorageKey] = 'short';
+
+        final stashed = await db.stashLockedDatabase();
+
+        expect(stashed, isFalse);
+        expect(await File('${dbFile().path}.recovery-bak').readAsString(),
+            'earlier-attempt');
+      },
+    );
+  });
+
+  group('a key of the right LENGTH is not a key that WORKS', () {
+    test(
+      'isDatabaseLocked reports true when the fingerprint sidecar proves the '
+      'key belongs to a different database',
+      () async {
+        await dbFile().writeAsString('enc');
+        await File('${dbFile().path}.keyfp').writeAsString(
+          '{"fp":"0000000000000000","store":"devfile"}',
+        );
+        keychain[keyStorageKey] = 'k' * 64;
+
+        expect(await db.isDatabaseLocked(), isTrue,
+            reason: 'the length test alone called this healthy');
+      },
+    );
+
+    test('a missing sidecar is NOT evidence of a mismatch', () async {
+      await dbFile().writeAsString('enc');
+      keychain[keyStorageKey] = 'k' * 64;
+      expect(await db.isDatabaseLocked(), isFalse);
+    });
+  });
 
   const bak = '.recovery-bak';
 

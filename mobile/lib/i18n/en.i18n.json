@@ -589,11 +589,20 @@
     "lockedMessageLocalOnly": "This device can't unlock your local private database — its encryption key is missing — and iCloud sync is off, so there's no cloud copy to restore. You can reset and start fresh.",
     "lockedMessageICloudUnavailable": "This device can't unlock your local private database. iCloud sync is on but the account is unavailable — sign in to iCloud, then retry.",
     "errorTitle": "Couldn't open private mode",
-    "errorMessage": "Something went wrong opening your private database. Retry, or reset it and start fresh.",
+    "errorMessage": "Something went wrong opening your private database. Try again, or go back to sign in.",
     "enableSyncHint": "Have this data on another device? Turn on iCloud sync in Settings after resetting to pull it here.",
     "retry": "Retry",
     "resetFresh": "Reset & start fresh",
-    "backToSignIn": "Back to sign in"
+    "backToSignIn": "Back to sign in",
+    "undecryptableTitle": "Your data is safe — but this copy of the app can't unlock it",
+    "undecryptableMessage": "The private database on this device is intact, it's just encrypted with a different key than this build holds. Nothing has been changed or deleted. This usually means another build of Evolve (for example a development build) created it. Open that build to reach the data, or restore from iCloud on a fresh install.",
+    "schemaTooNewTitle": "This database is from a newer version",
+    "schemaTooNewMessage": "Your private data was last opened by a newer version of Evolve and is fully intact. This older version can't read it safely. Update to the latest version — or reopen the newer build — and everything will be there.",
+    "copyDiagnostics": "Copy diagnostics",
+    "diagnosticsCopied": "Diagnostics copied to the clipboard",
+    "resetConfirmTitle": "Move this database aside?",
+    "resetConfirmBody": "Evolve will start with an empty private database. Your existing encrypted file is kept on this device, not deleted, so it can still be recovered.",
+    "resetConfirmBodySized": "Evolve will start with an empty private database. Your existing encrypted file ({size}) is kept on this device, not deleted, so it can still be recovered."
   },
   "consent": {
     "systemNotifications": "System Notifications",

@@ -158,9 +158,13 @@ void main() {
     test('onDowngrade fails closed (throws) rather than silently stamping '
         'user_version down', () async {
       final db = await openFresh();
+      // TYPED, not a bare StateError: an untyped throw fell into the same
+      // catch-all as every other open failure, and the screen that produced
+      // offered only a destructive reset — over a database this very guard has
+      // just established is intact and decryptable.
       await expectLater(
         PrivateDbSchema.onDowngrade(db, 4, 3),
-        throwsA(isA<StateError>()),
+        throwsA(isA<PrivateDbSchemaTooNewException>()),
       );
       await db.close();
     });
@@ -233,9 +237,14 @@ void main() {
 
       // Older build (v3) opening the same file must be refused (fail closed),
       // NOT silently stamp user_version to 3.
+      // sqflite wraps the cause, so assert on the marker that survives the
+      // trip rather than on the runtime type.
       await expectLater(
         () => databaseFactory.openDatabase(path, options: opts(3)),
-        throwsA(isA<StateError>()),
+        throwsA(predicate<Object>(
+          (e) => e.toString().contains(kSchemaTooNewMarker),
+          'carries the schema-too-new marker',
+        )),
       );
 
       // user_version untouched, so the newer build still opens cleanly.

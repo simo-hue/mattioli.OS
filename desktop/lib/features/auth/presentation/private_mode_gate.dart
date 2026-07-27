@@ -2,6 +2,7 @@ import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
+import 'package:evolve_desktop/core/desktop_private_db.dart';
 import 'package:evolve_desktop/core/desktop_private_sync_service.dart';
 import 'package:evolve_desktop/core/private_data_refresh.dart';
 import 'package:evolve_desktop/features/auth/application/private_mode_recovery.dart';
@@ -10,6 +11,7 @@ import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_spinner.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_toast.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -122,6 +124,69 @@ class _PrivateModeGateState extends ConsumerState<PrivateModeGate> {
     }
   }
 
+  /// Never reset without an explicit confirmation.
+  ///
+  /// This screen is reached by simply launching the app, and the reset used to
+  /// fire on a single tap with no dialog at all. The action is no longer a
+  /// delete (the database is renamed aside and kept), but it still takes the
+  /// user's data out from under them, and the size of what is being moved is
+  /// exactly the fact they need in order to decide.
+  Future<void> _confirmAndReset() async {
+    final aside = await DesktopPrivateDb.instance.databaseSizeBytes();
+    if (!mounted) return;
+    final confirmed = await showEvolveDialog<bool>(
+      context: context,
+      builder: (ctx) => EvolveAlertDialog(
+        icon: LucideIcons.triangleAlert,
+        iconColor: EvolveColors.destructive,
+        title: Text(t.privateRecovery.resetConfirmTitle),
+        subtitle: aside == null
+            ? t.privateRecovery.resetConfirmBody
+            : t.privateRecovery.resetConfirmBodySized(
+                size: _formatBytes(aside),
+              ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(t.common.actions.cancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: EvolveColors.destructive,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(t.privateRecovery.resetFresh),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await _reset(enableSync: false);
+  }
+
+  static String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(0)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  /// Copies a SCRUBBED diagnostic bundle: the classified cause, the stable code,
+  /// the schema versions and a file inventory. Never a row value, never key
+  /// material, never a path inside the user's home directory — the raw
+  /// exception text can carry the values of the row that failed.
+  Future<void> _copyDiagnostics() async {
+    final report = await DesktopPrivateDb.instance.diagnosticsReport(
+      failure: _result?.failure,
+    );
+    await Clipboard.setData(ClipboardData(text: report));
+    if (!mounted) return;
+    showEvolveToast(
+      context,
+      message: t.privateRecovery.diagnosticsCopied,
+      kind: EvolveToastKind.neutral,
+    );
+  }
+
   Future<void> _reset({required bool enableSync}) async {
     setState(() => _busy = true);
     final sync = ref.read(desktopPrivateSyncServiceProvider);
@@ -156,8 +221,9 @@ class _PrivateModeGateState extends ConsumerState<PrivateModeGate> {
       busy: _busy,
       result: result,
       onRetry: _run,
-      onResetFresh: () => _reset(enableSync: false),
+      onResetFresh: _confirmAndReset,
       onBackToSignIn: _backToSignIn,
+      onCopyDiagnostics: _copyDiagnostics,
     );
   }
 }
@@ -169,6 +235,7 @@ class _RecoveryScaffold extends StatelessWidget {
     required this.onRetry,
     required this.onResetFresh,
     required this.onBackToSignIn,
+    required this.onCopyDiagnostics,
   });
 
   final bool busy;
@@ -176,6 +243,7 @@ class _RecoveryScaffold extends StatelessWidget {
   final VoidCallback onRetry;
   final VoidCallback onResetFresh;
   final VoidCallback onBackToSignIn;
+  final VoidCallback onCopyDiagnostics;
 
   @override
   Widget build(BuildContext context) {
@@ -222,6 +290,20 @@ class _RecoveryScaffold extends StatelessWidget {
               ? t.privateRecovery.lockedMessageICloudUnavailable
               : t.privateRecovery.lockedMessageLocalOnly,
         ),
+      // Intact data, wrong key. The tone is deliberately NOT alarming and the
+      // icon is not destructive-red: nothing is damaged and nothing is lost.
+      PrivateRecoveryStatus.undecryptable => (
+          LucideIcons.keyRound,
+          accent,
+          t.privateRecovery.undecryptableTitle,
+          t.privateRecovery.undecryptableMessage,
+        ),
+      PrivateRecoveryStatus.schemaTooNew => (
+          LucideIcons.arrowBigUpDash,
+          accent,
+          t.privateRecovery.schemaTooNewTitle,
+          t.privateRecovery.schemaTooNewMessage,
+        ),
       _ => (
           LucideIcons.circleAlert,
           EvolveColors.destructive,
@@ -230,13 +312,21 @@ class _RecoveryScaffold extends StatelessWidget {
         ),
     };
 
-    final showReset = status == PrivateRecoveryStatus.needsUserChoice ||
-        status == PrivateRecoveryStatus.error;
+    // The reset is offered ONLY where the shared policy says the data can be
+    // sacrificed. It used to be shown for the generic `error` status too, which
+    // meant every unclassified failure — including a wrong key over perfectly
+    // intact ciphertext, and an older build opening a newer schema — presented
+    // deletion as the remedy.
+    final showReset = result?.allowsReset ?? false;
     final showRetry = status == PrivateRecoveryStatus.waitingForICloudKey ||
         status == PrivateRecoveryStatus.error ||
+        status == PrivateRecoveryStatus.undecryptable ||
         iCloudUnavailable;
     final showSyncHint =
         status == PrivateRecoveryStatus.needsUserChoice && !iCloudUnavailable;
+    final code = result?.failure == null
+        ? null
+        : diagnosticCode(result!.failure!);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -290,6 +380,27 @@ class _RecoveryScaffold extends StatelessWidget {
             child: Text(t.privateRecovery.retry),
           ),
           const SizedBox(height: 10),
+        ],
+        // The stable, non-identifying code + a one-click copy of the facts that
+        // actually diagnose this. Without it the only channel was a log viewer
+        // that lives BEHIND the shell this screen replaces — i.e. unreachable
+        // exactly when it is needed. The raw error stays hidden in release.
+        if (code != null) ...[
+          Center(
+            child: TextButton.icon(
+              onPressed: onCopyDiagnostics,
+              icon: const Icon(LucideIcons.clipboardCopy, size: 14),
+              label: Text(
+                '$code · ${t.privateRecovery.copyDiagnostics}',
+                style: TextStyle(
+                  color: colors.subtle,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
         ],
         if (showReset)
           OutlinedButton(

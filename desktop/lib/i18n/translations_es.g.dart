@@ -209,11 +209,20 @@ class _Translations$privateRecovery$es extends Translations$privateRecovery$en {
 	@override String get lockedMessageLocalOnly => 'Este dispositivo no puede desbloquear tu base de datos privada local —falta su clave de cifrado— y la sincronización de iCloud está desactivada, así que no hay copia en la nube para restaurar. Puedes restablecer y empezar de nuevo.';
 	@override String get lockedMessageICloudUnavailable => 'Este dispositivo no puede desbloquear tu base de datos privada local. La sincronización de iCloud está activada, pero la cuenta no está disponible: inicia sesión en iCloud y vuelve a intentarlo.';
 	@override String get errorTitle => 'No se pudo abrir el modo privado';
-	@override String get errorMessage => 'Algo salió mal al abrir tu base de datos privada. Vuelve a intentarlo o restablécela y empieza de nuevo.';
+	@override String get errorMessage => 'Se produjo un problema al abrir tu base de datos privada. Vuelve a intentarlo o regresa al inicio de sesión.';
 	@override String get enableSyncHint => '¿Tienes estos datos en otro dispositivo? Activa la sincronización de iCloud en Ajustes después de restablecer para traerlos aquí.';
 	@override String get retry => 'Reintentar';
 	@override String get resetFresh => 'Restablecer y empezar de nuevo';
 	@override String get backToSignIn => 'Volver al inicio de sesión';
+	@override String get undecryptableTitle => 'Tus datos están a salvo, pero esta copia de la app no puede desbloquearlos';
+	@override String get undecryptableMessage => 'La base de datos privada de este Mac está intacta: simplemente está cifrada con una clave distinta de la que tiene esta versión. No se ha modificado ni eliminado nada. Normalmente significa que la creó otra versión de Evolve (por ejemplo, una de desarrollo). Abre esa versión para acceder a los datos, o restaura desde iCloud en una instalación nueva.';
+	@override String get schemaTooNewTitle => 'Esta base de datos es de una versión más reciente';
+	@override String get schemaTooNewMessage => 'Tus datos privados se abrieron por última vez con una versión más reciente de Evolve y están completamente intactos. Esta versión anterior no puede leerlos de forma segura. Actualiza a la última versión — o vuelve a abrir la más reciente — y lo encontrarás todo.';
+	@override String get copyDiagnostics => 'Copiar diagnóstico';
+	@override String get diagnosticsCopied => 'Diagnóstico copiado al portapapeles';
+	@override String get resetConfirmTitle => '¿Apartar esta base de datos?';
+	@override String get resetConfirmBody => 'Evolve empezará con una base de datos privada vacía. Tu archivo cifrado actual se conserva en este Mac, no se elimina, así que aún se puede recuperar.';
+	@override String resetConfirmBodySized({required Object size}) => 'Evolve empezará con una base de datos privada vacía. Tu archivo cifrado actual (${size}) se conserva en este Mac, no se elimina, así que aún se puede recuperar.';
 }
 
 // Path: namePrompt
@@ -2084,11 +2093,20 @@ extension on TranslationsEs {
 			'privateRecovery.lockedMessageLocalOnly' => 'Este dispositivo no puede desbloquear tu base de datos privada local —falta su clave de cifrado— y la sincronización de iCloud está desactivada, así que no hay copia en la nube para restaurar. Puedes restablecer y empezar de nuevo.',
 			'privateRecovery.lockedMessageICloudUnavailable' => 'Este dispositivo no puede desbloquear tu base de datos privada local. La sincronización de iCloud está activada, pero la cuenta no está disponible: inicia sesión en iCloud y vuelve a intentarlo.',
 			'privateRecovery.errorTitle' => 'No se pudo abrir el modo privado',
-			'privateRecovery.errorMessage' => 'Algo salió mal al abrir tu base de datos privada. Vuelve a intentarlo o restablécela y empieza de nuevo.',
+			'privateRecovery.errorMessage' => 'Se produjo un problema al abrir tu base de datos privada. Vuelve a intentarlo o regresa al inicio de sesión.',
 			'privateRecovery.enableSyncHint' => '¿Tienes estos datos en otro dispositivo? Activa la sincronización de iCloud en Ajustes después de restablecer para traerlos aquí.',
 			'privateRecovery.retry' => 'Reintentar',
 			'privateRecovery.resetFresh' => 'Restablecer y empezar de nuevo',
 			'privateRecovery.backToSignIn' => 'Volver al inicio de sesión',
+			'privateRecovery.undecryptableTitle' => 'Tus datos están a salvo, pero esta copia de la app no puede desbloquearlos',
+			'privateRecovery.undecryptableMessage' => 'La base de datos privada de este Mac está intacta: simplemente está cifrada con una clave distinta de la que tiene esta versión. No se ha modificado ni eliminado nada. Normalmente significa que la creó otra versión de Evolve (por ejemplo, una de desarrollo). Abre esa versión para acceder a los datos, o restaura desde iCloud en una instalación nueva.',
+			'privateRecovery.schemaTooNewTitle' => 'Esta base de datos es de una versión más reciente',
+			'privateRecovery.schemaTooNewMessage' => 'Tus datos privados se abrieron por última vez con una versión más reciente de Evolve y están completamente intactos. Esta versión anterior no puede leerlos de forma segura. Actualiza a la última versión — o vuelve a abrir la más reciente — y lo encontrarás todo.',
+			'privateRecovery.copyDiagnostics' => 'Copiar diagnóstico',
+			'privateRecovery.diagnosticsCopied' => 'Diagnóstico copiado al portapapeles',
+			'privateRecovery.resetConfirmTitle' => '¿Apartar esta base de datos?',
+			'privateRecovery.resetConfirmBody' => 'Evolve empezará con una base de datos privada vacía. Tu archivo cifrado actual se conserva en este Mac, no se elimina, así que aún se puede recuperar.',
+			'privateRecovery.resetConfirmBodySized' => ({required Object size}) => 'Evolve empezará con una base de datos privada vacía. Tu archivo cifrado actual (${size}) se conserva en este Mac, no se elimina, así que aún se puede recuperar.',
 			'namePrompt.title' => '¿Cómo te llamas?',
 			'namePrompt.subtitle' => 'Introduce tu nombre para personalizar el panel.',
 			'namePrompt.hint' => 'Ej. Simo',
@@ -2510,6 +2528,8 @@ extension on TranslationsEs {
 			'stats.gapLongest' => 'Máximo',
 			'stats.gapSince' => 'Desde el último',
 			'stats.habitBounceBackShort' => 'Recuperación',
+			_ => null,
+		} ?? switch (path) {
 			'stats.habitConsistencyDetail' => 'Puntuación de regularidad',
 			'stats.habitPercentile' => ({required Object pct}) => 'Mejor que el ${pct}% de tus hábitos',
 			'stats.monthVsTitle' => 'Este mes vs anterior',
@@ -2519,8 +2539,6 @@ extension on TranslationsEs {
 			'stats.nextDayMoodTitle' => 'Impacto en el ánimo del día siguiente',
 			'stats.nextDayMoodSubtitle' => 'Ánimo y energía al día siguiente',
 			'stats.nextDayAfterDone' => 'Tras hacerlo',
-			_ => null,
-		} ?? switch (path) {
 			'stats.nextDayAfterMissed' => 'Tras fallarlo',
 			'stats.nextDayMoodLift' => ({required Object value}) => '${value} más de ánimo',
 			'stats.streakHistoryTitle' => 'Historial de rachas',
@@ -3024,6 +3042,8 @@ extension on TranslationsEs {
 			'subscriptionCtrl.restoreInProgress' => 'Ya hay una restauración en curso. Espere unos segundos.',
 			'subscriptionCtrl.purchaseFailedMessage' => 'No se pudo completar la compra. Vuelve a intentarlo en breve.',
 			'subscriptionCtrl.restoreFailedMessage' => 'No se pudieron restaurar las compras. Vuelve a intentarlo en breve.',
+			_ => null,
+		} ?? switch (path) {
 			'subscriptionCtrl.purchaseRegisteredNotActive' => 'Compra registrada, pero la suscripción Pro aún no está activa. Espere unos segundos y use Restaurar compras.',
 			'subscriptionCtrl.noActiveSubscription' => 'No se encontró ninguna suscripción activa a Evolve PRO en este Apple ID. Asegúrate de usar el mismo Apple ID de la compra.',
 			'subscriptionCtrl.invalidConfig' => 'Configuración de compras no válida. Inténtalo de nuevo más tarde o contacta con soporte.',
@@ -3033,8 +3053,6 @@ extension on TranslationsEs {
 			'authCtrl.accessNotCompleted' => ({required Object provider}) => 'Inicio de sesión con ${provider} no completado.',
 			'authCtrl.providerAuthFailed' => ({required Object provider}) => 'Error de autenticación de ${provider}.',
 			'authCtrl.operationFailed' => 'Operación fallida. Inténtalo de nuevo en breve.',
-			_ => null,
-		} ?? switch (path) {
 			'proModal.title' => 'Desbloquea Evolve PRO',
 			'proModal.subtitle' => 'Lleva tu sistema de hábitos al siguiente nivel',
 			'proModal.featuresHeader' => 'Qué incluye el plan PRO',

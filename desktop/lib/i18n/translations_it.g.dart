@@ -209,11 +209,20 @@ class _Translations$privateRecovery$it extends Translations$privateRecovery$en {
 	@override String get lockedMessageLocalOnly => 'Questo dispositivo non può sbloccare il database privato locale — la chiave di crittografia è mancante — e la sincronizzazione iCloud è disattivata, quindi non c\'è una copia cloud da ripristinare. Puoi reimpostare e ricominciare.';
 	@override String get lockedMessageICloudUnavailable => 'Questo dispositivo non può sbloccare il database privato locale. La sincronizzazione iCloud è attiva ma l\'account non è disponibile: accedi a iCloud e riprova.';
 	@override String get errorTitle => 'Impossibile aprire la modalità privata';
-	@override String get errorMessage => 'Si è verificato un problema durante l\'apertura del database privato. Riprova oppure reimpostalo e ricomincia.';
+	@override String get errorMessage => 'Si è verificato un problema durante l\'apertura del database privato. Riprova oppure torna all\'accesso.';
 	@override String get enableSyncHint => 'Hai questi dati su un altro dispositivo? Attiva la sincronizzazione iCloud nelle Impostazioni dopo la reimpostazione per recuperarli qui.';
 	@override String get retry => 'Riprova';
 	@override String get resetFresh => 'Reimposta e ricomincia';
 	@override String get backToSignIn => 'Torna all\'accesso';
+	@override String get undecryptableTitle => 'I tuoi dati sono al sicuro, ma questa copia dell\'app non può sbloccarli';
+	@override String get undecryptableMessage => 'Il database privato su questo Mac è intatto: è semplicemente cifrato con una chiave diversa da quella di questa build. Non è stato modificato né eliminato nulla. Di solito significa che è stato creato da un\'altra build di Evolve (per esempio una build di sviluppo). Apri quella build per accedere ai dati, oppure ripristina da iCloud con un\'installazione pulita.';
+	@override String get schemaTooNewTitle => 'Questo database proviene da una versione più recente';
+	@override String get schemaTooNewMessage => 'I tuoi dati privati sono stati aperti l\'ultima volta da una versione più recente di Evolve e sono perfettamente intatti. Questa versione più vecchia non può leggerli in sicurezza. Aggiorna all\'ultima versione — o riapri la build più recente — e ritroverai tutto.';
+	@override String get copyDiagnostics => 'Copia diagnostica';
+	@override String get diagnosticsCopied => 'Diagnostica copiata negli appunti';
+	@override String get resetConfirmTitle => 'Spostare da parte questo database?';
+	@override String get resetConfirmBody => 'Evolve ripartirà con un database privato vuoto. Il file cifrato esistente viene conservato su questo Mac, non eliminato, quindi è ancora recuperabile.';
+	@override String resetConfirmBodySized({required Object size}) => 'Evolve ripartirà con un database privato vuoto. Il file cifrato esistente (${size}) viene conservato su questo Mac, non eliminato, quindi è ancora recuperabile.';
 }
 
 // Path: namePrompt
@@ -2084,11 +2093,20 @@ extension on TranslationsIt {
 			'privateRecovery.lockedMessageLocalOnly' => 'Questo dispositivo non può sbloccare il database privato locale — la chiave di crittografia è mancante — e la sincronizzazione iCloud è disattivata, quindi non c\'è una copia cloud da ripristinare. Puoi reimpostare e ricominciare.',
 			'privateRecovery.lockedMessageICloudUnavailable' => 'Questo dispositivo non può sbloccare il database privato locale. La sincronizzazione iCloud è attiva ma l\'account non è disponibile: accedi a iCloud e riprova.',
 			'privateRecovery.errorTitle' => 'Impossibile aprire la modalità privata',
-			'privateRecovery.errorMessage' => 'Si è verificato un problema durante l\'apertura del database privato. Riprova oppure reimpostalo e ricomincia.',
+			'privateRecovery.errorMessage' => 'Si è verificato un problema durante l\'apertura del database privato. Riprova oppure torna all\'accesso.',
 			'privateRecovery.enableSyncHint' => 'Hai questi dati su un altro dispositivo? Attiva la sincronizzazione iCloud nelle Impostazioni dopo la reimpostazione per recuperarli qui.',
 			'privateRecovery.retry' => 'Riprova',
 			'privateRecovery.resetFresh' => 'Reimposta e ricomincia',
 			'privateRecovery.backToSignIn' => 'Torna all\'accesso',
+			'privateRecovery.undecryptableTitle' => 'I tuoi dati sono al sicuro, ma questa copia dell\'app non può sbloccarli',
+			'privateRecovery.undecryptableMessage' => 'Il database privato su questo Mac è intatto: è semplicemente cifrato con una chiave diversa da quella di questa build. Non è stato modificato né eliminato nulla. Di solito significa che è stato creato da un\'altra build di Evolve (per esempio una build di sviluppo). Apri quella build per accedere ai dati, oppure ripristina da iCloud con un\'installazione pulita.',
+			'privateRecovery.schemaTooNewTitle' => 'Questo database proviene da una versione più recente',
+			'privateRecovery.schemaTooNewMessage' => 'I tuoi dati privati sono stati aperti l\'ultima volta da una versione più recente di Evolve e sono perfettamente intatti. Questa versione più vecchia non può leggerli in sicurezza. Aggiorna all\'ultima versione — o riapri la build più recente — e ritroverai tutto.',
+			'privateRecovery.copyDiagnostics' => 'Copia diagnostica',
+			'privateRecovery.diagnosticsCopied' => 'Diagnostica copiata negli appunti',
+			'privateRecovery.resetConfirmTitle' => 'Spostare da parte questo database?',
+			'privateRecovery.resetConfirmBody' => 'Evolve ripartirà con un database privato vuoto. Il file cifrato esistente viene conservato su questo Mac, non eliminato, quindi è ancora recuperabile.',
+			'privateRecovery.resetConfirmBodySized' => ({required Object size}) => 'Evolve ripartirà con un database privato vuoto. Il file cifrato esistente (${size}) viene conservato su questo Mac, non eliminato, quindi è ancora recuperabile.',
 			'namePrompt.title' => 'Come ti chiami?',
 			'namePrompt.subtitle' => 'Inserisci il tuo nome per personalizzare la dashboard.',
 			'namePrompt.hint' => 'Es. Simo',
@@ -2510,6 +2528,8 @@ extension on TranslationsIt {
 			'stats.gapLongest' => 'Massimo',
 			'stats.gapSince' => 'Dall\'ultimo',
 			'stats.habitBounceBackShort' => 'Ripresa',
+			_ => null,
+		} ?? switch (path) {
 			'stats.habitConsistencyDetail' => 'Punteggio regolarità',
 			'stats.habitPercentile' => ({required Object pct}) => 'Meglio del ${pct}% delle tue abitudini',
 			'stats.monthVsTitle' => 'Questo mese vs scorso',
@@ -2519,8 +2539,6 @@ extension on TranslationsIt {
 			'stats.nextDayMoodTitle' => 'Impatto sull\'umore del giorno dopo',
 			'stats.nextDayMoodSubtitle' => 'Umore ed energia il giorno seguente',
 			'stats.nextDayAfterDone' => 'Dopo averla fatta',
-			_ => null,
-		} ?? switch (path) {
 			'stats.nextDayAfterMissed' => 'Dopo averla saltata',
 			'stats.nextDayMoodLift' => ({required Object value}) => '${value} di umore in più',
 			'stats.streakHistoryTitle' => 'Cronologia serie',
@@ -3024,6 +3042,8 @@ extension on TranslationsIt {
 			'subscriptionCtrl.restoreInProgress' => 'Un ripristino è già in corso. Attendi qualche secondo.',
 			'subscriptionCtrl.purchaseFailedMessage' => 'Non siamo riusciti a completare l\'acquisto. Riprova tra poco.',
 			'subscriptionCtrl.restoreFailedMessage' => 'Non siamo riusciti a ripristinare gli acquisti. Riprova tra poco.',
+			_ => null,
+		} ?? switch (path) {
 			'subscriptionCtrl.purchaseRegisteredNotActive' => 'L\'acquisto è registrato, ma l\'abbonamento Pro non risulta ancora attivo. Attendi qualche secondo e usa Ripristina acquisti.',
 			'subscriptionCtrl.noActiveSubscription' => 'Nessun abbonamento Evolve Pro attivo è stato trovato su questo Apple ID. Assicurati di usare lo stesso Apple ID dell\'acquisto.',
 			'subscriptionCtrl.invalidConfig' => 'Configurazione degli acquisti non valida. Riprova più tardi o contatta l\'assistenza.',
@@ -3033,8 +3053,6 @@ extension on TranslationsIt {
 			'authCtrl.accessNotCompleted' => ({required Object provider}) => 'Accesso ${provider} non completato.',
 			'authCtrl.providerAuthFailed' => ({required Object provider}) => 'Autenticazione ${provider} non riuscita.',
 			'authCtrl.operationFailed' => 'Operazione non riuscita. Riprova tra poco.',
-			_ => null,
-		} ?? switch (path) {
 			'proModal.title' => 'Sblocca Evolve Pro',
 			'proModal.subtitle' => 'Porta il tuo sistema di abitudini al livello successivo',
 			'proModal.featuresHeader' => 'COSA INCLUDE IL PIANO PRO',

@@ -1314,11 +1314,18 @@ class PrivacySettingsScreen extends ConsumerWidget {
         // gone), the row-wipe below can't even open it — every step would throw
         // PrivateDatabaseLockedException. Fall back to a file-level reset so
         // "delete private data" still recovers a locked device for a user with
-        // no backup to import. The local data is unrecoverable anyway (key
-        // lost), which is exactly what this action promises to remove.
+        // no backup to import.
+        //
+        // resetLockedDatabase now RETAINS the encrypted file (renamed aside,
+        // with its key parked) — right for a recovery, wrong here: this action
+        // promises irreversible deletion, and the database may be perfectly
+        // intact (a wrong key also reads as locked). Destroy the retained copy
+        // immediately, or the app keeps a full copy of the data it just said it
+        // had deleted.
         if (await privateStore.isDatabaseLocked()) {
           await NotificationService().cancelAll();
           await privateStore.resetLockedDatabase();
+          await privateStore.deleteLockedAsideCopy();
           invalidatePrivateDataProviders(ref);
           if (context.mounted) {
             showEvolveToast(

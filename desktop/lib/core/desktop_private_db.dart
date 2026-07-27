@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:crypto/crypto.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/core/import_merge.dart';
 import 'package:evolve_desktop/core/import_merge_stats.dart';
@@ -34,6 +35,51 @@ class PrivateDatabaseLockedException implements Exception {
   String toString() =>
       'Private database key unavailable while the database file exists; '
       'refusing to regenerate it so the data stays recoverable.';
+}
+
+/// Thrown when a key IS present but does not decrypt the database file.
+///
+/// Deliberately a DIFFERENT exception from [PrivateDatabaseLockedException],
+/// even though both mean "this device cannot read this database". The
+/// distinction decides what the app is allowed to do next:
+///
+///  * *Locked* (no key at all) may auto-recover from CloudKit, because stashing
+///    a file whose key is gone risks nothing — there is no key that could ever
+///    open it again.
+///  * *Undecryptable* (a key, but the wrong one) must NOT auto-recover. The
+///    correct key exists somewhere — in another build's store, in a container
+///    that was restored, on the Mac this database came from — and the recovery
+///    path's first act is to rename the file aside and clear the key store,
+///    which is precisely how an intact database gets orphaned. So this state is
+///    reported, never acted upon: no stash, no re-pull, no destructive button.
+///
+/// [provenanceMismatch] is set when the key-fingerprint sidecar proves the file
+/// was encrypted by a key from a *different* store (e.g. a debug build's
+/// plaintext dev file versus the Keychain), which is the single most common
+/// cause and the one the user can actually fix.
+class PrivateDatabaseUndecryptableException implements Exception {
+  const PrivateDatabaseUndecryptableException({
+    this.provenanceMismatch = false,
+    this.expectedProvenance,
+    this.actualProvenance,
+  });
+
+  /// True when the sidecar attributes the file to another key store.
+  final bool provenanceMismatch;
+
+  /// The store recorded in the sidecar (`keychain` / `devfile`), if known.
+  final String? expectedProvenance;
+
+  /// The store this build reads from.
+  final String? actualProvenance;
+
+  @override
+  String toString() => provenanceMismatch
+      ? 'Private database was encrypted with a key from "$expectedProvenance" '
+          'but this build reads its key from "$actualProvenance"; refusing to '
+          'touch the file so the data stays recoverable.'
+      : 'Private database exists but the available key does not decrypt it; '
+          'refusing to touch the file so the data stays recoverable.';
 }
 
 /// The slice of the private store the locked-DB recovery flow needs. Extracted
@@ -103,14 +149,65 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
   String? _cachedOwnerId;
 
   /// New baseline file name — the pre-alignment mock used `evolve_private.db`.
-  static const _dbFileName = 'evolve_private_v2.db';
+  ///
+  /// **Debug builds use a DIFFERENT file** (`evolve_private_v2.dev.db`). This is
+  /// one line and it retires an entire incident class. A debug build and a
+  /// release build of `com.simo.evolve` share ONE macOS sandbox container, so
+  /// they resolve the same path here — but they do NOT share a key store: under
+  /// `kDebugMode` the SQLCipher key comes from a plaintext dev file
+  /// (`DevDeviceLocalStore`) and otherwise from the Keychain. Two key stores over
+  /// one file means neither build can open the other's database, and worse, the
+  /// loser takes the *recovery* path: it renames the file aside, mints a new key,
+  /// and can discard the stash — destroying the other build's data while the
+  /// other build is still running on the now-moved inode. Separate files make
+  /// that impossible, cost nothing in release, and need no signing changes.
+  ///
+  /// `_isFlutterTest` is deliberately NOT consulted: tests must exercise the
+  /// same name resolution the shipping build uses.
+  static String get _dbFileName =>
+      kDebugMode ? 'evolve_private_v2.dev.db' : 'evolve_private_v2.db';
+
+  /// The resolved database file name for THIS build flavour.
+  ///
+  /// Exposed so tests assert against the same resolution the app uses instead
+  /// of hardcoding a literal — a hardcoded name is precisely how a test keeps
+  /// passing while the app writes somewhere else.
+  @visibleForTesting
+  static String get databaseFileName => _dbFileName;
+
   static const _keyStorageKey = 'evolve_private_db_key';
+
+  /// Companion Keychain account holding the key for the retained
+  /// `.locked-*` aside copy. See [resetLockedDatabase]: preserving the
+  /// ciphertext without its key would preserve something nobody can ever read.
+  static const _asideKeyStorageKey = 'evolve_private_db_key.aside';
   static const _ownerStorageKey = 'evolve_private_owner_id';
   static const _avatarDirName = 'private_profile';
 
   /// Suffix for the temporary "stashed" copy of a locked DB kept during an
   /// auto-recovery cloud re-pull so it can be restored if the pull didn't run.
   static const _bakSuffix = '.recovery-bak';
+
+  /// Suffix for the non-destructive replacement of the old "delete the
+  /// database" recovery. See [resetLockedDatabase].
+  static const _lockedAsideSuffix = '.locked-';
+
+  /// Sidecar holding a short, NON-SECRET fingerprint of the key the database
+  /// file was encrypted with, plus which store that key came from.
+  ///
+  /// This exists because both the lock probe and the fail-closed guard used to
+  /// accept ANY string of >= 32 characters as "the key", collapsing the
+  /// three-way reality — absent / correct / WRONG — into two. A wrong key of the
+  /// right length therefore read as perfectly healthy, and the mismatch only
+  /// surfaced later as an opaque `open_failed` from deep inside SQLCipher.
+  /// Comparing eight bytes before the open turns that into a precise,
+  /// non-destructive answer.
+  static const _keyFingerprintSuffix = '.keyfp';
+
+  /// Where the SQLCipher key currently comes from, recorded in the sidecar so a
+  /// mismatch can say WHY rather than just "wrong key". Values are stable and
+  /// written to disk — do not rename.
+  static String get _keyProvenance => kDebugMode ? 'devfile' : 'keychain';
 
   /// Native bridge that flags the private-data directory as backup-excluded.
   /// Same channel contract as the iOS bridge (`evolve/private_storage`).
@@ -149,6 +246,55 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
     final existing = _db;
     if (existing != null && existing.isOpen) return existing;
     return _opening ??= _open().whenComplete(() => _opening = null);
+  }
+
+  /// Drops the cached connection so the next access reopens the file.
+  ///
+  /// Needed because `Database.isOpen` is a Dart-side flag that a rename or
+  /// unlink cannot clear, and no error path ever nulled `_db` — so ONE rename
+  /// (by another process, or by our own recovery) wedged the connection
+  /// permanently: every write failed with `SQLITE_READONLY_DBMOVED` while reads
+  /// kept succeeding from cache, which is precisely how 36 consecutive syncs
+  /// failed over 33 minutes with a perfectly healthy-looking UI.
+  Future<void> dropStaleHandle() async {
+    try {
+      await _db?.close();
+    } catch (_) {
+      // Already dead — that is the situation being repaired.
+    }
+    _db = null;
+    _opening = null;
+  }
+
+  /// Runs [action] against the open database, recovering ONCE from a database
+  /// file that was moved or replaced under our live handle.
+  ///
+  /// `Database.isOpen` is a Dart-side flag: renaming or unlinking the file
+  /// cannot clear it, and no error path ever nulled `_db`. So a single rename by
+  /// another process (or by our own recovery) wedged the connection forever —
+  /// SQLite returns `SQLITE_READONLY_DBMOVED` for every write while READS keep
+  /// succeeding from cache, which is why the UI looked perfectly healthy while
+  /// 36 consecutive syncs failed over 33 minutes and every mutation was silently
+  /// lost. Dropping the handle and reopening turns that permanent wedge into a
+  /// hiccup, and the successful reopen also confirms the diagnosis.
+  ///
+  /// Deliberately ONE retry: if the reopened handle fails the same way, the file
+  /// is being moved repeatedly and looping would only hide it.
+  Future<T> runResilient<T>(Future<T> Function(Database db) action) async {
+    try {
+      return await action(await database);
+    } catch (error) {
+      final failure =
+          classifyPrivateDbOpenFailure(error, fileExistedNonEmpty: true);
+      if (failure != PrivateDbOpenFailure.movedOrReadonly) rethrow;
+      AppLogger.warning(
+        '[DesktopPrivateDb] the database file moved under an open handle '
+        '(${diagnosticCode(failure)}); dropping the stale connection and '
+        'reopening once.',
+      );
+      await dropStaleHandle();
+      return await action(await database);
+    }
   }
 
   /// Opens the DB (running the owner self-heal) without exposing the handle —
@@ -201,10 +347,16 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
   Future<bool> isDatabaseLocked() async {
     try {
       final dir = await getApplicationSupportDirectory();
-      final dbFileExists = await File(p.join(dir.path, _dbFileName)).exists();
+      final dbPath = p.join(dir.path, _dbFileName);
+      final dbFileExists = await File(dbPath).exists();
       if (!dbFileExists) return false;
       final key = await SecureStorageUtils.readDeviceLocal(_keyStorageKey);
-      return key == null || key.length < 32;
+      if (key == null || key.length < 32) return true;
+      // A key of the right LENGTH is not a key that WORKS. This probe used to
+      // stop at the length test, so a wrong key read as "not locked" and the
+      // import pre-flight offered no recovery at all. The sidecar answers the
+      // question the length never could.
+      return await _keyFingerprintMismatch(dbPath, key) != null;
     } catch (error, stack) {
       // A probe failure must never itself block the user; treat as "not locked"
       // and let the real open surface any genuine problem.
@@ -219,50 +371,224 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
   /// open mints a fresh key over an empty schema. The device-local owner id is
   /// intentionally KEPT so identity stays stable across the reset.
   ///
-  /// DESTRUCTIVE and irreversible: the existing local private data cannot be
-  /// decrypted (its key is gone), so this must ONLY run behind an explicit,
-  /// user-confirmed recovery action — never automatically (a merely transient
-  /// Keychain miss would otherwise nuke recoverable data). Best-effort per
-  /// file; a missing sidecar is not an error.
+  /// **Not destructive, despite the name.** The encrypted file is RENAMED ASIDE
+  /// to `evolve_private_v2.db.locked-<ISO8601>`, never deleted.
+  ///
+  /// This used to be an unconditional `File.delete()`, offered behind a one-tap
+  /// button on a screen the user reached simply by launching the app, for a
+  /// failure the app could not classify. That combination is indefensible: the
+  /// overwhelmingly common causes of "can't open" leave the ciphertext perfectly
+  /// intact and merely separated from its key, and a delete makes a recoverable
+  /// situation permanent. Renaming aside costs a few megabytes and keeps every
+  /// one of those cases reversible.
+  ///
+  /// TWO generations are retained, not one. A single slot looks tidy and is
+  /// wrong: the states that put a user here — a rotated Keychain access group, a
+  /// container restored onto another Mac, a wrongly-keyed file — recur on the
+  /// NEXT launch too, so "reset, still broken, reset again" is the ordinary
+  /// path, and with one slot the second reset silently destroys the original the
+  /// first one saved. Each generation keeps its own parked key.
+  ///
+  /// If an interrupted recovery left a `.recovery-bak`, that stash is PROMOTED
+  /// to the aside copy instead of being deleted. This inversion matters: a stash
+  /// still on disk here proves the cloud re-pull restored nothing (a re-pull that
+  /// applied changes discards it), so the stash is the user's REAL database and
+  /// the live file is the empty one minted for that pull. Deleting the stash and
+  /// archiving the live file — which is what "clear the stash so the reset
+  /// cannot un-reset itself" naively does — throws away the only real copy and
+  /// keeps an empty one under a name that promises recoverability.
   @override
   Future<void> resetLockedDatabase() async {
     await _quiesceForFileMutation();
 
     final dir = await getApplicationSupportDirectory();
     final dbPath = p.join(dir.path, _dbFileName);
-    for (final path in [dbPath, '$dbPath-wal', '$dbPath-shm']) {
+    final stamp = _now().replaceAll(':', '-');
+    final aside = '$_lockedAsideSuffix$stamp';
+
+    final stashIsTheRealDatabase = await File('$dbPath$_bakSuffix').exists();
+    var moved = false;
+
+    if (stashIsTheRealDatabase) {
+      // Promote the stash; the live file is the disposable empty one.
+      for (final suffix in ['', '-wal', '-shm']) {
+        await _deleteIfExists(File('$dbPath$suffix'));
+        await _moveIfExists(
+          File('$dbPath$suffix$_bakSuffix'),
+          '$dbPath$suffix$aside',
+        );
+        if (suffix.isEmpty) moved = true;
+      }
+      await _moveIfExists(
+        File('$dbPath$_keyFingerprintSuffix$_bakSuffix'),
+        '$dbPath$_keyFingerprintSuffix$aside',
+      );
+      await _deleteIfExists(File('$dbPath$_keyFingerprintSuffix'));
+      // stashLockedDatabase deliberately destroyed the key that opens this
+      // stash, so there is nothing truthful to park. Advertising the copy with
+      // the CURRENT key would be worse than parking none: it cannot open it.
+      await _parkAsideKey(stamp, key: null);
+    } else {
+      for (final suffix in ['', '-wal', '-shm']) {
+        final src = File('$dbPath$suffix');
+        try {
+          if (await src.exists()) {
+            await src.rename('$dbPath$suffix$aside');
+            if (suffix.isEmpty) moved = true;
+          }
+        } catch (error, stack) {
+          AppLogger.error(
+            '[DesktopPrivateDb] locked reset: could not move $dbPath$suffix aside',
+            error,
+            stack,
+          );
+        }
+      }
+      await _moveIfExists(
+        File('$dbPath$_keyFingerprintSuffix'),
+        '$dbPath$_keyFingerprintSuffix$aside',
+      );
+      // PARK the key with its ciphertext. Moving a database aside is worthless
+      // if the key that opens it is destroyed in the same breath.
+      String? current;
       try {
-        final file = File(path);
-        if (await file.exists()) await file.delete();
+        current = await SecureStorageUtils.readDeviceLocal(_keyStorageKey);
       } catch (error, stack) {
-        AppLogger.error(
-          '[DesktopPrivateDb] locked reset: could not delete $path',
+        AppLogger.warning(
+          '[DesktopPrivateDb] locked reset: could not read the key to park it',
           error,
           stack,
         );
       }
+      await _parkAsideKey(stamp, key: current);
     }
 
     await _deletePrivateProfileFiles();
 
-    // Drop a short/stale key remnant so the next open takes the first-run path
-    // and writes a fresh key under the CURRENT Keychain access group. A key
-    // that is present-but-unreadable (rotated access group) is invisible to
-    // delete too — harmless no-op; the next read misses it and mints fresh.
+    // Clear the LIVE key so the next open takes the first-run path. Safe now:
+    // the copy that needs it (if any) has its own parked duplicate.
     try {
       await SecureStorageUtils.deleteDeviceLocal(_keyStorageKey);
     } catch (error, stack) {
       AppLogger.warning(
-        '[DesktopPrivateDb] locked reset: key remnant delete failed',
-        error,
-        stack,
-      );
+        '[DesktopPrivateDb] locked reset: key clear failed', error, stack);
     }
 
+    // Prune only AFTER the new copy exists, so a failure half-way can never
+    // leave zero copies.
+    await _pruneAsideCopies(dir, keep: 2);
+
     AppLogger.warning(
-      '[DesktopPrivateDb] locked database reset: orphaned file + key cleared; '
-      'the next open mints a fresh key.',
+      '[DesktopPrivateDb] locked database reset: '
+      '${moved ? 'database MOVED ASIDE to *$aside (recoverable)' : 'no database '
+          'file was present'}'
+      '${stashIsTheRealDatabase ? ' — promoted from an interrupted recovery\'s '
+          'stash, which held the real data' : ''}; the next open mints a fresh key.',
     );
+  }
+
+  /// Stores (or clears) the key belonging to the aside copy stamped [stamp].
+  /// One account PER GENERATION, so a later reset cannot overwrite an earlier
+  /// copy's key and leave it unreadable.
+  Future<void> _parkAsideKey(String stamp, {required String? key}) async {
+    final account = '$_asideKeyStorageKey.$stamp';
+    try {
+      if (key != null && key.isNotEmpty) {
+        await SecureStorageUtils.writeDeviceLocal(
+          account,
+          key,
+          context: '[DesktopPrivateDb] park key for the aside copy',
+        );
+      } else {
+        await SecureStorageUtils.deleteDeviceLocal(account);
+      }
+    } catch (error, stack) {
+      AppLogger.warning(
+        '[DesktopPrivateDb] could not park the aside key', error, stack);
+    }
+  }
+
+  /// Every retained aside generation, newest first, identified by its stamp.
+  Future<List<String>> _asideStamps(Directory dir) async {
+    final stamps = <String>[];
+    try {
+      if (!await dir.exists()) return stamps;
+      final prefix = '$_dbFileName$_lockedAsideSuffix';
+      await for (final entity in dir.list(followLinks: false)) {
+        if (entity is! File) continue;
+        final name = p.basename(entity.path);
+        // The bare `.db` copy identifies a generation; its -wal/-shm/.keyfp
+        // siblings carry the same stamp and are handled alongside it.
+        if (name.startsWith(prefix)) stamps.add(name.substring(prefix.length));
+      }
+    } catch (error, stack) {
+      AppLogger.warning(
+        '[DesktopPrivateDb] could not list aside copies', error, stack);
+    }
+    // The stamp is an ISO-8601 UTC timestamp, so lexical order IS chronological.
+    stamps.sort((a, b) => b.compareTo(a));
+    return stamps;
+  }
+
+  /// Deletes every aside generation beyond the newest [keep], with its sidecars
+  /// and its parked key. Best-effort.
+  Future<void> _pruneAsideCopies(Directory dir, {int keep = 0}) async {
+    final stamps = await _asideStamps(dir);
+    if (stamps.length <= keep) return;
+    final dbPath = p.join(dir.path, _dbFileName);
+    for (final stamp in stamps.skip(keep)) {
+      final aside = '$_lockedAsideSuffix$stamp';
+      for (final suffix in ['', '-wal', '-shm']) {
+        await _deleteIfExists(File('$dbPath$suffix$aside'));
+      }
+      await _deleteIfExists(File('$dbPath$_keyFingerprintSuffix$aside'));
+      try {
+        await SecureStorageUtils.deleteDeviceLocal('$_asideKeyStorageKey.$stamp');
+      } catch (error, stack) {
+        AppLogger.warning(
+          '[DesktopPrivateDb] could not remove a parked aside key', error, stack);
+      }
+    }
+  }
+
+  /// The NEWEST retained aside copy, with its size, or null when none exists.
+  /// Never throws.
+  Future<({String path, int bytes})?> lockedAsideCopy() async {
+    try {
+      final dir = await getApplicationSupportDirectory();
+      final stamps = await _asideStamps(dir);
+      if (stamps.isEmpty) return null;
+      final file = File(
+        '${p.join(dir.path, _dbFileName)}$_lockedAsideSuffix${stamps.first}',
+      );
+      if (!await file.exists()) return null;
+      return (path: file.path, bytes: await file.length());
+    } catch (error, stack) {
+      AppLogger.warning(
+        '[DesktopPrivateDb] could not inspect the aside copy', error, stack);
+    }
+    return null;
+  }
+
+  /// Permanently deletes EVERY retained aside copy and its parked key. The only
+  /// place in the app allowed to destroy private ciphertext, and only from an
+  /// explicit, separately-confirmed action. Never throws.
+  Future<void> deleteLockedAsideCopy() async {
+    final dir = await getApplicationSupportDirectory();
+    await _pruneAsideCopies(dir); // keep: 0 ⇒ remove all generations + keys
+    AppLogger.warning(
+      '[DesktopPrivateDb] aside copies deleted permanently at the user\'s '
+      'explicit request',
+    );
+  }
+
+  Future<void> _deleteIfExists(File file) async {
+    try {
+      if (await file.exists()) await file.delete();
+    } catch (error, stack) {
+      AppLogger.warning(
+        '[DesktopPrivateDb] could not delete ${file.path}', error, stack);
+    }
   }
 
   /// Bump the open generation, wait out any in-flight [_open] (so it can't
@@ -289,17 +615,57 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
     _opening = null;
   }
 
+  /// Renames the locked database aside so a fresh one can be re-pulled from
+  /// CloudKit, returning whether a database file was actually stashed.
+  ///
+  /// **The key is cleared BEFORE the file moves, and a failure to clear it
+  /// ABORTS the whole operation.** That ordering is the fix for a real defect,
+  /// not defensive style. The old code renamed first and cleared the key last,
+  /// with the clear wrapped in a catch that downgraded any failure to a warning
+  /// — so a swallowed Keychain error, or a process death in that window, left
+  /// exactly the state that bricks the database: an old-key file sitting beside
+  /// a new-key store, which every later launch reports as an unclassifiable
+  /// open failure. Clearing first means the worst case is a file with no key,
+  /// which is the *recoverable* lock state the recovery flow already handles.
+  ///
+  /// A pre-existing stash is never clobbered: it is the only copy of an earlier
+  /// attempt's data, and overwriting it would destroy the very thing the stash
+  /// exists to protect. Finding one aborts instead, leaving the sweep at the
+  /// recovery entry point to deal with it.
   @override
   Future<bool> stashLockedDatabase() async {
     await _quiesceForFileMutation();
     final dir = await getApplicationSupportDirectory();
     final dbPath = p.join(dir.path, _dbFileName);
+
+    if (await File('$dbPath$_bakSuffix').exists()) {
+      AppLogger.warning(
+        '[DesktopPrivateDb] stash ABORTED: a .recovery-bak already exists, so '
+        'a previous recovery is still in flight or was interrupted. Refusing '
+        'to overwrite the only copy of its data.',
+      );
+      return false;
+    }
+
+    // Key first. If this throws, nothing has moved yet and the caller can fail
+    // safely with the database exactly where it was.
+    try {
+      await SecureStorageUtils.deleteDeviceLocal(_keyStorageKey);
+    } catch (error, stack) {
+      AppLogger.error(
+        '[DesktopPrivateDb] stash ABORTED: could not clear the device-local '
+        'key, so moving the database would strand it beside a stale key.',
+        error,
+        stack,
+      );
+      return false;
+    }
+
     var stashed = false;
     for (final suffix in ['', '-wal', '-shm']) {
       final src = File('$dbPath$suffix');
       final dst = File('$dbPath$suffix$_bakSuffix');
       try {
-        if (await dst.exists()) await dst.delete();
         if (await src.exists()) {
           await src.rename(dst.path);
           if (suffix.isEmpty) stashed = true;
@@ -308,42 +674,82 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
         AppLogger.error('[DesktopPrivateDb] stash failed for $suffix', error, stack);
       }
     }
-    // Drop the unreadable key remnant so the next open mints a fresh key for the
-    // empty DB the cloud re-pull will populate. The stashed .bak still holds the
-    // real (old-key-encrypted) data until we discard or restore it.
-    try {
-      await SecureStorageUtils.deleteDeviceLocal(_keyStorageKey);
-    } catch (error, stack) {
-      AppLogger.warning(
-        '[DesktopPrivateDb] stash: key remnant delete failed', error, stack);
-    }
+    // The sidecar describes the stashed ciphertext; move it with the data so a
+    // restore can still prove which key the file belongs to.
+    await _moveIfExists(
+      File('$dbPath$_keyFingerprintSuffix'),
+      '$dbPath$_keyFingerprintSuffix$_bakSuffix',
+    );
     return stashed;
   }
 
+  /// Undoes [stashLockedDatabase]. **Only ever touches the live database when a
+  /// stash actually exists to put back.**
+  ///
+  /// The previous implementation deleted the live file unconditionally and only
+  /// then checked whether a `.recovery-bak` existed to rename over it — so
+  /// calling it when no stash was present (which the recovery's catch-all did,
+  /// blind, on any failure) destroyed a healthy database and restored nothing.
   @override
   Future<void> restoreStashedDatabase() async {
-    await _quiesceForFileMutation();
     final dir = await getApplicationSupportDirectory();
     final dbPath = p.join(dir.path, _dbFileName);
+
+    // Nothing to restore ⇒ do NOT touch the live database.
+    if (!await File('$dbPath$_bakSuffix').exists()) {
+      AppLogger.info(
+        '[DesktopPrivateDb] restore skipped: no .recovery-bak present, so the '
+        'live database is left untouched.',
+      );
+      return;
+    }
+
+    await _quiesceForFileMutation();
+
+    // Clear the key BEFORE the files move, for the same reason as the stash: the
+    // restored file belongs to the OLD key, so a fresh key left in the store
+    // would make it read as undecryptable instead of as the recoverable lock
+    // state. If the clear fails, abort — a stash on disk is recoverable, a
+    // wrongly-keyed live file is not.
+    try {
+      await SecureStorageUtils.deleteDeviceLocal(_keyStorageKey);
+    } catch (error, stack) {
+      AppLogger.error(
+        '[DesktopPrivateDb] restore ABORTED: could not clear the freshly-minted '
+        'key, so restoring would leave the old-key database beside it.',
+        error,
+        stack,
+      );
+      return;
+    }
+
     for (final suffix in ['', '-wal', '-shm']) {
       final fresh = File('$dbPath$suffix');
       final bak = File('$dbPath$suffix$_bakSuffix');
       try {
-        if (await fresh.exists()) await fresh.delete();
-        if (await bak.exists()) await bak.rename(fresh.path);
+        if (!await bak.exists()) continue;
+        // The "fresh" file here is the empty database minted for the re-pull
+        // that did not happen; it holds no user data, and the stash we are about
+        // to restore is the real one.
+        await _deleteIfExists(fresh);
+        await bak.rename(fresh.path);
       } catch (error, stack) {
         AppLogger.error(
           '[DesktopPrivateDb] restore failed for $suffix', error, stack);
       }
     }
-    // The restored DB is encrypted with the OLD (now-lost) key; drop the fresh
-    // key minted for the discarded empty DB so isDatabaseLocked() reads true
-    // again and a later launch re-enters the recovery flow.
+    await _moveIfExists(
+      File('$dbPath$_keyFingerprintSuffix$_bakSuffix'),
+      '$dbPath$_keyFingerprintSuffix',
+    );
+  }
+
+  Future<void> _moveIfExists(File src, String destination) async {
     try {
-      await SecureStorageUtils.deleteDeviceLocal(_keyStorageKey);
+      if (await src.exists()) await src.rename(destination);
     } catch (error, stack) {
       AppLogger.warning(
-        '[DesktopPrivateDb] restore: key remnant delete failed', error, stack);
+        '[DesktopPrivateDb] could not move ${src.path}', error, stack);
     }
   }
 
@@ -362,13 +768,133 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
     final dir = await getApplicationSupportDirectory();
     final dbPath = p.join(dir.path, _dbFileName);
     for (final suffix in ['', '-wal', '-shm']) {
-      final bak = File('$dbPath$suffix$_bakSuffix');
-      try {
-        if (await bak.exists()) await bak.delete();
-      } catch (error, stack) {
-        AppLogger.warning(
-          '[DesktopPrivateDb] discard stash failed for $suffix', error, stack);
+      await _deleteIfExists(File('$dbPath$suffix$_bakSuffix'));
+    }
+    await _deleteIfExists(File('$dbPath$_keyFingerprintSuffix$_bakSuffix'));
+  }
+
+  /// Size of the encrypted database on disk, or null when there is none. Used
+  /// by the reset confirmation so the user is told what they are moving.
+  Future<int?> databaseSizeBytes() async {
+    try {
+      final dir = await getApplicationSupportDirectory();
+      final file = File(p.join(dir.path, _dbFileName));
+      if (!await file.exists()) return null;
+      return await file.length();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// A SCRUBBED diagnostic bundle for the failure screen's "Copy diagnostics".
+  ///
+  /// Contains exactly the facts that distinguish the failure modes from one
+  /// another — and nothing else. Explicitly excluded: the database path (it
+  /// embeds the user's home directory and account name), key material, key
+  /// fingerprints (they are non-secret but pointless outside the device), and
+  /// the raw exception text, because a `DatabaseException` stringifies WITH the
+  /// values of the row that failed and this bundle is designed to be pasted
+  /// into a bug report.
+  Future<String> diagnosticsReport({PrivateDbOpenFailure? failure}) async {
+    final lines = <String>[
+      'Evolve private-database diagnostics',
+      'code: ${failure == null ? 'n/a' : diagnosticCode(failure)}',
+      'cause: ${failure?.name ?? 'unclassified'}',
+      'buildMode: ${kDebugMode ? 'debug' : 'release'}',
+      'keyStore: $_keyProvenance',
+      'schemaVersionKnownToThisBuild: ${PrivateDbSchema.version}',
+    ];
+    try {
+      final dir = await getApplicationSupportDirectory();
+      final dbPath = p.join(dir.path, _dbFileName);
+      Future<void> note(String label, String path) async {
+        final file = File(path);
+        lines.add(await file.exists()
+            ? '$label: present (${await file.length()} bytes)'
+            : '$label: absent');
       }
+
+      lines.add('dbFileName: $_dbFileName'); // name only, never the full path
+      await note('db', dbPath);
+      await note('wal', '$dbPath-wal');
+      await note('journal', '$dbPath-journal');
+      await note('recoveryStash', '$dbPath$_bakSuffix');
+      await note('keyFingerprintSidecar', '$dbPath$_keyFingerprintSuffix');
+
+      final key = await SecureStorageUtils.readDeviceLocal(_keyStorageKey);
+      lines.add('keyPresent: ${key != null && key.isNotEmpty}');
+      lines.add('keyLengthPlausible: ${(key?.length ?? 0) >= 32}');
+      if (key != null && key.length >= 32) {
+        final mismatch = await _keyFingerprintMismatch(dbPath, key);
+        lines.add('keyMatchesDatabase: ${mismatch == null}');
+        if (mismatch?.expectedProvenance != null) {
+          lines.add('databaseKeyStore: ${mismatch!.expectedProvenance}');
+        }
+      }
+      final aside = await lockedAsideCopy();
+      lines.add(aside == null
+          ? 'asideCopy: none'
+          : 'asideCopy: present (${aside.bytes} bytes) — recoverable');
+    } catch (error) {
+      lines.add('inventory: unavailable ($error)');
+    }
+    return lines.join('\n');
+  }
+
+  // ---------------------------------------------------------------------------
+  // Key ↔ file binding (the fingerprint sidecar)
+  // ---------------------------------------------------------------------------
+
+  /// Eight bytes of `SHA-256(key)`, hex — enough to tell two independently
+  /// minted 384-bit keys apart with certainty, and far too little to attack the
+  /// key with. Stored in plaintext beside the ciphertext ON PURPOSE: it must be
+  /// readable precisely when the database is not.
+  static String _fingerprint(String key) =>
+      sha256.convert(utf8.encode(key)).toString().substring(0, 16);
+
+  Future<void> _writeKeyFingerprint(String dbPath, String key) async {
+    try {
+      await File('$dbPath$_keyFingerprintSuffix').writeAsString(
+        jsonEncode({
+          'fp': _fingerprint(key),
+          'store': _keyProvenance,
+          'writtenAt': _now(),
+        }),
+        flush: true,
+      );
+    } catch (error, stack) {
+      // A missing sidecar only costs us a precise diagnosis; it must never stop
+      // the database opening.
+      AppLogger.warning(
+        '[DesktopPrivateDb] could not write the key fingerprint', error, stack);
+    }
+  }
+
+  /// Compares the key we are about to use against the sidecar written when the
+  /// file was created. Returns null when there is nothing to compare (no
+  /// sidecar, unreadable sidecar) — absence is not evidence of a mismatch.
+  Future<PrivateDatabaseUndecryptableException?> _keyFingerprintMismatch(
+    String dbPath,
+    String key,
+  ) async {
+    try {
+      final file = File('$dbPath$_keyFingerprintSuffix');
+      if (!await file.exists()) return null;
+      final decoded = jsonDecode(await file.readAsString());
+      if (decoded is! Map) return null;
+      final recorded = decoded['fp'];
+      if (recorded is! String || recorded.isEmpty) return null;
+      if (recorded == _fingerprint(key)) return null;
+      final store = decoded['store'];
+      return PrivateDatabaseUndecryptableException(
+        provenanceMismatch: store is String && store != _keyProvenance,
+        expectedProvenance: store is String ? store : null,
+        actualProvenance: _keyProvenance,
+      );
+    } catch (error, stack) {
+      AppLogger.warning(
+        '[DesktopPrivateDb] could not read the key fingerprint', error, stack);
+      return null;
     }
   }
 
@@ -392,6 +918,13 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
       await resetSyncBookkeeping(txn);
     });
     await _deletePrivateProfileFiles();
+    // "Delete all private data" must mean ALL of it. The recovery artefacts —
+    // the retained `.locked-*` aside copy, its parked key and any `.recovery-bak`
+    // stash — are full encrypted copies of exactly the data the user just asked
+    // to be rid of, and leaving them behind while reporting success is a privacy
+    // defect, not a safety net.
+    await deleteLockedAsideCopy();
+    await discardStashedDatabase();
   }
 
   /// Clears `sync_state` and the delta-fetch token/last-sync in `sync_meta`,
@@ -1642,54 +2175,41 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
     final gen = _openGeneration;
     final dir = await getApplicationSupportDirectory();
     final dbPath = p.join(dir.path, _dbFileName);
-    final dbFileExists = await File(dbPath).exists();
+    final dbFile = File(dbPath);
+    final dbFileExists = await dbFile.exists();
+    // A zero-length file is NOT a database to be protected — SQLCipher will
+    // happily initialise it with any key. Treating it as existing is what turns
+    // an interrupted first run into a permanent lockout.
+    final dbFileNonEmpty =
+        dbFileExists && await dbFile.length() > 0;
     await _excludeFromBackup(dir);
-    final key = await _encryptionKey(dbFileExists: dbFileExists);
+    final key = await _encryptionKey(dbFileExists: dbFileNonEmpty);
 
-    final db = await openDatabase(
-      dbPath,
-      version: PrivateDbSchema.version,
-      password: key,
-      onConfigure: (db) async {
-        await PrivateDbSchema.onConfigure(db);
-        await db.execute('PRAGMA foreign_keys = ON;');
-        // QA diagnostic (visible in the in-app log viewer): the DB's stored
-        // schema version vs the code's target at open. `onConfigure` fires
-        // BEFORE onCreate/onUpgrade, so `stored` is the PRE-migration value — a
-        // Mac coming from v6 logs "stored=6, code=11" immediately before the
-        // v6→v11 chain runs, which is the only way to confirm from a shipped
-        // build which legs actually executed against real encrypted data.
-        //
-        // Mobile has carried this since the chain landed; desktop had not, which
-        // left the platform where schema problems are most likely (macOS ships
-        // independently of iOS, and users keep old .app bundles around) as the
-        // one with no way to report its own schema version.
-        try {
-          final rows = await db.rawQuery('PRAGMA user_version');
-          final stored = rows.isEmpty ? null : rows.first.values.first;
-          AppLogger.info(
-            '[PrivateDB] open: stored user_version=$stored, '
-            'code PrivateDbSchema.version=${PrivateDbSchema.version}',
-          );
-        } catch (_) {
-          // A diagnostic must never block opening the DB.
-        }
-      },
-      onCreate: PrivateDbSchema.onCreate,
-      onUpgrade: PrivateDbSchema.onUpgrade,
-      // Fail closed on a downgrade — mobile has always done this, desktop had
-      // not. With NO onDowngrade, sqflite neither throws nor wipes: it silently
-      // stamps `user_version` DOWN while leaving the NEWER physical schema in
-      // place, so a later migration re-runs against tables/columns that already
-      // exist and the database permanently fails to open.
-      //
-      // Not hypothetical on this platform: macOS ships independently of iOS and
-      // users keep old `.app` bundles, so running an older build after a newer
-      // one is routine. Throwing leaves `user_version` at the newer value, so
-      // the newer build still opens cleanly and the older build simply refuses
-      // a schema it does not understand.
-      onDowngrade: PrivateDbSchema.onDowngrade,
-    );
+    // Cheapest possible correct answer: if the sidecar says this file was
+    // encrypted with a different key, we know the open cannot succeed BEFORE
+    // SQLCipher turns that fact into an opaque `open_failed`. Report it as its
+    // own state rather than letting it reach the generic error path.
+    if (dbFileNonEmpty) {
+      final mismatch = await _keyFingerprintMismatch(dbPath, key);
+      if (mismatch != null) {
+        AppLogger.error(
+          '[PrivateDB] key fingerprint MISMATCH — the database on disk was '
+          'encrypted by "${mismatch.expectedProvenance ?? 'an unknown store'}" '
+          'and this build reads its key from "${mismatch.actualProvenance}". '
+          'Not touching the file.',
+          mismatch,
+        );
+        throw mismatch;
+      }
+    }
+
+    final db = await _openEncrypted(dbPath, key, fileExisted: dbFileNonEmpty);
+
+    // Record the binding on a successful open: on first creation this is the
+    // only chance to capture it, and re-writing it on every open self-heals a
+    // database created before the sidecar existed.
+    await _writeKeyFingerprint(dbPath, key);
+
     // A reset/stash/restore may have run WHILE this open was in flight (those
     // paths mutate the DB file outside any lock). If so, this handle points at a
     // since-renamed/deleted (or re-created empty) file — discard it rather than
@@ -1719,6 +2239,119 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
     _db = db;
     debugPrint('[DesktopPrivateDb] Opened schema v${PrivateDbSchema.version}.');
     return db;
+  }
+
+  /// Opens the SQLCipher database and TRANSLATES its failures into the app's own
+  /// vocabulary before they can reach a generic catch-all.
+  ///
+  /// This translation is the crux of the whole fix. The raw failures are
+  /// unusable as-is: `sqflite_sqlcipher` replaces a wrong-key error with the
+  /// opaque string `open_failed <path>` (discarding SQLite's real code 26), and
+  /// every statement afterwards reports `SQLITE_NOMEM` — "out of memory" — which
+  /// is a codec-failure artefact and has nothing to do with memory. Left
+  /// unclassified, both landed on a screen whose only button deleted the
+  /// database.
+  ///
+  /// [fileExisted] is what disambiguates `open_failed`: with a non-empty file on
+  /// disk it means "this key does not decrypt it"; with no file it means the
+  /// environment refused.
+  Future<Database> _openEncrypted(
+    String dbPath,
+    String key, {
+    required bool fileExisted,
+  }) async {
+    try {
+      return await _rawOpen(dbPath, key);
+    } catch (error, stack) {
+      final failure = classifyPrivateDbOpenFailure(
+        error,
+        fileExistedNonEmpty: fileExisted,
+      );
+      AppLogger.error(
+        '[PrivateDB] open failed — classified as ${failure.name} '
+        '(${diagnosticCode(failure)})',
+        error,
+        stack,
+      );
+      switch (failure) {
+        case PrivateDbOpenFailure.undecryptable:
+          // Never auto-recover from here: the ciphertext is intact and the
+          // correct key exists somewhere. Stashing would orphan it.
+          throw const PrivateDatabaseUndecryptableException();
+        case PrivateDbOpenFailure.schemaTooNew:
+        case PrivateDbOpenFailure.corrupt:
+        case PrivateDbOpenFailure.movedOrReadonly:
+        case PrivateDbOpenFailure.environment:
+        case PrivateDbOpenFailure.unknown:
+          rethrow;
+        case PrivateDbOpenFailure.transient:
+          // The ONLY bucket a retry can help. Two attempts, short backoff; a
+          // third would just be latency the user watches.
+          for (final delay in const [
+            Duration(milliseconds: 250),
+            Duration(milliseconds: 750),
+          ]) {
+            await Future<void>.delayed(delay);
+            try {
+              return await _rawOpen(dbPath, key);
+            } on Object catch (retryError) {
+              if (classifyPrivateDbOpenFailure(
+                    retryError,
+                    fileExistedNonEmpty: fileExisted,
+                  ) !=
+                  PrivateDbOpenFailure.transient) {
+                rethrow;
+              }
+            }
+          }
+          rethrow;
+      }
+    }
+  }
+
+  Future<Database> _rawOpen(String dbPath, String key) {
+    return openDatabase(
+      dbPath,
+      version: PrivateDbSchema.version,
+      password: key,
+      onConfigure: (db) async {
+        await PrivateDbSchema.onConfigure(db);
+        await db.execute('PRAGMA foreign_keys = ON;');
+        // Positive assertion that the connection is genuinely readable.
+        //
+        // This is not belt-and-braces: the plugin's `-query:` never re-checks
+        // the error after stepping a statement, so a poisoned connection returns
+        // `PRAGMA user_version` as a SUCCESSFUL EMPTY result set. sqflite then
+        // reads version 0, concludes a migration is due, and runs the whole
+        // onCreate/onUpgrade machinery against a database it cannot actually
+        // read. Empty here means the read FAILED, never "the version is 0" — a
+        // real database always has a row. This is the same "absence is not
+        // evidence" class that has already cost this codebase data twice.
+        final rows = await db.rawQuery('PRAGMA user_version');
+        if (rows.isEmpty || rows.first.values.isEmpty) {
+          throw const PrivateDatabaseUndecryptableException();
+        }
+        final stored = rows.first.values.first;
+        AppLogger.info(
+          '[PrivateDB] open: stored user_version=$stored, '
+          'code PrivateDbSchema.version=${PrivateDbSchema.version}',
+        );
+      },
+      onCreate: PrivateDbSchema.onCreate,
+      onUpgrade: PrivateDbSchema.onUpgrade,
+      // Fail closed on a downgrade — mobile has always done this, desktop had
+      // not. With NO onDowngrade, sqflite neither throws nor wipes: it silently
+      // stamps `user_version` DOWN while leaving the NEWER physical schema in
+      // place, so a later migration re-runs against tables/columns that already
+      // exist and the database permanently fails to open.
+      //
+      // Not hypothetical on this platform: macOS ships independently of iOS and
+      // users keep old `.app` bundles, so running an older build after a newer
+      // one is routine. Throwing leaves `user_version` at the newer value, so
+      // the newer build still opens cleanly and the older build simply refuses
+      // a schema it does not understand.
+      onDowngrade: PrivateDbSchema.onDowngrade,
+    );
   }
 
   /// Self-heals an "orphaned owner": if this device's current owner id owns no

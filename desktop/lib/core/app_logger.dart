@@ -20,6 +20,10 @@ class LogEntry {
   final String? stackTrace;
   final Map<String, dynamic>? extras;
 
+  /// Which process wrote this entry (see [AppLogger.sessionId]). Nullable so
+  /// entries persisted before this existed still load.
+  final String? session;
+
   const LogEntry({
     required this.timestamp,
     required this.level,
@@ -27,6 +31,7 @@ class LogEntry {
     this.error,
     this.stackTrace,
     this.extras,
+    this.session,
   });
 
   String get levelLabel => switch (level) {
@@ -51,6 +56,7 @@ class LogEntry {
         if (error != null) 'error': error,
         if (stackTrace != null) 'stackTrace': stackTrace,
         if (extras != null) 'extras': extras,
+        if (session != null) 'session': session,
       };
 
   static LogEntry fromJson(Map<String, dynamic> json) => LogEntry(
@@ -63,6 +69,7 @@ class LogEntry {
         error: json['error'] as String?,
         stackTrace: json['stackTrace'] as String?,
         extras: (json['extras'] as Map?)?.cast<String, dynamic>(),
+        session: json['session'] as String?,
       );
 }
 
@@ -124,7 +131,17 @@ class AppLogger {
   }
 
   static void _addEntry(LogEntry entry) {
-    _logs.add(entry);
+    _logs.add(entry.session == null
+        ? LogEntry(
+            timestamp: entry.timestamp,
+            level: entry.level,
+            message: entry.message,
+            error: entry.error,
+            stackTrace: entry.stackTrace,
+            extras: entry.extras,
+            session: sessionId,
+          )
+        : entry);
     if (_logs.length > _maxEntries) _logs.removeAt(0);
     _notifyListeners();
     _scheduleSave();
@@ -153,10 +170,34 @@ class AppLogger {
   @visibleForTesting
   static bool persistenceEnabled = true;
 
+  /// Per-flavour log file, for the same reason the private database is
+  /// per-flavour: a debug build and a release build of the same bundle id share
+  /// ONE macOS sandbox container.
+  ///
+  /// This is not hygiene, it is forensics. `loadLogs()` clears the ring and
+  /// repopulates it from disk, and [_scheduleSave] rewrites the ENTIRE ring
+  /// back — so two processes in one container clobber each other wholesale and
+  /// the file ends up holding exactly one process's view. When that actually
+  /// happened, the debug build that caused the incident left no trace at all:
+  /// not one of its log lines survived, including the distinctive
+  /// "[SecureStorage] DEBUG build … PLAINTEXT dev file" breadcrumb that would
+  /// have named the cause immediately. The diagnosis had to be reconstructed by
+  /// decrypting the database instead.
   static Future<File> get _logFile async {
     final dir = await getApplicationSupportDirectory();
-    return File('${dir.path}/app_logs.json');
+    final name = kDebugMode ? 'app_logs.dev.json' : 'app_logs.json';
+    return File('${dir.path}/$name');
   }
+
+  /// Identifies the writing process within a single log file.
+  ///
+  /// Even with per-flavour files, two instances of the SAME flavour can run
+  /// against one container (a second copy of the `.app`, `open -n`). Stamping
+  /// every entry means an interleaved history is still readable, and — more
+  /// importantly — that "these two lines came from different processes" is a
+  /// question the log can answer at all. It could not before.
+  static final String sessionId =
+      DateTime.now().microsecondsSinceEpoch.toRadixString(36).padLeft(9, '0');
 
   /// Reload the persisted buffer. Call once at startup, before anything worth
   /// logging happens.

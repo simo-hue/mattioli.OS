@@ -209,11 +209,20 @@ class _Translations$privateRecovery$de extends Translations$privateRecovery$en {
 	@override String get lockedMessageLocalOnly => 'Dieses Gerät kann deine lokale private Datenbank nicht entsperren – der Verschlüsselungsschlüssel fehlt – und die iCloud-Synchronisierung ist aus, es gibt also keine Cloud-Kopie zum Wiederherstellen. Du kannst zurücksetzen und neu beginnen.';
 	@override String get lockedMessageICloudUnavailable => 'Dieses Gerät kann deine lokale private Datenbank nicht entsperren. Die iCloud-Synchronisierung ist aktiv, aber das Konto ist nicht verfügbar – melde dich bei iCloud an und versuche es erneut.';
 	@override String get errorTitle => 'Privater Modus konnte nicht geöffnet werden';
-	@override String get errorMessage => 'Beim Öffnen deiner privaten Datenbank ist etwas schiefgelaufen. Versuche es erneut oder setze sie zurück und beginne neu.';
+	@override String get errorMessage => 'Beim Öffnen deiner privaten Datenbank ist etwas schiefgelaufen. Versuche es erneut oder kehre zur Anmeldung zurück.';
 	@override String get enableSyncHint => 'Hast du diese Daten auf einem anderen Gerät? Aktiviere nach dem Zurücksetzen die iCloud-Synchronisierung in den Einstellungen, um sie hierher zu holen.';
 	@override String get retry => 'Erneut versuchen';
 	@override String get resetFresh => 'Zurücksetzen und neu beginnen';
 	@override String get backToSignIn => 'Zurück zur Anmeldung';
+	@override String get undecryptableTitle => 'Deine Daten sind sicher – aber diese Version der App kann sie nicht entsperren';
+	@override String get undecryptableMessage => 'Die private Datenbank auf diesem Mac ist unversehrt; sie ist lediglich mit einem anderen Schlüssel verschlüsselt als dem, den dieser Build besitzt. Es wurde nichts geändert oder gelöscht. Meist bedeutet das, dass sie von einem anderen Evolve-Build (etwa einem Entwicklungs-Build) erstellt wurde. Öffne diesen Build, um an die Daten zu kommen, oder stelle bei einer Neuinstallation aus iCloud wieder her.';
+	@override String get schemaTooNewTitle => 'Diese Datenbank stammt aus einer neueren Version';
+	@override String get schemaTooNewMessage => 'Deine privaten Daten wurden zuletzt mit einer neueren Version von Evolve geöffnet und sind vollständig intakt. Diese ältere Version kann sie nicht sicher lesen. Aktualisiere auf die neueste Version – oder öffne den neueren Build erneut – und alles ist wieder da.';
+	@override String get copyDiagnostics => 'Diagnose kopieren';
+	@override String get diagnosticsCopied => 'Diagnose in die Zwischenablage kopiert';
+	@override String get resetConfirmTitle => 'Diese Datenbank beiseitelegen?';
+	@override String get resetConfirmBody => 'Evolve startet mit einer leeren privaten Datenbank. Deine vorhandene verschlüsselte Datei bleibt auf diesem Mac erhalten und wird nicht gelöscht – sie kann also weiterhin wiederhergestellt werden.';
+	@override String resetConfirmBodySized({required Object size}) => 'Evolve startet mit einer leeren privaten Datenbank. Deine vorhandene verschlüsselte Datei (${size}) bleibt auf diesem Mac erhalten und wird nicht gelöscht – sie kann also weiterhin wiederhergestellt werden.';
 }
 
 // Path: namePrompt
@@ -2084,11 +2093,20 @@ extension on TranslationsDe {
 			'privateRecovery.lockedMessageLocalOnly' => 'Dieses Gerät kann deine lokale private Datenbank nicht entsperren – der Verschlüsselungsschlüssel fehlt – und die iCloud-Synchronisierung ist aus, es gibt also keine Cloud-Kopie zum Wiederherstellen. Du kannst zurücksetzen und neu beginnen.',
 			'privateRecovery.lockedMessageICloudUnavailable' => 'Dieses Gerät kann deine lokale private Datenbank nicht entsperren. Die iCloud-Synchronisierung ist aktiv, aber das Konto ist nicht verfügbar – melde dich bei iCloud an und versuche es erneut.',
 			'privateRecovery.errorTitle' => 'Privater Modus konnte nicht geöffnet werden',
-			'privateRecovery.errorMessage' => 'Beim Öffnen deiner privaten Datenbank ist etwas schiefgelaufen. Versuche es erneut oder setze sie zurück und beginne neu.',
+			'privateRecovery.errorMessage' => 'Beim Öffnen deiner privaten Datenbank ist etwas schiefgelaufen. Versuche es erneut oder kehre zur Anmeldung zurück.',
 			'privateRecovery.enableSyncHint' => 'Hast du diese Daten auf einem anderen Gerät? Aktiviere nach dem Zurücksetzen die iCloud-Synchronisierung in den Einstellungen, um sie hierher zu holen.',
 			'privateRecovery.retry' => 'Erneut versuchen',
 			'privateRecovery.resetFresh' => 'Zurücksetzen und neu beginnen',
 			'privateRecovery.backToSignIn' => 'Zurück zur Anmeldung',
+			'privateRecovery.undecryptableTitle' => 'Deine Daten sind sicher – aber diese Version der App kann sie nicht entsperren',
+			'privateRecovery.undecryptableMessage' => 'Die private Datenbank auf diesem Mac ist unversehrt; sie ist lediglich mit einem anderen Schlüssel verschlüsselt als dem, den dieser Build besitzt. Es wurde nichts geändert oder gelöscht. Meist bedeutet das, dass sie von einem anderen Evolve-Build (etwa einem Entwicklungs-Build) erstellt wurde. Öffne diesen Build, um an die Daten zu kommen, oder stelle bei einer Neuinstallation aus iCloud wieder her.',
+			'privateRecovery.schemaTooNewTitle' => 'Diese Datenbank stammt aus einer neueren Version',
+			'privateRecovery.schemaTooNewMessage' => 'Deine privaten Daten wurden zuletzt mit einer neueren Version von Evolve geöffnet und sind vollständig intakt. Diese ältere Version kann sie nicht sicher lesen. Aktualisiere auf die neueste Version – oder öffne den neueren Build erneut – und alles ist wieder da.',
+			'privateRecovery.copyDiagnostics' => 'Diagnose kopieren',
+			'privateRecovery.diagnosticsCopied' => 'Diagnose in die Zwischenablage kopiert',
+			'privateRecovery.resetConfirmTitle' => 'Diese Datenbank beiseitelegen?',
+			'privateRecovery.resetConfirmBody' => 'Evolve startet mit einer leeren privaten Datenbank. Deine vorhandene verschlüsselte Datei bleibt auf diesem Mac erhalten und wird nicht gelöscht – sie kann also weiterhin wiederhergestellt werden.',
+			'privateRecovery.resetConfirmBodySized' => ({required Object size}) => 'Evolve startet mit einer leeren privaten Datenbank. Deine vorhandene verschlüsselte Datei (${size}) bleibt auf diesem Mac erhalten und wird nicht gelöscht – sie kann also weiterhin wiederhergestellt werden.',
 			'namePrompt.title' => 'Wie heißt du?',
 			'namePrompt.subtitle' => 'Gib deinen Namen ein, um das Dashboard zu personalisieren.',
 			'namePrompt.hint' => 'z. B. Simo',
@@ -2510,6 +2528,8 @@ extension on TranslationsDe {
 			'stats.gapLongest' => 'Längster',
 			'stats.gapSince' => 'Seit letztem',
 			'stats.habitBounceBackShort' => 'Erholung',
+			_ => null,
+		} ?? switch (path) {
 			'stats.habitConsistencyDetail' => 'Regelmäßigkeitswert',
 			'stats.habitPercentile' => ({required Object pct}) => 'Besser als ${pct}% deiner Gewohnheiten',
 			'stats.monthVsTitle' => 'Dieser Monat vs. letzter',
@@ -2519,8 +2539,6 @@ extension on TranslationsDe {
 			'stats.nextDayMoodTitle' => 'Stimmung am Folgetag',
 			'stats.nextDayMoodSubtitle' => 'Stimmung & Energie am nächsten Tag',
 			'stats.nextDayAfterDone' => 'Nach dem Erledigen',
-			_ => null,
-		} ?? switch (path) {
 			'stats.nextDayAfterMissed' => 'Nach dem Verpassen',
 			'stats.nextDayMoodLift' => ({required Object value}) => '${value} Stimmungsplus',
 			'stats.streakHistoryTitle' => 'Serienverlauf',
@@ -3024,6 +3042,8 @@ extension on TranslationsDe {
 			'subscriptionCtrl.restoreInProgress' => 'Eine Wiederherstellung wird bereits durchgeführt. Warten Sie ein paar Sekunden.',
 			'subscriptionCtrl.purchaseFailedMessage' => 'Der Kauf konnte nicht abgeschlossen werden. Versuchen Sie es in Kürze noch einmal.',
 			'subscriptionCtrl.restoreFailedMessage' => 'Einkäufe konnten nicht wiederhergestellt werden. Versuchen Sie es in Kürze noch einmal.',
+			_ => null,
+		} ?? switch (path) {
 			'subscriptionCtrl.purchaseRegisteredNotActive' => 'Kauf registriert, aber Pro-Abonnement ist noch nicht aktiv. Warten Sie einige Sekunden und verwenden Sie „Käufe wiederherstellen“.',
 			'subscriptionCtrl.noActiveSubscription' => 'Für diese Apple-ID wurde kein aktives Evolve PRO-Abonnement gefunden. Stelle sicher, dass du dieselbe Apple-ID wie beim Kauf verwendest.',
 			'subscriptionCtrl.invalidConfig' => 'Kaufkonfiguration ungültig. Bitte versuche es später erneut oder kontaktiere den Support.',
@@ -3033,8 +3053,6 @@ extension on TranslationsDe {
 			'authCtrl.accessNotCompleted' => ({required Object provider}) => '${provider}-Anmeldung nicht abgeschlossen.',
 			'authCtrl.providerAuthFailed' => ({required Object provider}) => '${provider}-Authentifizierung fehlgeschlagen.',
 			'authCtrl.operationFailed' => 'Vorgang fehlgeschlagen. Versuche es gleich erneut.',
-			_ => null,
-		} ?? switch (path) {
 			'proModal.title' => 'Evolve PRO freischalten',
 			'proModal.subtitle' => 'Bringen Sie Ihr Gewohnheitssystem auf die nächste Stufe',
 			'proModal.featuresHeader' => 'Was der PRO-Plan enthält',

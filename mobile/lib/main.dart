@@ -519,12 +519,35 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
   }
 
   Future<void> _syncAndRefresh({String reason = 'manual'}) async {
-    final status =
-        await ref.read(privateSyncServiceProvider).syncNow(reason: reason);
-    // If the sync pulled remote changes, refresh the cached providers so the UI
-    // shows them (the engine writes straight to the local DB).
-    if (mounted && status.appliedChanges > 0) {
-      invalidatePrivateDataProviders(ref);
+    // Every caller launches this with `unawaited`, so an escaping error becomes
+    // an UNHANDLED zone error and pops the global "something went wrong" dialog.
+    // When the private DB cannot be opened, that happens on the launch sync and
+    // then on every 60-second poll — a modal stack piling up on top of the very
+    // recovery screen the user needs to read, forever. The recovery UI owns that
+    // conversation; sync must fail quietly and let it. Desktop's
+    // DesktopSyncLifecycle already does this; the mobile twin never did.
+    try {
+      final status =
+          await ref.read(privateSyncServiceProvider).syncNow(reason: reason);
+      // If the sync pulled remote changes, refresh the cached providers so the
+      // UI shows them (the engine writes straight to the local DB).
+      if (mounted && status.appliedChanges > 0) {
+        invalidatePrivateDataProviders(ref);
+      }
+    } on PrivateDatabaseLockedException catch (error) {
+      AppLogger.warning(
+        '[Sync] skipped: the private database is locked; PrivateModeGate owns '
+        'the recovery.',
+        error,
+      );
+    } on PrivateDatabaseUndecryptableException catch (error) {
+      AppLogger.warning(
+        '[Sync] skipped: the private database cannot be decrypted with this '
+        'key; PrivateModeGate owns the recovery.',
+        error,
+      );
+    } catch (error, stack) {
+      AppLogger.error('[Sync] automatic sync failed', error, stack);
     }
   }
 

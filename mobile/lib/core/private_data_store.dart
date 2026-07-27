@@ -203,6 +203,16 @@ abstract interface class PrivateDataStore {
   /// stashed `.bak` set for good. Never throws.
   Future<void> discardStashedDatabase();
 
+  /// Permanently destroys every retained `.locked-*` aside copy and its parked
+  /// key. The ONLY operation in the app allowed to destroy private ciphertext —
+  /// call it from actions that PROMISE deletion, never from a recovery.
+  Future<void> deleteLockedAsideCopy();
+
+  /// Size of the encrypted database on disk, or null when there is none.
+  /// Surfaced in the reset confirmation so the user is told what they are about
+  /// to displace rather than agreeing to an abstraction.
+  Future<int?> databaseSizeBytes();
+
   Future<List<Map<String, dynamic>>> habitStats();
 
   Future<Map<String, Map<String, dynamic>>> habitAnalytics();

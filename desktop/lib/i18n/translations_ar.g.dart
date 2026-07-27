@@ -209,11 +209,20 @@ class _Translations$privateRecovery$ar extends Translations$privateRecovery$en {
 	@override String get lockedMessageLocalOnly => 'لا يستطيع هذا الجهاز فتح قاعدة بياناتك الخاصة المحلية — مفتاح التشفير مفقود — ومزامنة iCloud متوقّفة، لذا لا توجد نسخة سحابية للاستعادة. يمكنك إعادة التعيين والبدء من جديد.';
 	@override String get lockedMessageICloudUnavailable => 'لا يستطيع هذا الجهاز فتح قاعدة بياناتك الخاصة المحلية. مزامنة iCloud مفعّلة لكن الحساب غير متاح — سجّل الدخول إلى iCloud ثم أعد المحاولة.';
 	@override String get errorTitle => 'تعذّر فتح الوضع الخاص';
-	@override String get errorMessage => 'حدث خطأ أثناء فتح قاعدة بياناتك الخاصة. أعد المحاولة، أو أعد تعيينها وابدأ من جديد.';
+	@override String get errorMessage => 'حدث خطأ أثناء فتح قاعدة بياناتك الخاصة. أعد المحاولة أو ارجع إلى تسجيل الدخول.';
 	@override String get enableSyncHint => 'هل لديك هذه البيانات على جهاز آخر؟ فعّل مزامنة iCloud من الإعدادات بعد إعادة التعيين لجلبها إلى هنا.';
 	@override String get retry => 'إعادة المحاولة';
 	@override String get resetFresh => 'إعادة التعيين والبدء من جديد';
 	@override String get backToSignIn => 'العودة إلى تسجيل الدخول';
+	@override String get undecryptableTitle => 'بياناتك آمنة، لكن هذه النسخة من التطبيق لا تستطيع فتحها';
+	@override String get undecryptableMessage => 'قاعدة البيانات الخاصة على هذا الـ Mac سليمة تمامًا، لكنها مشفَّرة بمفتاح مختلف عن المفتاح الموجود في هذا الإصدار. لم يتم تغيير أو حذف أي شيء. غالبًا ما يعني ذلك أن إصدارًا آخر من Evolve (مثل إصدار تطوير) هو الذي أنشأها. افتح ذلك الإصدار للوصول إلى البيانات، أو استعِدها من iCloud عند التثبيت من جديد.';
+	@override String get schemaTooNewTitle => 'قاعدة البيانات هذه من إصدار أحدث';
+	@override String get schemaTooNewMessage => 'تم فتح بياناتك الخاصة آخر مرة بإصدار أحدث من Evolve وهي سليمة بالكامل. لا يستطيع هذا الإصدار الأقدم قراءتها بأمان. حدِّث إلى أحدث إصدار — أو أعد فتح الإصدار الأحدث — وستجد كل شيء كما هو.';
+	@override String get copyDiagnostics => 'نسخ التشخيص';
+	@override String get diagnosticsCopied => 'تم نسخ التشخيص إلى الحافظة';
+	@override String get resetConfirmTitle => 'هل تريد تنحية قاعدة البيانات هذه جانبًا؟';
+	@override String get resetConfirmBody => 'سيبدأ Evolve بقاعدة بيانات خاصة فارغة. سيبقى ملفك المشفَّر الحالي محفوظًا على هذا الـ Mac ولن يُحذف، لذا يظل قابلًا للاستعادة.';
+	@override String resetConfirmBodySized({required Object size}) => 'سيبدأ Evolve بقاعدة بيانات خاصة فارغة. سيبقى ملفك المشفَّر الحالي (${size}) محفوظًا على هذا الـ Mac ولن يُحذف، لذا يظل قابلًا للاستعادة.';
 }
 
 // Path: namePrompt
@@ -2084,11 +2093,20 @@ extension on TranslationsAr {
 			'privateRecovery.lockedMessageLocalOnly' => 'لا يستطيع هذا الجهاز فتح قاعدة بياناتك الخاصة المحلية — مفتاح التشفير مفقود — ومزامنة iCloud متوقّفة، لذا لا توجد نسخة سحابية للاستعادة. يمكنك إعادة التعيين والبدء من جديد.',
 			'privateRecovery.lockedMessageICloudUnavailable' => 'لا يستطيع هذا الجهاز فتح قاعدة بياناتك الخاصة المحلية. مزامنة iCloud مفعّلة لكن الحساب غير متاح — سجّل الدخول إلى iCloud ثم أعد المحاولة.',
 			'privateRecovery.errorTitle' => 'تعذّر فتح الوضع الخاص',
-			'privateRecovery.errorMessage' => 'حدث خطأ أثناء فتح قاعدة بياناتك الخاصة. أعد المحاولة، أو أعد تعيينها وابدأ من جديد.',
+			'privateRecovery.errorMessage' => 'حدث خطأ أثناء فتح قاعدة بياناتك الخاصة. أعد المحاولة أو ارجع إلى تسجيل الدخول.',
 			'privateRecovery.enableSyncHint' => 'هل لديك هذه البيانات على جهاز آخر؟ فعّل مزامنة iCloud من الإعدادات بعد إعادة التعيين لجلبها إلى هنا.',
 			'privateRecovery.retry' => 'إعادة المحاولة',
 			'privateRecovery.resetFresh' => 'إعادة التعيين والبدء من جديد',
 			'privateRecovery.backToSignIn' => 'العودة إلى تسجيل الدخول',
+			'privateRecovery.undecryptableTitle' => 'بياناتك آمنة، لكن هذه النسخة من التطبيق لا تستطيع فتحها',
+			'privateRecovery.undecryptableMessage' => 'قاعدة البيانات الخاصة على هذا الـ Mac سليمة تمامًا، لكنها مشفَّرة بمفتاح مختلف عن المفتاح الموجود في هذا الإصدار. لم يتم تغيير أو حذف أي شيء. غالبًا ما يعني ذلك أن إصدارًا آخر من Evolve (مثل إصدار تطوير) هو الذي أنشأها. افتح ذلك الإصدار للوصول إلى البيانات، أو استعِدها من iCloud عند التثبيت من جديد.',
+			'privateRecovery.schemaTooNewTitle' => 'قاعدة البيانات هذه من إصدار أحدث',
+			'privateRecovery.schemaTooNewMessage' => 'تم فتح بياناتك الخاصة آخر مرة بإصدار أحدث من Evolve وهي سليمة بالكامل. لا يستطيع هذا الإصدار الأقدم قراءتها بأمان. حدِّث إلى أحدث إصدار — أو أعد فتح الإصدار الأحدث — وستجد كل شيء كما هو.',
+			'privateRecovery.copyDiagnostics' => 'نسخ التشخيص',
+			'privateRecovery.diagnosticsCopied' => 'تم نسخ التشخيص إلى الحافظة',
+			'privateRecovery.resetConfirmTitle' => 'هل تريد تنحية قاعدة البيانات هذه جانبًا؟',
+			'privateRecovery.resetConfirmBody' => 'سيبدأ Evolve بقاعدة بيانات خاصة فارغة. سيبقى ملفك المشفَّر الحالي محفوظًا على هذا الـ Mac ولن يُحذف، لذا يظل قابلًا للاستعادة.',
+			'privateRecovery.resetConfirmBodySized' => ({required Object size}) => 'سيبدأ Evolve بقاعدة بيانات خاصة فارغة. سيبقى ملفك المشفَّر الحالي (${size}) محفوظًا على هذا الـ Mac ولن يُحذف، لذا يظل قابلًا للاستعادة.',
 			'namePrompt.title' => 'ما اسمك؟',
 			'namePrompt.subtitle' => 'أدخل اسمك لتخصيص لوحة المعلومات.',
 			'namePrompt.hint' => 'مثال: Simo',
@@ -2510,6 +2528,8 @@ extension on TranslationsAr {
 			'stats.gapLongest' => 'الأطول',
 			'stats.gapSince' => 'منذ الأخير',
 			'stats.habitBounceBackShort' => 'التعافي',
+			_ => null,
+		} ?? switch (path) {
 			'stats.habitConsistencyDetail' => 'درجة الانتظام',
 			'stats.habitPercentile' => ({required Object pct}) => 'أفضل من ${pct}% من عاداتك',
 			'stats.monthVsTitle' => 'هذا الشهر مقابل السابق',
@@ -2519,8 +2539,6 @@ extension on TranslationsAr {
 			'stats.nextDayMoodTitle' => 'تأثير مزاج اليوم التالي',
 			'stats.nextDayMoodSubtitle' => 'المزاج والطاقة في اليوم التالي',
 			'stats.nextDayAfterDone' => 'بعد فعلها',
-			_ => null,
-		} ?? switch (path) {
 			'stats.nextDayAfterMissed' => 'بعد تفويتها',
 			'stats.nextDayMoodLift' => ({required Object value}) => '${value} تحسّن في المزاج',
 			'stats.streakHistoryTitle' => 'سجل السلاسل',
@@ -3024,6 +3042,8 @@ extension on TranslationsAr {
 			'subscriptionCtrl.restoreInProgress' => 'هناك عملية استعادة جارية بالفعل. انتظر بضع ثوانٍ.',
 			'subscriptionCtrl.purchaseFailedMessage' => 'تعذّر إتمام الشراء. حاول مرة أخرى بعد قليل.',
 			'subscriptionCtrl.restoreFailedMessage' => 'تعذّرت استعادة المشتريات. حاول مرة أخرى بعد قليل.',
+			_ => null,
+		} ?? switch (path) {
 			'subscriptionCtrl.purchaseRegisteredNotActive' => 'تم تسجيل الشراء، لكن اشتراك Pro ليس نشطاً بعد. انتظر بضع ثوانٍ واستخدم استعادة المشتريات.',
 			'subscriptionCtrl.noActiveSubscription' => 'لم يُعثر على اشتراك Evolve Pro نشط على معرّف Apple هذا. تأكّد من استخدام نفس معرّف Apple المستخدَم في الشراء.',
 			'subscriptionCtrl.invalidConfig' => 'إعداد عمليات الشراء غير صالح. حاول مرة أخرى لاحقًا أو تواصل مع الدعم.',
@@ -3033,8 +3053,6 @@ extension on TranslationsAr {
 			'authCtrl.accessNotCompleted' => ({required Object provider}) => 'لم يكتمل تسجيل الدخول عبر ${provider}.',
 			'authCtrl.providerAuthFailed' => ({required Object provider}) => 'فشلت مصادقة ${provider}.',
 			'authCtrl.operationFailed' => 'فشلت العملية. أعد المحاولة بعد قليل.',
-			_ => null,
-		} ?? switch (path) {
 			'proModal.title' => 'افتح Evolve Pro',
 			'proModal.subtitle' => 'ارتقِ بنظام عاداتك إلى المستوى التالي',
 			'proModal.featuresHeader' => 'ما الذي تتضمّنه خطة PRO',

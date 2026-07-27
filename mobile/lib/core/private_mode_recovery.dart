@@ -18,6 +18,19 @@ enum PrivateRecoveryStatus {
   /// enable iCloud sync to pull from another device, or import a backup).
   needsUserChoice,
 
+  /// A key IS present but does not decrypt the database file.
+  ///
+  /// Distinct from [needsUserChoice] because the correct action is the
+  /// OPPOSITE: the ciphertext is intact and its key exists somewhere, so the
+  /// app must not stash, re-pull, reset or delete anything on its own. It
+  /// reports, explains, and waits. Mirrors desktop.
+  undecryptable,
+
+  /// The stored schema is NEWER than this build understands: the user installed
+  /// a previous build (TestFlight keeps them one tap away). The data is intact
+  /// and correctly keyed; the only remedy is to reopen the newer build.
+  schemaTooNew,
+
   /// An unexpected, non-lock error while opening the DB.
   error,
 }
@@ -29,6 +42,7 @@ class PrivateRecoveryResult {
     this.restoredFromCloud = false,
     this.iCloudUnavailable = false,
     this.error,
+    this.failure,
   });
 
   final PrivateRecoveryStatus status;
@@ -42,6 +56,34 @@ class PrivateRecoveryResult {
   final bool iCloudUnavailable;
 
   final Object? error;
+
+  /// The classified cause, when one was determined. Drives the stable
+  /// diagnostic code and, critically, whether a destructive action may be
+  /// offered at all.
+  final PrivateDbOpenFailure? failure;
+
+  /// Whether the UI may offer the reset for this result. Deliberately computed
+  /// here rather than in the widget so both apps share ONE definition of "is it
+  /// acceptable to move this user's database out from under them".
+  bool get allowsReset {
+    final f = failure;
+    // A confirmed lock: no key exists, so starting fresh can orphan nothing.
+    if (status == PrivateRecoveryStatus.needsUserChoice) return true;
+    // Genuine corruption — the one failure where the data really is gone.
+    if (f != null && allowsDestructiveRecovery(f)) return true;
+    // An undecryptable database. Offering the reset here is CORRECT only
+    // because the reset is no longer destructive: it renames the ciphertext to
+    // `.locked-<timestamp>` and parks its key beside it, so the user can start
+    // using the app again without giving anything up. Withholding it would be
+    // the worse failure — it would leave a user whose only key lives in another
+    // build, or on a machine they no longer have, permanently unable to enter
+    // Private mode at all, with no action on screen but "back to sign in".
+    if (status == PrivateRecoveryStatus.undecryptable) return true;
+    // schemaTooNew deliberately does NOT: the remedy is to reopen the newer
+    // build, and moving the database aside would strand data that build reads
+    // perfectly.
+    return false;
+  }
 }
 
 /// Opens the encrypted Private DB, transparently recovering a LOCKED one (its
@@ -87,9 +129,58 @@ Future<PrivateRecoveryResult> openOrRecoverPrivate({
     return const PrivateRecoveryResult(PrivateRecoveryStatus.ready);
   } on PrivateDatabaseLockedException {
     // Locked — fall through to the recovery decision below.
+  } on PrivateDatabaseUndecryptableException catch (error) {
+    // A key is present but does not open the file. STOP HERE — deliberately
+    // before the recovery decision, because that path's first act is to rename
+    // the database aside and clear the key, which is exactly how an intact
+    // database gets orphaned from the key that still opens it.
+    AppLogger.error(
+      '[PrivateRecovery] the database exists and is intact but this key does '
+      'not decrypt it; taking NO action on the file.',
+      error,
+    );
+    return PrivateRecoveryResult(
+      PrivateRecoveryStatus.undecryptable,
+      error: error,
+      failure: PrivateDbOpenFailure.undecryptable,
+    );
+  } on PrivateDbSchemaTooNewException catch (error) {
+    AppLogger.error(
+      '[PrivateRecovery] the database was written by a newer build '
+      '(stored v${error.storedVersion} > known v${error.knownVersion}); the '
+      'data is intact — reopen the newer build.',
+      error,
+    );
+    return PrivateRecoveryResult(
+      PrivateRecoveryStatus.schemaTooNew,
+      error: error,
+      failure: PrivateDbOpenFailure.schemaTooNew,
+    );
   } catch (error, stack) {
     AppLogger.error('[PrivateRecovery] unexpected DB open failure', error, stack);
-    return PrivateRecoveryResult(PrivateRecoveryStatus.error, error: error);
+    // Classify before giving up. An unclassified failure must NEVER inherit the
+    // destructive recovery: only genuine corruption earns that.
+    final failure =
+        classifyPrivateDbOpenFailure(error, fileExistedNonEmpty: true);
+    if (failure == PrivateDbOpenFailure.undecryptable) {
+      return PrivateRecoveryResult(
+        PrivateRecoveryStatus.undecryptable,
+        error: error,
+        failure: failure,
+      );
+    }
+    if (failure == PrivateDbOpenFailure.schemaTooNew) {
+      return PrivateRecoveryResult(
+        PrivateRecoveryStatus.schemaTooNew,
+        error: error,
+        failure: failure,
+      );
+    }
+    return PrivateRecoveryResult(
+      PrivateRecoveryStatus.error,
+      error: error,
+      failure: failure,
+    );
   }
 
   // probe() reaches the Keychain / CloudKit and can throw; honor this function's
@@ -99,7 +190,14 @@ Future<PrivateRecoveryResult> openOrRecoverPrivate({
     probe = await sync.probe();
   } catch (error, stack) {
     AppLogger.error('[PrivateRecovery] probe failed', error, stack);
-    return PrivateRecoveryResult(PrivateRecoveryStatus.error, error: error);
+    return PrivateRecoveryResult(
+      PrivateRecoveryStatus.error,
+      error: error,
+      // Always carry a classification, even an explicitly unknown one: the
+      // diagnostics chip is suppressed when `failure` is null, and the states
+      // that reach here are exactly the ones nobody can diagnose without it.
+      failure: PrivateDbOpenFailure.unknown,
+    );
   }
   switch (decidePrivateModeRecovery(probe)) {
     case PrivateModeRecoveryAction.autoRecoverFromCloud:
@@ -170,7 +268,14 @@ Future<PrivateRecoveryResult> openOrRecoverPrivate({
         try {
           await store.restoreStashedDatabase();
         } catch (_) {}
-        return PrivateRecoveryResult(PrivateRecoveryStatus.error, error: error);
+        return PrivateRecoveryResult(
+      PrivateRecoveryStatus.error,
+      error: error,
+      // Always carry a classification, even an explicitly unknown one: the
+      // diagnostics chip is suppressed when `failure` is null, and the states
+      // that reach here are exactly the ones nobody can diagnose without it.
+      failure: PrivateDbOpenFailure.unknown,
+    );
       }
     case PrivateModeRecoveryAction.waitForICloudKey:
       return const PrivateRecoveryResult(
@@ -196,9 +301,21 @@ Future<bool> resetAndReopenPrivate({
   bool enableSync = false,
 }) async {
   try {
-    await store.resetLockedDatabase();
+    // Route the file move + recreate through the sync engine's op chain so an
+    // auto-sync opened on launch can't be mid-open over the file while we move
+    // and recreate it. Desktop fixed this race — it surfaced as SQLCipher "out
+    // of memory" on BEGIN EXCLUSIVE plus a double reset — and the mobile twin
+    // was simply never updated. runExclusive REUSES the same lock enable/syncNow
+    // take, so this section and any in-flight sync op serialize.
+    await sync.runExclusive(() async {
+      await store.resetLockedDatabase();
+      await store.ensureReady();
+    });
+    // enable() takes that SAME lock internally, so it must run AFTER — outside —
+    // the block above, never nested inside it: nesting would re-enter the lock
+    // and deadlock. The reset + reopen is already committed by the time this
+    // runs, so a later enable/pull sees the fresh, open DB.
     if (enableSync) await sync.enable();
-    await store.ensureReady();
     return true;
   } catch (error, stack) {
     AppLogger.error('[PrivateRecovery] reset & reopen failed', error, stack);

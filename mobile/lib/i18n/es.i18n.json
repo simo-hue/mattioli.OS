@@ -589,11 +589,20 @@
     "lockedMessageLocalOnly": "Este dispositivo no puede desbloquear tu base de datos privada local —falta su clave de cifrado— y la sincronización de iCloud está desactivada, así que no hay copia en la nube para restaurar. Puedes restablecer y empezar de nuevo.",
     "lockedMessageICloudUnavailable": "Este dispositivo no puede desbloquear tu base de datos privada local. La sincronización de iCloud está activada, pero la cuenta no está disponible: inicia sesión en iCloud y vuelve a intentarlo.",
     "errorTitle": "No se pudo abrir el modo privado",
-    "errorMessage": "Algo salió mal al abrir tu base de datos privada. Vuelve a intentarlo o restablécela y empieza de nuevo.",
+    "errorMessage": "Se produjo un problema al abrir tu base de datos privada. Vuelve a intentarlo o regresa al inicio de sesión.",
     "enableSyncHint": "¿Tienes estos datos en otro dispositivo? Activa la sincronización de iCloud en Ajustes después de restablecer para traerlos aquí.",
     "retry": "Reintentar",
     "resetFresh": "Restablecer y empezar de nuevo",
-    "backToSignIn": "Volver al inicio de sesión"
+    "backToSignIn": "Volver al inicio de sesión",
+    "undecryptableTitle": "Tus datos están a salvo, pero esta copia de la app no puede desbloquearlos",
+    "undecryptableMessage": "La base de datos privada de este dispositivo está intacta: simplemente está cifrada con una clave distinta de la que tiene esta versión. No se ha modificado ni eliminado nada. Normalmente significa que la creó otra versión de Evolve (por ejemplo, una de desarrollo). Abre esa versión para acceder a los datos, o restaura desde iCloud en una instalación nueva.",
+    "schemaTooNewTitle": "Esta base de datos es de una versión más reciente",
+    "schemaTooNewMessage": "Tus datos privados se abrieron por última vez con una versión más reciente de Evolve y están completamente intactos. Esta versión anterior no puede leerlos de forma segura. Actualiza a la última versión — o vuelve a abrir la más reciente — y lo encontrarás todo.",
+    "copyDiagnostics": "Copiar diagnóstico",
+    "diagnosticsCopied": "Diagnóstico copiado al portapapeles",
+    "resetConfirmTitle": "¿Apartar esta base de datos?",
+    "resetConfirmBody": "Evolve empezará con una base de datos privada vacía. Tu archivo cifrado actual se conserva en este dispositivo, no se elimina, así que aún se puede recuperar.",
+    "resetConfirmBodySized": "Evolve empezará con una base de datos privada vacía. Tu archivo cifrado actual ({size}) se conserva en este dispositivo, no se elimina, así que aún se puede recuperar."
   },
   "consent": {
     "systemNotifications": "Notificaciones del sistema",

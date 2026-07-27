@@ -1,10 +1,8 @@
 # TO_SIMO_DO.md
 - [ ] Widget for iPhone & MacOS
-- [ ] Today's protocol da MacOS i pallini degli habits devono essere riguardanti la settimana scorsa ( 6 giorni precedenti a quello corrente in modo tale da poter vedere il proprio contributo nell'ultimo pallino disponibile, il giorno corrente )
 - [ ] settings in desktop implementation is really weird and not intuitive as it is in the mobile app
 - [ ] what happens if I modify manually an automatic habits?
 - [ ] Macro goals still need a numeric target + progress bar (status already cycles active/completed/failed). Habits are DONE — the Checkbox / Number / Automatic picker and quantitative targets are live; MacroTargetsConfig.enabled is still false on both apps.
-- [ ] While trying the macOS version in testflight everything was working as expected until when I quit the app with Command + Q and then I reopened it. The error was the fact that the local mode ( privacy mode ) need to be resetted to carry on as the db could not be encrypted even though before ( 30 seconds before ) it was working perfectly and it was also synchronized with iCloud.
 
 ---
 
@@ -62,6 +60,17 @@ requires each to exceed the last upload for THAT platform: **mobile 1.2.0+41**,
 4. [ ] Run the QA script in `HABIT_CLASSES_PLAN.md` §6 **and §6a** (§6a is new — it covers
        the Phase 0 regressions, and item 1 is the one that matters most: a limit habit's
        recorded breach surviving a sync + two iPhone resumes).
+4a.[ ] **Habit day-dots (new, desktop only).** On Overview › "Protocollo di oggi" AND
+       Abitudini › Protocollo, the 7 marks are now the 6 days BEFORE today plus today —
+       today is always the last one, haloed. Check on the Mac:
+       - the last mark fills the moment you check a habit off today, and empties again
+         when you un-check it (no refresh, no app restart);
+       - a day you marked SKIPPED shows red, not grey;
+       - hovering any mark names its day and outcome ("22 luglio · Completata"), and the
+         last one says "Oggi · …";
+       - **clicking a mark does nothing** — only the checkbox/row toggles the day;
+       - a Number habit's last mark fills when you reach the target; a LIMIT habit's last
+         mark stays grey until the day closes (by design — the ring shows the live number).
 5. [ ] Release iOS + macOS together. **No rollback**: `onDowngrade` throws by design, so a
        device that reaches v11 cannot open a pre-v11 build ever again.
 
@@ -139,12 +148,64 @@ remembering before filing the next one, because "passes in isolation, fails in t
 is also exactly what an unguarded async tail looks like.
 - [ ] `desktop/test/evolve_controls_test.dart` — borderline pumpAndSettle timing on
       a few tap/render tests.
-- [x] ~~`desktop/test/subscription_entitlement_scope_test.dart`~~ **FIXED 2026-07-27 —
-      and it was never a flake.** `DesktopRevenueCatConfig.appleApiKey` has a committed
-      `defaultValue`, so `isConfigured` is TRUE under `flutter test`, the RevenueCat gate
-      passes and `_configure()` really does call `Purchases.setLogLevel`, which throws
-      MissingPluginException. The throw was caught and logged — but the catch then wrote
-      `state` on a Ref the test had already disposed, and that is what failed. An
-      unguarded async tail, the same defect class as the reconcile date bomb, not a
-      parallel-load artifact. `refresh()` now checks `ref.mounted` after its awaits.
-      Three consecutive full-suite runs clean.
+---
+
+## PRIVATE-MODE LOCKOUT (2026-07-27) — ROOT-CAUSED AND FIXED
+
+**Cause found, and it was not a lost Keychain key.** A DEBUG build and a RELEASE build of
+`com.simo.evolve` share one macOS sandbox container — so one encrypted database — but read the
+SQLCipher key from two different stores (a plaintext dev file under `kDebugMode` vs the
+Keychain). You had both running at 14:31; the debug build took the recovery path, renamed the
+database aside and re-keyed it, which is why the other process then failed every write for 33
+minutes and why the release build could never open it again. Proof: the database you sent
+decrypts with the key in `dev_device_local_secrets.json`, and its owner id is byte-identical to
+that file's. Full detail in `DOCUMENTATION.md`.
+
+**Your data was never at risk on that Mac**: `sync_state` showed 0 dirty rows and a completed
+full sync at 14:58, so everything was already in CloudKit.
+
+### What changed (both apps)
+No code path deletes the private database any more — a reset RENAMES it to
+`<db>.locked-<timestamp>` and keeps one copy. Every open failure is classified, and only genuine
+corruption may offer a destructive action. A database from a newer build is its own state with
+no reset button. The reset now asks for confirmation and tells you the size. Debug builds use
+`evolve_private_v2.dev.db` and `app_logs.dev.json`, so this collision cannot recur.
+
+### Manual actions (Xcode Mac)
+- [ ] **Delete the stale dev database on the MacBook Pro before testing again.** It is keyed by
+      the old shared filename and nothing will migrate it — this is intentional:
+      `rm -f ~/Library/Containers/com.simo.evolve/Data/Library/Application\ Support/com.simo.evolve/evolve_private_v2.db*`
+      Only do this after confirming the iPhone still holds your data (it does, per the sync
+      state above). Your real data comes back from iCloud on the next enable.
+- [ ] **Never run a debug build and a TestFlight/Release build against each other again** — the
+      per-flavour filename now prevents the damage, but a debug run still uses the Development
+      CloudKit environment, which is why the Mac looked near-empty after the re-pull.
+- [ ] **On-device QA before shipping 1.2.0** (the host tests cannot exercise real SQLCipher):
+      1. Install over EXISTING data; confirm `[PrivateDB] open: stored user_version=…` appears.
+      2. Force the wrong-key state (rename `.keyfp` aside, or run the old dev DB) and confirm
+         you get "Your data is safe — but this copy of the app can't unlock it" with NO reset
+         button, and that "Copy diagnostics" yields `EVOLVE-DB-KEY`.
+      3. Install the PREVIOUS TestFlight build over 1.2.0 data and confirm you get "This
+         database is from a newer version" with NO reset button (this is the one that is
+         guaranteed to happen to a real tester).
+      4. Confirm the reset dialog states a size and that after resetting a
+         `evolve_private_v2.db.locked-*` file still exists in the container.
+- [ ] **Arabic native review** of the 9 new `privateRecovery.*` keys in both apps
+      (`undecryptableTitle/Message`, `schemaTooNewTitle/Message`, `copyDiagnostics`,
+      `diagnosticsCopied`, `resetConfirmTitle/Body/BodySized`) — machine-translated MSA, same
+      caveat as the earlier batches.
+
+### Known gaps, deliberately deferred (fast-follow, not release-blocking)
+- [ ] **No Settings screen surfaces the retained `.locked-*` copy.** The file is kept and can be
+      removed programmatically (`deleteLockedAsideCopy()`), and the reset dialog tells the user
+      it is kept — but there is no UI to view or delete it later. Worth adding to Settings ›
+      Privacy on both apps.
+- [ ] **Mobile has no "Copy diagnostics" button** (the strings are translated but unused) and no
+      diagnostic code on its recovery screen. Desktop has both.
+- [ ] **`runResilient()` on desktop has no callers** — the moved-file recovery currently fires
+      only from the periodic sync (`desktop_sync_lifecycle`), not from user-initiated writes.
+      The right choke point is `DashboardController._syncRemote`.
+- [ ] **Neither recovery gate has a widget test.** The policy is tested (`allowsReset`, on both
+      apps) but not the rendering, so "which buttons appear in which state" is unpinned.
+- [ ] `error.png` (your screenshot) is untracked at the repo root — delete or move it when you
+      next tidy up; I left it alone since it is yours.

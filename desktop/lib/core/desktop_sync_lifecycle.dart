@@ -137,7 +137,30 @@ class _DesktopSyncLifecycleState extends ConsumerState<DesktopSyncLifecycle> {
       // keep firing. They run fire-and-forget via `unawaited`, so an uncaught
       // throw here becomes an UNHANDLED zone exception and crashes the app.
       // Swallow it quietly and let the gate drive recovery.
+    } on PrivateDatabaseUndecryptableException {
+      // A key is present but does not open the file. Same reasoning as the
+      // locked case: the gate owns that conversation, and sync must not pile
+      // modal failures on top of it every 60 seconds.
     } catch (error, stack) {
+      // A database file that was renamed or replaced under our open handle
+      // wedges that handle FOREVER: SQLite answers every write with
+      // SQLITE_READONLY_DBMOVED while reads keep succeeding from cache, so the
+      // UI looks perfectly healthy while nothing persists. That is exactly what
+      // happened here — 36 consecutive syncs failed over 33 minutes and the
+      // user was never told. `isOpen` is a Dart-side flag a rename cannot
+      // clear, so nothing recovers on its own; the handle has to be dropped
+      // explicitly, and the next sync then reopens cleanly.
+      if (classifyPrivateDbOpenFailure(error, fileExistedNonEmpty: true) ==
+          PrivateDbOpenFailure.movedOrReadonly) {
+        AppLogger.warning(
+          '[DesktopSync] the private database moved under our open handle; '
+          'dropping the stale connection so the next sync reopens it.',
+          error,
+          stack,
+        );
+        await DesktopPrivateDb.instance.dropStaleHandle();
+        return;
+      }
       // Automatic sync is best-effort: a transient CloudKit / network / store
       // failure must never crash the app for the same fire-and-forget reason.
       AppLogger.warning('[DesktopSync] automatic sync failed', error, stack);

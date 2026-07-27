@@ -382,8 +382,8 @@ class Translations$privateRecovery$en {
 	/// en: 'Couldn't open private mode'
 	String get errorTitle => 'Couldn\'t open private mode';
 
-	/// en: 'Something went wrong opening your private database. Retry, or reset it and start fresh.'
-	String get errorMessage => 'Something went wrong opening your private database. Retry, or reset it and start fresh.';
+	/// en: 'Something went wrong opening your private database. Try again, or go back to sign in.'
+	String get errorMessage => 'Something went wrong opening your private database. Try again, or go back to sign in.';
 
 	/// en: 'Have this data on another device? Turn on iCloud sync in Settings after resetting to pull it here.'
 	String get enableSyncHint => 'Have this data on another device? Turn on iCloud sync in Settings after resetting to pull it here.';
@@ -396,6 +396,33 @@ class Translations$privateRecovery$en {
 
 	/// en: 'Back to sign in'
 	String get backToSignIn => 'Back to sign in';
+
+	/// en: 'Your data is safe — but this copy of the app can't unlock it'
+	String get undecryptableTitle => 'Your data is safe — but this copy of the app can\'t unlock it';
+
+	/// en: 'The private database on this Mac is intact, it's just encrypted with a different key than this build holds. Nothing has been changed or deleted. This usually means another build of Evolve (for example a development build) created it. Open that build to reach the data, or restore from iCloud on a fresh install.'
+	String get undecryptableMessage => 'The private database on this Mac is intact, it\'s just encrypted with a different key than this build holds. Nothing has been changed or deleted. This usually means another build of Evolve (for example a development build) created it. Open that build to reach the data, or restore from iCloud on a fresh install.';
+
+	/// en: 'This database is from a newer version'
+	String get schemaTooNewTitle => 'This database is from a newer version';
+
+	/// en: 'Your private data was last opened by a newer version of Evolve and is fully intact. This older version can't read it safely. Update to the latest version — or reopen the newer build — and everything will be there.'
+	String get schemaTooNewMessage => 'Your private data was last opened by a newer version of Evolve and is fully intact. This older version can\'t read it safely. Update to the latest version — or reopen the newer build — and everything will be there.';
+
+	/// en: 'Copy diagnostics'
+	String get copyDiagnostics => 'Copy diagnostics';
+
+	/// en: 'Diagnostics copied to the clipboard'
+	String get diagnosticsCopied => 'Diagnostics copied to the clipboard';
+
+	/// en: 'Move this database aside?'
+	String get resetConfirmTitle => 'Move this database aside?';
+
+	/// en: 'Evolve will start with an empty private database. Your existing encrypted file is kept on this Mac, not deleted, so it can still be recovered.'
+	String get resetConfirmBody => 'Evolve will start with an empty private database. Your existing encrypted file is kept on this Mac, not deleted, so it can still be recovered.';
+
+	/// en: 'Evolve will start with an empty private database. Your existing encrypted file ({size}) is kept on this Mac, not deleted, so it can still be recovered.'
+	String resetConfirmBodySized({required Object size}) => 'Evolve will start with an empty private database. Your existing encrypted file (${size}) is kept on this Mac, not deleted, so it can still be recovered.';
 }
 
 // Path: namePrompt
@@ -4545,11 +4572,20 @@ extension on Translations {
 			'privateRecovery.lockedMessageLocalOnly' => 'This device can\'t unlock your local private database — its encryption key is missing — and iCloud sync is off, so there\'s no cloud copy to restore. You can reset and start fresh.',
 			'privateRecovery.lockedMessageICloudUnavailable' => 'This device can\'t unlock your local private database. iCloud sync is on but the account is unavailable — sign in to iCloud, then retry.',
 			'privateRecovery.errorTitle' => 'Couldn\'t open private mode',
-			'privateRecovery.errorMessage' => 'Something went wrong opening your private database. Retry, or reset it and start fresh.',
+			'privateRecovery.errorMessage' => 'Something went wrong opening your private database. Try again, or go back to sign in.',
 			'privateRecovery.enableSyncHint' => 'Have this data on another device? Turn on iCloud sync in Settings after resetting to pull it here.',
 			'privateRecovery.retry' => 'Retry',
 			'privateRecovery.resetFresh' => 'Reset & start fresh',
 			'privateRecovery.backToSignIn' => 'Back to sign in',
+			'privateRecovery.undecryptableTitle' => 'Your data is safe — but this copy of the app can\'t unlock it',
+			'privateRecovery.undecryptableMessage' => 'The private database on this Mac is intact, it\'s just encrypted with a different key than this build holds. Nothing has been changed or deleted. This usually means another build of Evolve (for example a development build) created it. Open that build to reach the data, or restore from iCloud on a fresh install.',
+			'privateRecovery.schemaTooNewTitle' => 'This database is from a newer version',
+			'privateRecovery.schemaTooNewMessage' => 'Your private data was last opened by a newer version of Evolve and is fully intact. This older version can\'t read it safely. Update to the latest version — or reopen the newer build — and everything will be there.',
+			'privateRecovery.copyDiagnostics' => 'Copy diagnostics',
+			'privateRecovery.diagnosticsCopied' => 'Diagnostics copied to the clipboard',
+			'privateRecovery.resetConfirmTitle' => 'Move this database aside?',
+			'privateRecovery.resetConfirmBody' => 'Evolve will start with an empty private database. Your existing encrypted file is kept on this Mac, not deleted, so it can still be recovered.',
+			'privateRecovery.resetConfirmBodySized' => ({required Object size}) => 'Evolve will start with an empty private database. Your existing encrypted file (${size}) is kept on this Mac, not deleted, so it can still be recovered.',
 			'namePrompt.title' => 'What is your name?',
 			'namePrompt.subtitle' => 'Enter your name to personalize the dashboard.',
 			'namePrompt.hint' => 'e.g. Simo',
@@ -4971,6 +5007,8 @@ extension on Translations {
 			'stats.gapLongest' => 'Longest',
 			'stats.gapSince' => 'Since last',
 			'stats.habitBounceBackShort' => 'Bounce-back',
+			_ => null,
+		} ?? switch (path) {
 			'stats.habitConsistencyDetail' => 'Regularity score',
 			'stats.habitPercentile' => ({required Object pct}) => 'Ahead of ${pct}% of your habits',
 			'stats.monthVsTitle' => 'This month vs last',
@@ -4980,8 +5018,6 @@ extension on Translations {
 			'stats.nextDayMoodTitle' => 'Next-day mood impact',
 			'stats.nextDayMoodSubtitle' => 'Mood & energy the day after',
 			'stats.nextDayAfterDone' => 'After doing it',
-			_ => null,
-		} ?? switch (path) {
 			'stats.nextDayAfterMissed' => 'After missing it',
 			'stats.nextDayMoodLift' => ({required Object value}) => '${value} mood lift',
 			'stats.streakHistoryTitle' => 'Streak history',
@@ -5485,6 +5521,8 @@ extension on Translations {
 			'subscriptionCtrl.restoreInProgress' => 'A restore is already in progress. Wait a few seconds.',
 			'subscriptionCtrl.purchaseFailedMessage' => 'Could not complete the purchase. Try again shortly.',
 			'subscriptionCtrl.restoreFailedMessage' => 'Could not restore purchases. Try again shortly.',
+			_ => null,
+		} ?? switch (path) {
 			'subscriptionCtrl.purchaseRegisteredNotActive' => 'Purchase registered, but Pro subscription is not active yet. Wait a few seconds and use Restore Purchases.',
 			'subscriptionCtrl.noActiveSubscription' => 'No active Evolve Pro subscription found on this Apple ID. Make sure to use the same Apple ID as the purchase.',
 			'subscriptionCtrl.invalidConfig' => 'Purchases are temporarily misconfigured. Please try again later or contact support.',
@@ -5494,8 +5532,6 @@ extension on Translations {
 			'authCtrl.accessNotCompleted' => ({required Object provider}) => '${provider} sign-in not completed.',
 			'authCtrl.providerAuthFailed' => ({required Object provider}) => '${provider} authentication failed.',
 			'authCtrl.operationFailed' => 'Operation failed. Try again shortly.',
-			_ => null,
-		} ?? switch (path) {
 			'proModal.title' => 'Unlock Evolve Pro',
 			'proModal.subtitle' => 'Take your habit system to the next level',
 			'proModal.featuresHeader' => 'WHAT THE PRO PLAN INCLUDES',

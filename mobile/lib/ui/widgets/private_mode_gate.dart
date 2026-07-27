@@ -111,6 +111,38 @@ class _PrivateModeGateState extends ConsumerState<PrivateModeGate> {
     }
   }
 
+  /// Never reset without an explicit confirmation.
+  ///
+  /// This screen is reached by simply launching the app, and the reset used to
+  /// fire on a SINGLE TAP with no dialog — on a screen whose button destroyed
+  /// the user's private database — while `showEvolveConfirm` was already
+  /// imported and used ten lines above for the far less consequential sync
+  /// prompt. The action is no longer a delete (the database is moved aside and
+  /// kept), but it still takes the data out from under them.
+  Future<void> _confirmAndReset() async {
+    final size = await ref.read(privateLocalDatabaseProvider).databaseSizeBytes();
+    if (!mounted) return;
+    final confirmed = await showEvolveConfirm(
+      context: context,
+      title: context.t.privateRecovery.resetConfirmTitle,
+      message: size == null
+          ? context.t.privateRecovery.resetConfirmBody
+          : context.t.privateRecovery
+              .resetConfirmBodySized(size: _formatBytes(size)),
+      confirmLabel: context.t.privateRecovery.resetFresh,
+      isDestructive: true,
+      ref: ref,
+    );
+    if (!confirmed || !mounted) return;
+    await _reset(enableSync: false);
+  }
+
+  static String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(0)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
   Future<void> _reset({required bool enableSync}) async {
     setState(() => _busy = true);
     final store = ref.read(privateLocalDatabaseProvider);
@@ -148,7 +180,7 @@ class _PrivateModeGateState extends ConsumerState<PrivateModeGate> {
       busy: _busy,
       result: result,
       onRetry: _run,
-      onResetFresh: () => _reset(enableSync: false),
+      onResetFresh: _confirmAndReset,
       onBackToSignIn: _backToSignIn,
     );
   }
@@ -231,6 +263,20 @@ class _RecoveryScaffold extends StatelessWidget {
               ? t.privateRecovery.lockedMessageICloudUnavailable
               : t.privateRecovery.lockedMessageLocalOnly,
         ),
+      // Intact data, wrong key. Deliberately NOT alarming and NOT
+      // destructive-red: nothing is damaged and nothing is lost.
+      PrivateRecoveryStatus.undecryptable => (
+          LucideIcons.keyRound,
+          colors.primary,
+          t.privateRecovery.undecryptableTitle,
+          t.privateRecovery.undecryptableMessage,
+        ),
+      PrivateRecoveryStatus.schemaTooNew => (
+          LucideIcons.arrowBigUpDash,
+          colors.primary,
+          t.privateRecovery.schemaTooNewTitle,
+          t.privateRecovery.schemaTooNewMessage,
+        ),
       _ => (
           LucideIcons.circleAlert,
           colors.destructive,
@@ -239,10 +285,15 @@ class _RecoveryScaffold extends StatelessWidget {
         ),
     };
 
-    final showReset = status == PrivateRecoveryStatus.needsUserChoice ||
-        status == PrivateRecoveryStatus.error;
+    // Offered ONLY where the shared policy says the data may be displaced. It
+    // used to be shown for the generic `error` status too, so every
+    // unclassified failure — including a wrong key over perfectly intact
+    // ciphertext, and an older build opening a newer schema — presented
+    // deletion as the remedy.
+    final showReset = result?.allowsReset ?? false;
     final showRetry = status == PrivateRecoveryStatus.waitingForICloudKey ||
         status == PrivateRecoveryStatus.error ||
+        status == PrivateRecoveryStatus.undecryptable ||
         iCloudUnavailable;
     final showSyncHint =
         status == PrivateRecoveryStatus.needsUserChoice && !iCloudUnavailable;

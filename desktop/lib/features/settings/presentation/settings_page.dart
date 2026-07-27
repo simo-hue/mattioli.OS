@@ -2158,11 +2158,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       // Locked-DB recovery: the encrypted DB can't be unlocked (its key is
       // gone), so the wipe above couldn't even open it. Fall back to a
       // file-level reset so "delete private data" still recovers a locked
-      // device for a user with no backup to import — the local data is
-      // unrecoverable anyway (key lost), which is exactly what this removes.
+      // device for a user with no backup to import.
       // Kept as a fallback (not a pre-check) so the common path adds no latency.
+      //
+      // resetLockedDatabase now RETAINS the encrypted file (renamed aside, with
+      // its key parked) — which is right for a recovery, and wrong here: this
+      // action's dialog promises irreversible deletion, and the database may be
+      // perfectly intact (a wrong key also reads as locked). So the retained
+      // copy is destroyed immediately afterwards, or the app would keep a full
+      // copy of the data it just told the user it had deleted.
       try {
         await DesktopPrivateDb.instance.resetLockedDatabase();
+        await DesktopPrivateDb.instance.deleteLockedAsideCopy();
         await ref.read(dashboardControllerProvider.notifier).refresh();
         ref.invalidate(privateProfileProvider);
         ref.invalidate(desktopGoalCategoriesControllerProvider);

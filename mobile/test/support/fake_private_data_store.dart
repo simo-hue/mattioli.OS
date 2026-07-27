@@ -321,6 +321,26 @@ class FakePrivateDataStore implements PrivateDataStore {
     stashed = false;
   }
 
+  /// Set true by [deleteLockedAsideCopy]; lets a test assert that an action
+  /// which PROMISES deletion actually destroyed the retained copy.
+  bool asideCopyDeleted = false;
+
+  @override
+  Future<void> deleteLockedAsideCopy() async {
+    calls.add('deleteLockedAsideCopy');
+    asideCopyDeleted = true;
+  }
+
+  /// Bytes the fake reports for the database; drives the reset confirmation's
+  /// "this is what you are about to displace" copy.
+  int? databaseBytes = 4096;
+
+  @override
+  Future<int?> databaseSizeBytes() async {
+    calls.add('databaseSizeBytes');
+    return databaseBytes;
+  }
+
   // ── Analytics (return harmless empties so the fake stays reusable) ───────
   @override
   Future<List<Map<String, dynamic>>> habitStats() async =>

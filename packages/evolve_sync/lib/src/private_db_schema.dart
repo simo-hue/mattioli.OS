@@ -1,5 +1,7 @@
 import 'package:sqflite_common/sqlite_api.dart';
 
+import 'private_db_open_failure.dart';
+
 /// Schema + migrations for the Private-Mode local database — the single source
 /// of truth for BOTH apps (iOS `mobile/` and macOS `desktop/`): identical
 /// tables, columns, constraints, indexes and sync triggers, so iCloud-sync
@@ -258,14 +260,24 @@ class PrivateDbSchema {
   /// synced private DB, so a user WILL open an older build after a newer one
   /// (TestFlight, a kept macOS .app). Never use `onDatabaseDowngradeDelete` —
   /// it would wipe the user's private data, which is intact and decryptable.
+  ///
+  /// The exception is TYPED ([PrivateDbSchemaTooNewException]) rather than a
+  /// bare `StateError`. That distinction is load-bearing, not cosmetic: an
+  /// untyped throw fell into the same catch-all as every other open failure and
+  /// put the user on a generic error screen whose only state-changing button
+  /// PERMANENTLY DELETED the database — over data this very method has just
+  /// established is intact and decryptable. The release that first moves the
+  /// private schema v6 → v11 makes this reachable for anyone who installs a
+  /// previous build from TestFlight, so it must arrive at the UI as its own
+  /// state with no destructive action attached.
   static Future<void> onDowngrade(
     Database db,
     int oldVersion,
     int newVersion,
   ) async {
-    throw StateError(
-      'Private DB is at schema v$oldVersion; this build only knows '
-      'v$newVersion. Refusing to downgrade.',
+    throw PrivateDbSchemaTooNewException(
+      storedVersion: oldVersion,
+      knownVersion: newVersion,
     );
   }
 

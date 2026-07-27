@@ -1288,6 +1288,20 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           );
         }
 
+        // goal_progress rides in the export under 'habitProgress' so a
+        // Replace-import can't wipe quantitative daily numbers by finding an empty
+        // keep-set. Degrade to empty if the table isn't there yet (the v9 migration
+        // lands before the targets flag flips), so a pre-migration export still
+        // succeeds instead of failing whole.
+        List<Map<String, dynamic>> habitProgress;
+        try {
+          habitProgress = await rows('goal_progress');
+        } catch (error, stack) {
+          AppLogger.error(
+              'goal_progress export read skipped (pre-migration?)', error, stack);
+          habitProgress = const [];
+        }
+
         json = const JsonEncoder.withIndent('  ').convert({
           'schemaVersion': 1,
           'exportDate': DateTime.now().toIso8601String(),
@@ -1296,6 +1310,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           'settings': profileRow,
           'habits': goals,
           'habitLogs': await rows('goal_logs'),
+          'habitProgress': habitProgress,
           'macroGoals': await rows('long_term_goals'),
           'macroGoalCategories': await rows('macro_goal_categories'),
           'dailyMoods': await rows('daily_moods'),

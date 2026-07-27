@@ -131,6 +131,48 @@ Map<String, Object?> verificationColumnsFor(
   };
 }
 
+/// Whether [raw] is a stored `verify_conditions` value this build cannot decode
+/// into a valid compound — a NON-blank blob that [decodeVerifyConditions]
+/// rejects, most importantly a newer client's set of MORE than
+/// [kMaxVerificationConditions] conditions. The exact analogue of
+/// `hasUnreadableTarget` for the quantitative target: such a blob must be
+/// written back verbatim so an unrelated edit on this build can't silently strip
+/// a newer client's compound verification. A null/blank value (an ordinary
+/// single-rule or manual habit — those never populate `verify_conditions`) is
+/// NOT unreadable.
+bool hasUnreadableVerifyConditions(Object? raw) {
+  if (raw is! String) return false;
+  if (raw.trim().isEmpty) return false;
+  return decodeVerifyConditions(raw) == null;
+}
+
+/// The verify_* columns to WRITE for a habit, preserving an undecodable
+/// newer-client compound blob when this build couldn't decode it into
+/// [conditions]. Mirrors the `rawTargetBlob` write guard:
+///
+/// - decodable [conditions] ⇒ [verificationColumnsFor] (the normal path);
+/// - no conditions, an UNREADABLE `verify_conditions` blob, and NO target
+///   ([hasTarget] false) ⇒ the blob written back verbatim, flat columns nulled;
+/// - otherwise ⇒ all six columns null (a plain habit, or a target habit).
+///
+/// [hasTarget] enforces mutual exclusion: a habit the user switched to a Number
+/// must not also carry a stale preserved compound, so a target supersedes it.
+Map<String, Object?> verificationColumnValues({
+  required List<VerificationRule> conditions,
+  required VerificationJoin op,
+  required Object? rawConditionsBlob,
+  required bool hasTarget,
+}) {
+  if (conditions.isNotEmpty) return verificationColumnsFor(conditions, op);
+  if (!hasTarget && hasUnreadableVerifyConditions(rawConditionsBlob)) {
+    return {
+      ...VerificationRule.nullColumns,
+      'verify_conditions': rawConditionsBlob,
+    };
+  }
+  return {...VerificationRule.nullColumns, 'verify_conditions': null};
+}
+
 /// Reads the verification state out of a `goals` row map: the ordered conditions
 /// and their operator, or **null** for a manual habit. Read precedence (Q4):
 /// `verify_conditions` (compound) wins if present and valid; else the flat

@@ -216,8 +216,10 @@ void main() {
   });
 
   group('wiring', () {
-    test('the schema version is 10', () {
-      expect(PrivateDbSchema.version, 10);
+    test('the schema version includes v10', () {
+      // Pinned as a floor (like the v9 test) rather than an exact match so a
+      // later additive version bump doesn't force-edit an unrelated test.
+      expect(PrivateDbSchema.version, greaterThanOrEqualTo(10));
     });
   });
 }

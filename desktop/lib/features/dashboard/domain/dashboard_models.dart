@@ -11,6 +11,39 @@ enum GoalType { lifetime, annual, quarterly, monthly, weekly }
 
 enum CalendarViewMode { month, week, year, life }
 
+/// Stamps [updated]'s [DashboardHabit.targetEffectiveFrom] for a forward-only
+/// target edit (v11) — the desktop analogue of mobile's `stampTargetEffectiveFrom`
+/// on `Goal`. macOS CAN author manual targets (Number habits) and runs the local
+/// end-of-day sweep, so it must own this anchor exactly as iOS does, or editing a
+/// target's amount would rewrite past days. Semantics (identical to mobile):
+///
+/// - no target at all (readable or a preserved unreadable blob) ⇒ no anchor;
+/// - an undecodable newer-client blob rides through unchanged (not this build's
+///   edit, and it cannot evaluate it);
+/// - readable target unchanged vs [previous] ⇒ preserve the prior anchor (incl.
+///   null); newly set or changed ⇒ effective [today].
+DashboardHabit stampTargetEffectiveFrom(
+  DashboardHabit updated, {
+  required DashboardHabit? previous,
+  required DateTime today,
+}) {
+  if (updated.targetColumnValue == null) {
+    return updated.copyWith(clearTargetEffectiveFrom: true);
+  }
+  if (updated.target == null) {
+    return updated;
+  }
+  if (previous != null && previous.target == updated.target) {
+    final anchor = previous.targetEffectiveFrom;
+    return anchor == null
+        ? updated.copyWith(clearTargetEffectiveFrom: true)
+        : updated.copyWith(targetEffectiveFrom: anchor);
+  }
+  return updated.copyWith(
+    targetEffectiveFrom: DateTime(today.year, today.month, today.day),
+  );
+}
+
 class DashboardHabit {
   const DashboardHabit({
     required this.id,
@@ -30,8 +63,10 @@ class DashboardHabit {
     this.verifyEffectiveFrom,
     this.additionalConditions,
     this.verificationJoin,
+    this.rawVerifyConditionsBlob,
     this.target,
     this.rawTargetBlob,
+    this.targetEffectiveFrom,
     this.isActive = true,
   });
 
@@ -71,6 +106,13 @@ class DashboardHabit {
   /// manual habit.
   final VerificationJoin? verificationJoin;
 
+  /// The raw `goals.verify_conditions` value exactly as stored, kept so a
+  /// compound written by a NEWER client (MORE than kMaxVerificationConditions
+  /// conditions, which this build decodes to null → reads as manual) is written
+  /// back verbatim on an unrelated edit instead of being stripped. The verify-
+  /// side twin of [rawTargetBlob]. See [verifyColumnValues].
+  final String? rawVerifyConditionsBlob;
+
   /// The quantitative daily target (count / duration / limit), or null for an
   /// ordinary boolean habit or a target this build cannot decode (see
   /// [rawTargetBlob]). Persisted via the `goals.target` JSON column.
@@ -81,6 +123,13 @@ class DashboardHabit {
   /// is null) is written back verbatim on an unrelated edit instead of being
   /// nulled. Same forward-compat guard as mobile's `Goal.rawTargetBlob`.
   final String? rawTargetBlob;
+
+  /// The day the current [target] took effect (v11, forward-only target edits) —
+  /// the analogue of [verifyEffectiveFrom] for the quantitative target. Carried
+  /// through reads/writes so a desktop edit can't drop it; the manual-target
+  /// sweep (which does run on macOS for local targets) never rewrites days
+  /// before this date. Null ⇒ fall back to [startDate].
+  final DateTime? targetEffectiveFrom;
 
   final bool isActive;
 
@@ -100,6 +149,29 @@ class DashboardHabit {
     if (target != null) return target!.encode();
     if (hasUnreadableTarget(rawTargetBlob)) return rawTargetBlob;
     return null;
+  }
+
+  /// The six `goals` verify_* columns to WRITE, preserving an undecodable
+  /// newer-client compound blob when it couldn't be decoded into a rule — the
+  /// verify-side twin of [targetColumnValue]. See [verificationColumnValues].
+  Map<String, Object?> get verifyColumnValues => verificationColumnValues(
+        conditions: verificationConditions,
+        op: verificationJoin ?? VerificationJoin.or,
+        rawConditionsBlob: rawVerifyConditionsBlob,
+        hasTarget: targetColumnValue != null,
+      );
+
+  /// The `verify_effective_from` (D10) date string to WRITE — rides with a live
+  /// rule OR a preserved compound blob, so the private REPLACE write keeps it
+  /// alongside the blob instead of stripping the freeze anchor. Null otherwise.
+  String? get verifyEffectiveFromColumnValue {
+    if (verifyEffectiveFrom == null) return null;
+    final hasVerification = verificationRule != null ||
+        (targetColumnValue == null &&
+            hasUnreadableVerifyConditions(rawVerifyConditionsBlob));
+    return hasVerification
+        ? verifyEffectiveFrom!.toIso8601String().substring(0, 10)
+        : null;
   }
 
   /// All verification conditions in order — [verificationRule] (if any) followed
@@ -166,8 +238,11 @@ class DashboardHabit {
     bool clearAdditionalConditions = false,
     VerificationJoin? verificationJoin,
     bool clearVerificationJoin = false,
+    String? rawVerifyConditionsBlob,
     HabitTarget? target,
     bool clearTarget = false,
+    DateTime? targetEffectiveFrom,
+    bool clearTargetEffectiveFrom = false,
   }) {
     return DashboardHabit(
       id: id ?? this.id,
@@ -197,11 +272,20 @@ class DashboardHabit {
       verificationJoin: clearVerificationJoin
           ? null
           : (verificationJoin ?? this.verificationJoin),
+      // Setting a NEW rule supersedes the preserved compound blob; otherwise keep
+      // it — NOT tied to clearVerificationRule, so an unrelated edit can't strip a
+      // newer client's undecodable compound. verifyColumnValues decides emission.
+      rawVerifyConditionsBlob: verificationRule != null
+          ? null
+          : (rawVerifyConditionsBlob ?? this.rawVerifyConditionsBlob),
       // A new target supersedes any preserved raw blob; clearing wipes both; a
       // copy touching neither preserves an unreadable newer-client target.
       target: clearTarget ? null : (target ?? this.target),
       rawTargetBlob:
           clearTarget ? null : (target != null ? null : rawTargetBlob),
+      targetEffectiveFrom: clearTargetEffectiveFrom
+          ? null
+          : (targetEffectiveFrom ?? this.targetEffectiveFrom),
       isActive: isActive ?? this.isActive,
     );
   }
@@ -217,15 +301,14 @@ class DashboardHabit {
     if (endDate != null) 'end_date': endDate!.toIso8601String(),
     if (displayOrder != null) 'display_order': displayOrder,
     if (reminderTime != null) 'reminder_time': reminderTime,
-    // Only for verified goals — keeps manual-habit writes independent of whether
-    // the Supabase verify_* migration has been applied yet. Single rule → flat
-    // verify_* columns; compound → verify_conditions JSON with the flat columns
-    // nulled (Q4).
-    if (verificationRule != null)
-      ...verificationColumnsFor(
-        verificationConditions,
-        verificationJoin ?? VerificationJoin.or,
-      ),
+    // For a real rule OR to preserve an undecodable newer-client compound blob
+    // (target-free); a plain manual habit stays column-free so its writes don't
+    // depend on the verify migration. Single rule → flat verify_*; compound →
+    // verify_conditions JSON, flat nulled (Q4); preserved blob → that blob.
+    if (verificationRule != null ||
+        (targetColumnValue == null &&
+            hasUnreadableVerifyConditions(rawVerifyConditionsBlob)))
+      ...verifyColumnValues,
     // The rule's effective-from day (D10), date-only to match the Supabase
     // `date` column. Carried even though macOS never reconciles.
     if (verificationRule != null && verifyEffectiveFrom != null)
@@ -237,6 +320,11 @@ class DashboardHabit {
     // path that must be able to CLEAR a target force-writes `targetColumnValue`
     // explicitly rather than relying on this (see SupabaseDashboardRepository).
     if (targetColumnValue != null) 'target': targetColumnValue,
+    // The target's effective-from day (v11), date-only, alongside a written
+    // target — the forward-only anchor mirrors verify_effective_from.
+    if (targetColumnValue != null && targetEffectiveFrom != null)
+      'target_effective_from':
+          targetEffectiveFrom!.toIso8601String().substring(0, 10),
   };
 
   factory DashboardHabit.fromRemoteJson(
@@ -270,10 +358,15 @@ class DashboardHabit {
       additionalConditions:
           conditions.length > 1 ? conditions.sublist(1) : null,
       verificationJoin: conditions.length > 1 ? verification!.op : null,
+      // Keep the raw compound blob so an undecodable newer-client compound
+      // survives a desktop edit instead of being stripped.
+      rawVerifyConditionsBlob: json['verify_conditions'] as String?,
       verifyEffectiveFrom:
           DateTime.tryParse(json['verify_effective_from'] as String? ?? ''),
       target: decodeHabitTarget(json['target']),
       rawTargetBlob: json['target'] as String?,
+      targetEffectiveFrom:
+          DateTime.tryParse(json['target_effective_from'] as String? ?? ''),
     );
   }
 }

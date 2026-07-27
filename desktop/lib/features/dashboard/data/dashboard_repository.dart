@@ -12,6 +12,7 @@ import 'package:evolve_desktop/core/macro_targets_config.dart';
 import 'package:evolve_desktop/core/targets_config.dart';
 import 'package:evolve_desktop/features/dashboard/data/private_dashboard_repository.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
+import 'package:evolve_verification/evolve_verification.dart';
 import 'package:evolve_desktop/features/dashboard/domain/macro_goal_progress.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -416,6 +417,28 @@ class SupabaseDashboardRepository extends DashboardRepository {
     // force-write clears a removed target correctly.
     if (DesktopTargetsConfig.enabled) {
       payload['target'] = habit.targetColumnValue;
+      // Force-write the forward-only anchor too (same omitted-column hazard):
+      // removing a target must clear its effective-from, or a stale anchor
+      // orphans on the server. Mirrors the private write and the mobile client.
+      payload['target_effective_from'] =
+          habit.targetColumnValue != null && habit.targetEffectiveFrom != null
+              ? habit.targetEffectiveFrom!.toIso8601String().substring(0, 10)
+              : null;
+      // Same omitted-column hazard for the verify columns when the rule is null:
+      // toRemoteJson omits verify_conditions/verify_effective_from, so switching a
+      // preserved compound to a Number would leave the stale compound on the
+      // server to win the read precedence over the new target. Force-null them
+      // UNLESS this is a target-free preserved compound we must keep (mirrors the
+      // mobile client's preservesCompound guard). Gated with the target write so
+      // it only fires once the verify migrations are live (same deploy batch).
+      if (habit.verificationRule == null) {
+        final preservesCompound = habit.targetColumnValue == null &&
+            hasUnreadableVerifyConditions(habit.rawVerifyConditionsBlob);
+        if (!preservesCompound) {
+          payload['verify_conditions'] = null;
+          payload['verify_effective_from'] = null;
+        }
+      }
     }
     await _runOrQueue(
       _PendingMutation.update('goals', payload, {'id': habit.id}),

@@ -30,7 +30,79 @@ import '../kit/evolve_section_header.dart';
 import '../kit/evolve_sheet.dart';
 import '../kit/evolve_spinner.dart';
 import '../kit/evolve_toast.dart';
+import '../kit/evolve_segmented_control.dart';
 import '../kit/evolve_weekday_selector.dart';
+
+/// The single tracking class a habit belongs to. Mutually exclusive — a habit
+/// is exactly one of these, never a manual number AND an auto-verified rule at
+/// once. [checkbox] is a plain done/not-done habit; [number] carries a
+/// quantitative target; [automatic] carries a verification rule.
+enum HabitTrackingMode { checkbox, number, automatic }
+
+/// Localized label for a tracking-mode segment.
+String _trackingModeLabel(Translations t, HabitTrackingMode mode) =>
+    switch (mode) {
+      HabitTrackingMode.checkbox => t.targets.trackingMode.checkbox,
+      HabitTrackingMode.number => t.targets.trackingMode.number,
+      HabitTrackingMode.automatic => t.targets.trackingMode.automatic,
+    };
+
+/// Read-only indicator shown in place of the tracking-mode picker when the
+/// habit's true class is disabled by a local feature flag — a habit synced from
+/// a device where that class is enabled. Mirrors desktop's locked Automatic row:
+/// the class is displayed but not editable, so no tappable segment exists to
+/// silently clear the synced target or verification rule on save.
+class _LockedClassRow extends StatelessWidget {
+  const _LockedClassRow({required this.mode});
+
+  final HabitTrackingMode mode;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final t = context.t;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: colors.muted.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.border),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.lock_outline, size: 16, color: colors.mutedForeground),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _trackingModeLabel(t, mode),
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: colors.foreground,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  t.targets.trackingMode.locked,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 12,
+                    color: colors.mutedForeground,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class HabitManagementModal extends ConsumerStatefulWidget {
   const HabitManagementModal({super.key});
@@ -67,6 +139,13 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
   /// checkbox habit. Only surfaced when [TargetsConfig.enabled].
   HabitTarget? _target;
 
+  /// The mutually-exclusive tracking class the form is currently editing. Kept
+  /// in lock-step with [_target] / [_verificationRule]: choosing a class clears
+  /// the others' state (see [_onTrackingModeChanged]), so the two fields can
+  /// never both be set. Derived from the persisted state on edit; Checkbox on a
+  /// fresh form.
+  late HabitTrackingMode _trackingMode;
+
   /// Weekly-schedule selection (ISO 1=Mon…7=Sun). Defaults to every day; an
   /// all-7 selection is persisted as `null` (every-day) via
   /// [Goal.canonicalFrequencyDays]. Never empty — the picker enforces ≥1 day.
@@ -100,6 +179,80 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
   void initState() {
     super.initState();
     _selectedColor = kEvolveDefaultPalette[0];
+    // A fresh form has neither a target nor a rule → the Checkbox class.
+    _trackingMode = HabitTrackingMode.checkbox;
+  }
+
+  /// The tracking classes offered, in display order. Checkbox is always
+  /// available; Number and Automatic appear only when their feature flag is on.
+  /// When only Checkbox is enabled the picker is hidden entirely — the form
+  /// keeps its unchanged plain-habit layout.
+  List<HabitTrackingMode> get _enabledModes => [
+        HabitTrackingMode.checkbox,
+        if (TargetsConfig.enabled) HabitTrackingMode.number,
+        if (VerificationConfig.enabled) HabitTrackingMode.automatic,
+      ];
+
+  /// Classifies a habit's persisted state into its mutually-exclusive tracking
+  /// class: a verification rule wins over a target, which wins over a plain
+  /// checkbox (mutual exclusion means at most one is ever set).
+  static HabitTrackingMode _modeFor({
+    required VerificationRule? verificationRule,
+    required HabitTarget? target,
+  }) {
+    if (verificationRule != null) return HabitTrackingMode.automatic;
+    if (target != null) return HabitTrackingMode.number;
+    return HabitTrackingMode.checkbox;
+  }
+
+  /// Switching tracking class is mutually exclusive: clear the OTHER classes'
+  /// state and seed a sensible default for the chosen one, so the form never
+  /// carries a half-set number AND rule at once.
+  void _onTrackingModeChanged(HabitTrackingMode mode) {
+    setState(() {
+      _trackingMode = mode;
+      switch (mode) {
+        case HabitTrackingMode.checkbox:
+          // A plain habit: neither a number nor a rule.
+          _target = null;
+          _verificationRule = null;
+          _additionalConditions = [];
+          _verificationJoin = VerificationJoin.or;
+          _appsSelection = null;
+          _verifyError = null;
+        case HabitTrackingMode.number:
+          // A manual number: drop any verification and seed a count target so
+          // the field is never empty (the picker's Checkbox segment IS "none").
+          _verificationRule = null;
+          _additionalConditions = [];
+          _verificationJoin = VerificationJoin.or;
+          _appsSelection = null;
+          _verifyError = null;
+          _target ??= TargetPresetCatalog.countDaily.targetWith();
+        case HabitTrackingMode.automatic:
+          // An auto-verified rule: drop the number and seed the first available
+          // template so the rule field renders usable — it hides when null.
+          _target = null;
+          if (_verificationRule == null) {
+            final tpls = _availableTemplates;
+            if (tpls.isNotEmpty) {
+              _verificationRule =
+                  tpls.first.ruleWith(tpls.first.defaultThreshold);
+              // Offer the metric's label as a default name, matching the old
+              // inline Auto-verify switch (which routed through
+              // VerificationRuleField.onChanged) — the seed path bypasses that
+              // handler, so replicate its auto-fill here. Only while the name is
+              // empty or still an untouched auto-fill, so a typed name survives.
+              if (_nameController.text.trim().isEmpty || _nameAutoFilled) {
+                _nameController.text = verificationTemplateLabel(
+                    context.t, _verificationRule!.metricKey);
+                _nameAutoFilled = true;
+                _nameError = null;
+              }
+            }
+          }
+      }
+    });
   }
 
   @override
@@ -211,6 +364,17 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       final hasCompound = _verificationRule != null &&
           _verificationRule!.isHealthKit &&
           _additionalConditions.isNotEmpty;
+      // A target this build can't decode (a newer-client target) reads as
+      // _target == null and classifies as Checkbox — NOT the locked row, since
+      // Checkbox is always enabled. Passing clearTarget:true on an unrelated edit
+      // (rename/schedule) would wipe its rawTargetBlob and strip the newer
+      // client's target for good, defeating the forward-compat guard. Preserve
+      // the blob unless the user actually moved off a target (set a real target,
+      // or switched to Automatic).
+      final keepsUnreadableTarget = isEditing &&
+          _target == null &&
+          _verificationRule == null &&
+          hasUnreadableTarget(_editingHabit!.rawTargetBlob);
       if (isEditing) {
         final updated = _editingHabit!.copyWith(
           title: name,
@@ -226,7 +390,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
           verificationJoin: hasCompound ? _verificationJoin : null,
           clearVerificationJoin: !hasCompound,
           target: _target,
-          clearTarget: _target == null,
+          clearTarget: _target == null && !keepsUnreadableTarget,
         );
         ok = await ref.read(goalsProvider.notifier).updateHabit(updated);
       } else {
@@ -296,6 +460,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       _verifyError = null;
       _nameError = null;
       _nameAutoFilled = false;
+      _trackingMode = HabitTrackingMode.checkbox;
     });
     ref.hapticMedium();
     showEvolveToast(
@@ -331,6 +496,12 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       _verifyError = null;
       _nameError = null;
       _nameAutoFilled = false; // the loaded title is the user's real name
+      // Pick the class from what the habit actually carries (rule → automatic,
+      // target → number, else checkbox).
+      _trackingMode = _modeFor(
+        verificationRule: habit.verificationRule,
+        target: habit.target,
+      );
     });
     _scrollController.animateTo(
       0,
@@ -529,6 +700,16 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
     final settings = ref.watch(settingsProvider);
     final isPro = settings.isPro;
     final currentHabitsCount = habits.length;
+    // A habit's true class isn't offered here when it was authored on a device
+    // where that class's flag is on but is off on this build (a mixed-version
+    // fleet). Show it as a LOCKED read-only row rather than a mislabelled picker,
+    // so tapping a fallback segment can't silently clear the synced target/rule —
+    // mirroring desktop's locked Automatic row. activeMode then falls back to
+    // Checkbox purely so the by-mode field guards render nothing editable; the
+    // synced _target/_verificationRule stay in state and round-trip on save.
+    final classLocked = !_enabledModes.contains(_trackingMode);
+    final activeMode =
+        classLocked ? HabitTrackingMode.checkbox : _trackingMode;
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
@@ -780,24 +961,62 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                           ),
                         ),
                       ),
-                      // Quantitative targets (count / duration / limit) —
-                      // rendered only when enabled; dark otherwise. A target and
-                      // a verification rule are orthogonal, so both fields can
-                      // show; the target is the manual number the user watches.
-                      if (TargetsConfig.enabled) ...[
+                      // Tracking-mode picker: a habit is exactly one class — a
+                      // plain Checkbox, a manual Number, or an Automatic
+                      // (auto-verified) rule. Mutually exclusive, so choosing one
+                      // clears the others. Shown only when more than one class is
+                      // enabled; with just Checkbox there is nothing to pick, so
+                      // the plain-habit layout is unchanged. A synced habit whose
+                      // class is disabled here shows a LOCKED read-only row instead
+                      // — no tappable segment, so its target/rule can't be wiped.
+                      if (classLocked) ...[
+                        const SizedBox(height: 16),
+                        EvolveSectionHeader(
+                          context.t.targets.trackingMode.title,
+                          padding: EdgeInsets.zero,
+                        ),
+                        const SizedBox(height: 10),
+                        _LockedClassRow(mode: _trackingMode),
+                      ] else if (_enabledModes.length > 1) ...[
+                        const SizedBox(height: 16),
+                        EvolveSectionHeader(
+                          context.t.targets.trackingMode.title,
+                          padding: EdgeInsets.zero,
+                        ),
+                        const SizedBox(height: 10),
+                        EvolveSegmentedControl<HabitTrackingMode>(
+                          groupValue: activeMode,
+                          segments: {
+                            for (final m in _enabledModes)
+                              m: _trackingModeLabel(context.t, m),
+                          },
+                          onValueChanged: _onTrackingModeChanged,
+                        ),
+                      ],
+                      // Number class — a quantitative target (count / duration /
+                      // limit). No "Simple" chip: the picker's Checkbox segment
+                      // already is the no-target choice, so Number always carries
+                      // a numeric preset.
+                      if (activeMode == HabitTrackingMode.number &&
+                          TargetsConfig.enabled) ...[
                         const SizedBox(height: 16),
                         TargetField(
                           target: _target,
+                          showNone: false,
                           onChanged: (t) => setState(() => _target = t),
                         ),
                       ],
-                      // Auto-verified habits (D5) — rendered only when the
-                      // feature is enabled; dark otherwise.
-                      if (VerificationConfig.enabled) ...[
+                      // Automatic class — an auto-verified rule (D5) plus its
+                      // compound conditions and provider-authorization
+                      // affordances. Rendered only when the feature is enabled;
+                      // dark otherwise.
+                      if (activeMode == HabitTrackingMode.automatic &&
+                          VerificationConfig.enabled) ...[
                         const SizedBox(height: 16),
                         VerificationRuleField(
                           rule: _verificationRule,
                           templates: _availableTemplates,
+                          showSwitch: false,
                           onChanged: (r) {
                             final prevKey = _verificationRule?.metricKey;
                             setState(() {
@@ -939,6 +1158,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                                   _verifyError = null;
                                   _nameError = null;
                                   _nameAutoFilled = false;
+                                  _trackingMode = HabitTrackingMode.checkbox;
                                 }),
                               ),
                             ),
@@ -1183,19 +1403,52 @@ class _HabitListItem extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              habit.title,
-              style: TextStyle(
-                color: context.appColors.foreground,
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  habit.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: context.appColors.foreground,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                // Auto-verified habits carry their indicator on a quiet second
+                // line (plain icon + muted text, no pill) so the name keeps the
+                // full row-1 width instead of collapsing into it.
+                if (habit.isVerified) ...[
+                  const SizedBox(height: 2),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        LucideIcons.shieldCheck,
+                        size: 12,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          context.t.verification.autoVerified,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: context.appColors.mutedForeground,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
             ),
           ),
-          if (habit.isVerified) ...[
-            const VerificationBadge(),
-            const SizedBox(width: 4),
-          ],
           IconButton(
             onPressed: onEdit,
             icon: Icon(

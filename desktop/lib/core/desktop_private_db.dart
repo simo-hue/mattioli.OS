@@ -471,6 +471,7 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
             'verify_conditions': g['verify_conditions'],
             // Round-trip the quantitative target so a restore keeps it.
             'target': g['target'],
+            'target_effective_from': g['target_effective_from'],
           },
       ],
       'habitLogs': [
@@ -1575,6 +1576,7 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
       'verify_effective_from': g['verify_effective_from'],
       'verify_conditions': g['verify_conditions'],
       'target': g['target'],
+      'target_effective_from': g['target_effective_from'],
       'created_at': createdAt,
       'updated_at': g['updated_at'] ?? updatedAt,
     };

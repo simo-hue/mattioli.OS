@@ -1,6 +1,9 @@
 // Compound verifiable habits at the Goal model layer: the verify_conditions
 // JSON round-trip (with the flat verify_* columns nulled) and the D10 re-stamp
 // detecting condition/operator edits.
+import 'dart:convert';
+
+import 'package:evolve_targets/evolve_targets.dart';
 import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -131,6 +134,94 @@ void main() {
       final out =
           stampVerificationEffectiveFrom(next, previous: prev, today: today);
       expect(out.verifyEffectiveFrom, DateTime(2026, 7, 23));
+    });
+  });
+
+  group('rawVerifyConditionsBlob (forward-compat preservation)', () {
+    // A newer client's 4-condition compound — over this build's cap of 3, so it
+    // decodes to null (reads as manual) but must survive an unrelated edit.
+    final fourCond = jsonEncode({
+      'v': 1,
+      'op': 'and',
+      'conditions': [
+        steps.toWire(),
+        exercise.toWire(),
+        energy.toWire(),
+        VerificationCatalog.sleepHours.ruleWith(8).toWire(),
+      ],
+    });
+
+    Goal manualWithBlob() => Goal(
+          id: 'g1',
+          title: 'Move',
+          color: const Color(0xFF3B82F6),
+          startDate: DateTime(2026, 1, 1),
+          rawVerifyConditionsBlob: fourCond,
+        );
+
+    test('an undecodable compound reads as manual but carries the blob', () {
+      final g = manualWithBlob();
+      expect(g.verificationRule, isNull);
+      expect(g.rawVerifyConditionsBlob, fourCond);
+    });
+
+    test('a title edit preserves the blob and writes it back verbatim', () {
+      final edited = manualWithBlob().copyWith(title: 'Renamed');
+      expect(edited.rawVerifyConditionsBlob, fourCond);
+      expect(edited.verifyColumnValues['verify_conditions'], fourCond);
+      expect(edited.verifyColumnValues['verify_provider'], isNull);
+    });
+
+    test('toJson round-trips the undecodable compound verbatim', () {
+      final json = manualWithBlob().toJson();
+      expect(json['verify_conditions'], fourCond);
+      final back = Goal.fromJson({...json, 'id': 'g1'});
+      expect(back.rawVerifyConditionsBlob, fourCond);
+      expect(back.verificationRule, isNull);
+    });
+
+    test('setting a real rule supersedes the preserved blob', () {
+      final edited = manualWithBlob().copyWith(verificationRule: steps);
+      expect(edited.rawVerifyConditionsBlob, isNull);
+      expect(edited.verifyColumnValues['verify_conditions'], isNull);
+      expect(edited.verifyColumnValues['verify_provider'], isNotNull);
+    });
+
+    test('a target supersedes the preserved compound (mutual exclusion)', () {
+      final edited = manualWithBlob().copyWith(
+        target: TargetPresetCatalog.countDaily.targetWith(amount: 80),
+      );
+      expect(edited.verifyColumnValues['verify_conditions'], isNull);
+    });
+
+    test('a plain manual habit omits verify_conditions from toJson', () {
+      final json = Goal(
+        id: 'g1',
+        title: 'Plain',
+        color: const Color(0xFF3B82F6),
+        startDate: DateTime(2026, 1, 1),
+      ).toJson();
+      expect(json.containsKey('verify_conditions'), isFalse);
+    });
+
+    test('the D10 anchor rides with the preserved compound (private write)', () {
+      final g = manualWithBlob().copyWith(
+        verifyEffectiveFrom: DateTime(2026, 6, 15),
+      );
+      // The private REPLACE write keeps the anchor next to the blob it belongs to
+      // instead of stripping it (the bug the final check caught).
+      expect(g.verifyEffectiveFromColumnValue, '2026-06-15');
+    });
+
+    test('a plain manual habit writes a null anchor', () {
+      final g = Goal(
+        id: 'g1',
+        title: 'Plain',
+        color: const Color(0xFF3B82F6),
+        startDate: DateTime(2026, 1, 1),
+        verifyEffectiveFrom: DateTime(2026, 6, 15),
+      );
+      expect(g.verifyEffectiveFromColumnValue, isNull);
     });
   });
 }

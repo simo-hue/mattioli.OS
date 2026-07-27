@@ -38,6 +38,16 @@ class Goal {
   /// manual habit.
   final VerificationJoin? verificationJoin;
 
+  /// The raw `goals.verify_conditions` value exactly as stored, kept so a
+  /// compound written by a NEWER client — one with MORE than
+  /// `kMaxVerificationConditions` conditions, which this build decodes to null
+  /// (so [verificationRule] is null and it reads as manual) — is written back
+  /// verbatim on an unrelated edit instead of being stripped. The verify-side
+  /// twin of [rawTargetBlob]. Null for a single-rule or manual habit; a readable
+  /// compound re-encodes from its conditions, so this is consulted only when the
+  /// blob could not be decoded. See [verifyColumnValues].
+  final String? rawVerifyConditionsBlob;
+
   /// The quantitative daily target (count / duration / limit), or null for an
   /// ordinary boolean habit — which is every habit that predates this feature —
   /// or for a target blob this build cannot decode (see [rawTargetBlob]).
@@ -54,6 +64,15 @@ class Goal {
   /// blob, then null.
   final String? rawTargetBlob;
 
+  /// The day the current [target] took effect (v11, forward-only target edits) —
+  /// the exact analogue of [verifyEffectiveFrom] for the quantitative target.
+  /// Null ⇒ fall back to [startDate]. The manual-target end-of-day sweep never
+  /// rewrites days before this date, so editing a target's amount (or switching
+  /// a habit's tracking class) applies forward instead of retroactively
+  /// re-deriving history. Owned by the save path (stamped on target
+  /// create/change), never set by the creation UI.
+  final DateTime? targetEffectiveFrom;
+
   const Goal({
     required this.id,
     required this.title,
@@ -69,8 +88,10 @@ class Goal {
     this.verifyEffectiveFrom,
     this.additionalConditions,
     this.verificationJoin,
+    this.rawVerifyConditionsBlob,
     this.target,
     this.rawTargetBlob,
+    this.targetEffectiveFrom,
   });
 
   bool get isVerified => verificationRule != null;
@@ -162,8 +183,11 @@ class Goal {
     bool clearAdditionalConditions = false,
     VerificationJoin? verificationJoin,
     bool clearVerificationJoin = false,
+    String? rawVerifyConditionsBlob,
     HabitTarget? target,
     bool clearTarget = false,
+    DateTime? targetEffectiveFrom,
+    bool clearTargetEffectiveFrom = false,
   }) {
     return Goal(
       id: id ?? this.id,
@@ -188,6 +212,16 @@ class Goal {
       verificationJoin: clearVerificationJoin
           ? null
           : (verificationJoin ?? this.verificationJoin),
+      // Setting a NEW rule supersedes any preserved compound blob (the rule is
+      // authoritative). Otherwise preserve it — DELIBERATELY NOT tied to
+      // clearVerificationRule, so an unrelated edit that passes
+      // clearVerificationRule (the modal does, for a habit that reads as manual)
+      // can't strip a newer client's undecodable compound. The write path
+      // ([verifyColumnValues]) decides whether the preserved blob is actually
+      // emitted (only when still unreadable and target-free).
+      rawVerifyConditionsBlob: verificationRule != null
+          ? null
+          : (rawVerifyConditionsBlob ?? this.rawVerifyConditionsBlob),
       // Setting a new target supersedes any preserved raw blob (a real edit is
       // authoritative); clearing wipes both, so an undecodable old blob can't
       // resurrect a target the user just removed. A copy that touches neither
@@ -196,6 +230,9 @@ class Goal {
       target: clearTarget ? null : (target ?? this.target),
       rawTargetBlob:
           clearTarget ? null : (target != null ? null : rawTargetBlob),
+      targetEffectiveFrom: clearTargetEffectiveFrom
+          ? null
+          : (targetEffectiveFrom ?? this.targetEffectiveFrom),
     );
   }
 
@@ -240,9 +277,13 @@ class Goal {
       additionalConditions:
           conditions.length > 1 ? conditions.sublist(1) : null,
       verificationJoin: conditions.length > 1 ? verification!.op : null,
+      // Keep the raw compound blob so an undecodable newer-client compound
+      // (which decodes to no conditions → reads as manual) survives an edit.
+      rawVerifyConditionsBlob: json['verify_conditions'] as String?,
       verifyEffectiveFrom: parseDate(json['verify_effective_from']),
       target: decodeHabitTarget(rawTarget),
       rawTargetBlob: rawTarget,
+      targetEffectiveFrom: parseDate(json['target_effective_from']),
     );
   }
 
@@ -278,13 +319,15 @@ class Goal {
       if (endDate != null) 'end_date': endDate!.toIso8601String(),
       if (displayOrder != null) 'display_order': displayOrder,
       if (reminderTime != null) 'reminder_time': reminderTime,
-      // Only emitted for verified goals: keeps manual-habit writes free of the
-      // verification columns, so they don't depend on the Supabase migration
-      // having been applied yet. Single rule → flat verify_* columns; compound →
-      // verify_conditions JSON with the flat columns nulled (Q4).
-      if (verificationRule != null)
-        ...verificationColumnsFor(
-            verificationConditions, verificationJoin ?? VerificationJoin.or),
+      // Emitted for a real rule OR to preserve an undecodable newer-client
+      // compound blob (target-free); a plain manual habit stays column-free so
+      // its writes don't depend on the verify migrations. Single rule → flat
+      // verify_* columns; compound → verify_conditions JSON with the flat columns
+      // nulled (Q4); a preserved blob → that blob verbatim, flat nulled.
+      if (verificationRule != null ||
+          (targetColumnValue == null &&
+              hasUnreadableVerifyConditions(rawVerifyConditionsBlob)))
+        ...verifyColumnValues,
       // The rule's effective-from day (D10) rides alongside a live rule; a
       // manual habit has neither a rule nor an effective-from.
       if (verificationRule != null && verifyEffectiveFrom != null)
@@ -296,6 +339,12 @@ class Goal {
       // unreadable newer-client blob is written back verbatim so an edit here
       // cannot strip it.
       if (targetColumnValue != null) 'target': targetColumnValue,
+      // The target's effective-from day (v11) rides alongside a live target,
+      // exactly like verify_effective_from rides a live rule. Gated on the
+      // target being written (readable or a preserved blob) so the anchor is
+      // never orphaned from — nor stranded without — its target.
+      if (targetColumnValue != null && targetEffectiveFrom != null)
+        'target_effective_from': isoDate(targetEffectiveFrom!),
     };
   }
 
@@ -307,6 +356,34 @@ class Goal {
     if (target != null) return target!.encode();
     if (hasUnreadableTarget(rawTargetBlob)) return rawTargetBlob;
     return null;
+  }
+
+  /// The six `goals` verify_* columns to WRITE, preserving an undecodable
+  /// newer-client compound blob (a >[kMaxVerificationConditions] set this build
+  /// can't represent) when it couldn't be decoded into a rule — the verify-side
+  /// twin of [targetColumnValue]. Shared by the cloud (`toJson`) and private
+  /// (`_goalToRow`) write paths so they cannot disagree. See
+  /// [verificationColumnValues].
+  Map<String, Object?> get verifyColumnValues => verificationColumnValues(
+        conditions: verificationConditions,
+        op: verificationJoin ?? VerificationJoin.or,
+        rawConditionsBlob: rawVerifyConditionsBlob,
+        hasTarget: targetColumnValue != null,
+      );
+
+  /// The `verify_effective_from` (D10) date string to WRITE. The anchor rides
+  /// with a live rule OR a preserved undecodable compound blob — so the private
+  /// REPLACE write keeps it alongside the blob instead of nulling it (which
+  /// would strip the freeze anchor and let a higher-cap peer re-verify recent
+  /// days). Null for a plain / manual / target habit. Date-only (YYYY-MM-DD).
+  String? get verifyEffectiveFromColumnValue {
+    if (verifyEffectiveFrom == null) return null;
+    final hasVerification = verificationRule != null ||
+        (targetColumnValue == null &&
+            hasUnreadableVerifyConditions(rawVerifyConditionsBlob));
+    return hasVerification
+        ? verifyEffectiveFrom!.toIso8601String().substring(0, 10)
+        : null;
   }
 }
 
@@ -345,5 +422,52 @@ Goal stampVerificationEffectiveFrom(
   // Newly verified, or the conditions/operator changed ⇒ effective from today.
   return updated.copyWith(
     verifyEffectiveFrom: DateTime(today.year, today.month, today.day),
+  );
+}
+
+/// Stamps [updated]'s [Goal.targetEffectiveFrom] for a forward-only target edit
+/// (v11) — the exact analogue of [stampVerificationEffectiveFrom] for the
+/// quantitative target. The save layer calls this so the anchor is owned
+/// centrally and never by the creation UI:
+///
+/// - no target at all (readable or a preserved unreadable blob) ⇒ no anchor;
+/// - a target this build cannot decode (a newer-client blob) is preserved
+///   verbatim on an unrelated edit and its anchor rides along UNCHANGED — this
+///   build neither authored nor can evaluate it, so it must not re-stamp;
+/// - readable target unchanged vs [previous] ⇒ preserve the previous anchor
+///   verbatim, **including null** — a title/colour/schedule edit must never
+///   retroactively freeze a habit that predates the anchor;
+/// - readable target newly set, or its content changed ⇒ effective [today], so
+///   the manual-target sweep won't rewrite days before the edit. Switching a
+///   habit's tracking class (checkbox→number, or number→verified which
+///   sets/clears the target) is exactly such a change.
+///
+/// "Target content" is [HabitTarget]'s value equality (amount, direction, unit,
+/// period, aggregation, step, input, fillSource, presetId and the deep `extra`),
+/// so changing any axis counts as an edit.
+Goal stampTargetEffectiveFrom(
+  Goal updated, {
+  required Goal? previous,
+  required DateTime today,
+}) {
+  // No target at all ⇒ no anchor.
+  if (updated.targetColumnValue == null) {
+    return updated.copyWith(clearTargetEffectiveFrom: true);
+  }
+  // An undecodable newer-client target: preserve its carried anchor verbatim.
+  if (updated.target == null) {
+    return updated;
+  }
+  // Same target meaning ⇒ preserve the prior anchor verbatim (incl. null): a
+  // title/colour/schedule edit must never retroactively freeze history.
+  if (previous != null && previous.target == updated.target) {
+    final anchor = previous.targetEffectiveFrom;
+    return anchor == null
+        ? updated.copyWith(clearTargetEffectiveFrom: true)
+        : updated.copyWith(targetEffectiveFrom: anchor);
+  }
+  // Newly targeted, or the target changed ⇒ effective from today.
+  return updated.copyWith(
+    targetEffectiveFrom: DateTime(today.year, today.month, today.day),
   );
 }

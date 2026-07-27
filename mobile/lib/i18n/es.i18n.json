@@ -1327,6 +1327,13 @@
     "none": "Simple",
     "atLeastLabel": "Alcanza",
     "atMostLabel": "Mantente bajo",
+    "trackingMode": {
+      "title": "¿Cómo se registra?",
+      "checkbox": "Casilla",
+      "number": "Número",
+      "automatic": "Automática",
+      "locked": "No editable en esta versión"
+    },
     "presets": {
       "countDaily": {
         "label": "Recuento",

@@ -1327,6 +1327,13 @@
     "none": "Simple",
     "atLeastLabel": "Reach",
     "atMostLabel": "Stay under",
+    "trackingMode": {
+      "title": "How is this tracked?",
+      "checkbox": "Checkbox",
+      "number": "Number",
+      "automatic": "Automatic",
+      "locked": "Not editable in this version"
+    },
     "presets": {
       "countDaily": {
         "label": "Count",

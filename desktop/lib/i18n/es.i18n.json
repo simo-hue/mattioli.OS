@@ -1381,5 +1381,12 @@
       "withinLimit": "Dentro de tu límite",
       "overLimit": "Por encima de tu límite"
     }
+  },
+  "trackingMode": {
+    "title": "¿Cómo se registra?",
+    "checkbox": "Casilla",
+    "number": "Número",
+    "automatic": "Automática",
+    "automaticLocked": "Verificada — edítala en el iPhone"
   }
 }

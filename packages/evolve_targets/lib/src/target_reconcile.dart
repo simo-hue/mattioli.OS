@@ -87,6 +87,7 @@ List<TargetReconcileChange> reconcileManualTargetDays({
   required HabitTarget target,
   required DateTime today,
   required DateTime start,
+  DateTime? effectiveFrom,
   required bool Function(DateTime day) isScheduled,
   required double? Function(String dateKey) progressFor,
   required String? Function(String dateKey) statusFor,
@@ -95,7 +96,15 @@ List<TargetReconcileChange> reconcileManualTargetDays({
   if (!target.isUserEnterable) return const [];
 
   final todayD = DateTime(today.year, today.month, today.day);
-  final startD = DateTime(start.year, start.month, start.day);
+  // The sweep never looks before the target's forward-only anchor (v11): editing
+  // a target's amount, or switching a habit's tracking class, stamps
+  // `effectiveFrom` = today, so already-materialised past days keep their verdict
+  // instead of being re-derived against the new target. NULL ⇒ fall back to
+  // `start`, so habits that predate the anchor are unaffected.
+  final effStart = (effectiveFrom != null && effectiveFrom.isAfter(start))
+      ? effectiveFrom
+      : start;
+  final startD = DateTime(effStart.year, effStart.month, effStart.day);
   final windowStart = todayD.subtract(Duration(days: backfillDays));
   var cursor = startD.isAfter(windowStart) ? startD : windowStart;
 

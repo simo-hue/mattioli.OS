@@ -1381,5 +1381,12 @@
       "withinLimit": "ضمن حدك",
       "overLimit": "تجاوزت حدك"
     }
+  },
+  "trackingMode": {
+    "title": "كيف تُتابَع؟",
+    "checkbox": "مربع",
+    "number": "رقم",
+    "automatic": "تلقائي",
+    "automaticLocked": "مُحقّقة — عدّلها على iPhone"
   }
 }

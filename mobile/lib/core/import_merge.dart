@@ -117,6 +117,7 @@ Map<String, dynamic> _normalizeWeb(Map<String, dynamic> raw) {
       'verify_effective_from': g['verify_effective_from'],
       'verify_conditions': g['verify_conditions'],
       'target': g['target'],
+      'target_effective_from': g['target_effective_from'],
     });
   }
 
@@ -223,6 +224,7 @@ Map<String, dynamic> _normalizeNative(Map<String, dynamic> raw) {
       'verify_effective_from': g['verify_effective_from'],
       'verify_conditions': g['verify_conditions'],
       'target': g['target'],
+      'target_effective_from': g['target_effective_from'],
     });
   }
 
@@ -556,6 +558,9 @@ ValidatedBackup validateCanonical(Map<String, dynamic> canonical) {
       // like verify_conditions — a target from a newer client round-trips rather
       // than being dropped here.
       'target': _str(g['target']),
+      // The target's forward-only anchor (v11), a date string — validated and
+      // round-tripped exactly like verify_effective_from.
+      'target_effective_from': _str(g['target_effective_from']),
     });
   }
 
@@ -1096,6 +1101,8 @@ Map<String, Object?> _goalRow(
     // Quantitative target (v9): round-tripped so a backup→restore doesn't
     // silently turn a targeted habit back into a plain checkbox.
     'target': g['target'],
+    // The target's forward-only anchor (v11), mirroring verify_effective_from.
+    'target_effective_from': g['target_effective_from'],
   };
 }
 
@@ -1342,6 +1349,8 @@ CloudImportPlan planCloudImport({
       // Quantitative target (v9) — without it a cloud import strips a habit's
       // target, reverting it to a checkbox. Mirrors the private merge.
       'target': g['target'],
+      // The target's forward-only anchor (v11), mirroring verify_effective_from.
+      'target_effective_from': g['target_effective_from'],
     });
     has ? stats.habits.updated++ : stats.habits.added++;
   }

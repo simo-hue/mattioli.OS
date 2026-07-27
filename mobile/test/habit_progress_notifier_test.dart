@@ -4,6 +4,7 @@
 // Runs in Private mode over a fake store, so Supabase is never touched.
 
 import 'package:evolve_targets/evolve_targets.dart';
+import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,10 +19,21 @@ import 'support/fake_private_data_store.dart';
 /// Records progress writes AND log writes/deletes, so a test can assert both the
 /// number that was stored and the verdict that was derived from it.
 class _RecordingStore extends FakePrivateDataStore {
+  _RecordingStore({this.seededGoals = const <Goal>[]});
+
+  /// Goals returned by [loadGoals] on init, so a test can start from a habit
+  /// whose target has been effective since a PAST date (a genuinely "started
+  /// days ago" habit). addHabit's forward-only create-stamp anchors a new
+  /// habit's target to today (v11), so it cannot express a backdated anchor.
+  final List<Goal> seededGoals;
+
   final List<Map<String, Object?>> progressWrites = [];
   final List<Map<String, Object?>> progressDeletes = [];
   final List<Map<String, Object?>> logWrites = [];
   final List<Map<String, Object?>> logDeletes = [];
+
+  @override
+  Future<List<Goal>> loadGoals() async => seededGoals;
 
   @override
   Future<void> setHabitProgress({
@@ -81,6 +93,28 @@ Goal _limitGoal() => Goal(
       color: const Color(0xFF3B82F6),
       startDate: DateTime(2026, 7, 1),
       target: TargetPresetCatalog.limitCountDaily.targetWith(amount: 1),
+    );
+
+// A habit that carries BOTH a HealthKit verification rule AND a manual target —
+// the (legacy/synced) configuration the class picker prevents. Its goal_logs
+// verdict must be owned solely by the verification pipeline (one owner per
+// habit-day): the manual sweep and manual setProgress must never touch it.
+Goal _verifiedLimitGoal() => Goal(
+      id: 'gv',
+      title: 'Steps + coffee',
+      color: const Color(0xFF3B82F6),
+      startDate: DateTime(2026, 7, 1),
+      verificationRule: VerificationCatalog.steps.ruleWith(10000),
+      target: TargetPresetCatalog.limitCountDaily.targetWith(amount: 1),
+    );
+
+Goal _verifiedCountGoal() => Goal(
+      id: 'gv',
+      title: 'Steps + push-ups',
+      color: const Color(0xFF3B82F6),
+      startDate: DateTime(2026, 7, 1),
+      verificationRule: VerificationCatalog.steps.ruleWith(10000),
+      target: TargetPresetCatalog.countDaily.targetWith(amount: 80, step: 20),
     );
 
 void main() {
@@ -274,15 +308,17 @@ void main() {
     // A limit habit that started a few days ago and was never touched: its quiet
     // past days must be materialised into 'done', its today left pending.
     test('materialises a limit habit\'s quiet closed days as done', () async {
-      final store = _RecordingStore();
+      final store = _RecordingStore(seededGoals: [
+        _limitGoal().copyWith(
+          startDate: DateTime(2026, 7, 21),
+          targetEffectiveFrom: DateTime(2026, 7, 21),
+        ),
+      ]);
       final c = await container(store);
       c.read(goalsProvider.notifier);
       c.read(habitLogsProvider.notifier);
       final progress = c.read(habitProgressProvider.notifier);
       await settle();
-      await c.read(goalsProvider.notifier).addHabit(
-            _limitGoal().copyWith(startDate: DateTime(2026, 7, 21)),
-          );
 
       await progress.reconcileManualTargets(now: now);
 
@@ -295,15 +331,17 @@ void main() {
     });
 
     test('is idempotent — a second pass writes nothing new', () async {
-      final store = _RecordingStore();
+      final store = _RecordingStore(seededGoals: [
+        _limitGoal().copyWith(
+          startDate: DateTime(2026, 7, 22),
+          targetEffectiveFrom: DateTime(2026, 7, 22),
+        ),
+      ]);
       final c = await container(store);
       c.read(goalsProvider.notifier);
       c.read(habitLogsProvider.notifier);
       final progress = c.read(habitProgressProvider.notifier);
       await settle();
-      await c.read(goalsProvider.notifier).addHabit(
-            _limitGoal().copyWith(startDate: DateTime(2026, 7, 22)),
-          );
 
       await progress.reconcileManualTargets(now: now);
       final writesAfterFirst = store.logWrites.length;
@@ -314,15 +352,17 @@ void main() {
     });
 
     test('does not invent misses for an untouched count habit', () async {
-      final store = _RecordingStore();
+      final store = _RecordingStore(seededGoals: [
+        _countGoal().copyWith(
+          startDate: DateTime(2026, 7, 20),
+          targetEffectiveFrom: DateTime(2026, 7, 20),
+        ),
+      ]);
       final c = await container(store);
       c.read(goalsProvider.notifier);
       c.read(habitLogsProvider.notifier);
       final progress = c.read(habitProgressProvider.notifier);
       await settle();
-      await c.read(goalsProvider.notifier).addHabit(
-            _countGoal().copyWith(startDate: DateTime(2026, 7, 20)),
-          );
 
       await progress.reconcileManualTargets(now: now);
 
@@ -332,15 +372,17 @@ void main() {
     });
 
     test('resolves a partial count day left pending into a miss', () async {
-      final store = _RecordingStore();
+      final store = _RecordingStore(seededGoals: [
+        _countGoal().copyWith(
+          startDate: DateTime(2026, 7, 20),
+          targetEffectiveFrom: DateTime(2026, 7, 20),
+        ),
+      ]);
       final c = await container(store);
       c.read(goalsProvider.notifier);
       c.read(habitLogsProvider.notifier);
       final progress = c.read(habitProgressProvider.notifier);
       await settle();
-      await c.read(goalsProvider.notifier).addHabit(
-            _countGoal().copyWith(startDate: DateTime(2026, 7, 20)),
-          );
       // Simulate progress logged yesterday while it was still open (pending, no
       // verdict): 40 of 80 on the 23rd.
       await progress.setProgress(
@@ -355,6 +397,56 @@ void main() {
       await progress.reconcileManualTargets(now: now);
 
       expect(c.read(habitLogsProvider)['2026-07-23']?['g1'], 'missed');
+    });
+
+    test('a verified habit is NOT swept even with a manual target (one owner)',
+        () async {
+      final store = _RecordingStore(seededGoals: [
+        _verifiedLimitGoal().copyWith(
+          startDate: DateTime(2026, 7, 21),
+          targetEffectiveFrom: DateTime(2026, 7, 21),
+        ),
+      ]);
+      final c = await container(store);
+      c.read(goalsProvider.notifier);
+      c.read(habitLogsProvider.notifier);
+      final progress = c.read(habitProgressProvider.notifier);
+      await settle();
+
+      await progress.reconcileManualTargets(now: now);
+
+      // The verification pipeline owns this habit's goal_logs — the manual sweep
+      // must write nothing, or the two fight and flip the day's status.
+      expect(store.logWrites, isEmpty);
+      expect(c.read(habitLogsProvider)['2026-07-22']?['gv'], isNull);
+    });
+
+    test(
+        'setProgress on a verified habit stores the number but writes NO verdict',
+        () async {
+      final store = _RecordingStore(seededGoals: [_verifiedCountGoal()]);
+      final c = await container(store);
+      c.read(goalsProvider.notifier);
+      c.read(habitLogsProvider.notifier);
+      final progress = c.read(habitProgressProvider.notifier);
+      await settle();
+
+      // 80 of 80 would derive 'done' for a plain count habit and overwrite the
+      // goal_logs row; here the verification pipeline owns it.
+      await progress.setProgress(
+        dateKey: '2026-07-23',
+        goalId: 'gv',
+        amount: 80,
+        target: _verifiedCountGoal().target!,
+        now: now,
+      );
+
+      // The number is persisted (goal_progress) ...
+      expect(store.progressWrites.any((w) => w['goalId'] == 'gv'), isTrue);
+      // ... but no verdict was derived, so a sensor-earned status is never
+      // clobbered or deleted by the manual path.
+      expect(store.logWrites, isEmpty);
+      expect(store.logDeletes, isEmpty);
     });
   });
 }

@@ -86,6 +86,7 @@ class TranslationsEs extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$tour$es tour = _Translations$tour$es._(_root);
 	@override late final _Translations$palette$es palette = _Translations$palette$es._(_root);
 	@override late final _Translations$targets$es targets = _Translations$targets$es._(_root);
+	@override late final _Translations$trackingMode$es trackingMode = _Translations$trackingMode$es._(_root);
 }
 
 // Path: macroTargets
@@ -1577,6 +1578,20 @@ class _Translations$targets$es extends Translations$targets$en {
 	@override late final _Translations$targets$presets$es presets = _Translations$targets$presets$es._(_root);
 	@override late final _Translations$targets$units$es units = _Translations$targets$units$es._(_root);
 	@override late final _Translations$targets$entry$es entry = _Translations$targets$entry$es._(_root);
+}
+
+// Path: trackingMode
+class _Translations$trackingMode$es extends Translations$trackingMode$en {
+	_Translations$trackingMode$es._(TranslationsEs root) : this._root = root, super.internal(root);
+
+	final TranslationsEs _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => '¿Cómo se registra?';
+	@override String get checkbox => 'Casilla';
+	@override String get number => 'Número';
+	@override String get automatic => 'Automática';
+	@override String get automaticLocked => 'Verificada — edítala en el iPhone';
 }
 
 // Path: common.actions
@@ -3219,6 +3234,11 @@ extension on TranslationsEs {
 			'targets.entry.keepGoing' => 'Sigue así',
 			'targets.entry.withinLimit' => 'Dentro de tu límite',
 			'targets.entry.overLimit' => 'Por encima de tu límite',
+			'trackingMode.title' => '¿Cómo se registra?',
+			'trackingMode.checkbox' => 'Casilla',
+			'trackingMode.number' => 'Número',
+			'trackingMode.automatic' => 'Automática',
+			'trackingMode.automaticLocked' => 'Verificada — edítala en el iPhone',
 			_ => null,
 		};
 	}

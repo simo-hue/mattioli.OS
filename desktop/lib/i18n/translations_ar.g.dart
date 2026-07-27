@@ -86,6 +86,7 @@ class TranslationsAr extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$tour$ar tour = _Translations$tour$ar._(_root);
 	@override late final _Translations$palette$ar palette = _Translations$palette$ar._(_root);
 	@override late final _Translations$targets$ar targets = _Translations$targets$ar._(_root);
+	@override late final _Translations$trackingMode$ar trackingMode = _Translations$trackingMode$ar._(_root);
 }
 
 // Path: macroTargets
@@ -1577,6 +1578,20 @@ class _Translations$targets$ar extends Translations$targets$en {
 	@override late final _Translations$targets$presets$ar presets = _Translations$targets$presets$ar._(_root);
 	@override late final _Translations$targets$units$ar units = _Translations$targets$units$ar._(_root);
 	@override late final _Translations$targets$entry$ar entry = _Translations$targets$entry$ar._(_root);
+}
+
+// Path: trackingMode
+class _Translations$trackingMode$ar extends Translations$trackingMode$en {
+	_Translations$trackingMode$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'كيف تُتابَع؟';
+	@override String get checkbox => 'مربع';
+	@override String get number => 'رقم';
+	@override String get automatic => 'تلقائي';
+	@override String get automaticLocked => 'مُحقّقة — عدّلها على iPhone';
 }
 
 // Path: common.actions
@@ -3219,6 +3234,11 @@ extension on TranslationsAr {
 			'targets.entry.keepGoing' => 'استمر',
 			'targets.entry.withinLimit' => 'ضمن حدك',
 			'targets.entry.overLimit' => 'تجاوزت حدك',
+			'trackingMode.title' => 'كيف تُتابَع؟',
+			'trackingMode.checkbox' => 'مربع',
+			'trackingMode.number' => 'رقم',
+			'trackingMode.automatic' => 'تلقائي',
+			'trackingMode.automaticLocked' => 'مُحقّقة — عدّلها على iPhone',
 			_ => null,
 		};
 	}

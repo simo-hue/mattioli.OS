@@ -86,6 +86,7 @@ class TranslationsIt extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$tour$it tour = _Translations$tour$it._(_root);
 	@override late final _Translations$palette$it palette = _Translations$palette$it._(_root);
 	@override late final _Translations$targets$it targets = _Translations$targets$it._(_root);
+	@override late final _Translations$trackingMode$it trackingMode = _Translations$trackingMode$it._(_root);
 }
 
 // Path: macroTargets
@@ -1577,6 +1578,20 @@ class _Translations$targets$it extends Translations$targets$en {
 	@override late final _Translations$targets$presets$it presets = _Translations$targets$presets$it._(_root);
 	@override late final _Translations$targets$units$it units = _Translations$targets$units$it._(_root);
 	@override late final _Translations$targets$entry$it entry = _Translations$targets$entry$it._(_root);
+}
+
+// Path: trackingMode
+class _Translations$trackingMode$it extends Translations$trackingMode$en {
+	_Translations$trackingMode$it._(TranslationsIt root) : this._root = root, super.internal(root);
+
+	final TranslationsIt _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Come viene monitorata?';
+	@override String get checkbox => 'Spunta';
+	@override String get number => 'Numero';
+	@override String get automatic => 'Automatica';
+	@override String get automaticLocked => 'Verificata — modifica su iPhone';
 }
 
 // Path: common.actions
@@ -3219,6 +3234,11 @@ extension on TranslationsIt {
 			'targets.entry.keepGoing' => 'Continua così',
 			'targets.entry.withinLimit' => 'Entro il limite',
 			'targets.entry.overLimit' => 'Oltre il limite',
+			'trackingMode.title' => 'Come viene monitorata?',
+			'trackingMode.checkbox' => 'Spunta',
+			'trackingMode.number' => 'Numero',
+			'trackingMode.automatic' => 'Automatica',
+			'trackingMode.automaticLocked' => 'Verificata — modifica su iPhone',
 			_ => null,
 		};
 	}

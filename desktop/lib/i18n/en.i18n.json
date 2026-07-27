@@ -1381,5 +1381,12 @@
       "withinLimit": "Within your limit",
       "overLimit": "Over your limit"
     }
+  },
+  "trackingMode": {
+    "title": "How is this tracked?",
+    "checkbox": "Checkbox",
+    "number": "Number",
+    "automatic": "Automatic",
+    "automaticLocked": "Verified — edit on iPhone"
   }
 }

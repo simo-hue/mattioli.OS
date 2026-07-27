@@ -1327,6 +1327,13 @@
     "none": "Einfach",
     "atLeastLabel": "Erreiche",
     "atMostLabel": "Bleib unter",
+    "trackingMode": {
+      "title": "Wie wird es erfasst?",
+      "checkbox": "Häkchen",
+      "number": "Zahl",
+      "automatic": "Automatisch",
+      "locked": "In dieser Version nicht bearbeitbar"
+    },
     "presets": {
       "countDaily": {
         "label": "Anzahl",

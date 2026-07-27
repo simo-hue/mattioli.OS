@@ -19,10 +19,16 @@ class TargetField extends ConsumerWidget {
     super.key,
     required this.target,
     required this.onChanged,
+    this.showNone = true,
   });
 
   final HabitTarget? target;
   final ValueChanged<HabitTarget?> onChanged;
+
+  /// Whether to offer the leading "Simple" (no-target) chip. False when the
+  /// caller already models the no-target choice elsewhere (the tracking-mode
+  /// picker's Checkbox segment), so Number mode always carries a numeric preset.
+  final bool showNone;
 
   TargetPreset? get _selectedPreset =>
       target == null ? null : TargetPresetCatalog.forTarget(target!);
@@ -51,14 +57,15 @@ class TargetField extends ConsumerWidget {
           spacing: 8,
           runSpacing: 8,
           children: [
-            _Chip(
-              label: t.targets.none,
-              selected: target == null,
-              onTap: () {
-                haptic();
-                onChanged(null);
-              },
-            ),
+            if (showNone)
+              _Chip(
+                label: t.targets.none,
+                selected: target == null,
+                onTap: () {
+                  haptic();
+                  onChanged(null);
+                },
+              ),
             for (final preset in TargetPresetCatalog.all)
               _Chip(
                 label: _presetLabel(t, preset),

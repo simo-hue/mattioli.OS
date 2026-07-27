@@ -161,6 +161,9 @@ ValidatedBackup validateCanonical(Map<String, dynamic> canonical) {
       // Quantitative target (v9) — opaque JSON, validated in the client, so a
       // backup→restore keeps the target instead of reverting to a checkbox.
       'target': _str(g['target']),
+      // The target's forward-only anchor (v11), a date string, round-tripped
+      // like verify_effective_from.
+      'target_effective_from': _str(g['target_effective_from']),
     });
   }
 
@@ -604,6 +607,7 @@ CloudImportPlan planCloudImport({
       'verify_effective_from': g['verify_effective_from'],
       'verify_conditions': g['verify_conditions'],
       'target': g['target'],
+      'target_effective_from': g['target_effective_from'],
     });
     has ? stats.habits.updated++ : stats.habits.added++;
   }

@@ -153,7 +153,17 @@ class DashboardController extends Notifier<DashboardSnapshot> {
   }) async {
     final habit = state.habits.firstWhere((habit) => habit.id == id);
     final target = habit.displayTarget;
-    if (target == null || !target.isUserEnterable) return;
+    // A verified habit's goal_logs verdict is owned by the verification pipeline
+    // (one owner per habit-day) — never let a manual increment derive/overwrite
+    // it. A purely-verified habit already returns here (its displayTarget is the
+    // measured projection, not user-enterable); this also covers a synced habit
+    // carrying BOTH a manual target and a rule. macOS can't author rules, and the
+    // class picker keeps the two mutually exclusive.
+    if (target == null ||
+        !target.isUserEnterable ||
+        habit.verificationRule != null) {
+      return;
+    }
 
     final clamped = amount < 0 ? 0.0 : amount;
     final dateKey = dashboardDateKey(date);
@@ -251,12 +261,20 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     final changes = <TargetReconcileChange>[];
     for (final habit in state.habits) {
       final target = habit.target;
-      if (target == null || !target.isUserEnterable) continue;
+      // A verified habit is owned by the verification pipeline — never sweep it
+      // here, or the two pipelines fight over goal_logs.status. (Both set only via
+      // legacy/synced data; the class picker keeps them mutually exclusive.)
+      if (target == null ||
+          !target.isUserEnterable ||
+          habit.verificationRule != null) {
+        continue;
+      }
       changes.addAll(reconcileManualTargetDays(
         goalId: habit.id,
         target: target,
         today: today,
         start: habit.startDate ?? today,
+        effectiveFrom: habit.targetEffectiveFrom,
         isScheduled: habit.isScheduledOn,
         progressFor: (dateKey) =>
             state.habitProgress[dateKey]?[habit.id],
@@ -292,17 +310,23 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     if (!ref.read(desktopIsProProvider) && state.habits.length >= 5) {
       return false;
     }
-    final draft = DashboardHabit(
-      id: _newLocalId(),
-      title: title,
-      color: color,
-      streak: 0,
-      weeklyProgress: const [false, false, false, false, false, false, false],
-      state: HabitState.pending,
-      reminderTime: reminderTime,
-      frequencyDays: _canonicalFrequencyDays(frequencyDays),
-      startDate: DateTime.now(),
-      target: target,
+    // A new target takes effect today (v11, forward-only), so the local sweep
+    // never rewrites pre-creation days. Stamped centrally, never by the editor.
+    final draft = stampTargetEffectiveFrom(
+      DashboardHabit(
+        id: _newLocalId(),
+        title: title,
+        color: color,
+        streak: 0,
+        weeklyProgress: const [false, false, false, false, false, false, false],
+        state: HabitState.pending,
+        reminderTime: reminderTime,
+        frequencyDays: _canonicalFrequencyDays(frequencyDays),
+        startDate: DateTime.now(),
+        target: target,
+      ),
+      previous: null,
+      today: DateTime.now(),
     );
     state = state.copyWith(habits: [...state.habits, draft]);
     await _saveLocal();
@@ -331,18 +355,34 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     HabitTarget? target,
   }) async {
     final canonicalDays = _canonicalFrequencyDays(frequencyDays);
+    final priorMatches = state.habits.where((h) => h.id == id);
+    final previous = priorMatches.isEmpty ? null : priorMatches.first;
     final habits = [
       for (final habit in state.habits)
         if (habit.id == id)
-          habit.copyWith(
-            title: title,
-            color: color,
-            reminderTime: reminderTime,
-            clearReminder: reminderTime == null,
-            frequencyDays: canonicalDays,
-            clearFrequencyDays: canonicalDays == null,
-            target: target,
-            clearTarget: target == null,
+          // Forward-only target edit (v11): stamp the anchor to today when the
+          // target's content changed (or was just set), else preserve the prior
+          // anchor so a title/schedule edit can't re-derive past days.
+          stampTargetEffectiveFrom(
+            habit.copyWith(
+              title: title,
+              color: color,
+              reminderTime: reminderTime,
+              clearReminder: reminderTime == null,
+              frequencyDays: canonicalDays,
+              clearFrequencyDays: canonicalDays == null,
+              target: target,
+              // A newer-client target this build can't decode reads as
+              // target == null and shows as Checkbox — clearTarget:true would
+              // wipe its rawTargetBlob and strip the target for good. Preserve
+              // the blob on an unrelated edit; only clear when a real target is
+              // set (target != null) or the habit isn't a preserved-blob one.
+              clearTarget: target == null &&
+                  !(habit.verificationRule == null &&
+                      hasUnreadableTarget(habit.rawTargetBlob)),
+            ),
+            previous: previous,
+            today: DateTime.now(),
           )
         else
           habit,

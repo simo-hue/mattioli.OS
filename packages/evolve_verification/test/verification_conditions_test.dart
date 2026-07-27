@@ -249,4 +249,85 @@ void main() {
       expect(compound.op, VerificationJoin.and);
     });
   });
+
+  // A newer client that raised the cap writes a 4-condition compound: this build
+  // decodes it to null (over cap), so it must be PRESERVED verbatim on write
+  // rather than stripped — the forward-compat analogue of rawTargetBlob.
+  final fourCond = jsonEncode({
+    'v': 1,
+    'op': 'and',
+    'conditions': [
+      steps.toWire(),
+      exercise.toWire(),
+      energy.toWire(),
+      VerificationCatalog.sleepHours.ruleWith(8).toWire(),
+    ],
+  });
+
+  group('hasUnreadableVerifyConditions', () {
+    test('null / blank is NOT unreadable', () {
+      expect(hasUnreadableVerifyConditions(null), isFalse);
+      expect(hasUnreadableVerifyConditions(''), isFalse);
+      expect(hasUnreadableVerifyConditions('   '), isFalse);
+    });
+
+    test('a valid 2..3 condition blob is NOT unreadable', () {
+      final ok = encodeVerifyConditions([steps, exercise], VerificationJoin.or);
+      expect(hasUnreadableVerifyConditions(ok), isFalse);
+    });
+
+    test('a newer-client >3 condition blob IS unreadable', () {
+      expect(decodeVerifyConditions(fourCond), isNull);
+      expect(hasUnreadableVerifyConditions(fourCond), isTrue);
+    });
+
+    test('a corrupt blob IS unreadable (preserve, never throw)', () {
+      expect(hasUnreadableVerifyConditions('{not json'), isTrue);
+    });
+  });
+
+  group('verificationColumnValues (preserve on write)', () {
+    test('decodable conditions take the normal encoded path', () {
+      final cols = verificationColumnValues(
+        conditions: [steps, exercise],
+        op: VerificationJoin.or,
+        rawConditionsBlob: fourCond,
+        hasTarget: false,
+      );
+      expect(cols['verify_conditions'],
+          encodeVerifyConditions([steps, exercise], VerificationJoin.or));
+    });
+
+    test('an unreadable blob is written back verbatim when no target', () {
+      final cols = verificationColumnValues(
+        conditions: const [],
+        op: VerificationJoin.or,
+        rawConditionsBlob: fourCond,
+        hasTarget: false,
+      );
+      expect(cols['verify_conditions'], fourCond);
+      expect(cols['verify_provider'], isNull); // flat columns nulled
+    });
+
+    test('an unreadable blob is DROPPED when the habit has a target', () {
+      final cols = verificationColumnValues(
+        conditions: const [],
+        op: VerificationJoin.or,
+        rawConditionsBlob: fourCond,
+        hasTarget: true,
+      );
+      expect(cols['verify_conditions'], isNull);
+    });
+
+    test('a plain habit writes all nulls', () {
+      final cols = verificationColumnValues(
+        conditions: const [],
+        op: VerificationJoin.or,
+        rawConditionsBlob: null,
+        hasTarget: false,
+      );
+      expect(cols['verify_conditions'], isNull);
+      expect(cols['verify_provider'], isNull);
+    });
+  });
 }

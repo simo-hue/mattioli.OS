@@ -11,6 +11,7 @@ List<TargetReconcileChange> run({
   required HabitTarget target,
   required DateTime today,
   required DateTime start,
+  DateTime? effectiveFrom,
   Map<String, double> progress = const {},
   Map<String, String> status = const {},
   bool Function(DateTime)? isScheduled,
@@ -21,6 +22,7 @@ List<TargetReconcileChange> run({
       target: target,
       today: today,
       start: start,
+      effectiveFrom: effectiveFrom,
       backfillDays: backfillDays,
       isScheduled: isScheduled ?? (_) => true,
       progressFor: (k) => progress[k],
@@ -181,5 +183,68 @@ void main() {
     final second =
         run(target: _limit(), today: today, start: start, status: status);
     expect(second, isEmpty);
+  });
+
+  group('forward-only freeze (effectiveFrom, v11)', () {
+    test('a later effectiveFrom clamps the window — pre-anchor days are frozen',
+        () {
+      // A limit target became active on 07-23. The 20th–22nd predate it and
+      // must keep their historical verdict; only the 23rd is swept.
+      final changes = run(
+        target: _limit(),
+        today: today, // 2026-07-24
+        start: DateTime(2026, 7, 20),
+        effectiveFrom: DateTime(2026, 7, 23),
+      );
+      expect(changes.map((c) => c.dateKey), ['2026-07-23']);
+    });
+
+    test('null effectiveFrom leaves behaviour identical to start', () {
+      final start = DateTime(2026, 7, 21);
+      final withNull = run(target: _limit(), today: today, start: start);
+      final withEarlier = run(
+        target: _limit(),
+        today: today,
+        start: start,
+        effectiveFrom: DateTime(2026, 7, 1), // earlier than start ⇒ ignored
+      );
+      expect(withNull.map((c) => c.dateKey),
+          withEarlier.map((c) => c.dateKey).toList());
+    });
+
+    test('raising an atLeast amount does NOT rewrite a day before the anchor',
+        () {
+      // 07-21 was earned (progress 80, status done) under the old target. The
+      // user raised the bar to 200 and the anchor moved to 07-22. The earned
+      // day predates the anchor and must survive untouched.
+      final raised =
+          TargetPresetCatalog.countDaily.targetWith(amount: 200, step: 20);
+      final changes = run(
+        target: raised,
+        today: today,
+        start: DateTime(2026, 7, 20),
+        effectiveFrom: DateTime(2026, 7, 22),
+        progress: {'2026-07-21': 80},
+        status: {'2026-07-21': 'done'},
+      );
+      expect(changes.any((c) => c.dateKey == '2026-07-21'), isFalse);
+    });
+
+    test('WITHOUT the anchor the same raised amount rewrites the earned day',
+        () {
+      // The bug the anchor fixes: with no effective-from, 80 < 200 flips the
+      // past 'done' to a change (→ 'missed'). This asserts the guard is load-
+      // bearing, not incidental.
+      final raised =
+          TargetPresetCatalog.countDaily.targetWith(amount: 200, step: 20);
+      final changes = run(
+        target: raised,
+        today: today,
+        start: DateTime(2026, 7, 20),
+        progress: {'2026-07-21': 80},
+        status: {'2026-07-21': 'done'},
+      );
+      expect(changes.any((c) => c.dateKey == '2026-07-21'), isTrue);
+    });
   });
 }

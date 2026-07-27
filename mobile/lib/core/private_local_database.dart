@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:evolve_sync/evolve_sync.dart';
-import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
@@ -174,6 +173,21 @@ class PrivateLocalDatabase implements PrivateDataStore {
       version: PrivateDbSchema.version,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
+        // QA diagnostic (visible in the in-app log viewer): the DB's stored
+        // schema version vs the code's target at open. onConfigure fires BEFORE
+        // onCreate/onUpgrade, so `stored` is the pre-migration value — so a
+        // device coming from v6 logs "stored=6, code=11" right before the
+        // v6→v11 chain runs, confirming which legs execute on real data.
+        try {
+          final rows = await db.rawQuery('PRAGMA user_version');
+          final stored = rows.isEmpty ? null : rows.first.values.first;
+          AppLogger.info(
+            '[PrivateDB] open: stored user_version=$stored, '
+            'code PrivateDbSchema.version=${PrivateDbSchema.version}',
+          );
+        } catch (_) {
+          // A diagnostic must never block opening the DB.
+        }
       },
       onCreate: PrivateDbSchema.onCreate,
       onUpgrade: PrivateDbSchema.onUpgrade,
@@ -1049,6 +1063,9 @@ class PrivateLocalDatabase implements PrivateDataStore {
             // The quantitative target (v9) — without this a backup→restore
             // silently turns a targeted habit back into a plain checkbox.
             'target': g['target'],
+            // The target's forward-only anchor (v11) rides along so a restore
+            // preserves the edit boundary, exactly like verify_effective_from.
+            'target_effective_from': g['target_effective_from'],
           },
       ],
       'habitLogs': [
@@ -2062,6 +2079,7 @@ class PrivateLocalDatabase implements PrivateDataStore {
       'verify_effective_from': row['verify_effective_from'],
       'verify_conditions': row['verify_conditions'],
       'target': row['target'],
+      'target_effective_from': row['target_effective_from'],
     };
     return Goal.fromJson(json);
   }
@@ -2083,21 +2101,27 @@ class PrivateLocalDatabase implements PrivateDataStore {
       // Always write ALL verification columns (null when absent): upsertGoal uses
       // ConflictAlgorithm.replace, so an omitted column would be wiped to NULL on
       // every edit. Single rule → flat verify_*, compound → verify_conditions
-      // with the flat columns nulled (Q4). Columns exist after the evolve_sync
-      // v4/v8 migrations (run automatically on open).
-      ...verificationColumnsFor(goal.verificationConditions,
-          goal.verificationJoin ?? VerificationJoin.or),
+      // with the flat columns nulled (Q4); an undecodable newer-client compound
+      // is written back verbatim (verifyColumnValues) so replace can't strip it.
+      // Columns exist after the evolve_sync v4/v8 migrations (run on open).
+      ...goal.verifyColumnValues,
       // Same reasoning: written explicitly (date-only) so replace can't wipe it.
-      // Null for a manual habit or a rule not yet stamped (v7 migration column).
-      'verify_effective_from':
-          goal.verificationRule != null && goal.verifyEffectiveFrom != null
-              ? goal.verifyEffectiveFrom!.toIso8601String().substring(0, 10)
-              : null,
+      // The anchor rides with a live rule OR a preserved compound blob (so a
+      // preserved compound keeps its D10 freeze), else null. Matches the cloud
+      // path, which retains it via omission + the preservesCompound guard.
+      'verify_effective_from': goal.verifyEffectiveFromColumnValue,
       // Written explicitly (like the verify_* columns) so ConflictAlgorithm
       // .replace can't wipe it on an unrelated edit. Live target encoded, an
       // unreadable newer-client blob preserved verbatim, else null. Column
       // exists after the evolve_sync v9 migration (run automatically on open).
       'target': goal.targetColumnValue,
+      // Same reasoning: written explicitly (date-only) so replace can't wipe it.
+      // The forward-only target anchor rides with a written target (readable or
+      // preserved blob); null otherwise. Column exists after the v11 migration.
+      'target_effective_from':
+          goal.targetColumnValue != null && goal.targetEffectiveFrom != null
+              ? goal.targetEffectiveFrom!.toIso8601String().substring(0, 10)
+              : null,
     };
   }
 

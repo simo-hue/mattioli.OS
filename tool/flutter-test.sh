@@ -102,4 +102,7 @@ echo $$ > "$MUTEX/pid"
 trap 'rm -rf "$MUTEX"' EXIT INT TERM
 
 cd "$PKG_DIR"
-exec flutter test "${DEFINES[@]}" "$@"
+# `${DEFINES[@]+...}` rather than a bare `"${DEFINES[@]}"`: macOS ships bash 3.2,
+# where expanding an EMPTY array under `set -u` aborts with "unbound variable" —
+# so the packages (which take no dart-defines) would never run at all.
+exec flutter test ${DEFINES[@]+"${DEFINES[@]}"} "$@"

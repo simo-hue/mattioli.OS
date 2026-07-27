@@ -813,6 +813,7 @@ class _Translations$habitsPage$ar extends Translations$habitsPage$en {
 	@override String get lifeWeeks => 'أسابيع مسارك';
 	@override String get catMindfulness => 'اليقظة الذهنية';
 	@override String get editableHint => 'يمكن تعديل اليوم والأمس فقط.';
+	@override String get titleRequired => 'العنوان مطلوب';
 }
 
 // Path: goalsPage
@@ -1578,6 +1579,19 @@ class _Translations$targets$ar extends Translations$targets$en {
 	@override late final _Translations$targets$presets$ar presets = _Translations$targets$presets$ar._(_root);
 	@override late final _Translations$targets$units$ar units = _Translations$targets$units$ar._(_root);
 	@override late final _Translations$targets$entry$ar entry = _Translations$targets$entry$ar._(_root);
+	@override String get amountLabel => 'الوصول إلى';
+	@override String get amountLabelAtMost => 'ابقَ تحت';
+	@override String get stepLabel => 'الخطوة';
+	@override String stepHint({required Object step}) => 'كل + يضيف ${step}';
+	@override String rangeError({required Object min, required Object max}) => 'أدخل رقمًا بين ${min} و ${max}';
+	@override String get stepPositiveError => 'يجب أن تكون الخطوة أكبر من 0';
+	@override String get stepExceedsWarning => 'نقرة واحدة ستتجاوز الهدف بالكامل';
+	@override String notDivisibleWarning({required Object amount, required Object below, required Object above}) => 'لا يمكنك الوصول إلى ${amount} بالضبط — النقرات تصل إلى ${below} ثم ${above}';
+	@override String notDivisibleWarningNoBelow({required Object amount, required Object above}) => 'لا يمكنك الوصول إلى ${amount} بالضبط — النقرة الأولى تصل إلى ${above}';
+	@override String tooManyTapsWarning({required Object taps}) => 'هذا يعني ${taps} نقرة لإكمال يوم واحد';
+	@override String get confirmTitle => 'تحقّق من هدفك';
+	@override String get confirmAdjust => 'تعديل';
+	@override String get confirmSaveAnyway => 'احفظ على أي حال';
 }
 
 // Path: trackingMode
@@ -2553,6 +2567,7 @@ extension on TranslationsAr {
 			'habitsPage.lifeWeeks' => 'أسابيع مسارك',
 			'habitsPage.catMindfulness' => 'اليقظة الذهنية',
 			'habitsPage.editableHint' => 'يمكن تعديل اليوم والأمس فقط.',
+			'habitsPage.titleRequired' => 'العنوان مطلوب',
 			'lavoro' => 'العمل',
 			'salute' => 'الصحة',
 			'finanza' => 'المال',
@@ -3016,9 +3031,9 @@ extension on TranslationsAr {
 			'authCtrl.operationFailed' => 'فشلت العملية. أعد المحاولة بعد قليل.',
 			'proModal.title' => 'افتح Evolve Pro',
 			'proModal.subtitle' => 'ارتقِ بنظام عاداتك إلى المستوى التالي',
-			'proModal.featuresHeader' => 'ما الذي تتضمّنه خطة PRO',
 			_ => null,
 		} ?? switch (path) {
+			'proModal.featuresHeader' => 'ما الذي تتضمّنه خطة PRO',
 			'proModal.aiCoachTitle' => 'AI Coach بلا إعداد',
 			'proModal.aiCoachDesc' => 'نشغّله نحن بمفتاحنا: لا مفتاح API تبحث عنه، ولا حساب ثانٍ. تفضّل حساب OpenRouter الخاص بك؟ هذا مجاني أيضًا.',
 			'proModal.statsTitle' => 'إحصاءات خاصة بكل عادة',
@@ -3234,6 +3249,19 @@ extension on TranslationsAr {
 			'targets.entry.keepGoing' => 'استمر',
 			'targets.entry.withinLimit' => 'ضمن حدك',
 			'targets.entry.overLimit' => 'تجاوزت حدك',
+			'targets.amountLabel' => 'الوصول إلى',
+			'targets.amountLabelAtMost' => 'ابقَ تحت',
+			'targets.stepLabel' => 'الخطوة',
+			'targets.stepHint' => ({required Object step}) => 'كل + يضيف ${step}',
+			'targets.rangeError' => ({required Object min, required Object max}) => 'أدخل رقمًا بين ${min} و ${max}',
+			'targets.stepPositiveError' => 'يجب أن تكون الخطوة أكبر من 0',
+			'targets.stepExceedsWarning' => 'نقرة واحدة ستتجاوز الهدف بالكامل',
+			'targets.notDivisibleWarning' => ({required Object amount, required Object below, required Object above}) => 'لا يمكنك الوصول إلى ${amount} بالضبط — النقرات تصل إلى ${below} ثم ${above}',
+			'targets.notDivisibleWarningNoBelow' => ({required Object amount, required Object above}) => 'لا يمكنك الوصول إلى ${amount} بالضبط — النقرة الأولى تصل إلى ${above}',
+			'targets.tooManyTapsWarning' => ({required Object taps}) => 'هذا يعني ${taps} نقرة لإكمال يوم واحد',
+			'targets.confirmTitle' => 'تحقّق من هدفك',
+			'targets.confirmAdjust' => 'تعديل',
+			'targets.confirmSaveAnyway' => 'احفظ على أي حال',
 			'trackingMode.title' => 'كيف تُتابَع؟',
 			'trackingMode.checkbox' => 'مربع',
 			'trackingMode.number' => 'رقم',

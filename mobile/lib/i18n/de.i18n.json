@@ -1362,6 +1362,19 @@
       "keepGoing": "Weiter so",
       "withinLimit": "Innerhalb des Limits",
       "overLimit": "Über dem Limit"
-    }
+    },
+    "amountLabel": "Erreiche",
+    "amountLabelAtMost": "Bleib unter",
+    "stepLabel": "Schritt",
+    "stepHint": "Jedes + fügt {step} hinzu",
+    "rangeError": "Gib eine Zahl zwischen {min} und {max} ein",
+    "stepPositiveError": "Der Schritt muss größer als 0 sein",
+    "stepExceedsWarning": "Ein Tippen würde das ganze Ziel überschreiten",
+    "notDivisibleWarning": "Du kannst {amount} nicht genau treffen — Tippen erreicht {below}, dann {above}",
+    "notDivisibleWarningNoBelow": "Du kannst {amount} nicht genau treffen — das erste Tippen erreicht {above}",
+    "tooManyTapsWarning": "Das sind {taps} Tipp-Vorgänge für einen Tag",
+    "confirmTitle": "Ziel prüfen",
+    "confirmAdjust": "Anpassen",
+    "confirmSaveAnyway": "Trotzdem speichern"
   }
 }

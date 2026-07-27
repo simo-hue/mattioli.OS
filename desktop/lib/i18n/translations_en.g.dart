@@ -1853,6 +1853,9 @@ class Translations$habitsPage$en {
 
 	/// en: 'Only today and yesterday can be edited.'
 	String get editableHint => 'Only today and yesterday can be edited.';
+
+	/// en: 'Title is required'
+	String get titleRequired => 'Title is required';
 }
 
 // Path: goalsPage
@@ -3769,6 +3772,45 @@ class Translations$targets$en {
 	late final Translations$targets$presets$en presets = Translations$targets$presets$en.internal(_root);
 	late final Translations$targets$units$en units = Translations$targets$units$en.internal(_root);
 	late final Translations$targets$entry$en entry = Translations$targets$entry$en.internal(_root);
+
+	/// en: 'Reach'
+	String get amountLabel => 'Reach';
+
+	/// en: 'Stay under'
+	String get amountLabelAtMost => 'Stay under';
+
+	/// en: 'Step'
+	String get stepLabel => 'Step';
+
+	/// en: 'Each + adds {step}'
+	String stepHint({required Object step}) => 'Each + adds ${step}';
+
+	/// en: 'Enter a number between {min} and {max}'
+	String rangeError({required Object min, required Object max}) => 'Enter a number between ${min} and ${max}';
+
+	/// en: 'The step must be greater than 0'
+	String get stepPositiveError => 'The step must be greater than 0';
+
+	/// en: 'One tap would pass the whole goal'
+	String get stepExceedsWarning => 'One tap would pass the whole goal';
+
+	/// en: 'You can't land on {amount} exactly — taps reach {below} then {above}'
+	String notDivisibleWarning({required Object amount, required Object below, required Object above}) => 'You can\'t land on ${amount} exactly — taps reach ${below} then ${above}';
+
+	/// en: 'You can't land on {amount} exactly — the first tap reaches {above}'
+	String notDivisibleWarningNoBelow({required Object amount, required Object above}) => 'You can\'t land on ${amount} exactly — the first tap reaches ${above}';
+
+	/// en: 'That's {taps} taps to finish a day'
+	String tooManyTapsWarning({required Object taps}) => 'That\'s ${taps} taps to finish a day';
+
+	/// en: 'Check your target'
+	String get confirmTitle => 'Check your target';
+
+	/// en: 'Adjust'
+	String get confirmAdjust => 'Adjust';
+
+	/// en: 'Save anyway'
+	String get confirmSaveAnyway => 'Save anyway';
 }
 
 // Path: trackingMode
@@ -4982,6 +5024,7 @@ extension on Translations {
 			'habitsPage.lifeWeeks' => 'Weeks of your journey',
 			'habitsPage.catMindfulness' => 'Mindfulness',
 			'habitsPage.editableHint' => 'Only today and yesterday can be edited.',
+			'habitsPage.titleRequired' => 'Title is required',
 			'lavoro' => 'Work',
 			'salute' => 'Health',
 			'finanza' => 'Finance',
@@ -5445,9 +5488,9 @@ extension on Translations {
 			'authCtrl.operationFailed' => 'Operation failed. Try again shortly.',
 			'proModal.title' => 'Unlock Evolve Pro',
 			'proModal.subtitle' => 'Take your habit system to the next level',
-			'proModal.featuresHeader' => 'WHAT THE PRO PLAN INCLUDES',
 			_ => null,
 		} ?? switch (path) {
+			'proModal.featuresHeader' => 'WHAT THE PRO PLAN INCLUDES',
 			'proModal.aiCoachTitle' => 'AI Coach, with no setup',
 			'proModal.aiCoachDesc' => 'We run it on our key — no API key to fetch, no second account. Prefer your own OpenRouter account? That\'s free too.',
 			'proModal.statsTitle' => 'Habit-Specific Statistics',
@@ -5663,6 +5706,19 @@ extension on Translations {
 			'targets.entry.keepGoing' => 'Keep going',
 			'targets.entry.withinLimit' => 'Within your limit',
 			'targets.entry.overLimit' => 'Over your limit',
+			'targets.amountLabel' => 'Reach',
+			'targets.amountLabelAtMost' => 'Stay under',
+			'targets.stepLabel' => 'Step',
+			'targets.stepHint' => ({required Object step}) => 'Each + adds ${step}',
+			'targets.rangeError' => ({required Object min, required Object max}) => 'Enter a number between ${min} and ${max}',
+			'targets.stepPositiveError' => 'The step must be greater than 0',
+			'targets.stepExceedsWarning' => 'One tap would pass the whole goal',
+			'targets.notDivisibleWarning' => ({required Object amount, required Object below, required Object above}) => 'You can\'t land on ${amount} exactly — taps reach ${below} then ${above}',
+			'targets.notDivisibleWarningNoBelow' => ({required Object amount, required Object above}) => 'You can\'t land on ${amount} exactly — the first tap reaches ${above}',
+			'targets.tooManyTapsWarning' => ({required Object taps}) => 'That\'s ${taps} taps to finish a day',
+			'targets.confirmTitle' => 'Check your target',
+			'targets.confirmAdjust' => 'Adjust',
+			'targets.confirmSaveAnyway' => 'Save anyway',
 			'trackingMode.title' => 'How is this tracked?',
 			'trackingMode.checkbox' => 'Checkbox',
 			'trackingMode.number' => 'Number',

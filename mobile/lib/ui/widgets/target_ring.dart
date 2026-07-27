@@ -41,7 +41,7 @@ class TargetRing extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final accentColor = accent ?? colors.primary;
-    const limitAmber = Color(0xFFF59E0B);
+    const limitAmber = kTargetWarningAmber;
     const missRed = Color(0xFFEF4444);
 
     final Color fillColor = switch (verdict.outcome) {
@@ -118,6 +118,11 @@ class _RingPainter extends CustomPainter {
 /// reads `5` while `0.5` stays `0.5`. Deliberately plain `toString`-based (the
 /// repo has no locale-aware NumberFormat yet — see task #8); the unit is shown
 /// abbreviated beside it so plurals never arise.
+/// The amber this feature uses for "not wrong, but watch out" — a filling limit
+/// ring, and a warning under the amount/step fields. One definition so the two
+/// surfaces cannot drift into different shades of caution.
+const Color kTargetWarningAmber = Color(0xFFF59E0B);
+
 String formatTargetAmount(double value) {
   if (value == value.roundToDouble()) return value.toInt().toString();
   return value.toString();

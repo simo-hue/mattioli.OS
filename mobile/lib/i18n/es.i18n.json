@@ -1362,6 +1362,19 @@
       "keepGoing": "Sigue así",
       "withinLimit": "Dentro de tu límite",
       "overLimit": "Por encima de tu límite"
-    }
+    },
+    "amountLabel": "Alcanza",
+    "amountLabelAtMost": "No superes",
+    "stepLabel": "Paso",
+    "stepHint": "Cada + añade {step}",
+    "rangeError": "Introduce un número entre {min} y {max}",
+    "stepPositiveError": "El paso debe ser mayor que 0",
+    "stepExceedsWarning": "Un solo toque superaría todo el objetivo",
+    "notDivisibleWarning": "No puedes llegar exactamente a {amount} — los toques alcanzan {below} y luego {above}",
+    "notDivisibleWarningNoBelow": "No puedes llegar exactamente a {amount} — el primer toque alcanza {above}",
+    "tooManyTapsWarning": "Son {taps} toques para completar un día",
+    "confirmTitle": "Revisa tu objetivo",
+    "confirmAdjust": "Ajustar",
+    "confirmSaveAnyway": "Guardar igualmente"
   }
 }

@@ -16,6 +16,7 @@ import '../../core/verification_config.dart';
 import '../../core/verification_providers.dart';
 import 'compound_conditions_field.dart';
 import 'target_field.dart';
+import 'target_ring.dart';
 import 'verification_rule_field.dart';
 import '../../core/time_formatting.dart';
 import '../../models/goal.dart';
@@ -290,6 +291,42 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
         ));
       }
       return;
+    }
+
+    // Quantitative targets: blocking issues stop the save with the reason
+    // already visible inline under the fields; warnings are legal but odd, so
+    // they get one confirmation rather than passing silently. The sheet only
+    // appears when something is genuinely off — a normal habit never sees it.
+    final target = _target;
+    if (target != null && TargetsConfig.enabled) {
+      final preset = TargetPresetCatalog.forTarget(target);
+      if (preset != null) {
+        final issues = validateHabitTarget(
+          preset: preset,
+          amount: target.amount,
+          step: target.step,
+        );
+        if (issues.any((i) => i.isBlocking)) {
+          ref.hapticMedium();
+          return;
+        }
+        if (issues.isNotEmpty) {
+          final unit = targetUnitShortLabel(context.t, target.unit);
+          final proceed = await showEvolveConfirm(
+            context: context,
+            ref: ref,
+            title: context.t.targets.confirmTitle,
+            message: [
+              for (final issue in issues)
+                targetIssueMessage(context.t, issue,
+                    amount: target.amount, unit: unit),
+            ].join('\n\n'),
+            cancelLabel: context.t.targets.confirmAdjust,
+            confirmLabel: context.t.targets.confirmSaveAnyway,
+          );
+          if (!mounted || !proceed) return;
+        }
+      }
     }
 
     final isEditing = _editingHabit != null;

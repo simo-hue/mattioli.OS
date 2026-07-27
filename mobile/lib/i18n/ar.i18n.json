@@ -1362,6 +1362,19 @@
       "keepGoing": "استمر",
       "withinLimit": "ضمن حدك",
       "overLimit": "تجاوزت حدك"
-    }
+    },
+    "amountLabel": "الوصول إلى",
+    "amountLabelAtMost": "ابقَ تحت",
+    "stepLabel": "الخطوة",
+    "stepHint": "كل + يضيف {step}",
+    "rangeError": "أدخل رقمًا بين {min} و {max}",
+    "stepPositiveError": "يجب أن تكون الخطوة أكبر من 0",
+    "stepExceedsWarning": "نقرة واحدة ستتجاوز الهدف بالكامل",
+    "notDivisibleWarning": "لا يمكنك الوصول إلى {amount} بالضبط — النقرات تصل إلى {below} ثم {above}",
+    "notDivisibleWarningNoBelow": "لا يمكنك الوصول إلى {amount} بالضبط — النقرة الأولى تصل إلى {above}",
+    "tooManyTapsWarning": "هذا يعني {taps} نقرة لإكمال يوم واحد",
+    "confirmTitle": "تحقّق من هدفك",
+    "confirmAdjust": "تعديل",
+    "confirmSaveAnyway": "احفظ على أي حال"
   }
 }

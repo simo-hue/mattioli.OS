@@ -813,6 +813,7 @@ class _Translations$habitsPage$es extends Translations$habitsPage$en {
 	@override String get lifeWeeks => 'Semanas de tu camino';
 	@override String get catMindfulness => 'Mindfulness';
 	@override String get editableHint => 'Solo se pueden editar hoy y ayer.';
+	@override String get titleRequired => 'El título es obligatorio';
 }
 
 // Path: goalsPage
@@ -1578,6 +1579,19 @@ class _Translations$targets$es extends Translations$targets$en {
 	@override late final _Translations$targets$presets$es presets = _Translations$targets$presets$es._(_root);
 	@override late final _Translations$targets$units$es units = _Translations$targets$units$es._(_root);
 	@override late final _Translations$targets$entry$es entry = _Translations$targets$entry$es._(_root);
+	@override String get amountLabel => 'Alcanza';
+	@override String get amountLabelAtMost => 'No superes';
+	@override String get stepLabel => 'Paso';
+	@override String stepHint({required Object step}) => 'Cada + añade ${step}';
+	@override String rangeError({required Object min, required Object max}) => 'Introduce un número entre ${min} y ${max}';
+	@override String get stepPositiveError => 'El paso debe ser mayor que 0';
+	@override String get stepExceedsWarning => 'Un solo toque superaría todo el objetivo';
+	@override String notDivisibleWarning({required Object amount, required Object below, required Object above}) => 'No puedes llegar exactamente a ${amount} — los toques alcanzan ${below} y luego ${above}';
+	@override String notDivisibleWarningNoBelow({required Object amount, required Object above}) => 'No puedes llegar exactamente a ${amount} — el primer toque alcanza ${above}';
+	@override String tooManyTapsWarning({required Object taps}) => 'Son ${taps} toques para completar un día';
+	@override String get confirmTitle => 'Revisa tu objetivo';
+	@override String get confirmAdjust => 'Ajustar';
+	@override String get confirmSaveAnyway => 'Guardar igualmente';
 }
 
 // Path: trackingMode
@@ -2553,6 +2567,7 @@ extension on TranslationsEs {
 			'habitsPage.lifeWeeks' => 'Semanas de tu camino',
 			'habitsPage.catMindfulness' => 'Mindfulness',
 			'habitsPage.editableHint' => 'Solo se pueden editar hoy y ayer.',
+			'habitsPage.titleRequired' => 'El título es obligatorio',
 			'lavoro' => 'Trabajo',
 			'salute' => 'Salud',
 			'finanza' => 'Finanzas',
@@ -3016,9 +3031,9 @@ extension on TranslationsEs {
 			'authCtrl.operationFailed' => 'Operación fallida. Inténtalo de nuevo en breve.',
 			'proModal.title' => 'Desbloquea Evolve PRO',
 			'proModal.subtitle' => 'Lleva tu sistema de hábitos al siguiente nivel',
-			'proModal.featuresHeader' => 'Qué incluye el plan PRO',
 			_ => null,
 		} ?? switch (path) {
+			'proModal.featuresHeader' => 'Qué incluye el plan PRO',
 			'proModal.aiCoachTitle' => 'AI Coach, sin configuración',
 			'proModal.aiCoachDesc' => 'Lo ejecutamos nosotros con nuestra clave: sin clave API que buscar, sin segunda cuenta. ¿Prefieres tu propia cuenta de OpenRouter? También es gratis.',
 			'proModal.statsTitle' => 'Estadísticas específicas por hábito',
@@ -3234,6 +3249,19 @@ extension on TranslationsEs {
 			'targets.entry.keepGoing' => 'Sigue así',
 			'targets.entry.withinLimit' => 'Dentro de tu límite',
 			'targets.entry.overLimit' => 'Por encima de tu límite',
+			'targets.amountLabel' => 'Alcanza',
+			'targets.amountLabelAtMost' => 'No superes',
+			'targets.stepLabel' => 'Paso',
+			'targets.stepHint' => ({required Object step}) => 'Cada + añade ${step}',
+			'targets.rangeError' => ({required Object min, required Object max}) => 'Introduce un número entre ${min} y ${max}',
+			'targets.stepPositiveError' => 'El paso debe ser mayor que 0',
+			'targets.stepExceedsWarning' => 'Un solo toque superaría todo el objetivo',
+			'targets.notDivisibleWarning' => ({required Object amount, required Object below, required Object above}) => 'No puedes llegar exactamente a ${amount} — los toques alcanzan ${below} y luego ${above}',
+			'targets.notDivisibleWarningNoBelow' => ({required Object amount, required Object above}) => 'No puedes llegar exactamente a ${amount} — el primer toque alcanza ${above}',
+			'targets.tooManyTapsWarning' => ({required Object taps}) => 'Son ${taps} toques para completar un día',
+			'targets.confirmTitle' => 'Revisa tu objetivo',
+			'targets.confirmAdjust' => 'Ajustar',
+			'targets.confirmSaveAnyway' => 'Guardar igualmente',
 			'trackingMode.title' => '¿Cómo se registra?',
 			'trackingMode.checkbox' => 'Casilla',
 			'trackingMode.number' => 'Número',

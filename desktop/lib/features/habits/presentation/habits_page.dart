@@ -2329,6 +2329,10 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
   /// Quantitative target draft (only surfaced when [DesktopTargetsConfig.enabled]).
   HabitTarget? _target;
 
+  /// Set when Save is pressed with an empty title, cleared on the next
+  /// keystroke. Desktop previously just returned, so the button appeared dead.
+  bool _titleError = false;
+
   /// How this habit is tracked. Derived from the edited habit: a verification
   /// rule ⇒ [HabitTrackingMode.automatic] (locked read-only), else a target ⇒
   /// [HabitTrackingMode.number], else [HabitTrackingMode.checkbox].
@@ -2386,7 +2390,16 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
           children: [
             EvolveFieldLabel(t.form.title),
             const SizedBox(height: 8),
-            TextField(controller: _title, autofocus: true),
+            TextField(
+              controller: _title,
+              autofocus: true,
+              onChanged: (_) {
+                if (_titleError) setState(() => _titleError = false);
+              },
+              decoration: InputDecoration(
+                errorText: _titleError ? t.habitsPage.titleRequired : null,
+              ),
+            ),
             const SizedBox(height: 20),
             EvolveFieldLabel(t.form.color),
             const SizedBox(height: 10),
@@ -2485,9 +2498,57 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
           child: Text(t.common.actions.cancel),
         ),
         FilledButton(
-          onPressed: () {
+          onPressed: () async {
             final title = _title.text.trim();
-            if (title.isEmpty) return;
+            // Previously a bare `return`: pressing Save with an empty title did
+            // nothing at all, with no explanation. Show the reason like mobile.
+            if (title.isEmpty) {
+              setState(() => _titleError = true);
+              return;
+            }
+            // Quantitative targets: blocking issues stop the save (the reason is
+            // already inline under the fields); warnings get one confirmation
+            // rather than passing silently. A normal habit never sees this.
+            final target = _target;
+            if (target != null && DesktopTargetsConfig.enabled) {
+              final preset = TargetPresetCatalog.forTarget(target);
+              if (preset != null) {
+                final issues = validateHabitTarget(
+                  preset: preset,
+                  amount: target.amount,
+                  step: target.step,
+                );
+                if (issues.any((i) => i.isBlocking)) return;
+                if (issues.isNotEmpty) {
+                  final unit = targetUnitShortLabel(target.unit);
+                  final proceed = await showEvolveDialog<bool>(
+                    context: context,
+                    builder: (ctx) => EvolveAlertDialog(
+                      icon: LucideIcons.triangleAlert,
+                      title: Text(t.targets.confirmTitle),
+                      subtitle: [
+                        for (final issue in issues)
+                          targetIssueMessage(issue,
+                              amount: target.amount, unit: unit),
+                      ].join('\n\n'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: Text(t.targets.confirmAdjust),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: Text(t.targets.confirmSaveAnyway),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (proceed != true) return;
+                }
+              }
+            }
+            if (!context.mounted) return;
             Navigator.pop(
               context,
               _HabitDraft(

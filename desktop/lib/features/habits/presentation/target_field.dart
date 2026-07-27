@@ -3,6 +3,7 @@ import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/target_ring.dart';
 import 'package:evolve_targets/evolve_targets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// Create/edit control for a habit's quantitative target — the desktop twin of
 /// mobile's `TargetField`. A closed list of preset chips ("Simple" + the four
@@ -58,7 +59,7 @@ class TargetField extends StatelessWidget {
         ),
         if (selected != null) ...[
           const SizedBox(height: 12),
-          _AmountRow(
+          _AmountAndStep(
             preset: selected,
             target: target!,
             onChanged: onChanged,
@@ -74,8 +75,13 @@ class TargetField extends StatelessWidget {
   }
 }
 
-class _AmountRow extends StatelessWidget {
-  const _AmountRow({
+/// Amount + step entry — the desktop twin of mobile's `_AmountAndStep`, and
+/// deliberately identical in behaviour: both numbers are typed, the `+`/`−`
+/// buttons move by the CURRENT step (not `preset.defaultStep`, which would now
+/// contradict both this field and the daily entry dialog), typing is never
+/// corrected mid-keystroke, and values settle on blur/submit.
+class _AmountAndStep extends StatefulWidget {
+  const _AmountAndStep({
     required this.preset,
     required this.target,
     required this.onChanged,
@@ -86,39 +92,220 @@ class _AmountRow extends StatelessWidget {
   final ValueChanged<HabitTarget?> onChanged;
 
   @override
+  State<_AmountAndStep> createState() => _AmountAndStepState();
+}
+
+class _AmountAndStepState extends State<_AmountAndStep> {
+  late final TextEditingController _amount;
+  late final TextEditingController _step;
+  late final FocusNode _amountFocus;
+  late final FocusNode _stepFocus;
+
+  @override
+  void initState() {
+    super.initState();
+    _amount = TextEditingController(text: formatTargetAmount(widget.target.amount));
+    _step = TextEditingController(text: formatTargetAmount(widget.target.step));
+    _amountFocus = FocusNode()..addListener(_onAmountFocusChange);
+    _stepFocus = FocusNode()..addListener(_onStepFocusChange);
+  }
+
+  @override
+  void didUpdateWidget(_AmountAndStep old) {
+    super.didUpdateWidget(old);
+    if (!_amountFocus.hasFocus && widget.target.amount != old.target.amount) {
+      _amount.text = formatTargetAmount(widget.target.amount);
+    }
+    if (!_stepFocus.hasFocus && widget.target.step != old.target.step) {
+      _step.text = formatTargetAmount(widget.target.step);
+    }
+  }
+
+  @override
+  void dispose() {
+    _amount.dispose();
+    _step.dispose();
+    _amountFocus.dispose();
+    _stepFocus.dispose();
+    super.dispose();
+  }
+
+  double? get _typedAmount => double.tryParse(_amount.text.replaceAll(',', '.'));
+  double? get _typedStep => double.tryParse(_step.text.replaceAll(',', '.'));
+
+  void _onAmountFocusChange() {
+    if (!_amountFocus.hasFocus) _commitAmount();
+  }
+
+  void _onStepFocusChange() {
+    if (!_stepFocus.hasFocus) _commitStep();
+  }
+
+  void _commitAmount() {
+    final typed = _typedAmount;
+    final next =
+        typed == null ? widget.target.amount : widget.preset.clampAmount(typed);
+    _amount.text = formatTargetAmount(next);
+    if (next != widget.target.amount) {
+      widget.onChanged(widget.target.copyWith(amount: next));
+    }
+    setState(() {});
+  }
+
+  void _commitStep() {
+    final typed = _typedStep;
+    var next = (typed == null || typed <= 0) ? widget.target.step : typed;
+    if (next > widget.target.amount) next = widget.target.amount;
+    _step.text = formatTargetAmount(next);
+    if (next != widget.target.step) {
+      widget.onChanged(widget.target.copyWith(step: next));
+    }
+    setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.evolveColors;
-    final unit = targetUnitShortLabel(target.unit);
-    final step = preset.defaultStep;
+    final unit = targetUnitShortLabel(widget.target.unit);
+    final liveAmount = _typedAmount ?? widget.target.amount;
+    final liveStep = _typedStep ?? widget.target.step;
+    final allowDecimal =
+        widget.preset.minAmount != widget.preset.minAmount.roundToDouble();
 
-    void bump(double delta) =>
-        onChanged(target.copyWith(amount: preset.clampAmount(target.amount + delta)));
+    final issues = validateHabitTarget(
+      preset: widget.preset,
+      amount: _typedAmount,
+      step: _typedStep,
+    );
+    final ordered = [
+      ...issues.where((i) => i.isBlocking),
+      ...issues.where((i) => !i.isBlocking),
+    ];
 
-    return Row(
+    void bump(double delta) {
+      final next = widget.preset.clampAmount(liveAmount + delta);
+      _amount.text = formatTargetAmount(next);
+      widget.onChanged(widget.target.copyWith(amount: next));
+      setState(() {});
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          preset.direction == TargetDirection.atMost
-              ? t.targets.atMostLabel
-              : t.targets.atLeastLabel,
-          style: TextStyle(fontSize: 13, color: colors.muted),
+        Row(
+          children: [
+            Text(
+              widget.preset.direction == TargetDirection.atMost
+                  ? t.targets.atMostLabel
+                  : t.targets.atLeastLabel,
+              style: TextStyle(fontSize: 13, color: colors.muted),
+            ),
+            const Spacer(),
+            _MiniStep(icon: Icons.remove, onTap: () => bump(-liveStep)),
+            _NumberBox(
+              controller: _amount,
+              focusNode: _amountFocus,
+              unit: unit,
+              allowDecimal: allowDecimal,
+              onSubmitted: _commitAmount,
+              emphasised: true,
+            ),
+            _MiniStep(icon: Icons.add, onTap: () => bump(liveStep)),
+          ],
         ),
-        const Spacer(),
-        _MiniStep(icon: Icons.remove, onTap: () => bump(-step)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          child: Text(
-            unit.isEmpty
-                ? formatTargetAmount(target.amount)
-                : '${formatTargetAmount(target.amount)} $unit',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: colors.foreground,
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Text(t.targets.stepLabel,
+                style: TextStyle(fontSize: 13, color: colors.muted)),
+            const Spacer(),
+            _NumberBox(
+              controller: _step,
+              focusNode: _stepFocus,
+              unit: unit,
+              allowDecimal: allowDecimal,
+              onSubmitted: _commitStep,
+              emphasised: false,
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          t.targets.stepHint(
+            step: unit.isEmpty
+                ? formatTargetAmount(liveStep)
+                : '${formatTargetAmount(liveStep)} $unit',
+          ),
+          style: TextStyle(fontSize: 12, color: colors.muted),
+        ),
+        for (final issue in ordered)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              targetIssueMessage(issue, amount: liveAmount, unit: unit),
+              style: TextStyle(
+                fontSize: 12,
+                color: issue.isBlocking
+                    ? EvolveColors.destructive
+                    : kTargetWarningAmber,
+              ),
             ),
           ),
-        ),
-        _MiniStep(icon: Icons.add, onTap: () => bump(step)),
       ],
+    );
+  }
+}
+
+/// Compact numeric box. Digits only (plus a decimal separator where the preset
+/// genuinely allows fractions), so letters cannot be typed at all.
+class _NumberBox extends StatelessWidget {
+  const _NumberBox({
+    required this.controller,
+    required this.focusNode,
+    required this.unit,
+    required this.allowDecimal,
+    required this.onSubmitted,
+    required this.emphasised,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String unit;
+  final bool allowDecimal;
+  final VoidCallback onSubmitted;
+  final bool emphasised;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.evolveColors;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 84, maxWidth: 128),
+      child: IntrinsicWidth(
+        child: TextField(
+          controller: controller,
+          focusNode: focusNode,
+          textAlign: TextAlign.center,
+          keyboardType: TextInputType.numberWithOptions(decimal: allowDecimal),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(
+              allowDecimal ? RegExp(r'[0-9.,]') : RegExp(r'[0-9]'),
+            ),
+          ],
+          onSubmitted: (_) => onSubmitted(),
+          style: TextStyle(
+            fontSize: emphasised ? 16 : 14,
+            fontWeight: emphasised ? FontWeight.w800 : FontWeight.w600,
+            color: colors.foreground,
+          ),
+          decoration: InputDecoration(
+            isDense: true,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            suffixText: unit.isEmpty ? null : unit,
+            suffixStyle: TextStyle(fontSize: 12, color: colors.muted),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -208,3 +395,38 @@ String _presetDescription(TargetPreset preset) => switch (preset.id) {
       'limit_duration_daily' => t.targets.presets.limitDurationDaily.description,
       _ => '',
     };
+
+
+/// Localized message for a [TargetIssue] — the desktop twin of mobile's helper.
+/// Shared with the save-time confirmation so a warning reads identically
+/// wherever it appears.
+String targetIssueMessage(
+  TargetIssue issue, {
+  required double amount,
+  required String unit,
+}) {
+  String n(double v) =>
+      unit.isEmpty ? formatTargetAmount(v) : '${formatTargetAmount(v)} $unit';
+  switch (issue.kind) {
+    case TargetIssueKind.amountOutOfRange:
+      return t.targets.rangeError(
+        min: formatTargetAmount(issue.lowerBound ?? 0),
+        max: formatTargetAmount(issue.upperBound ?? 0),
+      );
+    case TargetIssueKind.stepNotPositive:
+      return t.targets.stepPositiveError;
+    case TargetIssueKind.stepExceedsAmount:
+      return t.targets.stepExceedsWarning;
+    case TargetIssueKind.amountNotDivisibleByStep:
+      final above = n(issue.upperBound ?? 0);
+      return issue.lowerBound == null
+          ? t.targets.notDivisibleWarningNoBelow(amount: n(amount), above: above)
+          : t.targets.notDivisibleWarning(
+              amount: n(amount),
+              below: n(issue.lowerBound!),
+              above: above,
+            );
+    case TargetIssueKind.tooManyTaps:
+      return t.targets.tooManyTapsWarning(taps: '${issue.taps ?? 0}');
+  }
+}

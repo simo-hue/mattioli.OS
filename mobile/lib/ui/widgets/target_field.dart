@@ -1,5 +1,6 @@
 import 'package:evolve_targets/evolve_targets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/haptics.dart';
@@ -83,7 +84,7 @@ class TargetField extends ConsumerWidget {
         ),
         if (selected != null) ...[
           const SizedBox(height: 14),
-          _AmountRow(
+          _AmountAndStep(
             preset: selected,
             target: target!,
             haptic: haptic,
@@ -104,8 +105,21 @@ class TargetField extends ConsumerWidget {
   }
 }
 
-class _AmountRow extends StatelessWidget {
-  const _AmountRow({
+/// Amount + step entry for a numeric target.
+///
+/// Both numbers are typed directly — reaching 100 push-ups by tapping `+` a
+/// hundred times was the whole reason this replaced a read-only display. The
+/// `+`/`−` buttons remain for quick nudges, and they move by the CURRENT step,
+/// which is what makes the Step field self-explanatory: type 20, and every tap
+/// jumps 20. (They previously moved by `preset.defaultStep`, which would now
+/// contradict both this field and the daily entry sheet.)
+///
+/// Typing is never corrected mid-keystroke — you cannot type "100" without
+/// passing through "1" and "10". Values settle on blur/submit: empty reverts,
+/// out-of-range snaps to the nearest allowed value, and the reason is shown.
+/// Warnings (from `validateHabitTarget`) appear live but never block.
+class _AmountAndStep extends StatefulWidget {
+  const _AmountAndStep({
     required this.preset,
     required this.target,
     required this.haptic,
@@ -118,48 +132,262 @@ class _AmountRow extends StatelessWidget {
   final ValueChanged<HabitTarget?> onChanged;
 
   @override
+  State<_AmountAndStep> createState() => _AmountAndStepState();
+}
+
+class _AmountAndStepState extends State<_AmountAndStep> {
+  late final TextEditingController _amount;
+  late final TextEditingController _step;
+  late final FocusNode _amountFocus;
+  late final FocusNode _stepFocus;
+
+  @override
+  void initState() {
+    super.initState();
+    _amount = TextEditingController(text: formatTargetAmount(widget.target.amount));
+    _step = TextEditingController(text: formatTargetAmount(widget.target.step));
+    _amountFocus = FocusNode()..addListener(_onAmountFocusChange);
+    _stepFocus = FocusNode()..addListener(_onStepFocusChange);
+  }
+
+  @override
+  void didUpdateWidget(_AmountAndStep old) {
+    super.didUpdateWidget(old);
+    // Re-seed from the model when it changes underneath us (a +/- tap, or the
+    // user picking a different preset) — but never while the field has focus,
+    // or we would overwrite what is being typed.
+    if (!_amountFocus.hasFocus &&
+        widget.target.amount != old.target.amount) {
+      _amount.text = formatTargetAmount(widget.target.amount);
+    }
+    if (!_stepFocus.hasFocus && widget.target.step != old.target.step) {
+      _step.text = formatTargetAmount(widget.target.step);
+    }
+  }
+
+  @override
+  void dispose() {
+    _amount.dispose();
+    _step.dispose();
+    _amountFocus.dispose();
+    _stepFocus.dispose();
+    super.dispose();
+  }
+
+  double? get _typedAmount => double.tryParse(_amount.text.replaceAll(',', '.'));
+  double? get _typedStep => double.tryParse(_step.text.replaceAll(',', '.'));
+
+  void _onAmountFocusChange() {
+    if (_amountFocus.hasFocus) return;
+    _commitAmount();
+  }
+
+  void _onStepFocusChange() {
+    if (_stepFocus.hasFocus) return;
+    _commitStep();
+  }
+
+  /// Settles the amount: empty reverts to the stored value rather than becoming
+  /// zero (clearing a field is not a request to set 0), anything else clamps
+  /// into the preset's range.
+  void _commitAmount() {
+    final typed = _typedAmount;
+    final next = typed == null
+        ? widget.target.amount
+        : widget.preset.clampAmount(typed);
+    _amount.text = formatTargetAmount(next);
+    if (next != widget.target.amount) {
+      widget.onChanged(widget.target.copyWith(amount: next));
+    }
+    setState(() {});
+  }
+
+  /// Settles the step. A step larger than the amount collapses to the amount —
+  /// one tap completes the day, which is legitimate — and a zero/empty step
+  /// reverts, because an inert `+` button is never what was meant.
+  void _commitStep() {
+    final typed = _typedStep;
+    var next = (typed == null || typed <= 0) ? widget.target.step : typed;
+    if (next > widget.target.amount) next = widget.target.amount;
+    _step.text = formatTargetAmount(next);
+    if (next != widget.target.step) {
+      widget.onChanged(widget.target.copyWith(step: next));
+    }
+    setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final t = context.t;
-    final unit = targetUnitShortLabel(t, target.unit);
-    final step = preset.defaultStep;
+    final unit = targetUnitShortLabel(t, widget.target.unit);
+    // Live values, so the hint and the warnings track what is being typed
+    // rather than what was last committed.
+    final liveAmount = _typedAmount ?? widget.target.amount;
+    final liveStep = _typedStep ?? widget.target.step;
+
+    final issues = validateHabitTarget(
+      preset: widget.preset,
+      amount: _typedAmount,
+      step: _typedStep,
+    );
+    final blocking = issues.where((i) => i.isBlocking).toList();
+    final warnings = issues.where((i) => !i.isBlocking).toList();
 
     void bump(double delta) {
-      haptic();
-      final next = preset.clampAmount(target.amount + delta);
-      onChanged(target.copyWith(amount: next));
+      widget.haptic();
+      final next = widget.preset.clampAmount(liveAmount + delta);
+      _amount.text = formatTargetAmount(next);
+      widget.onChanged(widget.target.copyWith(amount: next));
+      setState(() {});
     }
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Row(
+          children: [
+            Text(
+              widget.preset.direction == TargetDirection.atMost
+                  ? t.targets.atMostLabel
+                  : t.targets.atLeastLabel,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                color: colors.mutedForeground,
+              ),
+            ),
+            const Spacer(),
+            _MiniStep(icon: Icons.remove, onTap: () => bump(-liveStep)),
+            _NumberBox(
+              controller: _amount,
+              focusNode: _amountFocus,
+              unit: unit,
+              allowDecimal: widget.preset.minAmount != widget.preset.minAmount.roundToDouble(),
+              onSubmitted: _commitAmount,
+              emphasised: true,
+            ),
+            _MiniStep(icon: Icons.add, onTap: () => bump(liveStep)),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Text(
+              t.targets.stepLabel,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                color: colors.mutedForeground,
+              ),
+            ),
+            const Spacer(),
+            _NumberBox(
+              controller: _step,
+              focusNode: _stepFocus,
+              unit: unit,
+              allowDecimal: widget.preset.minAmount != widget.preset.minAmount.roundToDouble(),
+              onSubmitted: _commitStep,
+              emphasised: false,
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        // The hint is what makes the Step field explain itself: it names, in
+        // words, exactly what the + button above will now do.
         Text(
-          preset.direction == TargetDirection.atMost
-              ? t.targets.atMostLabel
-              : t.targets.atLeastLabel,
+          t.targets.stepHint(
+            step: unit.isEmpty
+                ? formatTargetAmount(liveStep)
+                : '${formatTargetAmount(liveStep)} $unit',
+          ),
           style: TextStyle(
             fontFamily: 'Inter',
-            fontSize: 14,
+            fontSize: 12,
             color: colors.mutedForeground,
           ),
         ),
-        const Spacer(),
-        _MiniStep(icon: Icons.remove, onTap: () => bump(-step)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          child: Text(
-            unit.isEmpty
-                ? formatTargetAmount(target.amount)
-                : '${formatTargetAmount(target.amount)} $unit',
-            style: TextStyle(
+        for (final issue in [...blocking, ...warnings])
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              targetIssueMessage(t, issue, amount: liveAmount, unit: unit),
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 12,
+                color: issue.isBlocking ? colors.destructive : kTargetWarningAmber,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// A compact numeric text box. Digits only (plus a decimal separator where the
+/// preset genuinely allows fractions, e.g. the 0.5 coffee minimum), so there is
+/// no way to type letters at all.
+class _NumberBox extends StatelessWidget {
+  const _NumberBox({
+    required this.controller,
+    required this.focusNode,
+    required this.unit,
+    required this.allowDecimal,
+    required this.onSubmitted,
+    required this.emphasised,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String unit;
+  final bool allowDecimal;
+  final VoidCallback onSubmitted;
+  final bool emphasised;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 76, maxWidth: 118),
+      child: IntrinsicWidth(
+        child: TextField(
+          controller: controller,
+          focusNode: focusNode,
+          textAlign: TextAlign.center,
+          keyboardType: TextInputType.numberWithOptions(decimal: allowDecimal),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(
+              allowDecimal ? RegExp(r'[0-9.,]') : RegExp(r'[0-9]'),
+            ),
+          ],
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => onSubmitted(),
+          onTapOutside: (_) => focusNode.unfocus(),
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: emphasised ? 18 : 15,
+            fontWeight: emphasised ? FontWeight.w800 : FontWeight.w600,
+            color: colors.foreground,
+          ),
+          decoration: InputDecoration(
+            isDense: true,
+            filled: true,
+            fillColor: colors.background.withValues(alpha: 0.5),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            suffixText: unit.isEmpty ? null : unit,
+            suffixStyle: TextStyle(
               fontFamily: 'Inter',
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: colors.foreground,
+              fontSize: 12,
+              color: colors.mutedForeground,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide.none,
             ),
           ),
         ),
-        _MiniStep(icon: Icons.add, onTap: () => bump(step)),
-      ],
+      ),
     );
   }
 }
@@ -251,3 +479,40 @@ String _presetDescription(Translations t, TargetPreset preset) =>
       'limit_duration_daily' => t.targets.presets.limitDurationDaily.description,
       _ => '',
     };
+
+
+/// Localized message for a [TargetIssue]. Kept beside the field so the package
+/// stays i18n-free, and shared with the save-time confirmation so a warning is
+/// worded identically wherever it appears.
+String targetIssueMessage(
+  Translations t,
+  TargetIssue issue, {
+  required double amount,
+  required String unit,
+}) {
+  String n(double v) => unit.isEmpty
+      ? formatTargetAmount(v)
+      : '${formatTargetAmount(v)} $unit';
+  switch (issue.kind) {
+    case TargetIssueKind.amountOutOfRange:
+      return t.targets.rangeError(
+        min: formatTargetAmount(issue.lowerBound ?? 0),
+        max: formatTargetAmount(issue.upperBound ?? 0),
+      );
+    case TargetIssueKind.stepNotPositive:
+      return t.targets.stepPositiveError;
+    case TargetIssueKind.stepExceedsAmount:
+      return t.targets.stepExceedsWarning;
+    case TargetIssueKind.amountNotDivisibleByStep:
+      final above = n(issue.upperBound ?? 0);
+      return issue.lowerBound == null
+          ? t.targets.notDivisibleWarningNoBelow(amount: n(amount), above: above)
+          : t.targets.notDivisibleWarning(
+              amount: n(amount),
+              below: n(issue.lowerBound!),
+              above: above,
+            );
+    case TargetIssueKind.tooManyTaps:
+      return t.targets.tooManyTapsWarning(taps: '${issue.taps ?? 0}');
+  }
+}

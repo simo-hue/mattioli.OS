@@ -813,6 +813,7 @@ class _Translations$habitsPage$de extends Translations$habitsPage$en {
 	@override String get lifeWeeks => 'Wochen deines Weges';
 	@override String get catMindfulness => 'Achtsamkeit';
 	@override String get editableHint => 'Nur heute und gestern können bearbeitet werden.';
+	@override String get titleRequired => 'Titel ist erforderlich';
 }
 
 // Path: goalsPage
@@ -1578,6 +1579,19 @@ class _Translations$targets$de extends Translations$targets$en {
 	@override late final _Translations$targets$presets$de presets = _Translations$targets$presets$de._(_root);
 	@override late final _Translations$targets$units$de units = _Translations$targets$units$de._(_root);
 	@override late final _Translations$targets$entry$de entry = _Translations$targets$entry$de._(_root);
+	@override String get amountLabel => 'Erreiche';
+	@override String get amountLabelAtMost => 'Bleib unter';
+	@override String get stepLabel => 'Schritt';
+	@override String stepHint({required Object step}) => 'Jedes + fügt ${step} hinzu';
+	@override String rangeError({required Object min, required Object max}) => 'Gib eine Zahl zwischen ${min} und ${max} ein';
+	@override String get stepPositiveError => 'Der Schritt muss größer als 0 sein';
+	@override String get stepExceedsWarning => 'Ein Tippen würde das ganze Ziel überschreiten';
+	@override String notDivisibleWarning({required Object amount, required Object below, required Object above}) => 'Du kannst ${amount} nicht genau treffen — Tippen erreicht ${below}, dann ${above}';
+	@override String notDivisibleWarningNoBelow({required Object amount, required Object above}) => 'Du kannst ${amount} nicht genau treffen — das erste Tippen erreicht ${above}';
+	@override String tooManyTapsWarning({required Object taps}) => 'Das sind ${taps} Tipp-Vorgänge für einen Tag';
+	@override String get confirmTitle => 'Ziel prüfen';
+	@override String get confirmAdjust => 'Anpassen';
+	@override String get confirmSaveAnyway => 'Trotzdem speichern';
 }
 
 // Path: trackingMode
@@ -2553,6 +2567,7 @@ extension on TranslationsDe {
 			'habitsPage.lifeWeeks' => 'Wochen deines Weges',
 			'habitsPage.catMindfulness' => 'Achtsamkeit',
 			'habitsPage.editableHint' => 'Nur heute und gestern können bearbeitet werden.',
+			'habitsPage.titleRequired' => 'Titel ist erforderlich',
 			'lavoro' => 'Arbeit',
 			'salute' => 'Gesundheit',
 			'finanza' => 'Finanzen',
@@ -3016,9 +3031,9 @@ extension on TranslationsDe {
 			'authCtrl.operationFailed' => 'Vorgang fehlgeschlagen. Versuche es gleich erneut.',
 			'proModal.title' => 'Evolve PRO freischalten',
 			'proModal.subtitle' => 'Bringen Sie Ihr Gewohnheitssystem auf die nächste Stufe',
-			'proModal.featuresHeader' => 'Was der PRO-Plan enthält',
 			_ => null,
 		} ?? switch (path) {
+			'proModal.featuresHeader' => 'Was der PRO-Plan enthält',
 			'proModal.aiCoachTitle' => 'AI Coach, ohne Einrichtung',
 			'proModal.aiCoachDesc' => 'Wir betreiben ihn mit unserem Schlüssel: kein API-Schlüssel zu besorgen, kein zweites Konto. Lieber dein eigenes OpenRouter-Konto? Das ist ebenfalls kostenlos.',
 			'proModal.statsTitle' => 'Gewohnheitsspezifische Statistiken',
@@ -3234,6 +3249,19 @@ extension on TranslationsDe {
 			'targets.entry.keepGoing' => 'Weiter so',
 			'targets.entry.withinLimit' => 'Innerhalb des Limits',
 			'targets.entry.overLimit' => 'Über dem Limit',
+			'targets.amountLabel' => 'Erreiche',
+			'targets.amountLabelAtMost' => 'Bleib unter',
+			'targets.stepLabel' => 'Schritt',
+			'targets.stepHint' => ({required Object step}) => 'Jedes + fügt ${step} hinzu',
+			'targets.rangeError' => ({required Object min, required Object max}) => 'Gib eine Zahl zwischen ${min} und ${max} ein',
+			'targets.stepPositiveError' => 'Der Schritt muss größer als 0 sein',
+			'targets.stepExceedsWarning' => 'Ein Tippen würde das ganze Ziel überschreiten',
+			'targets.notDivisibleWarning' => ({required Object amount, required Object below, required Object above}) => 'Du kannst ${amount} nicht genau treffen — Tippen erreicht ${below}, dann ${above}',
+			'targets.notDivisibleWarningNoBelow' => ({required Object amount, required Object above}) => 'Du kannst ${amount} nicht genau treffen — das erste Tippen erreicht ${above}',
+			'targets.tooManyTapsWarning' => ({required Object taps}) => 'Das sind ${taps} Tipp-Vorgänge für einen Tag',
+			'targets.confirmTitle' => 'Ziel prüfen',
+			'targets.confirmAdjust' => 'Anpassen',
+			'targets.confirmSaveAnyway' => 'Trotzdem speichern',
 			'trackingMode.title' => 'Wie wird es erfasst?',
 			'trackingMode.checkbox' => 'Häkchen',
 			'trackingMode.number' => 'Zahl',

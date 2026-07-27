@@ -92,9 +92,15 @@ release build must carry schema v11 + the Supabase migrations applied.
       resolves to done at day-end (leave it overnight or use the sweep); VoiceOver
       announces the stepper value and the +/- actions.
 - [ ] **Native Arabic review** of the new `targets.*` strings in
-      `mobile/lib/i18n/ar.i18n.json` (sectionTitle, none, atLeast/atMostLabel,
-      presets.*.label/description, units.*, entry.*) — machine MSA, same caveat as
-      the earlier verification/compound copy.
+      `mobile/lib/i18n/ar.i18n.json` AND `desktop/lib/i18n/ar.i18n.json`
+      (sectionTitle, none, atLeast/atMostLabel, presets.*.label/description,
+      units.*, entry.*) — machine MSA, same caveat as the earlier
+      verification/compound copy.
+      **Extended 2026-07-27** by the amount/step fields: `stepLabel`, `stepHint`,
+      `rangeError`, `stepPositiveError`, `stepExceedsWarning`,
+      `notDivisibleWarning(+NoBelow)`, `tooManyTapsWarning`, `confirmTitle`,
+      `confirmAdjust`, `confirmSaveAnyway`, plus desktop `habitsPage.titleRequired`.
+      13 keys × 5 locales × 2 apps, all machine-translated.
 - [ ] **DEFERRED, your call whether to fund now**: (a) a live start/stop TIMER for
       duration targets (v1 uses a +/- minute stepper); (b) showing the progress
       ring/fraction on the 5 read-only surfaces (month calendar, weekly radar,

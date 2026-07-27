@@ -1362,6 +1362,19 @@
       "keepGoing": "Keep going",
       "withinLimit": "Within your limit",
       "overLimit": "Over your limit"
-    }
+    },
+    "amountLabel": "Reach",
+    "amountLabelAtMost": "Stay under",
+    "stepLabel": "Step",
+    "stepHint": "Each + adds {step}",
+    "rangeError": "Enter a number between {min} and {max}",
+    "stepPositiveError": "The step must be greater than 0",
+    "stepExceedsWarning": "One tap would pass the whole goal",
+    "notDivisibleWarning": "You can't land on {amount} exactly — taps reach {below} then {above}",
+    "notDivisibleWarningNoBelow": "You can't land on {amount} exactly — the first tap reaches {above}",
+    "tooManyTapsWarning": "That's {taps} taps to finish a day",
+    "confirmTitle": "Check your target",
+    "confirmAdjust": "Adjust",
+    "confirmSaveAnyway": "Save anyway"
   }
 }

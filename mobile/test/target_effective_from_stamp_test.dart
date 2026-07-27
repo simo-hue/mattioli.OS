@@ -121,4 +121,43 @@ void main() {
       expect(json.containsKey('target_effective_from'), isFalse);
     });
   });
+
+  test('a STEP-only edit preserves the anchor — it changes no verdict', () {
+    // step is how many taps reach the amount, not what the amount is. 80 is
+    // still 80 whether you got there in 4 taps of 20 or 80 taps of 1, so no past
+    // day can change verdict and history must not be re-anchored. Before this,
+    // `previous.target == updated.target` was false for a step edit and the
+    // sweep silently stopped revisiting earlier days.
+    final anchored =
+        goal(target: t80, targetEffectiveFrom: DateTime(2026, 7, 1));
+    final restepped = goal(
+      target: TargetPresetCatalog.countDaily.targetWith(amount: 80, step: 10),
+      targetEffectiveFrom: DateTime(2026, 7, 1),
+    );
+
+    final stamped = stampTargetEffectiveFrom(
+      restepped,
+      previous: anchored,
+      today: today,
+    );
+
+    expect(stamped.targetEffectiveFrom, DateTime(2026, 7, 1),
+        reason: 'the original anchor must survive a step-only edit');
+  });
+
+  test('an AMOUNT edit still re-anchors, so the freeze keeps working', () {
+    // The guard above must not disable the feature it sits next to.
+    final anchored =
+        goal(target: t80, targetEffectiveFrom: DateTime(2026, 7, 1));
+    final raised =
+        goal(target: t200, targetEffectiveFrom: DateTime(2026, 7, 1));
+
+    final stamped = stampTargetEffectiveFrom(
+      raised,
+      previous: anchored,
+      today: today,
+    );
+
+    expect(stamped.targetEffectiveFrom, DateTime(2026, 7, 23));
+  });
 }

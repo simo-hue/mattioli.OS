@@ -22,5 +22,6 @@ export 'src/macro_goal_progress.dart';
 export 'src/target_axes.dart';
 export 'src/target_preset.dart';
 export 'src/target_projection.dart';
+export 'src/target_validation.dart';
 export 'src/target_reconcile.dart';
 export 'src/target_verdict.dart';

@@ -143,6 +143,34 @@ class HabitTarget {
   /// The JSON string stored in `goals.target`.
   String encode() => jsonEncode(toWire());
 
+  /// Whether [other] would SCORE a day the same way this target does —
+  /// every axis except [step].
+  ///
+  /// Deliberately not `==`. `step` is an input affordance (how many taps reach
+  /// the amount), not a scoring rule: a day's stored progress is a number, and
+  /// 80 >= 80 whether it arrived in four taps of 20 or eighty taps of 1. So a
+  /// step-only edit must NOT be treated as "the target changed".
+  ///
+  /// That distinction is load-bearing for the v11 forward-only freeze:
+  /// `stampTargetEffectiveFrom` re-anchors history to today whenever the target
+  /// changed, and re-anchoring on a step edit would silently stop the
+  /// manual-target sweep from ever revisiting earlier days — for a change that
+  /// cannot alter any past verdict.
+  ///
+  /// Adding a new axis? Decide EXPLICITLY which side it falls on. If it can
+  /// change whether a day passes, it belongs here; if it only changes how the
+  /// number is entered, it belongs beside [step] in the exclusion.
+  bool hasSameScoringMeaningAs(HabitTarget other) =>
+      other.fillSource == fillSource &&
+      other.direction == direction &&
+      other.period == period &&
+      other.aggregation == aggregation &&
+      other.amount == amount &&
+      other.unit == unit &&
+      // `input` and `presetId` are presentational; `extra` is opaque forward-compat
+      // payload that this build cannot score on, so neither can change a verdict.
+      _jsonDeepEquals(other.extra, extra);
+
   @override
   bool operator ==(Object other) =>
       other is HabitTarget &&

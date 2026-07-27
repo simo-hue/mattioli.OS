@@ -460,7 +460,14 @@ Goal stampTargetEffectiveFrom(
   }
   // Same target meaning ⇒ preserve the prior anchor verbatim (incl. null): a
   // title/colour/schedule edit must never retroactively freeze history.
-  if (previous != null && previous.target == updated.target) {
+  // Compare on SCORING MEANING, not object equality. `step` is part of
+  // HabitTarget's `==`, but it is an input affordance — how many taps reach the
+  // amount — and cannot change whether any past day passed. Re-anchoring on a
+  // step-only edit would silently stop the manual-target sweep from revisiting
+  // earlier days, for a change that alters no verdict. See
+  // HabitTarget.hasSameScoringMeaningAs.
+  if (previous?.target != null &&
+      previous!.target!.hasSameScoringMeaningAs(updated.target!)) {
     final anchor = previous.targetEffectiveFrom;
     return anchor == null
         ? updated.copyWith(clearTargetEffectiveFrom: true)

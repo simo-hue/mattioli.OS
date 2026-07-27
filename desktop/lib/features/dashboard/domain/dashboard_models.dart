@@ -20,8 +20,9 @@ enum CalendarViewMode { month, week, year, life }
 /// - no target at all (readable or a preserved unreadable blob) ⇒ no anchor;
 /// - an undecodable newer-client blob rides through unchanged (not this build's
 ///   edit, and it cannot evaluate it);
-/// - readable target unchanged vs [previous] ⇒ preserve the prior anchor (incl.
-///   null); newly set or changed ⇒ effective [today].
+/// - readable target whose SCORING MEANING is unchanged vs [previous] ⇒ preserve
+///   the prior anchor (incl. null) — a step-only edit counts as unchanged;
+///   newly set, or changed in a way that could alter a verdict ⇒ effective [today].
 DashboardHabit stampTargetEffectiveFrom(
   DashboardHabit updated, {
   required DashboardHabit? previous,
@@ -33,7 +34,14 @@ DashboardHabit stampTargetEffectiveFrom(
   if (updated.target == null) {
     return updated;
   }
-  if (previous != null && previous.target == updated.target) {
+  // Compare on SCORING MEANING, not object equality. `step` is part of
+  // HabitTarget's `==`, but it is an input affordance — how many taps reach the
+  // amount — and cannot change whether any past day passed. Re-anchoring on a
+  // step-only edit would silently stop the manual-target sweep from revisiting
+  // earlier days, for a change that alters no verdict. See
+  // HabitTarget.hasSameScoringMeaningAs.
+  if (previous?.target != null &&
+      previous!.target!.hasSameScoringMeaningAs(updated.target!)) {
     final anchor = previous.targetEffectiveFrom;
     return anchor == null
         ? updated.copyWith(clearTargetEffectiveFrom: true)

@@ -27,50 +27,6 @@ flutter build ipa --release
 ```
 
 ---
-## Auto-verified habits — D10 forward-only rule-edit freezing (2026-07-23)
-
-Editing a verification rule (e.g. a step-goal threshold) previously re-derived the
-whole 7-day backfill window under the new value — silently rewriting recent
-history. This change adds `goals.verify_effective_from` (the day the current rule
-took effect) so reconcile never rewrites days before an edit. Nullable/additive;
-existing habits are unaffected until their rule is next edited.
-
-### Manual action required (Supabase)
-- [ ] **Apply the migration `migrations/20260723_add_goal_verify_effective_from.sql`
-      to the production Supabase database.** It is a single additive, nullable
-      `ALTER TABLE public.goals ADD COLUMN IF NOT EXISTS verify_effective_from date`
-      (+ a column comment). No RLS change, no data backfill, backwards-compatible —
-      account-mode clients that predate it keep working (the column reads NULL →
-      the client falls back to `start_date`). The SQLCipher/CloudKit side ships it
-      automatically as `PrivateDbSchema` **v7**.
-
----
-
-## Compound verifiable habits — OR/AND (2026-07-23)
-
-Combine 2–3 HealthKit conditions into one auto-verified habit ("10k steps OR
-30 min exercise"). HealthKit-only for v1; the storage model is provider-general
-so cross-provider is later-additive. Verification stays iOS-only; desktop/web
-carry the data. **The feature ships DARK** behind
-`VerificationConfig.compoundVerificationEnabled = false`.
-
-### Manual actions
-- [ ] **Apply the Supabase migration `migrations/20260723_add_goal_verify_conditions.sql`**
-      to production — a single additive, nullable `ALTER TABLE public.goals ADD
-      COLUMN IF NOT EXISTS verify_conditions text` (+ comment). No RLS change,
-      backwards-compatible. `TEXT` (not jsonb) on purpose: the client stores the
-      same opaque JSON string on both backends; a jsonb column would double-encode
-      it via PostgREST. The SQLCipher/CloudKit side ships it as `PrivateDbSchema` **v8**.
-- [ ] **Native Arabic review** of the new `verification.compound.*` strings in
-      `mobile/lib/i18n/ar.i18n.json` (anyOfThese / allOfThese / anyHelper /
-      allHelper / addCondition / addSheetTitle / add) — machine MSA, same caveat
-      as the earlier verification copy.
-- [ ] **On-device QA, then flip the flag.** Set `compoundVerificationEnabled = true`
-      (needs `healthKitEnabled`, already on) and verify on a device: create a
-      "steps OR exercise" habit, confirm the Any/All toggle + "+ Add condition"
-      (Pro-gated) work, that a compound day resolves to a single done/missed, and
-      that editing a condition re-freezes history from today (D10). Desktop shows
-      the compound read-only (no editing of the rule there).
 
 ## Quantitative habit targets — foundation (2026-07-24)
 
@@ -189,42 +145,7 @@ only after on-device QA and once schema v9 + the Supabase migrations are live.
 
 ## Quantitative targets — notifications (2026-07-24)
 
-Two fixes in the reminder path (subagent-implemented, orchestrator-verified).
-
-### Manual actions
-- [ ] **Native Arabic review** of the new limit-reminder strings: mobile
-      `notifications.limitReminderMessage{1,2,3}` in `mobile/lib/i18n/ar.i18n.json`
-      and desktop `notif.limitReminderBody` in `desktop/lib/i18n/ar.i18n.json` —
-      machine MSA.
-- [ ] **On-device QA (with the targets flag on)**: a habit with a LIMIT target
-      shows restraint-framed reminder copy ("Staying within your limit today?"),
-      NOT the motivational "do it!" copy.
-- [ ] **NOTE — a LIVE bug was fixed and ships NOW (not behind a flag)**: a
-      notification "Done"/"Skip" on an auto-verified (HealthKit) habit used to be
-      silently reverted by the next foreground reconcile; it now records the D9
-      manual-freeze so it sticks. Worth a quick confirm on-device that tapping
-      "Done" from a notification on a verified habit persists after backgrounding
-      and reopening the app.
-
 ## Cumulative numeric macro goals (feature #6) — foundation (2026-07-24)
-
-Storage/domain/import foundation done + tested (subagent, orchestrator-verified).
-Dark behind `MacroTargetsConfig.enabled` / `DesktopMacroTargetsConfig.enabled`.
-long_term_goals gained: target_amount, target_unit, progress_amount, linked_goal_id
-(FK → goals(id) ON DELETE SET NULL). Private schema v10.
-
-### Manual actions
-- [ ] **Apply the new Supabase migration** `migrations/20260724_add_macro_goal_targets.sql`
-      (additive `ADD COLUMN IF NOT EXISTS` on long_term_goals + the FK). Apply it
-      alongside the other queued migrations (schema v9 targets + verify_*).
-- [ ] **RELEASE NOTE**: private schema is now at **v10** (was v9 after the habit-
-      targets work, v6 on main). A device upgrading from main runs v7→v8→v9→v10 in
-      one open; onDowngrade still throws, so v10 must reach iOS and macOS together.
-- [ ] **Pre-existing test flakiness surfaced**: `desktop/test/evolve_controls_test.dart`
-      intermittently fails 2–3 tap/render tests on full-suite runs (passes on retry
-      and in isolation) — borderline pumpAndSettle timing under parallel load, NOT
-      caused by the feature work. Worth a separate hardening pass (add explicit
-      pumps / bump settle timeouts in that file).
 
 ### Deferred feature work (the macro-goal feature is NOT user-visible until these land)
 - [ ] **UI (the bulk of remaining work)**: create/edit a numeric macro-goal target
@@ -244,28 +165,6 @@ long_term_goals gained: target_amount, target_unit, progress_amount, linked_goal
       completion flows through `status`); reflecting numeric progress in stats is a
       future enhancement, not a fix.
 
-## Cumulative numeric macro goals (feature #6) — UI COMPLETE (2026-07-24)
-
-Feature #6 is now complete end-to-end on both apps (create/edit numeric target +
-link-a-habit picker + progress bar + cloud delete-snapshot), dark behind
-`MacroTargetsConfig.enabled` / `DesktopMacroTargetsConfig.enabled`. Independently
-verified: mobile 567, desktop 588 green.
-
-### Manual actions
-- [ ] **DEPLOY ORDER (important):** apply `migrations/20260724_add_macro_goal_targets.sql`
-      to production BEFORE flipping `MacroTargetsConfig` / `DesktopMacroTargetsConfig`
-      on. The macro-goal Supabase UPDATE force-write is gated behind the flag on
-      purpose, so while dark it never sends the numeric columns — but the moment
-      the flag is on, an edit writes `target_amount`/`target_unit`/`progress_amount`/
-      `linked_goal_id`, which fail unless the migration has added those columns.
-- [ ] **Native Arabic review** of the new `macroTargets.*` strings (sectionTitle,
-      none, amountLabel, linkLabel, manual, unitCount, reached) in
-      `mobile/lib/i18n/ar.i18n.json` and `desktop/lib/i18n/ar.i18n.json` — machine MSA.
-- [ ] **On-device QA (flags on)**: create a macro goal with a numeric target
-      ("run 500 km this year"); link a running habit; log habit progress and watch
-      the macro-goal progress bar accumulate; delete the linked habit and confirm
-      the accumulated value is snapshotted (not zeroed).
-
 ## Pre-existing test flakes surfaced during verification (NOT feature bugs)
 Two desktop test files intermittently fail under full-suite PARALLEL load and pass
 in isolation / on retry — independently confirmed as pre-existing, unrelated to the
@@ -276,74 +175,3 @@ targets/macro-goal work:
       `MissingPluginException(setLogLevel)` platform-channel artifact under parallel
       load (last touched by commit e87db2e, unrelated).
       Worth a separate hardening pass (explicit pumps / channel mock / --concurrency).
-
-## Pre-merge review — GO_WITH_FIXES → fixed; go-live checklist (2026-07-24)
-
-An adversarial pre-merge review found 2 blocking deploy-order defects (both in
-desktop dashboard_repository.dart, both now FIXED + re-verified green): the
-goal_progress SELECT is now isolated (degrades to [] pre-migration), and the
-updateHabit target force-write is now flag-gated (mobile made consistent). The
-remaining confirmed findings are LOW / dark-gated — fix opportunistically, none
-block the merge, but review before flipping the flags live:
-
-- [ ] `reconcileManualTargets` runs on app resume UNGATED (`mobile/lib/main.dart`
-      ~478). Harmless in a pure-dark fleet, but during a STAGED rollout a target
-      authored on a flag-on device round-trips to a still-dark device whose resume
-      sweep then writes 'done' verdicts / can overwrite a manual past-day toggle.
-      Semantically correct + re-syncs; no data loss. Consider gating it behind
-      TargetsConfig.enabled once you decide the rollout strategy.
-- [ ] Habit delete does `snapshotLinkedMacroGoals` then `delete('goals')` as TWO
-      awaits, not one `db.transaction` (`mobile/lib/core/private_local_database.dart`
-      ~492, `desktop/.../private_dashboard_repository.dart` ~167). A process kill in
-      the tiny window leaves a macro goal snapshotted+unlinked while its habit
-      survives. Recoverable; trivial fix = wrap each pair in a transaction.
-- [ ] PRIVATE/CloudKit: a two-device create-then-delete race can leave a macro
-      goal's `linked_goal_id` dangling at a deleted habit (sync apply runs with
-      `PRAGMA foreign_keys=OFF`, so ON DELETE SET NULL never fires on the PULLING
-      device; only the originating device's snapshot un-links). Account mode
-      self-heals via the real Postgres FK. Only matters once the flag is live.
-- [ ] Desktop account-mode delete-snapshot derives the frozen total from the
-      IN-MEMORY dashboard snapshot (`dashboard_repository.dart` deleteHabit) rather
-      than a live Supabase SUM like mobile — a stale desktop snapshot could freeze
-      a partial value. Single-device flows are fine.
-- [ ] (cosmetic) `reminderBody` rotation math changed to `seed.abs() % len`, so a
-      habit whose title.hashCode is negative gets a different (still valid)
-      motivational reminder line than before. No functional impact.
-
-## Habit classes — target_effective_from (v11) (2026-07-24)
-- [ ] **Apply the Supabase migration `migrations/20260724_add_goal_target_effective_from.sql`**
-      to production. Additive, nullable `goals.target_effective_from date` — safe for
-      existing clients. Same batch as the v9/v10 target migrations; apply it BEFORE
-      flipping the targets flag. Mirrors evolve_sync `PrivateDbSchema` v11.
-- NOTE: the private schema is now **v11**. The v6→v11 chain still deploys to iOS +
-      macOS TOGETHER (onDowngrade throws — no rollback). See `HABIT_CLASSES_PLAN.md` §5.
-
-## ⚠️ Habit classes — FLAGS ARE NOW ON IN CODE (2026-07-24, Phase 3)
-`TargetsConfig.enabled`, `DesktopTargetsConfig.enabled` and
-`VerificationConfig.compoundVerificationEnabled` are all **`true`** on `main`.
-That means **any build from this commit ships quantitative targets + compound
-verification LIVE**, and the Account-mode `target` / `verify_conditions` /
-`verify_effective_from` writes are **no longer flag-gated**. So before this build
-reaches ANY device or Supabase project (on-device QA included):
-- [ ] **Apply ALL queued Supabase migrations FIRST**, in order:
-      `20260723_add_goal_verify_effective_from`, `20260723_add_goal_verify_conditions`,
-      `20260724_add_goal_targets_and_progress`, `20260724_add_goal_target_effective_from`
-      (and `20260724_add_macro_goal_targets`, harmless — macro UI stays dark).
-      A pre-migration project will now reject target/compound edits (PGRST204).
-- [ ] **Deploy iOS + macOS together** on schema **v11** (`onDowngrade` throws — no
-      rollback). See `HABIT_CLASSES_PLAN.md` §5.
-- `MacroTargetsConfig` / `DesktopMacroTargetsConfig` remain **false** (macro deferred).
-
-## Habit classes — class picker + i18n review (2026-07-24)
-- [ ] **Arabic (ar) native review** of the new `trackingMode` strings on BOTH apps
-      (`title` / `checkbox` / `number` / `automatic`, plus desktop `automaticLocked`).
-      They are machine MSA — same review batch as the earlier `targets.*` /
-      `verification.compound.*` ar strings.
-- [ ] **On-device QA of the class picker** (needs the Xcode Mac + a device):
-      create a Checkbox, a Number (count/duration/limit), and an Automatic habit;
-      switch an existing habit between classes and confirm history is frozen
-      (target_effective_from); on macOS confirm a synced verified habit shows the
-      locked "Verified — edit on iPhone" row and a desktop edit never wipes its rule.
-      NOTE: shipping the picker changes the LIVE single-metric verification creation
-      UX (the inline "Auto-verify" switch becomes the "Automatic" segment) — QA that
-      flow specifically since HealthKit verification is already live.

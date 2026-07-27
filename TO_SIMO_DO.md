@@ -143,11 +143,31 @@ release build must carry schema v11 + the Supabase migrations applied.
       future enhancement, not a fix.
 
 ## Pre-existing test flakes surfaced during verification (NOT feature bugs)
-One remains. The second turned out not to be a flake at all — see below; that is worth
-remembering before filing the next one, because "passes in isolation, fails in the suite"
-is also exactly what an unguarded async tail looks like.
-- [ ] `desktop/test/evolve_controls_test.dart` — borderline pumpAndSettle timing on
-      a few tap/render tests.
+Both are now closed, and NEITHER was a flaky test. Worth remembering before filing the
+next one: "passes in isolation, fails in the suite" is also what an unguarded async tail
+looks like — and, as it turns out, what a shared BUILD DIRECTORY looks like.
+- [x] `desktop/test/evolve_controls_test.dart` — **the diagnosis was wrong; the test is
+      fine.** It passes 6/6 in isolation and passes under 24-way CPU saturation in 3
+      seconds, and it could not have been "borderline pumpAndSettle timing" in the first
+      place: `flutter_test` drives a FAKE clock, so `pumpAndSettle` cannot run out of time
+      because the machine is busy. The real cause is that `flutter test` rebuilds native
+      code assets into the package's SHARED `build/native_assets/<os>/` on every
+      invocation, so two concurrent runs against the same package delete each other's
+      `objective_c.dylib` mid-build. Reproduced deliberately: one run dies with
+      `install_name_tool: can't open file … objective_c.dylib`, the other with a flutter
+      TOOL CRASH (`FileSystemException: Deletion failed`). The damage lands on whichever
+      test file happened to be compiling, which is why the culprit looked random and why
+      it was mistaken for a timing problem in whichever file it hit.
+      **Fix: `tool/flutter-test.sh`** — serialises test runs per package (different
+      packages still run in parallel). Use it instead of a bare `flutter test`:
+      ```bash
+      tool/flutter-test.sh desktop
+      ```
+      It also supplies the dummy `--dart-define`s the desktop/mobile suites need, so
+      `desktop_supabase_config_security_test` stops failing "by design".
+      This bites any time two runs overlap — two terminals, an IDE runner, a watch task,
+      or several agents testing in one working tree. `FLUTTER_BUILD_DIR` does NOT help; it
+      does not relocate `build/native_assets`.
 ---
 
 ## PRIVATE-MODE LOCKOUT (2026-07-27) — ROOT-CAUSED AND FIXED

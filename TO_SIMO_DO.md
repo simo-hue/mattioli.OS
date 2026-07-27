@@ -29,6 +29,45 @@ flutter build ipa --release
 
 ---
 
+## PHASE 5 — RELEASE RUNBOOK (2026-07-27) — everything left is on your Xcode Mac
+
+Pre-flight done here, nothing outstanding on my side:
+- All six CI surfaces green; `flutter analyze --fatal-infos --fatal-warnings` clean.
+- The **v6→v11 chain now has a real test** (`packages/evolve_sync/test/private_db_schema_v6_to_v11_chain_test.dart`):
+  a realistic v6 database with 40 logs, a v6 HealthKit rule, macro goals and moods,
+  upgraded through all five legs in ONE open. Asserts no row is lost, the v6 rule
+  survives, every synced table keeps its dirty/tombstone triggers, and re-running is a
+  no-op. It does NOT prove the encrypted half — SQLCipher is orthogonal, and only a
+  device settles it. That is step 3.
+- All 6 Supabase migrations applied (you did the 6th on 2026-07-27).
+
+### DECISION NEEDED FROM YOU (before building)
+- [ ] **Version numbers.** `mobile` is `1.1.5+40`, `desktop` is `1.1.6+24`. The plan calls
+      for a *simultaneous* release; tell me whether you want them aligned (and to what)
+      or left independent, and I'll bump them. I did not guess — with Universal Purchase
+      on a shared bundle id this is your call, not a mechanical one.
+
+### Ordered steps (Mac)
+1. [ ] `git pull` — main is at the Phase 0 fixes + this runbook.
+2. [ ] Build BOTH from the SAME commit:
+       `cd mobile && flutter build ipa --release`
+       `cd desktop && flutter build macos --release --dart-define-from-file=.env`
+3. [ ] **Install over EXISTING v6 data — do not wipe first.** The whole point is to watch
+       the chain run on a real encrypted file. On first launch of each app, read the
+       console for:
+       `[PrivateDB] open: stored user_version=6, code PrivateDbSchema.version=11`
+       If it says anything else, STOP and send me the line.
+4. [ ] Run the QA script in `HABIT_CLASSES_PLAN.md` §6 **and §6a** (§6a is new — it covers
+       the Phase 0 regressions, and item 1 is the one that matters most: a limit habit's
+       recorded breach surviving a sync + two iPhone resumes).
+5. [ ] Release iOS + macOS together. **No rollback**: `onDowngrade` throws by design, so a
+       device that reaches v11 cannot open a pre-v11 build ever again.
+
+### Hazards, unchanged
+- Never publish a pre-v11 build after this ships.
+- Cross-DEVICE version skew is safe (sync preserves unknown columns); cross-BUILD
+  downgrade on one device is not.
+
 ## Schema snapshot + CI (2026-07-27) — COMPLETE
 
 Weekly quota closed permanently (rationale in `HABIT_CLASSES_PLAN.md` §2a),

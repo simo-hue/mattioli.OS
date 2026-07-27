@@ -156,6 +156,37 @@ i18n for the picker labels across all 5 locales.
 - **Class change:** Checkbox → Number → Automatic on one habit; confirm history is frozen at each switch.
 - **Parity:** create on iPhone → appears on Mac read‑only (Automatic) / editable (Number); repeat in Private mode (CloudKit).
 
+### 6a. Phase‑0 regression checks (added 2026‑07‑27 — these are the ones only a device can prove)
+
+Every item below is a defect that was LIVE in committed code and is now fixed with unit
+coverage. Unit tests cannot prove the sync/CloudKit half, so verify each once:
+
+1. **Limit‑habit data survival — the blocker.** Private mode, both devices. On the **Mac**
+   record 3 against a "≤1 coffee" limit habit on a PAST day (expect `missed`). Let it sync,
+   then background/foreground the **iPhone** twice. The 3 must still be there and the day
+   must still read `missed`. Before the fix the iPhone's resume sweep erased the number and
+   flipped the day to a success — on BOTH devices, because the delete tombstoned to CloudKit.
+2. **macOS toggle — deliberate behaviour change, confirm you agree with it.** On the Mac,
+   open a past day's detail dialog: a **verified** habit no longer toggles (a Mac cannot
+   record the manual‑provenance freeze, so the iPhone used to revert it silently), and a
+   **quantitative** habit no longer cycles its checkbox.
+3. **Weekly grid.** Don't open the Mac app for several days, then launch it. The 7‑dot week
+   strip must NOT show future days as done. Previously the backfill sweep wrote past days
+   into the current week's slots.
+4. **Cloud backup round‑trip.** Account mode: export, change a habit (e.g. Number → Checkbox),
+   re‑import with the default **Merge**. The habit must come back. It used to be a silent
+   no‑op reported as "unchanged".
+5. **HealthKit privacy.** Export from **Private** mode, switch to **Account**, import that
+   file, then in Supabase run
+   `select value from goal_logs where goal_id = '<a HealthKit habit>' limit 5;` — every
+   `value` must be NULL. Desktop used to upload the measured quantities.
+6. **Schema log line.** On first launch of EACH app read the console for
+   `[PrivateDB] open: stored user_version=6, code PrivateDbSchema.version=11`. That is the
+   only confirmation the v6→v11 chain actually ran on real encrypted data.
+7. **If the ⌘Q lockout recurs**, capture both `[PrivateDB] open: …` and any
+   `[PrivateRecovery] found an orphaned .recovery-bak` line. Its cause is still unknown; the
+   recovery around it is now safe, but those lines are the evidence needed to diagnose it.
+
 ## 7. Division of labor
 - **Me (no Xcode):** all Dart / SQL / TS, tests, migrations authored, CI config, i18n; Swift typecheck‑only if any is touched (none expected — features reuse existing bridges and the Dart sync engine).
 - **Simone (Mac):** apply migrations, Xcode build, on‑device QA, simultaneous release.

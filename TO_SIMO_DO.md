@@ -29,21 +29,12 @@ flutter build ipa --release
 
 ---
 
-## Schema snapshot + CI (2026-07-27) — DONE in code, ONE manual step left
+## Schema snapshot + CI (2026-07-27) — COMPLETE
 
-Weekly quota is now a closed decision (permanently deferred — rationale moved to
-`HABIT_CLASSES_PLAN.md` §2). The schema drift and the CI gap are fixed in code.
-
-### Manual action
-- [ ] **Apply `migrations/20260727_complete_bootstrap_chain.sql` to Supabase.**
-      Every statement is guarded (`IF NOT EXISTS`), so on your live project it is
-      a **strict no-op** — it exists so a *fresh* project provisions correctly.
-      It deliberately does NOT `CREATE OR REPLACE` the live `handle_new_user()`:
-      replacing a live SECURITY DEFINER function from a reconstructed snapshot is
-      how signup breaks. Run it with the other pending migrations, no special
-      ordering beyond being last.
-      Nothing else here needs you: `schema.sql` is a checked-in snapshot that no
-      app reads at runtime, so it cannot affect iOS or macOS behaviour.
+Weekly quota closed permanently (rationale in `HABIT_CLASSES_PLAN.md` §2a),
+schema drift fixed, CI widened to desktop + all 4 packages, drift guard extended.
+`migrations/20260727_complete_bootstrap_chain.sql` applied to Supabase by Simone
+on 2026-07-27. No outstanding manual actions for this workstream.
 
 ## Quantitative targets — mobile UI (dark) (2026-07-24)
 

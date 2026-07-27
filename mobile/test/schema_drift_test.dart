@@ -28,22 +28,44 @@ void main() {
 
   setUpAll(() {
     final repoRoot = _findRepoRoot();
-    final libDir = Directory('${repoRoot.path}/mobile/lib');
-    expect(libDir.existsSync(), isTrue, reason: 'lib/ not found at ${libDir.path}');
+
+    // Scan BOTH apps, not just this one. Until 2026-07-27 this guard read only
+    // `mobile/lib`, so every table and RPC that desktop reaches for was
+    // unguarded — and desktop talks to Supabase directly through its own
+    // repositories, so that was never a safe assumption.
+    final libDirs = [
+      Directory('${repoRoot.path}/mobile/lib'),
+      Directory('${repoRoot.path}/desktop/lib'),
+    ];
+    for (final d in libDirs) {
+      expect(d.existsSync(), isTrue, reason: 'lib/ not found at ${d.path}');
+    }
+    // Shared packages too: evolve_sync owns the private mirror and can name a
+    // cloud relation in a sync/import path.
+    final packagesRoot = Directory('${repoRoot.path}/packages');
+    if (packagesRoot.existsSync()) {
+      for (final pkg in packagesRoot.listSync()) {
+        if (pkg is! Directory) continue;
+        final pkgLib = Directory('${pkg.path}/lib');
+        if (pkgLib.existsSync()) libDirs.add(pkgLib);
+      }
+    }
 
     // 1. Collect every RPC name and every `from()` target referenced by the app.
     final rpcRe = RegExp(r"""\.rpc\(\s*['"]([a-zA-Z0-9_]+)['"]""");
     final fromRe = RegExp(r"""\.from\(\s*['"]([a-zA-Z0-9_]+)['"]""");
     final rpcs = <String>{};
     final froms = <String>{};
-    for (final entity in libDir.listSync(recursive: true)) {
-      if (entity is! File || !entity.path.endsWith('.dart')) continue;
-      final src = entity.readAsStringSync();
-      for (final m in rpcRe.allMatches(src)) {
-        rpcs.add(m.group(1)!);
-      }
-      for (final m in fromRe.allMatches(src)) {
-        froms.add(m.group(1)!);
+    for (final libDir in libDirs) {
+      for (final entity in libDir.listSync(recursive: true)) {
+        if (entity is! File || !entity.path.endsWith('.dart')) continue;
+        final src = entity.readAsStringSync();
+        for (final m in rpcRe.allMatches(src)) {
+          rpcs.add(m.group(1)!);
+        }
+        for (final m in fromRe.allMatches(src)) {
+          froms.add(m.group(1)!);
+        }
       }
     }
     rpcNames = rpcs;
@@ -101,6 +123,57 @@ void main() {
             'schema.sql/migrations (schema drift): $missing. Capture the missing '
             'definition, or if it is genuinely external add it to '
             'allowlistedExternalTables.');
+  });
+
+  test('schema.sql is the ONLY bootstrap snapshot', () {
+    // The repo used to carry a second one, mobile/mobile_schema.sql, which no
+    // test read. It drifted apart from schema.sql on goals / goal_logs /
+    // long_term_goals, and each file ended up holding objects the other lacked,
+    // so NEITHER could provision a project alone. Deleted 2026-07-27; this test
+    // stops a replacement growing back unnoticed.
+    //
+    // A "bootstrap snapshot" = any .sql outside migrations/ that declares a
+    // table. web-app/ is excluded: that client is abandoned and owns its own
+    // copy.
+    final repoRoot = _findRepoRoot();
+    final createTableRe =
+        RegExp(r'CREATE\s+TABLE', caseSensitive: false);
+    final rivals = <String>[];
+
+    void walk(Directory dir) {
+      for (final entity in dir.listSync()) {
+        final name = entity.path.split(Platform.pathSeparator).last;
+        if (entity is Directory) {
+          // Skip every dot-directory (.git, .dart_tool, and .claude/worktrees —
+          // which holds full checkouts of this same repo and would otherwise
+          // report the real schema.sql as its own rival), plus build output,
+          // dependency caches, migrations (those patches ARE allowed to create
+          // tables) and the retired web client.
+          if (name.startsWith('.') ||
+              name == 'build' ||
+              name == 'node_modules' ||
+              name == 'migrations' ||
+              name == 'web-app') {
+            continue;
+          }
+          walk(entity);
+        } else if (entity is File && name.endsWith('.sql')) {
+          if (entity.path == '${repoRoot.path}/schema.sql') continue;
+          if (createTableRe.hasMatch(entity.readAsStringSync())) {
+            rivals.add(entity.path.replaceFirst('${repoRoot.path}/', ''));
+          }
+        }
+      }
+    }
+
+    walk(repoRoot);
+
+    expect(rivals, isEmpty,
+        reason: 'a second bootstrap snapshot has appeared: $rivals. The repo '
+            'provisions from schema.sql + migrations/*.sql in date order and '
+            'nothing else. Fold the definitions into schema.sql (or into a '
+            'migration, if they depend on a table an earlier migration '
+            'creates) and delete the rival file.');
   });
 }
 

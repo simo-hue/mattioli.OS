@@ -41,11 +41,13 @@ Pre-flight done here, nothing outstanding on my side:
   device settles it. That is step 3.
 - All 6 Supabase migrations applied (you did the 6th on 2026-07-27).
 
-### DECISION NEEDED FROM YOU (before building)
-- [ ] **Version numbers.** `mobile` is `1.1.5+40`, `desktop` is `1.1.6+24`. The plan calls
-      for a *simultaneous* release; tell me whether you want them aligned (and to what)
-      or left independent, and I'll bump them. I did not guess — with Universal Purchase
-      on a shared bundle id this is your call, not a mechanical one.
+### Versions — DECIDED 2026-07-27
+Both apps ship `com.simo.evolve`, i.e. ONE App Store record under Universal Purchase,
+so users see a single product and the marketing version must match. Both are now
+**1.2.0** (a feature release: class picker + quantitative targets + compound).
+Build numbers stay on independent per-platform tracks because App Store Connect
+requires each to exceed the last upload for THAT platform: **mobile 1.2.0+41**,
+**desktop 1.2.0+25**.
 
 ### Ordered steps (Mac)
 1. [ ] `git pull` — main is at the Phase 0 fixes + this runbook.
@@ -86,7 +88,9 @@ release build must carry schema v11 + the Supabase migrations applied.
 - [ ] **On-device QA (needs the Xcode Mac + a device).** The flag is already
       `true`, so verify on a device: create a "80 push-ups,
       +20" count habit and a "≤1 coffee" limit habit; the create sheet's Target
-      chips + amount stepper work; the day-details card shows a ring + "40 / 80"
+      chips work; the amount and Step fields accept TYPED numbers and the "Each +
+      adds N" hint tracks what you type; -/+ moves by the step you set; the
+      day-details card shows a ring + "40 / 80"
       and tapping opens the entry sheet; the −/+ stepper updates the ring live;
       a count habit turns green at 80; a limit habit shows amber while under and
       resolves to done at day-end (leave it overnight or use the sweep); VoiceOver

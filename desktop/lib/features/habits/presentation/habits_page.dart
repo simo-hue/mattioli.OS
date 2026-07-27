@@ -2280,6 +2280,12 @@ Future<void> showCreateHabitDialog(
         color: draft.color,
         reminderTime: draft.reminderTime,
         frequencyDays: draft.frequencyDays,
+        // This dialog renders the tracking-mode picker and the target field, so
+        // omitting `target` silently threw away whatever the user configured:
+        // ⌘K → "Create habit" and the Dashboard "+" produced a plain checkbox
+        // while the Habits-page "+" (which does pass it) produced the Number
+        // habit. `target` is an optional named param, so the omission compiled.
+        target: draft.target,
       );
   if (!added) {
     if (context.mounted) await showProFeaturesDialog(context, ref);

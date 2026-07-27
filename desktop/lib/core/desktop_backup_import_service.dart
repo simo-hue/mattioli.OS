@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:evolve_verification/evolve_verification.dart';
 
 import 'package:archive/archive.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -678,7 +679,21 @@ class DesktopBackupImportService {
     await _bulkUpsert(client, 'macro_goal_categories', plan.categories);
     await _bulkUpsert(client, 'goals', plan.goals);
     await _bulkUpsert(client, 'long_term_goals', plan.macros);
-    await _bulkUpsert(client, 'goal_logs', plan.logs);
+    // A HealthKit measurement must NEVER reach Supabase. It rides in
+    // `goal_logs.value`, which a Private-mode backup carries, so restoring such
+    // a file into a Cloud account would upload every step count Apple Health
+    // measured. Mobile has always enforced this; desktop dropped the guard in
+    // the port — the sibling comment on the next line survived, which is how the
+    // omission stayed invisible. Shared implementation in
+    // package:evolve_verification so the two clients cannot drift again.
+    await _bulkUpsert(
+      client,
+      'goal_logs',
+      stripHealthMeasurements(
+        logs: plan.logs,
+        backupGoals: canonical[kGoalsKey],
+      ),
+    );
     // Manual-only counts (never a health measurement), so upsert as-is.
     await _bulkUpsert(client, 'goal_progress', plan.progress);
     await _bulkUpsert(client, 'daily_moods', plan.moods);

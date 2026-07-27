@@ -338,13 +338,14 @@ class SupabaseDashboardRepository extends DashboardRepository {
             .order('created_at', ascending: true),
         _client.from('daily_moods').select().eq('user_id', _userId),
       ]);
+      final progressRows = await progressFuture;
       _snapshot = _fromRemote(
         habitRows: _rows(responses[0]),
         logRows: _rows(responses[1]),
         goalRows: _rows(responses[2]),
         moodRows: _rows(responses[3]),
-        progressRows: await progressFuture,
-      );
+        progressRows: progressRows ?? const [],
+      ).copyWith(progressStale: progressRows == null);
       await _writeCache(_snapshot);
       return _snapshot;
     } catch (error, stack) {
@@ -360,7 +361,11 @@ class SupabaseDashboardRepository extends DashboardRepository {
   /// rather than failing the whole refresh — so a pre-migration project (the
   /// table doesn't exist yet) still loads goals/logs/moods normally. Matches the
   /// mobile client's isolation of the same new-table read.
-  Future<List<Map<String, dynamic>>> _fetchProgressRows() async {
+  /// Returns null when the read FAILED, so the caller can tell that apart from
+  /// an account with no progress rows. Returning `const []` for both is what
+  /// let a failed fetch be read as "every limit day was quiet", which the sweep
+  /// then applied as amount 0 and DELETED the real server rows.
+  Future<List<Map<String, dynamic>>?> _fetchProgressRows() async {
     try {
       final res = await _client
           .from('goal_progress')
@@ -369,11 +374,12 @@ class SupabaseDashboardRepository extends DashboardRepository {
       return _rows(res);
     } catch (error, stack) {
       AppLogger.error(
-        'goal_progress fetch failed (pre-migration?) — degrading to empty',
+        'goal_progress fetch failed (pre-migration?) — degrading to empty, '
+        'and marking the snapshot progressStale so nothing writes on absence',
         error,
         stack,
       );
-      return const [];
+      return null;
     }
   }
 

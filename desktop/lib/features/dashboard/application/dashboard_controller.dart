@@ -80,6 +80,24 @@ class DashboardController extends Notifier<DashboardSnapshot> {
   }
 
   Future<void> toggleHabitForDay(String id, DateTime date) async {
+    // One owner per habit-day. Both sibling writers already enforce this triple;
+    // this one did not, which is how a macOS check-in on a VERIFIED habit got
+    // silently reverted by the iPhone's next reconcile (manual provenance is a
+    // device-local mobile table, so a Mac tap can never record the freeze that
+    // would protect it), and how toggling a QUANTITATIVE habit's day appeared to
+    // do nothing — the manual-target sweep recomputes the verdict from
+    // goal_progress on the next refresh and writes it straight back.
+    final owner = state.habits.where((h) => h.id == id).firstOrNull;
+    if (owner != null &&
+        (owner.verificationRule != null ||
+            (owner.target?.isUserEnterable ?? false))) {
+      AppLogger.info(
+        'Ignoring manual toggle for habit $id: its verdict is owned by '
+        '${owner.verificationRule != null ? 'the verification pipeline' : 'its quantitative target'}.',
+      );
+      return;
+    }
+
     final dateKey = dashboardDateKey(date);
     final weekdayIndex = date.weekday - 1;
     final currentStatus =
@@ -127,6 +145,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
             _isToday(date),
             nextStatus == 'done',
             nextStreak,
+            inCurrentWeek: _isCurrentWeek(date),
           )
         else
           habit,
@@ -229,6 +248,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
             _isToday(date),
             derivedStatus == 'done',
             nextStreak,
+            inCurrentWeek: _isCurrentWeek(date),
           )
         else
           item,
@@ -263,6 +283,18 @@ class DashboardController extends Notifier<DashboardSnapshot> {
   /// so a Mac-primary user's limit habits must resolve here or they would look
   /// perpetually unlogged.
   Future<void> reconcileManualTargets({DateTime? now}) async {
+    // Never sweep when the goal_progress read FAILED. For an atMost target an
+    // absent entry means a quiet SUCCESS, so a degraded map resolves every
+    // recorded breach to 'done' and applies it as amount 0 — which DELETES the
+    // real row on the server, irreversibly and idempotently (a later healthy
+    // refresh sees no progress and status 'done', so nothing restores it).
+    if (state.progressStale) {
+      AppLogger.info(
+        'Manual-target reconcile skipped: goal_progress is stale, so absence '
+        'cannot be read as "no progress".',
+      );
+      return;
+    }
     final today = now ?? _now();
     final changes = <TargetReconcileChange>[];
     for (final habit in state.habits) {
@@ -740,13 +772,25 @@ class DashboardController extends Notifier<DashboardSnapshot> {
         '${value.substring(20)}';
   }
 
+  /// Applies a day's outcome to the habit's cached CURRENT-week grid.
+  ///
+  /// [inCurrentWeek] is what stops a backfilled day from colliding with this
+  /// week's slot for the same weekday. `weeklyProgress` is a 7-slot Mon..Sun
+  /// list for the CURRENT week only, so writing index `date.weekday - 1` for an
+  /// arbitrary past date silently marks that weekday of THIS week done — which
+  /// the manual-target sweep did on every launch after a quiet stretch, showing
+  /// completions on days that have not happened yet. `streak` is gated with it:
+  /// the streak computed for a swept past day is not today's streak.
   DashboardHabit _setHabitForWeekday(
     DashboardHabit habit,
     int weekdayIndex,
     bool updateToday,
     bool completed,
-    int streak,
-  ) {
+    int streak, {
+    required bool inCurrentWeek,
+  }) {
+    if (!inCurrentWeek) return habit;
+
     final progress = [...habit.weeklyProgress];
     progress[weekdayIndex] = completed;
 

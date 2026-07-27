@@ -589,7 +589,20 @@ class DashboardSnapshot {
     this.moods = const {},
     this.isRefreshing = false,
     this.errorMessage,
+    this.progressStale = false,
   });
+
+  /// True when the `goal_progress` read FAILED and [habitProgress] is therefore
+  /// incomplete rather than genuinely empty.
+  ///
+  /// The distinction is load-bearing, not cosmetic. For an `atMost` (limit)
+  /// target an absent entry means a quiet SUCCESS, so a sweep over a degraded
+  /// map resolves every recorded breach to 'done' and applies it as amount 0 —
+  /// which DELETES the real row on the server. `_fetchProgressRows` degrades to
+  /// an empty list on any error (deliberately, so a pre-migration project still
+  /// loads), which made "fetch failed" and "no progress" indistinguishable.
+  /// Anything that WRITES based on absence must check this first.
+  final bool progressStale;
 
   final List<DashboardHabit> habits;
   final List<DashboardGoal> goals;
@@ -691,6 +704,7 @@ class DashboardSnapshot {
     bool? isRefreshing,
     String? errorMessage,
     bool clearError = false,
+    bool? progressStale,
   }) {
     return DashboardSnapshot(
       habits: habits ?? this.habits,
@@ -702,6 +716,7 @@ class DashboardSnapshot {
       moods: moods ?? this.moods,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      progressStale: progressStale ?? this.progressStale,
     );
   }
 

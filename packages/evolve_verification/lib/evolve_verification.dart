@@ -10,6 +10,7 @@ library;
 
 export 'src/day_verdict.dart';
 export 'src/health_kit_bridge.dart';
+export 'src/health_measurement_privacy.dart';
 export 'src/screen_time_bridge.dart';
 export 'src/verification_conditions.dart';
 export 'src/verification_controller.dart';

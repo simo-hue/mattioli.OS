@@ -313,6 +313,9 @@ class FakePrivateDataStore implements PrivateDataStore {
   }
 
   @override
+  Future<bool> hasStashedDatabase() async => stashed;
+
+  @override
   Future<void> discardStashedDatabase() async {
     calls.add('discardStashedDatabase');
     stashed = false;

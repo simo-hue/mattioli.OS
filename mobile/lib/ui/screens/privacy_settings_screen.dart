@@ -687,9 +687,11 @@ class PrivacySettingsScreen extends ConsumerWidget {
       // `context` in this branch and would otherwise cross an async gap.
       final shareText = context.t.privacy.exportedDataTitle;
       final settings = ref.read(settingsProvider);
-      final goals = ref.read(goalsProvider);
-      final macroGoals = ref.read(macroGoalsProvider).goals;
-      final moods = ref.read(dailyMoodsProvider);
+      // habits / macro goals / moods are no longer read from the in-memory
+      // providers: their models carry no `updated_at`, which is what silently
+      // broke Merge re-imports. They come from the tables below instead.
+      // Categories stay — the importer matches them by NAME and never consults a
+      // timestamp, so serialising them is lossless.
       final categories =
           ref.read(macroGoalCategoriesProvider).value ?? const [];
       final profile = ref.read(userProfileProvider);
@@ -717,6 +719,30 @@ class PrivacySettingsScreen extends ConsumerWidget {
       final userId = supabase.auth.currentUser?.id;
       if (userId == null) throw Exception('Utente non trovato.');
 
+      // Paged raw-table read. Everything the import side merges by
+      // last-write-wins MUST come through here rather than through a model's
+      // `toJson()`: those emit no `updated_at`, and `incomingWins` treats a null
+      // incoming timestamp as OLDEST, so a Merge import skipped every row whose
+      // id already existed — i.e. a same-account restore was a silent no-op for
+      // habits, macro goals and moods, while logs and progress (raw rows, real
+      // timestamps) merged normally. The result was a habit reverted to Checkbox
+      // still owning its goal_progress numbers, reported as "unchanged".
+      Future<List<Map<String, dynamic>>> fetchAllRows(String table) async {
+        final all = <Map<String, dynamic>>[];
+        for (var offset = 0; ; offset += kGoalLogsSyncPageSize) {
+          final page = await supabase
+              .from(table)
+              .select()
+              .eq('user_id', userId)
+              .order('id', ascending: true)
+              .range(offset, offset + kGoalLogsSyncPageSize - 1);
+          final rows = List<Map<String, dynamic>>.from(page);
+          all.addAll(rows);
+          if (rows.length < kGoalLogsSyncPageSize) break;
+        }
+        return all;
+      }
+
       final habitLogs = <Map<String, dynamic>>[];
       for (var offset = 0; ; offset += kGoalLogsSyncPageSize) {
         final page = await supabase
@@ -730,6 +756,14 @@ class PrivacySettingsScreen extends ConsumerWidget {
         habitLogs.addAll(rows);
         if (rows.length < kGoalLogsSyncPageSize) break;
       }
+
+      // Same treatment for the three entities that were being serialised from
+      // in-memory models. `daily_moods` becomes a LIST of rows; normalizeBackup
+      // accepts both shapes and its list branch is the one that reads
+      // created_at/updated_at.
+      final habitRows = await fetchAllRows('goals');
+      final macroGoalRows = await fetchAllRows('long_term_goals');
+      final moodRows = await fetchAllRows('daily_moods');
 
       // Quantitative-target daily numbers ride in the backup under 'habitProgress'
       // (the key the import side already reads) so a Replace-import can't wipe
@@ -789,10 +823,10 @@ class PrivacySettingsScreen extends ConsumerWidget {
           'morningBriefTime': settings.morningBriefTime,
           'eveningReviewTime': settings.eveningReviewTime,
         },
-        'habits': goals.map((g) => g.toJson()).toList(),
+        'habits': habitRows,
         'habitLogs': habitLogs,
         'habitProgress': habitProgress,
-        'macroGoals': macroGoals.map((g) => g.toJson()).toList(),
+        'macroGoals': macroGoalRows,
         'macroGoalCategories': categories
             .map(
               (c) => {
@@ -804,15 +838,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
               },
             )
             .toList(),
-        'dailyMoods': moods.map(
-          (key, value) => MapEntry(key, {
-            'id': value.id,
-            'user_id': value.userId,
-            'date': value.date,
-            'mood_score': value.moodScore,
-            'energy_score': value.energyScore,
-          }),
-        ),
+        'dailyMoods': moodRows,
       };
 
       final jsonString = const JsonEncoder.withIndent('  ').convert(data);

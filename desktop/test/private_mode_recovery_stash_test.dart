@@ -60,6 +60,9 @@ class _StashTrackingStore implements PrivateRecoveryStore {
   }
 
   @override
+  Future<bool> hasStashedDatabase() async => stash != null;
+
+  @override
   Future<void> restoreStashedDatabase() async {
     calls.add('restoreStashedDatabase');
     localCopy = stash;
@@ -228,6 +231,39 @@ void main() {
       expect(store.calls, isNot(contains('discardStashedDatabase')));
     });
   });
+
+  test('an ORPHANED stash from an interrupted attempt is restored at entry', () async {
+    // The crash-mid-recovery case. A stash only exists DURING one attempt, which
+    // ends by discarding or restoring it — so finding one at entry proves the
+    // previous attempt died in between (⌘Q during the long zone re-pull, a
+    // crash, an OS kill). Before this sweep nothing ever looked at a
+    // `.recovery-bak` again: the app opened the fresh EMPTY database and
+    // reported itself ready, with the user's real data sitting in a file no code
+    // path, log line or settings screen ever mentioned.
+    final store = _StashTrackingStore()
+      ..localCopy = null // the fresh empty DB the interrupted attempt left behind
+      ..stash = 'the-users-real-database';
+
+    // enableResult is irrelevant here: the sweep must restore the orphan BEFORE
+    // any of the enable/probe machinery is consulted.
+    await openOrRecoverPrivate(
+      _FakeSync(
+        enableResult: const PrivateSyncStatus(
+          isAvailable: true,
+          isEnabled: true,
+          hasKey: true,
+        ),
+      ),
+      store: store,
+    );
+
+    expect(store.calls, contains('restoreStashedDatabase'),
+        reason: 'the orphaned stash must be put back so recovery retries '
+            'instead of silently accepting an empty database');
+    expect(store.localCopyDestroyed, isFalse,
+        reason: "the user's real database must never be silently abandoned");
+  });
+
 }
 
 /// probe() succeeds into the auto-recover branch, then enable() blows up.

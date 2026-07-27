@@ -1306,6 +1306,17 @@ class PrivateLocalDatabase implements PrivateDataStore {
     }
   }
 
+
+  @override
+  Future<bool> hasStashedDatabase() async {
+    try {
+      final dir = await getApplicationSupportDirectory();
+      return File('${p.join(dir.path, _dbName)}$_bakSuffix').exists();
+    } catch (_) {
+      return false;
+    }
+  }
+
   @override
   Future<void> discardStashedDatabase() async {
     final dir = await getApplicationSupportDirectory();

@@ -127,6 +127,9 @@ class _RecordingStore implements PrivateRecoveryStore {
   Future<bool> stashLockedDatabase() async => false;
 
   @override
+  Future<bool> hasStashedDatabase() async => false;
+
+  @override
   Future<void> restoreStashedDatabase() async {}
 
   @override

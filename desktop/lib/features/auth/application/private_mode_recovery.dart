@@ -61,6 +61,31 @@ Future<PrivateRecoveryResult> openOrRecoverPrivate(
 }) async {
   final db = store ?? DesktopPrivateDb.instance;
 
+  // An orphaned stash means a PREVIOUS recovery attempt died between stashing
+  // the locked database and the discard/restore that ends the attempt — ⌘Q, a
+  // crash, or an OS termination during the full zone re-pull. Nothing else in
+  // either app ever looks at a `.recovery-bak`, so without this the user's real
+  // database sits in a file no code path, log line or settings screen mentions,
+  // while the app silently opens the fresh EMPTY database and reports ready.
+  //
+  // Restoring is the safe answer, not discarding: the stash is encrypted with
+  // the old (unreadable) key, so putting it back simply makes the DB read as
+  // locked again and the normal recovery decision below runs on it — a retry
+  // rather than a silent, permanent loss of the local copy.
+  try {
+    if (await db.hasStashedDatabase()) {
+      AppLogger.warning(
+        '[PrivateRecovery] found an orphaned .recovery-bak — a previous '
+        'recovery was interrupted. Restoring it so recovery retries instead of '
+        'opening an empty database.',
+      );
+      await db.restoreStashedDatabase();
+    }
+  } catch (error, stack) {
+    AppLogger.error('[PrivateRecovery] orphan-stash sweep failed', error, stack);
+    // Best-effort: fall through to the normal open/probe path.
+  }
+
   try {
     await db.ensureReady(); // opens the DB (and runs the owner self-heal)
     return const PrivateRecoveryResult(PrivateRecoveryStatus.ready);

@@ -87,8 +87,11 @@ void main() {
       final sync = _FakeSync(
         enableResult: const PrivateSyncStatus(
           isAvailable: true,
-          isEnabled: true, // enable ran and pulled
+          isEnabled: true,
           hasKey: true,
+          // The load-bearing field: records actually landed from the zone. That,
+          // and ONLY that, makes hard-deleting the stashed database safe.
+          appliedChanges: 42,
           account: CloudAccountStatus.available,
         ),
       );
@@ -109,8 +112,16 @@ void main() {
       final sync = _FakeSync(
         enableResult: const PrivateSyncStatus(
           isAvailable: true,
-          isEnabled: false, // ownerPending: enable did NOT run
+          // isEnabled is TRUE here, which is the whole point. It reports the
+          // persisted per-device pref, already true on this branch, and no leg
+          // of _enable() ever writes it false — so the old fixture's
+          // `isEnabled: false` was a value production cannot return, and it hid
+          // the bug: the real deferred status took the SUCCESS branch and
+          // hard-deleted the user's stashed database.
+          isEnabled: true,
           hasKey: true,
+          appliedChanges: 0, // deferred: nothing was pulled
+          ownerPending: true,
           account: CloudAccountStatus.available,
         ),
       );

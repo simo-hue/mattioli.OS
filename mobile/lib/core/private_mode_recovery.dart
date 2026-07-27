@@ -55,6 +55,33 @@ Future<PrivateRecoveryResult> openOrRecoverPrivate({
   required PrivateDataStore store,
   required PrivateSyncService sync,
 }) async {
+  // An orphaned stash means a PREVIOUS recovery attempt died between stashing
+  // the locked database and the discard/restore that ends the attempt — a quit,
+  // a crash, or an OS termination during the full zone re-pull, which the code's
+  // own logs describe as long enough to watch a spinner through. Nothing else in
+  // either app ever looks at a `.recovery-bak`, so without this the user's real
+  // database sits in a file no code path, log line or settings screen mentions,
+  // while the app silently opens the fresh EMPTY database and reports itself
+  // ready.
+  //
+  // Restoring is the safe answer, not discarding: the stash is encrypted with
+  // the old (unreadable) key, so putting it back simply makes isDatabaseLocked()
+  // true again and the normal recovery decision below runs on it — a retry
+  // rather than a silent, permanent loss of the local copy.
+  try {
+    if (await store.hasStashedDatabase()) {
+      AppLogger.warning(
+        '[PrivateRecovery] found an orphaned .recovery-bak — a previous '
+        'recovery was interrupted. Restoring it so recovery retries instead of '
+        'opening an empty database.',
+      );
+      await store.restoreStashedDatabase();
+    }
+  } catch (error, stack) {
+    AppLogger.error('[PrivateRecovery] orphan-stash sweep failed', error, stack);
+    // Best-effort: fall through to the normal open/probe path.
+  }
+
   try {
     await store.ensureReady(); // opens the DB (and runs the owner self-heal)
     return const PrivateRecoveryResult(PrivateRecoveryStatus.ready);
@@ -89,10 +116,21 @@ Future<PrivateRecoveryResult> openOrRecoverPrivate({
         // synced Keychain and full-pulls the zone. It can legitimately DEFER
         // (key synced, canonical owner not yet — SyncResult.ownerPending, leaves
         // sync disabled) or be BLOCKED (iCloud went unavailable between probe and
-        // now), in which case it populated NOTHING. Only claim success when it
-        // actually ran (isEnabled). Plain syncNow() would NOT adopt the owner.
+        // now), in which case it populated NOTHING. Plain syncNow() would NOT
+        // adopt the owner.
         final status = await sync.enable();
-        if (status.isEnabled) {
+        // Records actually landed from the zone ⇒ the re-pull ran AND restored
+        // data. That is the only evidence that makes dropping the stash safe.
+        //
+        // `isEnabled` must NOT stand in for it, and this branch used to test
+        // exactly that: it reports the persisted per-device pref, which is
+        // ALREADY true here (decidePrivateModeRecovery only returns
+        // autoRecoverFromCloud when probe.isEnabled) and stays true across a
+        // deferred or blocked enable. So a deferred re-pull — ownerPending,
+        // nothing applied — took the success branch and HARD-DELETED the stashed
+        // real database, then told the user it had been restored from iCloud.
+        // Desktop fixed this in 7156a4f; the mobile twin was never updated.
+        if (status.appliedChanges > 0) {
           await store.ensureReady(); // open the fresh, re-populated DB
           await store.discardStashedDatabase(); // recovery committed — drop .bak
           return const PrivateRecoveryResult(
@@ -100,14 +138,24 @@ Future<PrivateRecoveryResult> openOrRecoverPrivate({
             restoredFromCloud: true,
           );
         }
-        // enable() did not run — restore the stashed cache (locked again) so a
+        // Nothing was restored — restore the stashed cache (locked again) so a
         // later retry can recover the real data instead of accepting an empty DB
         // behind a misleading "restored from iCloud" toast.
         await store.restoreStashedDatabase();
         if (status.isAvailable && status.hasKey) {
-          // Key present but the canonical owner hasn't synced yet — wait & retry.
+          // Deferral is a fact the engine knows — ask it, rather than inferring
+          // it from a timestamp (desktop's note explains why that inference was
+          // wrong).
+          if (status.ownerPending) {
+            return const PrivateRecoveryResult(
+              PrivateRecoveryStatus.waitingForICloudKey,
+            );
+          }
+          // The pull ran but the zone held nothing to restore, so the locked
+          // local copy is the only one left: let the user choose (reset/import)
+          // rather than discarding it behind a false "restored" notice.
           return const PrivateRecoveryResult(
-            PrivateRecoveryStatus.waitingForICloudKey,
+            PrivateRecoveryStatus.needsUserChoice,
           );
         }
         // iCloud flipped unavailable in the gap — let the user retry / choose.

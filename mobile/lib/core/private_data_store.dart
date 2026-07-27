@@ -190,6 +190,15 @@ abstract interface class PrivateDataStore {
   /// Never throws.
   Future<void> restoreStashedDatabase();
 
+  /// Whether a `.recovery-bak` stash is present on disk.
+  ///
+  /// A stash is only ever meant to exist DURING one recovery attempt, which
+  /// ends by either discarding or restoring it. Finding one at entry therefore
+  /// means a previous attempt was interrupted (quit, crash, OS termination)
+  /// between the two, and the user's real database is sitting in a file nothing
+  /// else ever looks at.
+  Future<bool> hasStashedDatabase();
+
   /// Commit [stashLockedDatabase]: the cloud re-pull succeeded, so delete the
   /// stashed `.bak` set for good. Never throws.
   Future<void> discardStashedDatabase();

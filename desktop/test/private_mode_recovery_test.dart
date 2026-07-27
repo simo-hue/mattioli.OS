@@ -47,6 +47,9 @@ class _LockedFakeStore implements PrivateRecoveryStore {
   }
 
   @override
+  Future<bool> hasStashedDatabase() async => stashed;
+
+  @override
   Future<void> restoreStashedDatabase() async {
     calls.add('restoreStashedDatabase');
     stashed = false;

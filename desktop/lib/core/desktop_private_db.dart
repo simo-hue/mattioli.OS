@@ -61,6 +61,13 @@ abstract interface class PrivateRecoveryStore {
   /// Never throws.
   Future<void> restoreStashedDatabase();
 
+  /// Whether a `.recovery-bak` stash is present on disk.
+  ///
+  /// A stash is only meant to exist DURING one recovery attempt, which ends by
+  /// either discarding or restoring it. Finding one at entry means a previous
+  /// attempt was interrupted between the two.
+  Future<bool> hasStashedDatabase();
+
   /// Commit [stashLockedDatabase]: the cloud re-pull succeeded, so delete the
   /// stashed `.bak` set for good. Never throws.
   Future<void> discardStashedDatabase();
@@ -337,6 +344,16 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
     } catch (error, stack) {
       AppLogger.warning(
         '[DesktopPrivateDb] restore: key remnant delete failed', error, stack);
+    }
+  }
+
+  @override
+  Future<bool> hasStashedDatabase() async {
+    try {
+      final dir = await getApplicationSupportDirectory();
+      return File('${p.join(dir.path, _dbFileName)}$_bakSuffix').exists();
+    } catch (_) {
+      return false;
     }
   }
 

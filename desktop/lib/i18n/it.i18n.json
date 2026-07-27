@@ -600,6 +600,8 @@
     "monthsRemaining": "Mesi rimanenti",
     "dayDetail": "Dettaglio {day} {month}",
     "dayDetailSubtitle": "Aggiorna lo stato delle abitudini per questo giorno.",
+    "dayDotTooltip": "{day} {month} · {status}",
+    "dayDotTooltipToday": "Oggi · {status}",
     "editHabit": "Modifica abitudine",
     "newHabit": "Nuova abitudine",
     "optionalReminder": "Promemoria opzionale",

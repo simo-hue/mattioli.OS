@@ -801,6 +801,8 @@ class _Translations$habitsPage$es extends Translations$habitsPage$en {
 	@override String get monthsRemaining => 'Meses restantes';
 	@override String dayDetail({required Object day, required Object month}) => 'Detalle ${day} ${month}';
 	@override String get dayDetailSubtitle => 'Actualiza el estado de los hábitos para este día.';
+	@override String dayDotTooltip({required Object day, required Object month, required Object status}) => '${day} ${month} · ${status}';
+	@override String dayDotTooltipToday({required Object status}) => 'Hoy · ${status}';
 	@override String get editHabit => 'Editar hábito';
 	@override String get newHabit => 'Nuevo hábito';
 	@override String get optionalReminder => 'Recordatorio opcional';
@@ -2555,6 +2557,8 @@ extension on TranslationsEs {
 			'habitsPage.monthsRemaining' => 'Meses restantes',
 			'habitsPage.dayDetail' => ({required Object day, required Object month}) => 'Detalle ${day} ${month}',
 			'habitsPage.dayDetailSubtitle' => 'Actualiza el estado de los hábitos para este día.',
+			'habitsPage.dayDotTooltip' => ({required Object day, required Object month, required Object status}) => '${day} ${month} · ${status}',
+			'habitsPage.dayDotTooltipToday' => ({required Object status}) => 'Hoy · ${status}',
 			'habitsPage.editHabit' => 'Editar hábito',
 			'habitsPage.newHabit' => 'Nuevo hábito',
 			'habitsPage.optionalReminder' => 'Recordatorio opcional',
@@ -3029,10 +3033,10 @@ extension on TranslationsEs {
 			'authCtrl.accessNotCompleted' => ({required Object provider}) => 'Inicio de sesión con ${provider} no completado.',
 			'authCtrl.providerAuthFailed' => ({required Object provider}) => 'Error de autenticación de ${provider}.',
 			'authCtrl.operationFailed' => 'Operación fallida. Inténtalo de nuevo en breve.',
-			'proModal.title' => 'Desbloquea Evolve PRO',
-			'proModal.subtitle' => 'Lleva tu sistema de hábitos al siguiente nivel',
 			_ => null,
 		} ?? switch (path) {
+			'proModal.title' => 'Desbloquea Evolve PRO',
+			'proModal.subtitle' => 'Lleva tu sistema de hábitos al siguiente nivel',
 			'proModal.featuresHeader' => 'Qué incluye el plan PRO',
 			'proModal.aiCoachTitle' => 'AI Coach, sin configuración',
 			'proModal.aiCoachDesc' => 'Lo ejecutamos nosotros con nuestra clave: sin clave API que buscar, sin segunda cuenta. ¿Prefieres tu propia cuenta de OpenRouter? También es gratis.',

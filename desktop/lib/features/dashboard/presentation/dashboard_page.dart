@@ -14,6 +14,8 @@ import 'package:evolve_desktop/features/dashboard/application/dashboard_controll
 import 'package:evolve_desktop/core/targets_config.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/features/habits/presentation/target_entry_dialog.dart';
+import 'package:evolve_desktop/core/clock.dart';
+import 'package:evolve_desktop/shared/widgets/habit_day_dots.dart';
 import 'package:evolve_desktop/shared/widgets/target_ring.dart';
 import 'package:evolve_targets/evolve_targets.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
@@ -951,7 +953,7 @@ class _HabitPanel extends ConsumerWidget {
           else
             for (final habit in snapshot.todayHabits)
               Builder(builder: (context) {
-                final today = DateTime.now();
+                final today = ref.watch(clockProvider)();
                 final target = DesktopTargetsConfig.enabled &&
                         (habit.target?.isUserEnterable ?? false)
                     ? habit.target
@@ -968,6 +970,8 @@ class _HabitPanel extends ConsumerWidget {
                 return _HabitRow(
                   habit: habit,
                   status: snapshot.habitStatusFor(habit.id, today),
+                  windowStatuses: snapshot.habitWindowStatuses(habit, today),
+                  windowDays: habitWindowDays(today),
                   target: target,
                   verdict: verdict,
                   progressAmount: progressAmount,
@@ -994,6 +998,8 @@ class _HabitRow extends StatelessWidget {
   const _HabitRow({
     required this.habit,
     required this.onTap,
+    required this.windowStatuses,
+    required this.windowDays,
     this.status,
     this.target,
     this.verdict,
@@ -1006,6 +1012,11 @@ class _HabitRow extends StatelessWidget {
   /// Today's log status: 'done', 'missed', or null (untracked). Drives the
   /// tri-state indicator (tapping cycles untracked → done → missed → untracked).
   final String? status;
+
+  /// The last 7 days' outcomes, oldest → today, and the days they describe.
+  final List<String?> windowStatuses;
+  final List<DateTime> windowDays;
+
   final VoidCallback onTap;
 
   /// A manual target for today (null ⇒ plain checkbox). When set the check
@@ -1099,18 +1110,15 @@ class _HabitRow extends StatelessWidget {
                 ],
               ),
             ),
-            for (final completed in habit.weeklyProgress)
-              Container(
-                width: 8,
-                height: 8,
-                margin: const EdgeInsetsDirectional.only(start: 5),
-                decoration: BoxDecoration(
-                  color: completed
-                      ? habit.color
-                      : context.evolveColors.panelSoft,
-                  shape: BoxShape.circle,
-                ),
-              ),
+            const SizedBox(width: 5),
+            HabitDayDots(
+              statuses: windowStatuses,
+              dates: windowDays,
+              accent: habit.color,
+              size: 8,
+              gap: 5,
+              borderRadius: 4,
+            ),
             const SizedBox(width: 16),
             SizedBox(
               width: 58,

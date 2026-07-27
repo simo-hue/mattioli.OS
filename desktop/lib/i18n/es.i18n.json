@@ -600,6 +600,8 @@
     "monthsRemaining": "Meses restantes",
     "dayDetail": "Detalle {day} {month}",
     "dayDetailSubtitle": "Actualiza el estado de los hábitos para este día.",
+    "dayDotTooltip": "{day} {month} · {status}",
+    "dayDotTooltipToday": "Hoy · {status}",
     "editHabit": "Editar hábito",
     "newHabit": "Nuevo hábito",
     "optionalReminder": "Recordatorio opcional",

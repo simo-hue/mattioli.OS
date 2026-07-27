@@ -1818,6 +1818,12 @@ class Translations$habitsPage$en {
 	/// en: 'Update the status of habits for this day.'
 	String get dayDetailSubtitle => 'Update the status of habits for this day.';
 
+	/// en: '{day} {month} · {status}'
+	String dayDotTooltip({required Object day, required Object month, required Object status}) => '${day} ${month} · ${status}';
+
+	/// en: 'Today · {status}'
+	String dayDotTooltipToday({required Object status}) => 'Today · ${status}';
+
 	/// en: 'Edit habit'
 	String get editHabit => 'Edit habit';
 
@@ -5012,6 +5018,8 @@ extension on Translations {
 			'habitsPage.monthsRemaining' => 'Months remaining',
 			'habitsPage.dayDetail' => ({required Object day, required Object month}) => 'Details ${day} ${month}',
 			'habitsPage.dayDetailSubtitle' => 'Update the status of habits for this day.',
+			'habitsPage.dayDotTooltip' => ({required Object day, required Object month, required Object status}) => '${day} ${month} · ${status}',
+			'habitsPage.dayDotTooltipToday' => ({required Object status}) => 'Today · ${status}',
 			'habitsPage.editHabit' => 'Edit habit',
 			'habitsPage.newHabit' => 'New habit',
 			'habitsPage.optionalReminder' => 'Optional reminder',
@@ -5486,10 +5494,10 @@ extension on Translations {
 			'authCtrl.accessNotCompleted' => ({required Object provider}) => '${provider} sign-in not completed.',
 			'authCtrl.providerAuthFailed' => ({required Object provider}) => '${provider} authentication failed.',
 			'authCtrl.operationFailed' => 'Operation failed. Try again shortly.',
-			'proModal.title' => 'Unlock Evolve Pro',
-			'proModal.subtitle' => 'Take your habit system to the next level',
 			_ => null,
 		} ?? switch (path) {
+			'proModal.title' => 'Unlock Evolve Pro',
+			'proModal.subtitle' => 'Take your habit system to the next level',
 			'proModal.featuresHeader' => 'WHAT THE PRO PLAN INCLUDES',
 			'proModal.aiCoachTitle' => 'AI Coach, with no setup',
 			'proModal.aiCoachDesc' => 'We run it on our key — no API key to fetch, no second account. Prefer your own OpenRouter account? That\'s free too.',

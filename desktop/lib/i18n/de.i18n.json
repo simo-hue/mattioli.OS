@@ -600,6 +600,8 @@
     "monthsRemaining": "Verbleibende Monate",
     "dayDetail": "Details {day}. {month}",
     "dayDetailSubtitle": "Aktualisiere den Status der Gewohnheiten für diesen Tag.",
+    "dayDotTooltip": "{day}. {month} · {status}",
+    "dayDotTooltipToday": "Heute · {status}",
     "editHabit": "Gewohnheit bearbeiten",
     "newHabit": "Neue Gewohnheit",
     "optionalReminder": "Optionale Erinnerung",

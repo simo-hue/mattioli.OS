@@ -801,6 +801,8 @@ class _Translations$habitsPage$de extends Translations$habitsPage$en {
 	@override String get monthsRemaining => 'Verbleibende Monate';
 	@override String dayDetail({required Object day, required Object month}) => 'Details ${day}. ${month}';
 	@override String get dayDetailSubtitle => 'Aktualisiere den Status der Gewohnheiten für diesen Tag.';
+	@override String dayDotTooltip({required Object day, required Object month, required Object status}) => '${day}. ${month} · ${status}';
+	@override String dayDotTooltipToday({required Object status}) => 'Heute · ${status}';
 	@override String get editHabit => 'Gewohnheit bearbeiten';
 	@override String get newHabit => 'Neue Gewohnheit';
 	@override String get optionalReminder => 'Optionale Erinnerung';
@@ -2555,6 +2557,8 @@ extension on TranslationsDe {
 			'habitsPage.monthsRemaining' => 'Verbleibende Monate',
 			'habitsPage.dayDetail' => ({required Object day, required Object month}) => 'Details ${day}. ${month}',
 			'habitsPage.dayDetailSubtitle' => 'Aktualisiere den Status der Gewohnheiten für diesen Tag.',
+			'habitsPage.dayDotTooltip' => ({required Object day, required Object month, required Object status}) => '${day}. ${month} · ${status}',
+			'habitsPage.dayDotTooltipToday' => ({required Object status}) => 'Heute · ${status}',
 			'habitsPage.editHabit' => 'Gewohnheit bearbeiten',
 			'habitsPage.newHabit' => 'Neue Gewohnheit',
 			'habitsPage.optionalReminder' => 'Optionale Erinnerung',
@@ -3029,10 +3033,10 @@ extension on TranslationsDe {
 			'authCtrl.accessNotCompleted' => ({required Object provider}) => '${provider}-Anmeldung nicht abgeschlossen.',
 			'authCtrl.providerAuthFailed' => ({required Object provider}) => '${provider}-Authentifizierung fehlgeschlagen.',
 			'authCtrl.operationFailed' => 'Vorgang fehlgeschlagen. Versuche es gleich erneut.',
-			'proModal.title' => 'Evolve PRO freischalten',
-			'proModal.subtitle' => 'Bringen Sie Ihr Gewohnheitssystem auf die nächste Stufe',
 			_ => null,
 		} ?? switch (path) {
+			'proModal.title' => 'Evolve PRO freischalten',
+			'proModal.subtitle' => 'Bringen Sie Ihr Gewohnheitssystem auf die nächste Stufe',
 			'proModal.featuresHeader' => 'Was der PRO-Plan enthält',
 			'proModal.aiCoachTitle' => 'AI Coach, ohne Einrichtung',
 			'proModal.aiCoachDesc' => 'Wir betreiben ihn mit unserem Schlüssel: kein API-Schlüssel zu besorgen, kein zweites Konto. Lieber dein eigenes OpenRouter-Konto? Das ist ebenfalls kostenlos.',

@@ -1,5 +1,6 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/calendar_view_preference.dart';
+import 'package:evolve_desktop/core/clock.dart';
 import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
@@ -25,6 +26,7 @@ import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_period_switcher.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_weekday_selector.dart';
+import 'package:evolve_desktop/shared/widgets/habit_day_dots.dart';
 import 'package:evolve_desktop/shared/widgets/target_ring.dart';
 import 'package:evolve_desktop/shared/widgets/verified_habit_badge.dart';
 import 'package:evolve_targets/evolve_targets.dart';
@@ -302,6 +304,10 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
   ) {
     return _ProtocolPanel(
       snapshot: snapshot,
+      // One "now" for the whole table: the day-dot window, the target ring and
+      // the entry dialog must agree about which day they are on, and the clock
+      // seam is what lets a test pin it (see core/clock.dart).
+      today: ref.watch(clockProvider)(),
       habitsOverride: demoHabits,
       checkoffKey: _checkoffKey,
       streakKey: _streakKey,
@@ -441,6 +447,20 @@ DashboardHabit _tutorialDemoHabit() => DashboardHabit(
   state: HabitState.completed,
 );
 
+/// The demo row's "last 7 days" strip. Supplied literally because the demo habit
+/// owns no `goal_logs` — the real strip resolves from them — and shaped to match
+/// the row it decorates: today done, and the five trailing completions the
+/// `streak: 5` above claims.
+const _tutorialDemoWindow = <String?>[
+  'done',
+  'missed',
+  'done',
+  'done',
+  'done',
+  'done',
+  'done',
+];
+
 /// Compact metric strip: the three summary cards share one row of fixed
 /// chrome. They are secondary info, so they stay ~72px tall and stop growing
 /// at 470px per card (aligned to the start on very wide windows).
@@ -551,6 +571,7 @@ class _SummaryCard extends StatelessWidget {
 class _ProtocolPanel extends StatefulWidget {
   const _ProtocolPanel({
     required this.snapshot,
+    required this.today,
     required this.onToggle,
     required this.onAdd,
     required this.onEdit,
@@ -562,6 +583,9 @@ class _ProtocolPanel extends StatefulWidget {
   });
 
   final DashboardSnapshot snapshot;
+
+  /// The single "now" every row reads, from `clockProvider`.
+  final DateTime today;
   final ValueChanged<String> onToggle;
   final ValueChanged<DashboardHabit> onEdit;
   final ValueChanged<DashboardHabit> onDelete;
@@ -670,7 +694,7 @@ class _ProtocolPanelState extends State<_ProtocolPanel> {
                         final habit = habits[index];
                         // Only the first row carries the tour spotlight keys.
                         final isFirst = index == 0;
-                        final today = DateTime.now();
+                        final today = widget.today;
                         // A MANUAL target: the check square becomes a progress
                         // ring that opens the entry dialog. A measured/projected
                         // rule keeps the checkbox (its value lives in
@@ -693,7 +717,21 @@ class _ProtocolPanelState extends State<_ProtocolPanel> {
                         return _HabitRow(
                           key: ValueKey(habit.id),
                           habit: habit,
-                          todayStatus: widget.snapshot.habitStatusFor(habit.id, DateTime.now()),
+                          todayStatus: widget.snapshot.habitStatusFor(
+                            habit.id,
+                            today,
+                          ),
+                          // The tour's demo row owns no logs by design, so it
+                          // carries its own strip instead of resolving to seven
+                          // empty days under the coach-mark that narrates
+                          // streaks.
+                          windowStatuses: widget.habitsOverride != null
+                              ? _tutorialDemoWindow
+                              : widget.snapshot.habitWindowStatuses(
+                                  habit,
+                                  today,
+                                ),
+                          windowDays: habitWindowDays(today),
                           metrics: metrics,
                           checkoffKey: isFirst ? widget.checkoffKey : null,
                           streakKey: isFirst ? widget.streakKey : null,
@@ -890,6 +928,8 @@ class _HabitRow extends StatefulWidget {
   const _HabitRow({
     required this.habit,
     this.todayStatus,
+    required this.windowStatuses,
+    required this.windowDays,
     required this.metrics,
     required this.onToggle,
     required this.onEdit,
@@ -906,6 +946,11 @@ class _HabitRow extends StatefulWidget {
 
   final DashboardHabit habit;
   final String? todayStatus;
+
+  /// The "LAST 7 DAYS" column: outcomes oldest → today, and their days.
+  final List<String?> windowStatuses;
+  final List<DateTime> windowDays;
+
   final _HabitRowMetrics metrics;
   final Widget? dragHandle;
   final VoidCallback onToggle;
@@ -1114,23 +1159,13 @@ class _HabitRowState extends State<_HabitRow> {
                   ),
                   SizedBox(
                     width: metrics.weekWidth,
-                    child: Row(
-                      children: [
-                        for (final done in habit.weeklyProgress)
-                          Container(
-                            width: metrics.daySquareSize,
-                            height: metrics.daySquareSize,
-                            margin: EdgeInsetsDirectional.only(
-                              end: metrics.daySquareGap,
-                            ),
-                            decoration: BoxDecoration(
-                              color: done
-                                  ? habit.color.withValues(alpha: 0.86)
-                                  : context.evolveColors.panelSoft,
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                          ),
-                      ],
+                    child: HabitDayDots(
+                      statuses: widget.windowStatuses,
+                      dates: widget.windowDays,
+                      accent: habit.color.withValues(alpha: 0.86),
+                      size: metrics.daySquareSize,
+                      gap: metrics.daySquareGap,
+                      borderRadius: 5,
                     ),
                   ),
                 ],
@@ -1599,7 +1634,7 @@ class _DayCellState extends State<_DayCell> with SingleTickerProviderStateMixin 
   void _updateAnimationState() {
     final isToday = DateUtils.isSameDay(widget.date, DateTime.now());
     final hasActivity = widget.snapshot.habitsFor(widget.date).any(
-      (h) => _habitStatus(widget.snapshot, h.id, widget.date, h) != null,
+      (h) => widget.snapshot.resolvedHabitStatus(h, widget.date) != null,
     );
     if (isToday || hasActivity) {
       if (!_glowController.isAnimating) _glowController.repeat(reverse: true);
@@ -1626,7 +1661,7 @@ class _DayCellState extends State<_DayCell> with SingleTickerProviderStateMixin 
     final indicators = widget.snapshot.habitsFor(widget.date);
     final isFuture = widget.date.isAfter(DateTime.now());
     final hasActivity = indicators.any(
-      (habit) => _habitStatus(widget.snapshot, habit.id, widget.date, habit) != null,
+      (habit) => widget.snapshot.resolvedHabitStatus(habit, widget.date) != null,
     );
     final isEditable = _canEditDate(widget.date);
     
@@ -2115,10 +2150,12 @@ class _DayDetailsDialog extends ConsumerWidget {
               title: habit.title,
               color: habit.color,
               streak: habit.streak,
-              done: _habitStatus(snapshot, habit.id, date, habit) == 'done',
-              missed: _habitStatus(snapshot, habit.id, date, habit) == 'missed',
+              done: snapshot.resolvedHabitStatus(habit, date) == 'done',
+              missed: snapshot.resolvedHabitStatus(habit, date) == 'missed',
               verified: habit.verificationRule != null,
-              statusLabel: _habitStatusLabel(snapshot, habit.id, date, habit),
+              statusLabel: habitStatusLabel(
+                snapshot.resolvedHabitStatus(habit, date),
+              ),
               onToggle: _canEditDate(date)
                   ? () => ref
                         .read(dashboardControllerProvider.notifier)
@@ -2662,41 +2699,6 @@ double _completionFor(DashboardSnapshot snapshot, DateTime date) {
   return snapshot.completionFor(date);
 }
 
-bool _isCurrentWeek(DateTime date) {
-  final now = DateTime.now();
-  final monday = now.subtract(Duration(days: now.weekday - 1));
-  final sunday = monday.add(const Duration(days: 6));
-  final normalized = DateTime(date.year, date.month, date.day);
-  return !normalized.isBefore(
-        DateTime(monday.year, monday.month, monday.day),
-      ) &&
-      !normalized.isAfter(DateTime(sunday.year, sunday.month, sunday.day));
-}
-
-String? _habitStatus(
-  DashboardSnapshot snapshot,
-  String habitId,
-  DateTime date,
-  DashboardHabit habit,
-) {
-  return snapshot.habitStatusFor(habitId, date) ??
-      (_isCurrentWeek(date) && habit.weeklyProgress[date.weekday - 1]
-          ? 'done'
-          : null);
-}
-
-String _habitStatusLabel(
-  DashboardSnapshot snapshot,
-  String habitId,
-  DateTime date,
-  DashboardHabit habit,
-) {
-  return switch (_habitStatus(snapshot, habitId, date, habit)) {
-    'done' => t.habitsPage.statusDone,
-    'missed' => t.habitsPage.statusSkipped,
-    _ => t.habitsPage.statusUnrecorded,
-  };
-}
 
 bool _canEditDate(DateTime date) {
   final now = DateTime.now();

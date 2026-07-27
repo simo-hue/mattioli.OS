@@ -801,6 +801,8 @@ class _Translations$habitsPage$ar extends Translations$habitsPage$en {
 	@override String get monthsRemaining => 'الأشهر المتبقية';
 	@override String dayDetail({required Object day, required Object month}) => 'تفاصيل ${day} ${month}';
 	@override String get dayDetailSubtitle => 'حدّث حالة العادات لهذا اليوم.';
+	@override String dayDotTooltip({required Object day, required Object month, required Object status}) => '${day} ${month} · ${status}';
+	@override String dayDotTooltipToday({required Object status}) => 'اليوم · ${status}';
 	@override String get editHabit => 'تعديل العادة';
 	@override String get newHabit => 'عادة جديدة';
 	@override String get optionalReminder => 'تذكير اختياري';
@@ -2555,6 +2557,8 @@ extension on TranslationsAr {
 			'habitsPage.monthsRemaining' => 'الأشهر المتبقية',
 			'habitsPage.dayDetail' => ({required Object day, required Object month}) => 'تفاصيل ${day} ${month}',
 			'habitsPage.dayDetailSubtitle' => 'حدّث حالة العادات لهذا اليوم.',
+			'habitsPage.dayDotTooltip' => ({required Object day, required Object month, required Object status}) => '${day} ${month} · ${status}',
+			'habitsPage.dayDotTooltipToday' => ({required Object status}) => 'اليوم · ${status}',
 			'habitsPage.editHabit' => 'تعديل العادة',
 			'habitsPage.newHabit' => 'عادة جديدة',
 			'habitsPage.optionalReminder' => 'تذكير اختياري',
@@ -3029,10 +3033,10 @@ extension on TranslationsAr {
 			'authCtrl.accessNotCompleted' => ({required Object provider}) => 'لم يكتمل تسجيل الدخول عبر ${provider}.',
 			'authCtrl.providerAuthFailed' => ({required Object provider}) => 'فشلت مصادقة ${provider}.',
 			'authCtrl.operationFailed' => 'فشلت العملية. أعد المحاولة بعد قليل.',
-			'proModal.title' => 'افتح Evolve Pro',
-			'proModal.subtitle' => 'ارتقِ بنظام عاداتك إلى المستوى التالي',
 			_ => null,
 		} ?? switch (path) {
+			'proModal.title' => 'افتح Evolve Pro',
+			'proModal.subtitle' => 'ارتقِ بنظام عاداتك إلى المستوى التالي',
 			'proModal.featuresHeader' => 'ما الذي تتضمّنه خطة PRO',
 			'proModal.aiCoachTitle' => 'AI Coach بلا إعداد',
 			'proModal.aiCoachDesc' => 'نشغّله نحن بمفتاحنا: لا مفتاح API تبحث عنه، ولا حساب ثانٍ. تفضّل حساب OpenRouter الخاص بك؟ هذا مجاني أيضًا.',

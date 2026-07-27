@@ -667,15 +667,47 @@ class DashboardSnapshot {
   double? habitProgressFor(String habitId, DateTime date) =>
       habitProgress[dashboardDateKey(date)]?[habitId];
 
+  /// The habit's outcome for [date] — `'done'`, `'missed'`, or null when the day
+  /// is unrecorded.
+  ///
+  /// `goal_logs` is the source of truth. The CURRENT-week `weeklyProgress` grid
+  /// is only a fallback, for a snapshot whose log map lags it. The
+  /// [_isDashboardCurrentWeek] gate is what stops an older date from reading
+  /// THIS week's slot for the same weekday: the grid is Mon..Sun for the current
+  /// week only, so `weeklyProgress[date.weekday - 1]` is meaningless outside it.
+  ///
+  /// This is the ONLY place that precedence lives. It had been written out twice
+  /// (here and the Habits page's `_habitStatus`), and the 7-day dot strips would
+  /// have made a third copy — the same drift `TargetVerdict.logStatus` was
+  /// consolidated to prevent, where one surface calls a day done and another
+  /// does not.
+  String? resolvedHabitStatus(DashboardHabit habit, DateTime date) {
+    final logged = habitStatusFor(habit.id, date);
+    if (logged != null) return logged;
+    return _isDashboardCurrentWeek(date) &&
+            habit.weeklyProgress[date.weekday - 1]
+        ? 'done'
+        : null;
+  }
+
+  /// Outcomes for the [days] calendar days ending on [today], oldest → newest,
+  /// index-aligned with [habitWindowDays] — the habit dot strips' data, so the
+  /// LAST entry is always today and the user can see the day they are living in.
+  List<String?> habitWindowStatuses(
+    DashboardHabit habit,
+    DateTime today, {
+    int days = 7,
+  }) => [
+    for (final date in habitWindowDays(today, days: days))
+      resolvedHabitStatus(habit, date),
+  ];
+
   double completionFor(DateTime date) {
     final activeHabits = habitsFor(date);
     if (activeHabits.isEmpty) return 0;
-    final done = activeHabits.where((habit) {
-      final status = habitStatusFor(habit.id, date);
-      if (status != null) return status == 'done';
-      return _isDashboardCurrentWeek(date) &&
-          habit.weeklyProgress[date.weekday - 1];
-    }).length;
+    final done = activeHabits
+        .where((habit) => resolvedHabitStatus(habit, date) == 'done')
+        .length;
     return done / activeHabits.length;
   }
 
@@ -735,6 +767,21 @@ class DashboardSnapshot {
     checkIn: DailyCheckIn(),
   );
 }
+
+/// The [days] calendar days ending on [today], oldest → newest — the x-axis of
+/// every habit dot strip. Kept beside [DashboardSnapshot.habitWindowStatuses],
+/// which maps over it, so a dot's tooltip can never name a different day from
+/// the one it colours.
+///
+/// `DateTime(y, m, d - i)` rather than `subtract(Duration(days: i))`: a duration
+/// steps a fixed 24 h, so a walk that straddles a DST transition lands at 23:00
+/// or 01:00 of a neighbouring day. Building the window forward from
+/// `today - 6` with durations is the visible form of that bug — in Europe/Rome
+/// it renders 25 October twice and never renders 26 October.
+List<DateTime> habitWindowDays(DateTime today, {int days = 7}) => [
+  for (var i = days - 1; i >= 0; i--)
+    DateTime(today.year, today.month, today.day - i),
+];
 
 String dashboardDateKey(DateTime date) {
   final month = date.month.toString().padLeft(2, '0');

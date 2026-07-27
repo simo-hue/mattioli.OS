@@ -600,6 +600,8 @@
     "monthsRemaining": "الأشهر المتبقية",
     "dayDetail": "تفاصيل {day} {month}",
     "dayDetailSubtitle": "حدّث حالة العادات لهذا اليوم.",
+    "dayDotTooltip": "{day} {month} · {status}",
+    "dayDotTooltipToday": "اليوم · {status}",
     "editHabit": "تعديل العادة",
     "newHabit": "عادة جديدة",
     "optionalReminder": "تذكير اختياري",

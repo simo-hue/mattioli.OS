@@ -59,6 +59,105 @@ void main() {
       expect(find.byIcon(Icons.add), findsOneWidget);
     });
 
+    // ── Typing behaviour (added after an adversarial review, 2026-07-27) ────
+    //
+    // This half was entirely uncovered on desktop, and the review found real
+    // bugs in it. The pre-existing tests above only tap chips and assert
+    // 10 + 1 = 11 — which would still pass if every TYPED value were discarded.
+
+    testWidgets('a typed amount commits and clamps to the preset maximum',
+        (tester) async {
+      HabitTarget? emitted;
+      await tester.pumpWidget(fieldHarness((t) => emitted = t));
+      await tester.tap(find.text('Duration')); // maxes at 1440 minutes
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).first, '5000');
+      await tester.pump();
+      // The reason must be visible BEFORE the value is corrected on blur.
+      expect(find.textContaining('1440'), findsWidgets);
+
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      expect(emitted!.amount, 1440);
+    });
+
+    testWidgets('clearing the amount reverts to the stored value, not 0',
+        (tester) async {
+      HabitTarget? emitted;
+      await tester.pumpWidget(fieldHarness((t) => emitted = t));
+      await tester.tap(find.text('Count'));
+      await tester.pumpAndSettle();
+      final before = emitted!.amount;
+
+      await tester.enterText(find.byType(TextField).first, '');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      expect(emitted!.amount, before,
+          reason: 'clearing a field is not a request to set zero');
+    });
+
+    testWidgets('a step larger than the amount collapses to the amount',
+        (tester) async {
+      HabitTarget? emitted;
+      await tester.pumpWidget(fieldHarness((t) => emitted = t));
+      await tester.tap(find.text('Count')); // default amount 10
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).last, '50');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      expect(emitted!.step, 10,
+          reason: 'one tap completing the day is legitimate; overshooting it is not');
+    });
+
+    testWidgets('the +/- buttons move by the TYPED step', (tester) async {
+      HabitTarget? emitted;
+      await tester.pumpWidget(fieldHarness((t) => emitted = t));
+      await tester.tap(find.text('Count'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).last, '5');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.add));
+      await tester.pumpAndSettle();
+      expect(emitted!.amount, 15,
+          reason: 'must use the typed step, not preset.defaultStep');
+    });
+
+    testWidgets('the hint tracks the step while the box still has focus',
+        (tester) async {
+      await tester.pumpWidget(fieldHarness((_) {}));
+      await tester.tap(find.text('Count'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).last, '7');
+      await tester.pump(); // no blur — the hint must already be current
+
+      expect(find.textContaining('Each + adds 7'), findsOneWidget);
+    });
+
+    testWidgets('re-tapping the selected preset keeps a typed step',
+        (tester) async {
+      HabitTarget? emitted;
+      await tester.pumpWidget(fieldHarness((t) => emitted = t));
+      await tester.tap(find.text('Count'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).last, '5');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      // A visual no-op that used to reset the step to the preset default.
+      await tester.tap(find.text('Count'));
+      await tester.pumpAndSettle();
+      expect(emitted!.step, 5);
+    });
+
     testWidgets('the stepper bumps by the preset step', (tester) async {
       HabitTarget? emitted;
       await tester.pumpWidget(fieldHarness((t) => emitted = t));

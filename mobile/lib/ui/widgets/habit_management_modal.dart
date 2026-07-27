@@ -310,7 +310,14 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
           ref.hapticMedium();
           return;
         }
-        if (issues.isNotEmpty) {
+        // Only ASK about warnings the user is actually introducing. A habit
+        // whose target legitimately warns — and whose warning was accepted once
+        // — must not re-prompt on every later rename, recolour or schedule
+        // tweak. Full equality on purpose, not scoring-meaning: the divisibility
+        // and tap-count warnings depend on `step`, so a step-only edit CAN
+        // change which warnings apply and does deserve a fresh prompt.
+        final targetUnchanged = _editingHabit?.target == target;
+        if (issues.isNotEmpty && !targetUnchanged) {
           final unit = targetUnitShortLabel(context.t, target.unit);
           final proceed = await showEvolveConfirm(
             context: context,

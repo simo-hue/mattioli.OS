@@ -149,4 +149,34 @@ void main() {
       expect(base.hasSameScoringMeaningAs(base), isTrue);
     });
   });
+
+  group('the save gate only re-prompts on a CHANGED target', () {
+    // Both apps skip the "Save anyway" confirmation when the target is
+    // unchanged, so an accepted warning does not re-ask on every later rename or
+    // recolour. That gate uses FULL equality, not hasSameScoringMeaningAs — and
+    // this pins why: the divisibility and tap-count warnings both depend on
+    // `step`, so a step-only edit genuinely CAN change which warnings apply and
+    // must be re-prompted.
+    final base = TargetPresetCatalog.countDaily.targetWith(amount: 100, step: 1);
+
+    test('a step-only edit changes which warnings apply', () {
+      // 100 in steps of 1 is 100 taps -> tooManyTaps.
+      expect(
+        kinds(TargetPresetCatalog.countDaily, amount: 100, step: 1),
+        contains(TargetIssueKind.tooManyTaps),
+      );
+      // 100 in steps of 25 is 4 taps and divides exactly -> nothing.
+      expect(kinds(TargetPresetCatalog.countDaily, amount: 100, step: 25),
+          isEmpty);
+    });
+
+    test('and full equality sees that edit, while scoring-meaning does not', () {
+      final restepped = base.copyWith(step: 25);
+      expect(base == restepped, isFalse,
+          reason: 'the save gate must re-prompt, because the warnings changed');
+      expect(base.hasSameScoringMeaningAs(restepped), isTrue,
+          reason: 'yet no past verdict changed, so the freeze must NOT re-anchor '
+              '— the two comparisons are deliberately different tools');
+    });
+  });
 }

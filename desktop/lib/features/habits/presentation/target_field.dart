@@ -430,6 +430,9 @@ class _Chip extends StatelessWidget {
       button: true,
       selected: selected,
       label: label,
+      // Without this the inner Text produces a SECOND node and VoiceOver reads
+      // the preset name twice. Mobile's twin already excludes it.
+      excludeSemantics: true,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(10),

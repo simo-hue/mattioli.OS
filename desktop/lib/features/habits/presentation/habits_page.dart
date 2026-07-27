@@ -2518,8 +2518,16 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
                   amount: target.amount,
                   step: target.step,
                 );
+                // Blocking issues are checked unconditionally — those must not
+                // be saveable even if pre-existing.
                 if (issues.any((i) => i.isBlocking)) return;
-                if (issues.isNotEmpty) {
+                // Warnings only prompt when the user is INTRODUCING them, so an
+                // accepted warning does not re-ask on every later edit. Full
+                // equality, not scoring-meaning: divisibility and tap-count
+                // depend on `step`, so a step-only edit can change which
+                // warnings apply.
+                final targetUnchanged = widget.habit?.target == target;
+                if (issues.isNotEmpty && !targetUnchanged) {
                   final unit = targetUnitShortLabel(target.unit);
                   final proceed = await showEvolveDialog<bool>(
                     context: context,

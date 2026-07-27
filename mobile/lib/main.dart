@@ -244,7 +244,11 @@ void main() async {
   // Apply the saved app language to slang before the first frame is built.
   await LocaleSettings.setLocale(_appLocaleFor(storedLanguageFor(prefs)));
 
-  if (shouldStartSentry) {
+  // `isConfigured` is the second half of the gate: shouldStartSentry answers
+  // "may we?", this answers "can we?". A build whose sentry_config.dart is the
+  // unfilled template (as every CI build's is) must start the app WITHOUT
+  // Sentry rather than throw out of SentryFlutter.init.
+  if (shouldStartSentry && SentryService.isConfigured) {
     final info = await SentryService.releaseInfo();
     await SentryFlutter.init((options) {
       SentryService.configure(

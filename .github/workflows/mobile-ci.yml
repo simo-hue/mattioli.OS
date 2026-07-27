@@ -62,11 +62,26 @@ jobs:
       - name: Test
         run: flutter test
 
-  # macOS client. Cheaper to gate than the mobile job: desktop COMMITS its slang
-  # output (lib/i18n/*.g.dart) and has no git-ignored lib/core config files, so
-  # there is no codegen or config-copy step — just pub get, analyze, test.
+  # macOS client. MUST run on a macOS runner, not ubuntu.
+  #
+  # This is not a preference. `settings_page.dart` gates the whole iCloud Sync
+  # card on `Platform.isMacOS` (and the sync service returns a no-op off-macOS),
+  # so on Linux the widget tree under test simply does not exist and
+  # icloud_sync_card_test.dart fails 12/12 with "Found 0 widgets". The first CI
+  # run proved it. Since iCloud sync is the subsystem with the most incident
+  # history in this repo, skipping those tests on a cheap runner would gate the
+  # least and cost the most trust.
+  #
+  # macOS runners bill at a higher rate than ubuntu ones. If that ever bites,
+  # the honest fallback is `@TestOn('mac-os')` on the platform-gated files plus
+  # ubuntu — but that buys cheapness by NOT running them, and the trade should
+  # be made deliberately rather than discovered later.
+  #
+  # No codegen or config-copy step is needed: desktop COMMITS its slang output
+  # (lib/i18n/*.g.dart) and has no git-ignored lib/core config files. SQLite
+  # ships with macOS, so sqflite_common_ffi needs no install step either.
   desktop:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     defaults:
       run:
         working-directory: desktop
@@ -79,11 +94,6 @@ jobs:
         with:
           channel: stable
           cache: true
-
-      # The private-DB tests run the real schema/DDL against an in-memory
-      # sqflite_common_ffi database, which dlopens the system SQLite.
-      - name: Install SQLite (sqflite_common_ffi links against it)
-        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Install dependencies
         run: flutter pub get

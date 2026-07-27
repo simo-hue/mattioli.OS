@@ -38,11 +38,39 @@ class SentryService {
     }
   }
 
+  /// Whether [SentryConfig.dsn] is a DSN the SDK can actually use.
+  ///
+  /// Load-bearing, not defensive noise. `sentry_config.dart` is git-ignored and
+  /// CI provisions it by copying `sentry_config.dart.example`, whose DSN is the
+  /// placeholder `YOUR_SENTRY_DSN_HERE`. That is non-empty, so every "is Sentry
+  /// on?" check passed, and `SentryFlutter.init` then threw from deep inside the
+  /// SDK — `FormatException: Invalid empty scheme` while building
+  /// `:///api/YOUR_SENTRY_DSN_HERE/envelope/` — failing an unrelated test. An
+  /// empty DSN was already safe (the SDK treats it as disabled); a *malformed*
+  /// one was not.
+  ///
+  /// So: an unconfigured OR half-configured build runs WITHOUT Sentry instead of
+  /// crashing. A real DSN is unaffected.
+  static bool get isConfigured => isUsableDsn(SentryConfig.dsn);
+
+  /// The pure predicate behind [isConfigured], exposed so it can be tested
+  /// against arbitrary values — the getter alone can only ever assert whatever
+  /// DSN this build happened to compile in, which is precisely the blind spot
+  /// that let the placeholder through.
+  static bool isUsableDsn(String dsn) {
+    final uri = Uri.tryParse(dsn.trim());
+    return uri != null &&
+        uri.hasScheme &&
+        (uri.scheme == 'https' || uri.scheme == 'http') &&
+        uri.host.isNotEmpty;
+  }
+
   /// Initialize Sentry if it isn't already running. Called when the user leaves
   /// Private Mode mid-session, having previously granted crash-reporting
-  /// consent (SEC-4). No-ops when Sentry is already enabled.
+  /// consent (SEC-4). No-ops when Sentry is already enabled, or when no usable
+  /// DSN is configured.
   static Future<void> ensureInitialized() async {
-    if (Sentry.isEnabled) return;
+    if (Sentry.isEnabled || !isConfigured) return;
     final info = await releaseInfo();
     await SentryFlutter.init((options) {
       configure(options, release: info.release, dist: info.dist);
@@ -56,6 +84,10 @@ class SentryService {
   /// alone starts the SDK at cold start before the consent screen has ever been
   /// shown. Requiring the answer to exist keeps a first launch silent until the
   /// user has actually been asked.
+  /// Deliberately does NOT consult [isConfigured]: this is the CONSENT policy,
+  /// and it stays a pure function of the user's choices so it can be reasoned
+  /// about and tested without a provisioned DSN. Whether the SDK can physically
+  /// start is a separate question, asked at the init sites.
   static bool shouldRun({
     required bool hasCompletedConsent,
     required bool hasSentryConsent,

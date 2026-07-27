@@ -77,6 +77,13 @@ class TargetField extends ConsumerWidget {
                     // Preserve the amount when switching between presets, else
                     // fall back to the preset default.
                     amount: selected != null ? target!.amount : null,
+                    // Carry the STEP across too. Dropping it while keeping the
+                    // amount is the inconsistent option, and it silently undid
+                    // the whole point of the feature: re-tapping the
+                    // already-selected chip reset "4 sets of 20" back to 80
+                    // single taps. targetWith clamps it into (0, amount], so a
+                    // carried step can never be illegal for the new preset.
+                    step: selected != null ? target!.step : null,
                   ));
                 },
               ),
@@ -148,6 +155,22 @@ class _AmountAndStepState extends State<_AmountAndStep> {
     _step = TextEditingController(text: formatTargetAmount(widget.target.step));
     _amountFocus = FocusNode()..addListener(_onAmountFocusChange);
     _stepFocus = FocusNode()..addListener(_onStepFocusChange);
+    // Rebuild on every keystroke. Without these the hint and the warnings are
+    // one commit stale — and worse, `_commitAmount` clamps and rewrites the text
+    // BEFORE its setState, so an out-of-range value was already back in range by
+    // the time build() ran and the error could never render at all: the number
+    // just changed under the user with no explanation.
+    _amount.addListener(_onTyped);
+    _step.addListener(_onTyped);
+  }
+
+  /// The value the last commit had to correct, and what it became — shown until
+  /// the next keystroke so a silent snap always carries its reason.
+  String? _clampNote;
+
+  void _onTyped() {
+    if (!mounted) return;
+    setState(() => _clampNote = null);
   }
 
   @override
@@ -167,6 +190,8 @@ class _AmountAndStepState extends State<_AmountAndStep> {
 
   @override
   void dispose() {
+    _amount.removeListener(_onTyped);
+    _step.removeListener(_onTyped);
     _amount.dispose();
     _step.dispose();
     _amountFocus.dispose();
@@ -176,6 +201,15 @@ class _AmountAndStepState extends State<_AmountAndStep> {
 
   double? get _typedAmount => double.tryParse(_amount.text.replaceAll(',', '.'));
   double? get _typedStep => double.tryParse(_step.text.replaceAll(',', '.'));
+
+  /// Repeated `+`/`−` on a fractional step accumulates binary dust (0.5 + 0.5 +
+  /// 0.5 ... drifts), which then leaks into the stored target and into the
+  /// divisibility check. Three decimals is far finer than any unit here.
+  static double _tidy(double v) => double.parse(v.toStringAsFixed(3));
+
+  /// "5000 → 1440" — the sentence a silently-corrected number owes the user.
+  String _snapNote(double from, double to) =>
+      '${formatTargetAmount(from)} → ${formatTargetAmount(to)}';
 
   void _onAmountFocusChange() {
     if (_amountFocus.hasFocus) return;
@@ -194,7 +228,8 @@ class _AmountAndStepState extends State<_AmountAndStep> {
     final typed = _typedAmount;
     final next = typed == null
         ? widget.target.amount
-        : widget.preset.clampAmount(typed);
+        : _tidy(widget.preset.clampAmount(typed));
+    _clampNote = (typed != null && typed != next) ? _snapNote(typed, next) : null;
     _amount.text = formatTargetAmount(next);
     if (next != widget.target.amount) {
       widget.onChanged(widget.target.copyWith(amount: next));
@@ -207,8 +242,9 @@ class _AmountAndStepState extends State<_AmountAndStep> {
   /// reverts, because an inert `+` button is never what was meant.
   void _commitStep() {
     final typed = _typedStep;
-    var next = (typed == null || typed <= 0) ? widget.target.step : typed;
+    var next = (typed == null || typed <= 0) ? widget.target.step : _tidy(typed);
     if (next > widget.target.amount) next = widget.target.amount;
+    _clampNote = (typed != null && typed != next) ? _snapNote(typed, next) : null;
     _step.text = formatTargetAmount(next);
     if (next != widget.target.step) {
       widget.onChanged(widget.target.copyWith(step: next));
@@ -236,7 +272,7 @@ class _AmountAndStepState extends State<_AmountAndStep> {
 
     void bump(double delta) {
       widget.haptic();
-      final next = widget.preset.clampAmount(liveAmount + delta);
+      final next = _tidy(widget.preset.clampAmount(liveAmount + delta));
       _amount.text = formatTargetAmount(next);
       widget.onChanged(widget.target.copyWith(amount: next));
       setState(() {});
@@ -258,8 +294,17 @@ class _AmountAndStepState extends State<_AmountAndStep> {
               ),
             ),
             const Spacer(),
-            _MiniStep(icon: Icons.remove, onTap: () => bump(-liveStep)),
+            _MiniStep(
+              icon: Icons.remove,
+              semanticLabel: t.targets.stepHint(
+                step: '-${formatTargetAmount(liveStep)}',
+              ),
+              onTap: () => bump(-liveStep),
+            ),
             _NumberBox(
+              semanticLabel: widget.preset.direction == TargetDirection.atMost
+                  ? t.targets.atMostLabel
+                  : t.targets.atLeastLabel,
               controller: _amount,
               focusNode: _amountFocus,
               unit: unit,
@@ -267,7 +312,13 @@ class _AmountAndStepState extends State<_AmountAndStep> {
               onSubmitted: _commitAmount,
               emphasised: true,
             ),
-            _MiniStep(icon: Icons.add, onTap: () => bump(liveStep)),
+            _MiniStep(
+              icon: Icons.add,
+              semanticLabel: t.targets.stepHint(
+                step: '+${formatTargetAmount(liveStep)}',
+              ),
+              onTap: () => bump(liveStep),
+            ),
           ],
         ),
         const SizedBox(height: 10),
@@ -283,6 +334,7 @@ class _AmountAndStepState extends State<_AmountAndStep> {
             ),
             const Spacer(),
             _NumberBox(
+              semanticLabel: t.targets.stepLabel,
               controller: _step,
               focusNode: _stepFocus,
               unit: unit,
@@ -307,6 +359,18 @@ class _AmountAndStepState extends State<_AmountAndStep> {
             color: colors.mutedForeground,
           ),
         ),
+        if (_clampNote != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              _clampNote!,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 12,
+                color: colors.mutedForeground,
+              ),
+            ),
+          ),
         for (final issue in [...blocking, ...warnings])
           Padding(
             padding: const EdgeInsets.only(top: 4),
@@ -329,6 +393,7 @@ class _AmountAndStepState extends State<_AmountAndStep> {
 /// no way to type letters at all.
 class _NumberBox extends StatelessWidget {
   const _NumberBox({
+    required this.semanticLabel,
     required this.controller,
     required this.focusNode,
     required this.unit,
@@ -337,6 +402,9 @@ class _NumberBox extends StatelessWidget {
     required this.emphasised,
   });
 
+  /// The visible row label is a sibling Text, which a screen reader has no way
+  /// to associate with this field — so it is repeated here.
+  final String semanticLabel;
   final TextEditingController controller;
   final FocusNode focusNode;
   final String unit;
@@ -347,7 +415,10 @@ class _NumberBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    return ConstrainedBox(
+    return Semantics(
+      label: semanticLabel,
+      textField: true,
+      child: ConstrainedBox(
       constraints: const BoxConstraints(minWidth: 76, maxWidth: 118),
       child: IntrinsicWidth(
         child: TextField(
@@ -388,29 +459,43 @@ class _NumberBox extends StatelessWidget {
           ),
         ),
       ),
+      ),
     );
   }
 }
 
 class _MiniStep extends StatelessWidget {
-  const _MiniStep({required this.icon, required this.onTap});
+  const _MiniStep({
+    required this.icon,
+    required this.onTap,
+    this.semanticLabel,
+  });
 
   final IconData icon;
   final VoidCallback onTap;
 
+  /// Spoken instead of the bare glyph, so the button announces WHAT it adds
+  /// ("+20 reps") rather than "plus". Mirrors the daily entry sheet, which
+  /// already carries explicit increment semantics.
+  final String? semanticLabel;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    return Material(
-      color: colors.muted,
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: SizedBox(
-          width: 36,
-          height: 36,
-          child: Icon(icon, size: 18, color: colors.foreground),
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: Material(
+        color: colors.muted,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: SizedBox(
+            width: 36,
+            height: 36,
+            child: Icon(icon, size: 18, color: colors.foreground),
+          ),
         ),
       ),
     );

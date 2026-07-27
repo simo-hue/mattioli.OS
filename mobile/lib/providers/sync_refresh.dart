@@ -34,6 +34,14 @@ void refreshSyncEnabled(WidgetRef ref) => ref.invalidate(syncEnabledProvider);
 void invalidatePrivateDataProviders(WidgetRef ref) {
   ref.invalidate(goalsProvider);
   ref.invalidate(habitLogsProvider);
+  // Quantitative-target progress. Its absence here was a DATA-LOSS bug, not a
+  // stale-UI one: `goal_progress` rows pulled by the sync engine (or written by
+  // a backup import) never reached the in-memory map, and the next foreground
+  // `reconcileManualTargets` read that stale map, saw no entry for a limit
+  // habit's day, resolved it as a quiet success, and wrote amount 0 — which
+  // DELETES the row and tombstones the deletion to CloudKit. A breach recorded
+  // on the Mac silently became a success everywhere.
+  ref.invalidate(habitProgressProvider);
   ref.invalidate(habitStatsProvider);
   ref.invalidate(habitAnalyticsProvider);
   ref.invalidate(globalCriticalDayProvider);

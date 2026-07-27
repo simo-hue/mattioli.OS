@@ -19,7 +19,11 @@ import 'support/fake_private_data_store.dart';
 /// Records progress writes AND log writes/deletes, so a test can assert both the
 /// number that was stored and the verdict that was derived from it.
 class _RecordingStore extends FakePrivateDataStore {
-  _RecordingStore({this.seededGoals = const <Goal>[]});
+  _RecordingStore({
+    this.seededGoals = const <Goal>[],
+    this.seededProgress = const <String, Map<String, double>>{},
+    this.seededLogs = const <String, Map<String, String>>{},
+  });
 
   /// Goals returned by [loadGoals] on init, so a test can start from a habit
   /// whose target has been effective since a PAST date (a genuinely "started
@@ -34,6 +38,20 @@ class _RecordingStore extends FakePrivateDataStore {
 
   @override
   Future<List<Goal>> loadGoals() async => seededGoals;
+
+  /// Progress/logs already on disk when the app starts — i.e. rows a sync pull,
+  /// a backup import, or a previous session left behind. The loaders are async,
+  /// which is the whole point of the regression test below.
+  final Map<String, Map<String, double>> seededProgress;
+  final Map<String, Map<String, String>> seededLogs;
+
+  @override
+  Future<Map<String, Map<String, double>>> loadHabitProgress() async =>
+      {for (final e in seededProgress.entries) e.key: {...e.value}};
+
+  @override
+  Future<Map<String, Map<String, String>>> loadHabitLogs() async =>
+      {for (final e in seededLogs.entries) e.key: {...e.value}};
 
   @override
   Future<void> setHabitProgress({
@@ -302,6 +320,85 @@ void main() {
     // Staying under a cap is only knowable at day end — today is still pending,
     // so no premature 'done'.
     expect(c.read(habitLogsProvider)[todayKey]?['g2'], isNull);
+  });
+
+  group('reconcileManualTargets never sweeps an unloaded map', () {
+    // Phase 0 blocker. `build()` must return synchronously, so in Private mode it
+    // returns {} and loads goal_progress in the BACKGROUND. That makes "no data"
+    // and "not loaded yet" indistinguishable — and for an `atMost` target an
+    // absent entry means a quiet SUCCESS, whose verdict is applied by writing
+    // amount 0, which DELETES the stored row and tombstones it to CloudKit.
+    //
+    // Every other test here calls `await settle()` before reconciling, which is
+    // exactly why none of them caught it. These deliberately do NOT settle.
+    test('a breach pulled from the store survives a sweep racing the load',
+        () async {
+      final store = _RecordingStore(
+        seededGoals: [
+          _limitGoal().copyWith(
+            startDate: DateTime(2026, 7, 21),
+            targetEffectiveFrom: DateTime(2026, 7, 21),
+          ),
+        ],
+        // 3 coffees against a cap of 1 on a closed day: a real, recorded breach.
+        seededProgress: const {'2026-07-22': {'g2': 3}},
+        seededLogs: const {'2026-07-22': {'g2': 'missed'}},
+      );
+      final c = await container(store);
+      // Warm goals + logs FIRST. This is the state that actually ships: Home
+      // watches goalsProvider, so by the time a resume fires the habits are
+      // loaded — and ONLY the progress map is behind. (Leaving goals unloaded
+      // too makes the sweep no-op over an empty habit list, which hides the bug
+      // rather than exposing it.)
+      c.read(goalsProvider.notifier);
+      c.read(habitLogsProvider.notifier);
+      await settle();
+
+      // Now force the progress provider to rebuild, so its async load is in
+      // flight while everything else is warm — precisely what
+      // invalidatePrivateDataProviders does after a sync pull or an import.
+      c.invalidate(habitProgressProvider);
+      final progress = c.read(habitProgressProvider.notifier);
+
+      // NO settle() before sweeping: main.dart's resume handler doesn't either.
+      await progress.reconcileManualTargets(now: now);
+      await settle();
+
+      // Scoped to the breach day on purpose. The sweep legitimately resolves the
+      // OTHER quiet days in the window to 'done' and applies that as amount 0,
+      // which issues a delete for a row that never existed — harmless. The
+      // invariant is narrower and sharper: a day that HAS a recorded amount must
+      // never be deleted.
+      expect(
+        store.progressDeletes.where((d) => d['date'] == '2026-07-22'),
+        isEmpty,
+        reason: 'the sweep deleted a recorded breach it could not yet see',
+      );
+      expect(c.read(habitProgressProvider)['2026-07-22']?['g2'], 3,
+          reason: 'the real amount must survive the sweep');
+      expect(c.read(habitLogsProvider)['2026-07-22']?['g2'], 'missed',
+          reason: 'a breach must not be rewritten as a success');
+    });
+
+    test('the sweep still materialises a genuinely quiet closed day', () async {
+      // The guard must not defeat the feature: with the map loaded and truly
+      // empty, an untouched limit day is still a success.
+      final store = _RecordingStore(seededGoals: [
+        _limitGoal().copyWith(
+          startDate: DateTime(2026, 7, 22),
+          targetEffectiveFrom: DateTime(2026, 7, 22),
+        ),
+      ]);
+      final c = await container(store);
+      c.read(goalsProvider.notifier);
+      c.read(habitLogsProvider.notifier);
+      final progress = c.read(habitProgressProvider.notifier);
+
+      await progress.reconcileManualTargets(now: now);
+      await settle();
+
+      expect(c.read(habitLogsProvider)['2026-07-22']?['g2'], 'done');
+    });
   });
 
   group('reconcileManualTargets (end-of-day sweep)', () {

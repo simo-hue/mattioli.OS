@@ -1164,13 +1164,28 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
   HabitProgressMap? _pendingCacheWrite;
   bool _serverStateApplied = false;
 
+  /// The initial population of [state] for the current data mode, still in
+  /// flight.
+  ///
+  /// [build] MUST return synchronously, so it returns `{}` and loads in the
+  /// background — meaning "the map is empty" and "the map has not loaded yet"
+  /// look identical to any reader. For most readers that is harmless (a widget
+  /// rebuilds when the load lands). For [reconcileManualTargets] it is
+  /// destructive: an `atMost` habit-day with no progress entry resolves to a
+  /// quiet SUCCESS, and applying that verdict writes amount 0, which DELETES the
+  /// stored row. Sweeping an unloaded map therefore erases every limit-habit
+  /// entry in the backfill window and tombstones the deletions to CloudKit.
+  ///
+  /// So the sweep awaits this first. See [_ensureLoaded].
+  Future<void>? _initialLoad;
+
   @override
   HabitProgressMap build() {
     final dataMode = ref.watch(activeDataModeProvider);
     ref.onDispose(_flushCache);
 
     if (dataMode == AppDataMode.private) {
-      _loadFromPrivateStore();
+      _initialLoad = _loadFromPrivateStore();
       return {};
     }
 
@@ -1187,9 +1202,25 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
     final user = authState.user;
     if (authState.isLoggedIn && user != null) {
       _seedFromCache(user.id);
-      _syncFromSupabase();
+      _initialLoad = _syncFromSupabase();
+    } else {
+      _initialLoad = null;
     }
     return {};
+  }
+
+  /// Awaits the in-flight initial load, if any, so a caller that must not
+  /// mistake "not loaded yet" for "no data" can wait for the real map. Failures
+  /// are already swallowed by the loaders (which fall back to an empty map), so
+  /// this never rethrows.
+  Future<void> _ensureLoaded() async {
+    final pending = _initialLoad;
+    if (pending == null) return;
+    try {
+      await pending;
+    } catch (_) {
+      // The loaders handle their own errors; this is only a barrier.
+    }
   }
 
   Future<void> _seedFromCache(String userId) async {
@@ -1402,6 +1433,12 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
   /// re-derives and persists exactly as a live edit would, streaks included.
   /// [now] is injectable for tests.
   Future<void> reconcileManualTargets({DateTime? now}) async {
+    await _ensureLoaded();
+    if (!ref.mounted) return;
+    // Never sweep a map that has not finished loading: for an `atMost` target an
+    // absent entry means "quiet success", so an unloaded map resolves every
+    // stored breach to 'done' and DELETES the amount behind it. See
+    // [_initialLoad].
     final today = now ?? DateTime.now();
     final logs = ref.read(habitLogsProvider);
     final changes = <TargetReconcileChange>[];

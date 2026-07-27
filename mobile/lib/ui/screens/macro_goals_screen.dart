@@ -40,7 +40,6 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
     with AutomaticKeepAliveClientMixin {
   static const int _performanceTutorialIndex = 7;
 
-  bool _isForward = true;
   bool _showStats = false;
   bool _didFinishGoalsTutorial = false;
   int _goalsTutorialIndex = 0;
@@ -76,7 +75,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
   }
 
   void _onPageChanged(int index) {
-    int delta = index - _currentPageIndex;
+    final delta = index - _currentPageIndex;
     if (delta == 0) return;
     _currentPageIndex = index;
     
@@ -122,7 +121,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
   }
 
   MacroGoalsViewState _getStateForIndex(MacroGoalsViewState base, int index) {
-    int delta = index - _basePage;
+    final delta = index - _basePage;
     MacroGoalsViewState s = base;
     if (delta > 0) {
       for (int i = 0; i < delta; i++) {

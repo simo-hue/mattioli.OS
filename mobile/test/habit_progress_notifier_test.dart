@@ -153,7 +153,7 @@ void main() {
     await c.read(goalsProvider.notifier).addHabit(_countGoal());
 
     // TODAY, still open: 40 of 80 is in-progress, not yet decided.
-    final todayKey = '2026-07-24';
+    const todayKey = '2026-07-24';
     await progress.setProgress(
       dateKey: todayKey,
       goalId: 'g1',
@@ -290,7 +290,7 @@ void main() {
     await settle();
     await c.read(goalsProvider.notifier).addHabit(_limitGoal());
 
-    final todayKey = '2026-07-24';
+    const todayKey = '2026-07-24';
     await progress.setProgress(
       dateKey: todayKey,
       goalId: 'g2',

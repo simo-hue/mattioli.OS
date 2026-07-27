@@ -15,6 +15,35 @@ macOS) and BOTH sync modes (Account/Cloud + Private)._
 - **IN:** compound OR/AND (condition‑level, HealthKit‑only); quantitative targets (count / duration / limit).
 - **OUT (accepted deferrals):** macro numeric goals (migration applied, flag stays off); Screen‑Time‑as‑compound‑operand; weekly‑quota targets; live duration timer; progress rings on the 5 read‑only surfaces.
 
+### 2a. Weekly quota ("gym 4×/week") — PERMANENTLY deferred (decided 2026‑07‑27)
+
+Closed, not backlogged. Recorded here so the analysis is not re‑derived.
+
+The cheap part is real: `TargetPeriod.week` already round‑trips, and
+`daysInPeriod` / `periodIsOver` already handle a week correctly
+(`packages/evolve_targets/lib/src/target_axes.dart`). So the *preset* is one
+entry. That is also the trap — the earlier note concluded "one preset entry, not
+a rewrite", which contradicted its own premise.
+
+What actually blocks it is that a quota is a **second completion semantics**, not
+a second period:
+
+- A quota habit has **no fixed days**. "Gym 4×/week" means `frequency_days` must
+  be all‑7, so `computeStreak` (`streak_utils.dart:42`) walks seven days, sees
+  three non‑done days every week, and kills the streak weekly. Streaks would be
+  permanently wrong for every quota habit.
+- **Completion‑rate denominators** break the same way: 3 of 7 days would count as
+  misses instead of "not needed".
+- It contradicts desktop's documented **"off‑day habits are HIDDEN"** invariant —
+  a quota has no off‑days until the quota is met, at which point the *remaining*
+  days should go quiet, and nothing in the stack knows that.
+- No SQL surface buckets `goal_logs` by week, so the analytics layer would score
+  it wrong even if the client were right.
+
+A preset the streak engine and the stats cannot score is a lie to the user, so it
+stays out. Revisit only as a deliberate "quota habit type" project with its own
+streak rule — never as a preset.
+
 ## 3. Locked design decisions
 | # | Decision |
 |---|---|
@@ -65,7 +94,7 @@ i18n for the picker labels across all 5 locales.
 - `compoundVerificationEnabled = true`, `TargetsConfig.enabled = true`. Keep `MacroTargetsConfig = false`.
 
 ### Phase 4 — Rigor
-- Widen the CI paths filter so changes under `packages/evolve_sync`, `packages/evolve_targets`, `migrations/` run their tests + `schema_drift_test.dart`.
+- ~~Widen the CI paths filter so changes under `packages/evolve_sync`, `packages/evolve_targets`, `migrations/` run their tests + `schema_drift_test.dart`.~~ **DONE.** Extended again on 2026‑07‑27: `desktop/**` + `schema.sql` added to the paths filter, a **`desktop` job** added (84 test files that had been running on nothing), and `evolve_legal` added to the packages matrix. Phase 2 edits `desktop/lib/.../habits_page.dart`, so that surface is now guarded *before* the class‑picker work lands on it.
 - Arabic native review of new i18n (`targets.*`, `verification.compound.*`, picker labels) — machine MSA now, flagged.
 
 ### Phase 5 — Ops (Simone's Mac; I have no Xcode here)

@@ -1,22 +1,31 @@
-name: Mobile CI
+name: Flutter CI
 
-# Gate the Flutter app AND the shared Dart packages on a green analyzer +
-# passing tests. Runs on changes under mobile/, the shared packages, or the SQL
-# migrations — the schema guard lives in mobile/test/schema_drift_test.dart, so a
-# packages/ or migrations/ change no longer sails through with zero CI.
+# Gate BOTH Flutter apps and every shared Dart package on a green analyzer +
+# passing tests.
+#
+# Coverage history: this workflow once matched only `mobile/**`, so a change to
+# migrations/ or packages/ ran zero CI. That was fixed; what stayed uncovered was
+# `desktop/` — 84 test files and the larger of the two UI surfaces, guarded by
+# nothing. The first time the desktop suite ran here it was already red (a
+# date-dependent test that passed only on the day it was written, plus 7
+# analyzer findings), which is precisely what "no CI" buys you.
 on:
   push:
     branches: [main, master]
     paths:
       - 'mobile/**'
+      - 'desktop/**'
       - 'packages/**'
       - 'migrations/**'
+      - 'schema.sql'
       - '.github/workflows/mobile-ci.yml'
   pull_request:
     paths:
       - 'mobile/**'
+      - 'desktop/**'
       - 'packages/**'
       - 'migrations/**'
+      - 'schema.sql'
       - '.github/workflows/mobile-ci.yml'
 
 jobs:
@@ -53,16 +62,57 @@ jobs:
       - name: Test
         run: flutter test
 
-  # Shared pure-Dart packages (schema, verification, targets). Previously ran
-  # ZERO CI, so a migration or reconcile bug could land unguarded. This includes
-  # the evolve_sync schema-migration tests (private_db_schema_v*_test.dart) and
-  # the evolve_targets reconcile/freeze tests.
+  # macOS client. Cheaper to gate than the mobile job: desktop COMMITS its slang
+  # output (lib/i18n/*.g.dart) and has no git-ignored lib/core config files, so
+  # there is no codegen or config-copy step — just pub get, analyze, test.
+  desktop:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # The private-DB tests run the real schema/DDL against an in-memory
+      # sqflite_common_ffi database, which dlopens the system SQLite.
+      - name: Install SQLite (sqflite_common_ffi links against it)
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze (fail on any issue, including info-level lints)
+        run: flutter analyze --fatal-infos --fatal-warnings
+
+      # desktop_supabase_config_security_test asserts the credentials arrive via
+      # --dart-define rather than a committed fallback, so it fails a bare
+      # `flutter test` BY DESIGN. Dummy values satisfy it without shipping a
+      # secret; nothing in the suite makes a network call.
+      - name: Test
+        run: |
+          flutter test \
+            --dart-define=EVOLVE_SUPABASE_URL=https://dummy.supabase.co \
+            --dart-define=EVOLVE_SUPABASE_PUBLISHABLE_KEY=dummy_key
+
+  # Shared pure-Dart packages (schema, verification, targets, legal). Previously
+  # ran ZERO CI, so a migration or reconcile bug could land unguarded. This
+  # includes the evolve_sync schema-migration tests
+  # (private_db_schema_v*_test.dart) and the evolve_targets reconcile/freeze
+  # tests. evolve_legal guards the App Store compliance URLs (Guidelines 1.5 /
+  # 3.1.2) and was the last package left out of the matrix.
   packages:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        package: [evolve_verification, evolve_targets, evolve_sync]
+        package: [evolve_verification, evolve_targets, evolve_sync, evolve_legal]
     defaults:
       run:
         working-directory: packages/${{ matrix.package }}

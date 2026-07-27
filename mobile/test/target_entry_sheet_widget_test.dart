@@ -167,6 +167,10 @@ void main() {
       });
     }
 
+    // The documented replacement (RendererBinding.rootPipelineOwner) exposes
+    // no semanticsOwner in the test binding, so this stays until the
+    // semantics API settles.
+    // ignore: deprecated_member_use
     visit(tester.binding.pipelineOwner.semanticsOwner!.rootSemanticsNode!);
     expect(foundIncrease, isTrue);
     expect(foundDecrease, isTrue);

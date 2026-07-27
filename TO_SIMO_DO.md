@@ -29,25 +29,21 @@ flutter build ipa --release
 
 ---
 
-- [ ] **WEEKLY QUOTA ("gym 4×/week")**
-      Currently deferred. Nothing in the stack buckets by week — `computeStreak`
-      walks days, `frequency_days` is the only schedule input, and no migration
-      groups `goal_logs` by week — so a quota needs a second walk unit, a new
-      week-grained SQL surface with two Dart mirrors, and it contradicts
-      desktop's documented "off-day habits are HIDDEN" invariant. The model
-      already round-trips `TargetPeriod.week`, so adding it later is one preset
-      entry, not a rewrite.
-- [ ] **Known pre-existing drift, NOT fixed here** (deliberately, to keep this
-      change reviewable): `schema.sql` still omits `goal_logs.streak` although
-      the app upserts it and `habit_stats` reads it, and still declares
-      `long_term_goals.is_completed` while `get_macro_goals_stats` filters on
-      `status`. Worth a separate cleanup commit.
-- [ ] **CI gap that affects this work**: `.github/workflows/mobile-ci.yml` is the
-      only workflow and is paths-scoped to `mobile/**`, so a commit touching only
-      `migrations/`, `packages/evolve_sync` or `packages/evolve_targets` runs
-      **zero** CI — including `mobile/test/schema_drift_test.dart`, the repo's
-      only schema guard. Widening the paths filter and adding a `packages` job is
-      nearly free and would cover the v9 migration tests.
+## Schema snapshot + CI (2026-07-27) — DONE in code, ONE manual step left
+
+Weekly quota is now a closed decision (permanently deferred — rationale moved to
+`HABIT_CLASSES_PLAN.md` §2). The schema drift and the CI gap are fixed in code.
+
+### Manual action
+- [ ] **Apply `migrations/20260727_complete_bootstrap_chain.sql` to Supabase.**
+      Every statement is guarded (`IF NOT EXISTS`), so on your live project it is
+      a **strict no-op** — it exists so a *fresh* project provisions correctly.
+      It deliberately does NOT `CREATE OR REPLACE` the live `handle_new_user()`:
+      replacing a live SECURITY DEFINER function from a reconstructed snapshot is
+      how signup breaks. Run it with the other pending migrations, no special
+      ordering beyond being last.
+      Nothing else here needs you: `schema.sql` is a checked-in snapshot that no
+      app reads at runtime, so it cannot affect iOS or macOS behaviour.
 
 ## Quantitative targets — mobile UI (dark) (2026-07-24)
 

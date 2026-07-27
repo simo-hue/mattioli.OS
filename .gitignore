@@ -3,6 +3,9 @@
 #   web-app/.gitignore   node_modules, dist, *.tsbuildinfo, .env
 #   mobile/.gitignore    Flutter build output, Dart config secrets, .env*
 #   desktop/.gitignore   Flutter build output, .env*
+#   packages/*/.gitignore  .dart_tool/, build/, coverage/ — one per package,
+#                          since each shared package is its own pub project
+#                          root (own pubspec.yaml, own CI matrix entry).
 
 # Logs
 logs

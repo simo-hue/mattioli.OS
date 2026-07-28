@@ -5,11 +5,7 @@ import '../../core/theme.dart';
 import '../../core/haptics.dart';
 import '../../core/performance_color.dart';
 import '../../providers/goal_provider.dart';
-
-const _kMonthShort = [
-  'GEN', 'FEB', 'MAR', 'APR', 'MAG', 'GIU',
-  'LUG', 'AGO', 'SET', 'OTT', 'NOV', 'DIC',
-];
+import '../../i18n/translations.g.dart';
 
 class YearlyViewWidget extends ConsumerStatefulWidget {
   const YearlyViewWidget({super.key});
@@ -131,7 +127,7 @@ class _YearlyViewWidgetState extends ConsumerState<YearlyViewWidget> {
                         return _MonthDensityWidget(
                           year: _currentYear,
                           month: index + 1,
-                          label: _kMonthShort[index],
+                          label: context.t.common.monthsShort[index],
                         );
                       },
                     );

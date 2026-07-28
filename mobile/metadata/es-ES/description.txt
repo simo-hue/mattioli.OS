@@ -1,21 +1,41 @@
-Wealth Compass es un panel de finanzas personales privado y local que lo ayuda a comprender su patrimonio neto, flujo de efectivo, inversiones, criptoactivos y pasivos en un solo lugar.
+Evolve es un rastreador de hábitos y objetivos para quien quiere construir una rutina que se sostenga de verdad, y entender por qué se sostiene. Una sola app para iPhone, iPad y Mac, sin anuncios, sin ruido, y con un motor de análisis que convierte tus registros diarios en algo accionable.
 
-Construya una imagen clara de sus finanzas:
+CUATRO FORMAS DE VER EL TIEMPO
+Cambia el panel entre Semana, Mes, Año y Vida. La vista Vida representa las semanas que ya has vivido y las que quedan por delante a partir de tu fecha de nacimiento: un recordatorio sereno de en qué estás gastando tu tiempo.
 
-- Ver el patrimonio neto, el saldo de caja, las inversiones y las criptomonedas de un vistazo
-- Seguimiento de ingresos y gastos con categorías y tendencias visuales.
-- Programe transacciones recurrentes y reciba recordatorios locales opcionales
-- Supervisar las tenencias de acciones, ETF y criptomonedas.
-- Revisar la base de costos, pérdidas y ganancias y asignación de cartera.
-- Realice un seguimiento de sus pasivos junto con sus activos
-- Siga el historial de patrimonio neto con instantáneas locales automáticas
-- Convertir valores utilizando tipos de cambio de referencia del BCE almacenados en caché
-- Oculte cantidades sensibles al instante con el Modo Privacidad
-- Protege la aplicación con Face ID o Touch ID
-- Exporta, importa y elimina tus datos locales cuando quieras
+HÁBITOS QUE SE REGISTRAN SOLOS
+- Cada hábito tiene su propia frecuencia semanal, su color y su hora de recordatorio.
+- Marca un hábito directamente desde la notificación, sin abrir la app.
+- La racha actual, la mejor y la peor se calculan sobre la marcha.
+- Verificación automática con Salud: pasos, minutos de ejercicio, energía activa, horas de pie, distancia, minutos de conciencia plena, sueño y entrenamientos.
+- Verificación automática con Tiempo de uso: uso total del dispositivo o tiempo en las apps y categorías que elijas.
+- Combina señales con "cualquiera de estas" o "todas estas" cuando una sola condición no basta.
 
-Sus registros financieros permanecen en su dispositivo. Wealth Compass no requiere una cuenta y no almacena su cartera ni su historial de transacciones en servidores operados por desarrolladores.
+OBJETIVOS EN TODOS LOS HORIZONTES
+Objetivos semanales, mensuales, trimestrales, anuales y de por vida, agrupados en las áreas de vida que tú defines. Añade metas numéricas, vincula un objetivo al hábito que lo alimenta y revisa rendimiento, estacionalidad y progreso interanual.
 
-Las actualizaciones opcionales de precios de mercado utilizan las credenciales API que usted proporciona. Las credenciales se almacenan de forma segura en el llavero de iOS.
+ESTADÍSTICAS QUE DICEN ALGO
+- Tendencias de cumplimiento a 7, 14 y 30 días, más un calendario anual por hábito.
+- Análisis de correlación: qué hábitos arrastran a los demás hacia arriba y cuáles compiten en silencio por la misma hora.
+- Registro de estado de ánimo y energía, relacionado con lo que realmente completaste.
+- Hábitos clave, críticos, resilientes y sensibles al ánimo, identificados automáticamente.
+- Análisis de las peores rachas, para que un mal tramo sea información y no culpa.
 
-Wealth Compass es una herramienta de seguimiento informativo. No se conecta a instituciones financieras, no ejecuta operaciones, proporciona asesoramiento financiero ni garantiza la exactitud de los datos de mercado de terceros.
+COACH AI
+Un chat que ya conoce tus hábitos, tus objetivos y cómo ha ido la semana, con sugerencias de un toque como "arregla mi hábito más débil" o "¿voy por buen camino?". Solo ve el contexto que decides compartir y pide permiso antes de enviar nada.
+
+DOS FORMAS DE GUARDAR TUS DATOS
+- Modo privado: sin ninguna cuenta. Tus datos viven en una base de datos cifrada en tu dispositivo.
+- Modo con cuenta: inicia sesión con Apple o Google y sincroniza entre tus dispositivos.
+En ambos casos Evolve funciona sin conexión. La sincronización con iCloud es opcional, cifrada de extremo a extremo a través de tu propia cuenta de iCloud, y no es una función de pago. Exporta, importa o borra todo cuando quieras, y bloquea la app con Face ID o Touch ID.
+
+GRATIS Y PRO
+Evolve es gratis. El plan gratuito limita cuántos hábitos y objetivos puedes mantener a la vez. Evolve PRO elimina esos límites y añade gráficos avanzados, análisis profundo de tendencias y objetivos, y el Coach AI sin ninguna configuración.
+
+INFORMACIÓN SOBRE LA SUSCRIPCIÓN EVOLVE PRO
+Evolve PRO es una suscripción de renovación automática: 4,99 EUR al mes o 49,99 EUR al año. El precio equivalente en tu moneda local se muestra en la app antes de confirmar. El pago se carga a tu cuenta de Apple al confirmar la compra. La suscripción se renueva automáticamente salvo que desactives la renovación al menos 24 horas antes del final del periodo en curso, y el cargo se realiza dentro de las 24 horas previas al final del periodo. Puedes gestionar la suscripción y desactivar la renovación automática en los ajustes de tu cuenta de Apple después de la compra.
+
+En modo privado no hay cuenta, así que el Coach AI funciona con tu propia cuenta de OpenRouter: gratis, con una clave que aportas tú.
+
+Términos de uso (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Política de privacidad: https://simo-hue.github.io/evolve/privacy.html

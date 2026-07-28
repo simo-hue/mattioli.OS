@@ -1,21 +1,41 @@
-Wealth Compass, net değerinizi, nakit akışınızı, yatırımlarınızı, kripto varlıklarınızı ve borçlarınızı tek bir yerde anlamanıza yardımcı olan özel, yerel öncelikli bir kişisel finans kontrol panelidir.
+Evolve, gerçekten ayakta kalan bir rutin kurmak ve bunun neden ayakta kaldığını anlamak isteyenler için bir alışkanlık ve hedef takipçisi. iPhone, iPad ve Mac için tek uygulama; reklamsız, gürültüsüz ve günlük kayıtlarını harekete geçebileceğin bir şeye dönüştüren bir analiz motoruyla.
 
-Finansal durumunuzun net bir resmini oluşturun:
+ZAMANI GÖRMENİN DÖRT YOLU
+Panoyu Hafta, Ay, Yıl ve Yaşam arasında değiştir. Yaşam görünümü, doğum tarihine göre şimdiye kadar yaşadığın haftaları ve önünde duranları çizer: zamanını neye harcadığına dair sakin bir hatırlatma.
 
-- Net değer, nakit bakiyesi, yatırımlar ve kriptoyu bir bakışta görün
-- Gelir ve giderleri kategoriler ve görsel trendlerle takip edin
-- Tekrarlayan işlemleri planlayın ve isteğe bağlı yerel hatırlatmalar alın
-- Hisse senedi, ETF ve kripto para varlıklarını izleyin
-- Maliyet tabanı, kar ve zarar ve portföy dağılımını gözden geçirin
-- Varlıklarınızla birlikte borçlarınızı takip edin
-- Otomatik yerel fotoğraflarla net değer geçmişinizi takip edin
-- Değerleri önbelleğe alınmış ECB referans döviz kurlarıyla dönüştürün
-- Hassas tutarları anında Gizlilik Modu ile gizleyin
-- Uygulamayı Face ID veya Touch ID ile koruyun
-- Yerel verilerinizi istediğiniz zaman dışa aktarın, içe aktarın ve silin
+KENDİNİ KAYDEDEN ALIŞKANLIKLAR
+- Her alışkanlığın kendi haftalık sıklığı, rengi ve hatırlatma saati vardır.
+- Uygulamayı açmadan, doğrudan bildirimden işaretle.
+- Güncel, en iyi ve en kötü seriler otomatik hesaplanır.
+- Sağlık ile otomatik doğrulama: adımlar, egzersiz dakikaları, aktif enerji, ayakta durma saatleri, mesafe, farkındalık dakikaları, uyku ve antrenmanlar.
+- Ekran Süresi ile otomatik doğrulama: toplam cihaz kullanımı ya da seçtiğin uygulama ve kategorilerde geçen süre.
+- Tek koşul yetmediğinde sinyalleri "bunlardan herhangi biri" veya "hepsi" ile birleştir.
 
-Finansal kayıtlarınız cihazınızda kalır. Wealth Compass bir hesap gerektirmez ve portföyünüzü veya işlem geçmişinizi geliştirici tarafından işletilen sunucularda saklamaz.
+HER UFUKTA HEDEFLER
+Haftalık, aylık, üç aylık, yıllık ve ömürlük hedefler, kendi belirlediğin yaşam alanlarına göre gruplanır. Sayısal hedefler ekle, bir hedefi onu besleyen alışkanlığa bağla; performansı, mevsimselliği ve yıldan yıla ilerlemeyi incele.
 
-İsteğe bağlı piyasa fiyatı güncellemeleri, sizin sağladığınız API kimlik bilgilerini kullanır. Kimlik bilgileri iOS Anahtar Zinciri’nde güvenli bir şekilde saklanır.
+BİR ŞEY SÖYLEYEN İSTATİSTİKLER
+- 7, 14 ve 30 günlük tamamlanma eğilimleri ve her alışkanlık için yıllık takvim.
+- Korelasyon analizi: hangi alışkanlıklar diğerlerini yukarı çekiyor, hangileri sessizce aynı saat için yarışıyor.
+- Ruh hali ve enerji kaydı, gerçekten tamamladıklarınla ilişkilendirilir.
+- Anahtar, kritik, dayanıklı ve ruh haline duyarlı alışkanlıklar otomatik olarak belirlenir.
+- En kötü serilerin analizi, böylece kötü bir dönem suçluluk değil bilgi olur.
 
-Wealth Compass bilgilendirici bir takip aracıdır. Finansal kurumlarla bağlantı kurmaz, işlem gerçekleştirmez, finansal tavsiye vermez veya üçüncü taraf piyasa verilerinin doğruluğunu garanti etmez.
+AI KOÇ
+Alışkanlıklarını, hedeflerini ve bu haftanın nasıl geçtiğini zaten bilen bir sohbet; "en zayıf alışkanlığımı düzelt" ya da "yolunda mıyım?" gibi tek dokunuşluk önerilerle. Yalnızca paylaşmayı seçtiğin bağlamı görür ve bir şey göndermeden önce sorar.
+
+VERİLERİNİ SAKLAMANIN İKİ YOLU
+- Özel mod: hiç hesap yok. Verilerin cihazındaki şifreli bir veritabanında durur.
+- Hesap modu: Apple veya Google ile giriş yap ve cihazların arasında eşitle.
+Her iki durumda da Evolve çevrimdışı çalışır. iCloud eşitlemesi isteğe bağlıdır, kendi iCloud hesabın üzerinden uçtan uca şifrelenir ve ücretli bir özellik değildir. Her şeyi istediğin zaman dışa aktarabilir, içe aktarabilir veya silebilir, uygulamayı Face ID ya da Touch ID ile kilitleyebilirsin.
+
+ÜCRETSİZ VE PRO
+Evolve ücretsiz indirilir. Ücretsiz plan, aynı anda kaç alışkanlık ve hedef tutabileceğini sınırlar. Evolve PRO bu sınırları kaldırır; derinlemesine grafikler, gelişmiş eğilim ve hedef analizi ile hiçbir kurulum gerektirmeyen AI Koç ekler.
+
+EVOLVE PRO ABONELİK BİLGİLERİ
+Evolve PRO otomatik yenilenen bir aboneliktir: ayda 4,99 EUR veya yılda 49,99 EUR. Yerel para birimindeki karşılığı, onaylamadan önce uygulamada gösterilir. Ücret, satın alma onayında Apple hesabından tahsil edilir. Mevcut dönemin bitiminden en az 24 saat önce otomatik yenileme kapatılmadıkça abonelik otomatik olarak yenilenir; yenileme ücreti dönem bitiminden önceki 24 saat içinde tahsil edilir. Aboneliği yönetebilir ve otomatik yenilemeyi satın alma sonrasında Apple hesabı ayarlarından kapatabilirsin.
+
+Özel modda hesap bulunmadığı için AI Koç kendi OpenRouter hesabın üzerinde çalışır: ücretsiz, senin sağladığın bir anahtarla.
+
+Kullanım Koşulları (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Gizlilik Politikası: https://simo-hue.github.io/evolve/privacy.html

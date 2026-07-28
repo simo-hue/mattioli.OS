@@ -307,6 +307,20 @@
       "November",
       "December"
     ],
+    "monthsShort": [
+      "JAN",
+      "FEB",
+      "MAR",
+      "APR",
+      "MAY",
+      "JUN",
+      "JUL",
+      "AUG",
+      "SEP",
+      "OCT",
+      "NOV",
+      "DEC"
+    ],
     "weekdaysShort": {
       "mon": "Mon",
       "tue": "Tue",
@@ -1137,7 +1151,8 @@
     "nameRequired": "Please enter a name for your habit",
     "habitAdded": "Habit added",
     "habitUpdated": "Habit updated",
-    "freeSlotsFullBanner": "You have filled your free habit slots ({used}/{limit}). Unlock unlimited slots with Evolve Pro."
+    "freeSlotsFullBanner": "You have filled your free habit slots ({used}/{limit}). Unlock unlimited slots with Evolve Pro.",
+    "protocol": "PROTOCOL"
   },
   "tutorial": {
     "aiChat": "AI Chat",

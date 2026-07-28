@@ -307,6 +307,20 @@
       "November",
       "Dezember"
     ],
+    "monthsShort": [
+      "JAN",
+      "FEB",
+      "MÄR",
+      "APR",
+      "MAI",
+      "JUN",
+      "JUL",
+      "AUG",
+      "SEP",
+      "OKT",
+      "NOV",
+      "DEZ"
+    ],
     "weekdaysShort": {
       "mon": "Mo",
       "tue": "Di",
@@ -1137,7 +1151,8 @@
     "nameRequired": "Bitte gib deiner Gewohnheit einen Namen",
     "habitAdded": "Gewohnheit hinzugefügt",
     "habitUpdated": "Gewohnheit aktualisiert",
-    "freeSlotsFullBanner": "Sie haben Ihre kostenlosen Gewohnheits-Plätze belegt ({used}/{limit}). Schalten Sie mit Evolve Pro unbegrenzte Plätze frei."
+    "freeSlotsFullBanner": "Sie haben Ihre kostenlosen Gewohnheits-Plätze belegt ({used}/{limit}). Schalten Sie mit Evolve Pro unbegrenzte Plätze frei.",
+    "protocol": "PROTOKOLL"
   },
   "tutorial": {
     "aiChat": "AI-Chat",

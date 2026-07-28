@@ -1,21 +1,41 @@
-Wealth Compass adalah papan pemuka kewangan peribadi tempatan yang membantu anda memahami nilai bersih, aliran tunai, pelaburan, aset kripto, dan liabiliti anda dalam satu tempat.
+Evolve ialah penjejak tabiat dan matlamat untuk sesiapa yang mahu membina rutin yang benar-benar bertahan - dan memahami mengapa ia bertahan. Satu aplikasi untuk iPhone, iPad dan Mac, tanpa iklan, tanpa bising, dengan enjin analitik yang menukar catatan harian anda kepada sesuatu yang boleh ditindaki.
 
-Bina gambaran jelas tentang kewangan anda:
+EMPAT CARA MELIHAT MASA
+Tukar papan pemuka antara Minggu, Bulan, Tahun dan Hidup. Paparan Hidup melakar minggu yang sudah anda lalui dan yang masih menanti, berdasarkan tarikh lahir anda: peringatan tenang tentang ke mana masa anda pergi.
 
-- Lihat nilai bersih, baki tunai, pelaburan, dan kripto sekilas
-- Jejak pendapatan dan perbelanjaan dengan kategori dan trend visual
-- Jadualkan transaksi berulang dan terima peringatan tempatan pilihan
-- Pantau pegangan saham, ETF, dan cryptocurrency
-- Semak asas kos, untung dan rugi, dan pengagihan portfolio
-- Jejak liabiliti bersama-sama aset anda
-- Ikuti sejarah nilai bersih dengan rakaman tempatan automatik
-- Tukar nilai menggunakan kadar pertukaran rujukan ECB yang disimpan dalam cache
-- Sembunyikan jumlah sensitif dengan segera menggunakan Mod Privasi
-- Lindungi aplikasi dengan Face ID atau Touch ID
-- Eksport, import, dan padam data tempatan anda bila-bila masa anda mahu
+TABIAT YANG MEREKOD DIRINYA SENDIRI
+- Setiap tabiat ada kekerapan mingguan, warna dan waktu peringatan tersendiri.
+- Tandakan tabiat terus dari pemberitahuan, tanpa membuka aplikasi.
+- Rentetan semasa, terbaik dan terburuk dikira secara automatik.
+- Pengesahan automatik melalui Kesihatan: langkah, minit senaman, tenaga aktif, jam berdiri, jarak, minit kesedaran, tidur dan latihan.
+- Pengesahan automatik melalui Masa Skrin: penggunaan peranti keseluruhan atau masa dalam aplikasi dan kategori pilihan anda.
+- Gabungkan syarat dengan "mana-mana daripada ini" atau "semua ini" apabila satu syarat tidak mencukupi.
 
-Rekod kewangan anda kekal di peranti anda. Wealth Compass tidak memerlukan akaun dan tidak menyimpan portfolio atau sejarah transaksi anda di pelayan yang dikendalikan oleh pembangun.
+MATLAMAT UNTUK SETIAP UFUK
+Matlamat mingguan, bulanan, suku tahunan, tahunan dan seumur hidup, dikumpulkan mengikut bidang kehidupan yang anda tentukan sendiri. Tambah sasaran berangka, hubungkan matlamat dengan tabiat yang menyokongnya, dan semak prestasi, kemusiman serta kemajuan tahun ke tahun.
 
-Kemas kini harga pasaran pilihan menggunakan kelayakan API yang anda berikan. Kelayakan disimpan dengan selamat dalam iOS Keychain.
+STATISTIK YANG BERMAKNA
+- Trend penyiapan bagi 7, 14 dan 30 hari, serta kalendar tahunan untuk setiap tabiat.
+- Analisis korelasi: tabiat mana yang menarik yang lain ke atas, dan mana yang senyap-senyap bersaing untuk jam yang sama.
+- Catatan mood dan tenaga, dikaitkan dengan apa yang benar-benar anda siapkan.
+- Tabiat utama, kritikal, berdaya tahan dan sensitif kepada mood dikenal pasti secara automatik.
+- Analisis rentetan terburuk, supaya tempoh yang lemah menjadi maklumat, bukan rasa bersalah.
 
-Wealth Compass adalah alat untuk menjejak maklumat sahaja. Ia tidak bersambung ke institusi kewangan, melaksanakan perdagangan, memberi nasihat kewangan, atau menjamin ketepatan data pasaran pihak ketiga.
+AI COACH
+Sembang yang sudah mengenali tabiat anda, matlamat anda dan perjalanan minggu ini, dengan cadangan satu ketikan seperti "baiki tabiat paling lemah saya" atau "adakah saya di landasan?". Ia hanya melihat konteks yang anda pilih untuk dikongsi, dan sentiasa bertanya sebelum menghantar apa-apa.
+
+DUA CARA MENYIMPAN DATA ANDA
+- Mod peribadi: tiada akaun langsung. Data anda tinggal dalam pangkalan data tersulit pada peranti anda.
+- Mod akaun: log masuk dengan Apple atau Google dan segerakkan antara peranti anda.
+Dalam kedua-dua keadaan Evolve berfungsi luar talian. Penyegerakan iCloud adalah pilihan, disulitkan hujung ke hujung melalui akaun iCloud anda sendiri, dan bukan ciri berbayar. Eksport, import atau padam semuanya bila-bila masa, dan kunci aplikasi dengan Face ID atau Touch ID.
+
+PERCUMA DAN PRO
+Evolve percuma untuk dimuat turun. Pelan percuma mengehadkan bilangan tabiat dan matlamat yang boleh anda simpan serentak. Evolve PRO membuang had itu dan menambah carta mendalam, analisis trend dan matlamat lanjutan, serta AI Coach tanpa sebarang persediaan.
+
+MAKLUMAT LANGGANAN EVOLVE PRO
+Evolve PRO ialah langganan yang diperbaharui secara automatik: 4.99 EUR sebulan atau 49.99 EUR setahun. Harga setara dalam mata wang tempatan anda dipaparkan dalam aplikasi sebelum pengesahan. Bayaran dikenakan pada Akaun Apple anda semasa pengesahan pembelian. Langganan diperbaharui secara automatik melainkan pembaharuan automatik dimatikan sekurang-kurangnya 24 jam sebelum tamat tempoh semasa, dan caj pembaharuan dikenakan dalam tempoh 24 jam sebelum tempoh berakhir. Anda boleh menguruskan langganan dan mematikan pembaharuan automatik dalam tetapan Akaun Apple selepas pembelian.
+
+Dalam mod peribadi tiada akaun, jadi AI Coach berjalan pada akaun OpenRouter anda sendiri - percuma, dengan kunci yang anda sediakan.
+
+Terma Penggunaan (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Dasar Privasi: https://simo-hue.github.io/evolve/privacy.html

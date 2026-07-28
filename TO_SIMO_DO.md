@@ -229,3 +229,64 @@ no reset button. The reset now asks for confirmation and tells you the size. Deb
       apps) but not the rendering, so "which buttons appear in which state" is unpinned.
 - [ ] `error.png` (your screenshot) is untracked at the repo root — delete or move it when you
       next tidy up; I left it alone since it is yours.
+
+---
+
+## 2026-07-28 — App Store metadata: "Wealth Compass" copy purged from 22 locales
+
+**BLOCKING: review this metadata before the next `fastlane deliver`.** The changes are
+uncommitted on purpose.
+
+### What was wrong
+22 of the 39 locale folders under `mobile/metadata/` shipped the marketing copy of a
+**completely different app** — "Wealth Compass", a personal-finance / net-worth dashboard.
+Both `description.txt` and `keywords.txt` were affected, in exactly the same 22 locales:
+
+`ar-SA, ca, cs, en-US, es-ES, fi, hi, hr, hu, ja, ms, nl-NL, no, pl, pt-BR, ro, ru, th, tr, uk, zh-Hans, zh-Hant`
+
+`name.txt` ("Evolve: Habits & Goals Tracker"), `subtitle.txt`, `promotional_text.txt` and
+`release_notes.txt` were **not** contaminated in any locale, and
+`desktop/macos/fastlane/metadata/**` was **entirely clean** (all 38 locales) — nothing was
+touched there.
+
+### What I changed
+Rewrote `description.txt` + `keywords.txt` for those 22 locales (44 files), each written in
+the locale's own language, grounded in the actual app: Week/Month/Year/Life dashboard views,
+per-habit frequency/colour/reminder, actionable notifications, streaks, Apple Health and
+Screen Time auto-verification with any/all compound conditions, weekly→lifetime macro goals
+with numeric targets, correlation and mood/energy statistics, AI Coach, Private mode vs
+account mode, optional end-to-end-encrypted iCloud sync, offline use, biometric lock,
+export/import/delete. All within App Store limits (description ≤4000, keywords ≤100 incl.
+commas) — verified programmatically; largest is `ro` at 3929 chars.
+
+### Things you must verify before shipping
+- [ ] **Pricing.** Every rewritten description now states Evolve Pro as an auto-renewing
+      subscription at **EUR 4.99 / month or EUR 49.99 / year**, plus "the equivalent price in
+      your local currency is shown in the app before you confirm". Confirm this matches
+      App Store Connect + RevenueCat before submitting. This was previously absent everywhere,
+      and Apple requires the price and renewal terms in the description for auto-renewables.
+- [ ] **Native-speaker review.** All 22 are my translations, not a translator's. Arabic, Hindi,
+      Thai, Malay, Croatian and Ukrainian are the ones I'd get read most urgently.
+- [ ] **Free-tier caps.** The code today enforces 5 habits and 100 goals on the free plan
+      (`habit_management_modal.dart:383`, `macro_goals/add_goal_bar.dart:56`). I deliberately
+      wrote "the free plan limits how many habits and goals you can keep at once" without
+      numbers so the copy doesn't go stale — say the word if you'd rather state 5 and 100.
+
+### Pre-existing issues I found but did NOT change (out of the bug's scope)
+- [ ] **The 17 "clean" locales still carry the OLD Evolve description**
+      (`da, de-DE, el, en-AU, en-CA, en-GB, es-MX, fr-CA, fr-FR, he, id, it, ko, pt-PT, sk, sv, vi`).
+      That copy predates several shipped features: it never mentions Private mode, the AI Coach,
+      Apple Health / Screen Time auto-verification, iCloud sync, or the subscription price, and
+      it describes cloud sync as if Supabase + Apple Sign-In were the only data model. Not wrong,
+      but incomplete — and it now diverges from the 22 I rewrote. `en-US` vs `en-GB`/`en-AU`/
+      `en-CA` is the most visible mismatch. Worth porting the new copy across all 39.
+- [ ] **`subtitle.txt` is the English string "Build Routines & Grow Daily" in all 39 locales**,
+      including ar-SA, ja, ru, th, zh-Hans. Never localised.
+- [ ] **`promotional_text.txt` is empty in 38 of 39 locales** — only `it` has content.
+- [ ] **`release_notes.txt` is still English** in 14 locales (`ca, cs, en-*, fi, hi, hr, hu, ms,
+      nl-NL, no, pl, ro, th, tr, uk`), and `zh-Hant/release_notes.txt` contains **Simplified**
+      Chinese ("安全增强和错误修复。") rather than Traditional.
+- [ ] **`desktop/macos/fastlane/metadata/` has no `it` locale** while `mobile/metadata/` does,
+      and every desktop `description.txt` is a single 90–310 char sentence. If desktop and
+      mobile share the one App Store record (id6770482363), decide which tree is authoritative
+      before `deliver` runs against either.

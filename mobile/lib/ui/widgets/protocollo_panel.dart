@@ -40,7 +40,7 @@ class ProtocolloPanel extends ConsumerWidget {
         Row(
           children: [
             Text(
-              'PROTOCOLLO',
+              context.t.habits.protocol,
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w800,

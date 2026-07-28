@@ -307,6 +307,20 @@
       "Noviembre",
       "Diciembre"
     ],
+    "monthsShort": [
+      "ENE",
+      "FEB",
+      "MAR",
+      "ABR",
+      "MAY",
+      "JUN",
+      "JUL",
+      "AGO",
+      "SEP",
+      "OCT",
+      "NOV",
+      "DIC"
+    ],
     "weekdaysShort": {
       "mon": "Lun",
       "tue": "Mar",
@@ -1137,7 +1151,8 @@
     "nameRequired": "Escribe un nombre para tu hábito",
     "habitAdded": "Hábito añadido",
     "habitUpdated": "Hábito actualizado",
-    "freeSlotsFullBanner": "Has ocupado todos tus espacios de hábitos gratuitos ({used}/{limit}). Desbloquea espacios ilimitados con Evolve Pro."
+    "freeSlotsFullBanner": "Has ocupado todos tus espacios de hábitos gratuitos ({used}/{limit}). Desbloquea espacios ilimitados con Evolve Pro.",
+    "protocol": "PROTOCOLO"
   },
   "tutorial": {
     "aiChat": "Chat AI",

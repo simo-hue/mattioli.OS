@@ -3,6 +3,7 @@ import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:evolve_desktop/features/settings/presentation/settings_section.dart';
 
 enum DesktopSection {
   overview,
@@ -45,22 +46,45 @@ enum DesktopSection {
 /// swipe-back gesture on macOS).
 enum NavDirection { forward, back }
 
-/// One-shot request to open the Settings page directly on its Privacy
-/// (iCloud-sync) section. The data-loss `SyncOffBanner` calls [request] before
-/// navigating to Settings; `SettingsPage` reads the flag on mount, jumps to the
-/// Privacy section, then [consume]s it so a later manual visit still opens on
-/// Profile.
-class PrivacySettingsRequest extends Notifier<bool> {
-  @override
-  bool build() => false;
+/// One-shot request to open the Settings page directly on a given pane.
+///
+/// Replaces the two ad-hoc booleans this used to be — `PrivacySettingsRequest`
+/// and `SubscriptionSettingsRequest` — which were handled asymmetrically (one
+/// in `initState`, one via a build-time listener) and had drifted: the
+/// subscription flag had no producer left anywhere in `lib/` or `test/` after
+/// the paywall entries moved to `showPaywallDialog`.
+///
+/// The caller sets the target pane and navigates to Settings; `SettingsPage`
+/// reads it on mount, opens that pane, then [consume]s it so a later manual
+/// visit opens wherever the user last was instead.
+///
+/// [rowId] is optional and addresses an individual setting rather than a pane.
+/// The command palette needs it: without it a ⌘K hit on "Language" opened
+/// General at scroll-top and left the user to find the row themselves, while
+/// the sidebar's own search — the same index, the same query — scrolled to it
+/// and tinted it. Two search surfaces disagreeing about what "found it" means
+/// is worse than either behaviour on its own.
+class SettingsSectionTarget {
+  const SettingsSectionTarget(this.section, {this.rowId});
 
-  void request() => state = true;
-
-  void consume() => state = false;
+  final SettingsSection section;
+  final String? rowId;
 }
 
-final privacySettingsRequestProvider =
-    NotifierProvider<PrivacySettingsRequest, bool>(PrivacySettingsRequest.new);
+class SettingsSectionRequest extends Notifier<SettingsSectionTarget?> {
+  @override
+  SettingsSectionTarget? build() => null;
+
+  void request(SettingsSection section, {String? rowId}) =>
+      state = SettingsSectionTarget(section, rowId: rowId);
+
+  void consume() => state = null;
+}
+
+final settingsSectionRequestProvider =
+    NotifierProvider<SettingsSectionRequest, SettingsSectionTarget?>(
+      SettingsSectionRequest.new,
+    );
 
 final navigationControllerProvider =
     NotifierProvider<NavigationController, DesktopSection>(
@@ -116,8 +140,7 @@ class NavigationController extends Notifier<DesktopSection> {
   /// auth/RevenueCat provider graph behind [coachNeedsPaywallProvider].
   bool _isReachable(DesktopSection section) =>
       section != state &&
-      !(section == DesktopSection.coach &&
-          ref.read(coachNeedsPaywallProvider));
+      !(section == DesktopSection.coach && ref.read(coachNeedsPaywallProvider));
 
   /// Whether there is a previously visited section to return to. Drives whether
   /// the two-finger swipe / ⌘[ back gesture does anything. Unreachable entries
@@ -199,17 +222,3 @@ class NavigationController extends Notifier<DesktopSection> {
     }
   }
 }
-
-/// One-shot request to open the Settings page directly on its Subscription
-/// section. Handled similarly to PrivacySettingsRequest.
-class SubscriptionSettingsRequest extends Notifier<bool> {
-  @override
-  bool build() => false;
-
-  void request() => state = true;
-
-  void consume() => state = false;
-}
-
-final subscriptionSettingsRequestProvider =
-    NotifierProvider<SubscriptionSettingsRequest, bool>(SubscriptionSettingsRequest.new);

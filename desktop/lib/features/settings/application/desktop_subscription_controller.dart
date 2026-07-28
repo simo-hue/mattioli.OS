@@ -71,6 +71,32 @@ class DesktopProDetails {
   final bool isAppStorePayment;
 }
 
+/// The two plans the purchase surface offers.
+///
+/// A typed pair rather than the `'monthly'` / `'yearly'` string literals the
+/// pane compared against in four places: a typo in any of them silently fell
+/// through to the annual branch, which is the more expensive of the two.
+enum DesktopPlan { monthly, yearly }
+
+/// Which plan the purchase surface has selected.
+///
+/// Deliberately NOT a `State` field on the pane. Settings rebuilds its content
+/// pane on every rail change, search jump and provider tick, so a plain field
+/// is destroyed under the user: pick Monthly, glance at another pane, come back
+/// — and the selection has silently reverted to the annual plan, which is the
+/// larger charge. Selection outliving the widget is the whole point.
+class DesktopSelectedPlanController extends Notifier<DesktopPlan> {
+  @override
+  DesktopPlan build() => DesktopPlan.yearly;
+
+  void select(DesktopPlan plan) => state = plan;
+}
+
+final desktopSelectedPlanProvider =
+    NotifierProvider<DesktopSelectedPlanController, DesktopPlan>(
+      DesktopSelectedPlanController.new,
+    );
+
 class DesktopSubscriptionState {
   const DesktopSubscriptionState({
     required this.isSupportedPlatform,
@@ -101,6 +127,21 @@ class DesktopSubscriptionState {
   /// Last resolved entitlement snapshot, feeding the "already Pro" panel.
   final CustomerInfo? customerInfo;
   final String? message;
+
+  /// The store product for [plan] — what the CTA prices and the plan card
+  /// shows. Null until an Offering or the direct-product fetch resolves.
+  StoreProduct? productFor(DesktopPlan plan) => switch (plan) {
+    DesktopPlan.monthly => monthlyProduct,
+    DesktopPlan.yearly => yearlyProduct,
+  };
+
+  /// The purchasable package for [plan]. A product can resolve without one —
+  /// prices come from the direct-product fallback, a purchase needs a Package —
+  /// so this is null more often than [productFor].
+  Package? packageFor(DesktopPlan plan) => switch (plan) {
+    DesktopPlan.monthly => monthlyPackage,
+    DesktopPlan.yearly => yearlyPackage,
+  };
 
   DesktopSubscriptionState copyWith({
     bool? isLoading,

@@ -1,6 +1,5 @@
 # TO_SIMO_DO.md
 - [ ] Widget for iPhone & MacOS
-- [ ] settings in desktop implementation is really weird and not intuitive as it is in the mobile app
 - [ ] what happens if I modify manually an automatic habits?
 - [ ] Macro goals still need a numeric target + progress bar (status already cycles active/completed/failed). Habits are DONE — the Checkbox / Number / Automatic picker and quantitative targets are live; MacroTargetsConfig.enabled is still false on both apps.
 
@@ -323,3 +322,19 @@ can be verified without Xcode. Run these in a **release-ish build signed into a 
       to purchase (the paywall is informative off macOS). The sidebar already behaved this way;
       the fix just makes the other three doors consistent with it. Decide separately whether
       those platforms should pitch Pro at all.
+
+## macOS Settings redesign — phase 1 (2026-07-28)
+
+- **On-device QA required.** There is no Xcode on this machine, so the redesigned Settings page has never been built or run — only widget-tested. Please walk all eight panes in both data modes (Account and Private) and check: the rail stays fixed while a long pane scrolls, the pane scroll resets when you switch destinations, the rail/pane divider actually paints, and the single 720px-capped column looks right on your display.
+- **Confirm nothing you use disappeared.** Five rows were deleted as verified no-ops (AI Suggestions, Milestones, Deep Work Insights, AI Insights, Weekly Reports). Their preference keys and synced columns are untouched, so your iPhone is unaffected — but if any of them ever *did* something you relied on, say so and I will restore the row.
+- **Account-mode avatar still has no upload path.** No Supabase Storage call exists anywhere in `desktop/lib`, and the shell reads a `user_metadata.avatar_url` the app never writes. The broken "Update avatar" row is gone; the underlying feature needs implementing (or the avatar menu should be scoped honestly to Private mode).
+- **`package_info_plus` needed for the About footer.** The proposal's version/build footer at the bottom of the rail is not implemented — adding the dependency touches the macOS Podfile and I cannot build to verify it. Add it when you are at a machine that can compile.
+
+## AI Coach dialog dissolution (2026-07-28)
+
+- **Check the four retargeted entry points on device.** The chat header's engine chip, the coach page's first-run nudge, its offline banner and the Settings row all now navigate to Settings › AI Coach instead of opening a modal. The tests drive the provider, not those widgets, so the wiring from each real button is unverified.
+- **Confirm the engine panel looks right inside a settings card.** It was designed for a 560px dialog and now renders in a 720px-capped pane column; the local-server rows and model picker in particular are worth a look in Private mode.
+
+## Personal info inlining (2026-07-28)
+
+- **Verify the Private-mode profile write end to end.** Editing your name or date of birth in Private mode now calls `privateProfileProvider.updateProfile` → `DesktopPrivateDb.updateProfileFields` → `notifyWrite`. That path was fully implemented but unreachable from desktop Settings until now, so it has never actually run here. Change your name on the Mac in Private mode and confirm it reaches the iPhone.

@@ -19,6 +19,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 // LinkDelegate is declared on the interface but lives in its own library.
 import 'package:url_launcher_platform_interface/link.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
+import 'package:evolve_desktop/features/settings/presentation/settings_section.dart';
+import 'support/settings_navigation.dart';
 
 /// Records what the paywall actually tries to open.
 ///
@@ -68,8 +70,7 @@ Future<void> _pumpSubscriptionSection(WidgetTester tester) async {
   );
   await tester.pumpAndSettle();
 
-  await tester.tap(find.text(t.settingsPage.subscription).first);
-  await tester.pumpAndSettle();
+  await openSettingsSection(tester, SettingsSection.subscription);
 }
 
 void main() {
@@ -109,7 +110,8 @@ void main() {
     expect(
       launcher.launched,
       [LegalUrls.appleEula.toString()],
-      reason: 'the Terms of Use (EULA) link must open Apple\'s standard EULA, '
+      reason:
+          'the Terms of Use (EULA) link must open Apple\'s standard EULA, '
           'not the privacy policy and not our own Terms of Service',
     );
   });

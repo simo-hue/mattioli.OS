@@ -23,6 +23,8 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher_platform_interface/link.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
+import 'package:evolve_desktop/features/settings/presentation/settings_section.dart';
+import 'support/settings_navigation.dart';
 
 class _RecordingLauncher extends UrlLauncherPlatform
     with MockPlatformInterfaceMixin {
@@ -84,8 +86,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text(t.settingsPage.subscription).first);
-    await tester.pumpAndSettle();
+    await openSettingsSection(tester, SettingsSection.subscription);
 
     await tester.tap(find.text(t.settingsPage.privacyPolicy));
     await tester.pumpAndSettle();

@@ -38,7 +38,7 @@ import '../domain/coach_chat_logic.dart';
 import '../domain/coach_prompts.dart';
 import '../domain/local_server_target.dart';
 import 'coach_model_chip.dart';
-import 'coach_settings_dialog.dart';
+import 'coach_settings_panels.dart';
 import 'start_local_server_button.dart';
 
 class AiCoachPage extends ConsumerStatefulWidget {
@@ -228,7 +228,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
       }
       if (apiKey == null) {
         _sending = false;
-        if (mounted) showCoachSettingsDialog(context);
+        if (mounted) openCoachSettings(ref);
         return;
       }
     }
@@ -1791,7 +1791,7 @@ class _CloudKeyMissingBanner extends ConsumerWidget {
             ),
             const SizedBox(width: 12),
             FilledButton(
-              onPressed: () => showCoachSettingsDialog(context),
+              onPressed: () => openCoachSettings(ref),
               child: Text(t.ai.apiKey.setupAction),
             ),
           ],

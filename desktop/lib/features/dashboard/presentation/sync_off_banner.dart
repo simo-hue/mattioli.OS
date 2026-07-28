@@ -8,6 +8,7 @@ import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:evolve_desktop/features/settings/presentation/settings_section.dart';
 
 /// Dismisses the banner for the current app session only. It returns next launch
 /// while sync stays off, because the data-loss risk it warns about is permanent.
@@ -85,12 +86,15 @@ class SyncOffBanner extends ConsumerWidget {
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(
                     onTap: () {
-                      // Deep-link Settings straight to the Privacy (iCloud-sync)
-                      // section — desktop's equivalent of mobile pushing the
-                      // IcloudSyncScreen.
+                      // Deep-link Settings straight to Data & Backup, where
+                      // iCloud sync now lives — desktop's equivalent of mobile
+                      // pushing the IcloudSyncScreen. It is retargeted from the
+                      // old Privacy pane, and Data & Backup exists in BOTH data
+                      // modes, so this link can never point at a pane that is
+                      // not in the rail.
                       ref
-                          .read(privacySettingsRequestProvider.notifier)
-                          .request();
+                          .read(settingsSectionRequestProvider.notifier)
+                          .request(SettingsSection.dataBackup);
                       ref
                           .read(navigationControllerProvider.notifier)
                           .select(DesktopSection.settings);

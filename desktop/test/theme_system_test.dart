@@ -29,6 +29,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:evolve_desktop/features/settings/presentation/settings_section.dart';
+import 'support/settings_navigation.dart';
 
 Future<ProviderContainer> _container(Map<String, Object> values) async {
   SharedPreferences.setMockInitialValues(values);
@@ -42,19 +44,21 @@ void main() {
   setUp(() => LocaleSettings.setLocale(AppLocale.en));
 
   group('the controller collapses a system theme at launch', () {
-    test('a stored system theme does not survive as ThemeMode.system',
-        () async {
-      final container = await _container({'pref_theme_mode': 'system'});
-      addTearDown(container.dispose);
+    test(
+      'a stored system theme does not survive as ThemeMode.system',
+      () async {
+        final container = await _container({'pref_theme_mode': 'system'});
+        addTearDown(container.dispose);
 
-      // ThemeMode.system is precisely the value that makes MaterialApp
-      // re-resolve on an OS appearance change; light/dark is the value that
-      // ignores it. This is behaviour, not shape.
-      expect(
-        container.read(desktopAppearanceControllerProvider).themeMode,
-        ThemeMode.system,
-      );
-    });
+        // ThemeMode.system is precisely the value that makes MaterialApp
+        // re-resolve on an OS appearance change; light/dark is the value that
+        // ignores it. This is behaviour, not shape.
+        expect(
+          container.read(desktopAppearanceControllerProvider).themeMode,
+          ThemeMode.system,
+        );
+      },
+    );
 
     test('an explicit theme still pins', () async {
       for (final (stored, expected) in [
@@ -70,22 +74,26 @@ void main() {
       }
     });
 
-    test('picking an accent rewrites a system mirror to a concrete theme',
-        () async {
-      // `_persist` runs on setAccentColor too, so merely choosing a colour was
-      // enough to destroy "follow system" on the next cold start.
-      final container = await _container({'pref_theme_mode': 'system'});
-      addTearDown(container.dispose);
+    test(
+      'picking an accent rewrites a system mirror to a concrete theme',
+      () async {
+        // `_persist` runs on setAccentColor too, so merely choosing a colour was
+        // enough to destroy "follow system" on the next cold start.
+        final container = await _container({'pref_theme_mode': 'system'});
+        addTearDown(container.dispose);
 
-      container
-          .read(desktopAppearanceControllerProvider.notifier)
-          .setAccentColor(const Color(0xFF3B82F6));
+        container
+            .read(desktopAppearanceControllerProvider.notifier)
+            .setAccentColor(const Color(0xFF3B82F6));
 
-      expect(
-        container.read(sharedPreferencesProvider)!.getString('pref_theme_mode'),
-        SettingsCodec.themeSystem,
-      );
-    });
+        expect(
+          container
+              .read(sharedPreferencesProvider)!
+              .getString('pref_theme_mode'),
+          SettingsCodec.themeSystem,
+        );
+      },
+    );
   });
 
   group('the settings page collapses a system theme in the prefs mirror', () {
@@ -126,31 +134,31 @@ void main() {
       return preferences;
     }
 
-    testWidgets('hydrating a synced system theme writes dark or light instead',
-        (tester) async {
+    testWidgets('hydrating a synced system theme writes dark or light instead', (
+      tester,
+    ) async {
       // The mirror is what `build()` reads on the next cold start, before the
       // store answers — and on a Mac that never completes a pull, permanently.
       final prefs = await pump(tester, const {'theme_mode': 'system'});
       expect(prefs.getString('pref_theme_mode'), SettingsCodec.themeSystem);
     });
 
-    testWidgets('the theme row offers no way back to "follow system"',
-        (tester) async {
+    testWidgets('the theme row offers no way back to "follow system"', (
+      tester,
+    ) async {
       // With a binary switch, a 'system' user who touched it once wrote a
       // concrete 'dark'/'light' into the SYNCED store — pinning the iPhone too
       // — and the Mac then had no control that could express "follow system"
       // again. Fixing the controller without fixing the control is half a fix.
-      final prefs = await pump(
-        tester,
-        const {'theme_mode': 'dark'},
-      );
-      await tester.tap(find.text(t.settingsPage.sectionApplication).first);
-      await tester.pumpAndSettle();
+      final prefs = await pump(tester, const {'theme_mode': 'dark'});
+      await openSettingsSection(tester, SettingsSection.general);
 
       final row = find.widgetWithText(ListTile, t.settingsPage.themeMode);
       expect(row, findsOneWidget);
       await tester.ensureVisible(row);
-      await tester.tap(find.descendant(of: row, matching: find.byType(EvolveSelect<String>)));
+      await tester.tap(
+        find.descendant(of: row, matching: find.byType(EvolveSelect<String>)),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text(t.settingsPage.themeLight), findsWidgets);
@@ -162,8 +170,9 @@ void main() {
       expect(prefs.getString('pref_theme_mode'), SettingsCodec.themeSystem);
     });
 
-    testWidgets('a pull without theme_mode overwrites the mirror anyway',
-        (tester) async {
+    testWidgets('a pull without theme_mode overwrites the mirror anyway', (
+      tester,
+    ) async {
       // The guard against "fixing" the above by writing
       // `normalizeThemeMode(values[kSettingThemeMode])` unconditionally:
       // `normalizeThemeMode(null)` is 'system', and `SyncedSettingsStore` omits
@@ -208,8 +217,9 @@ void main() {
             child: MaterialApp(
               theme: EvolveTheme.light(EvolveColors.lightForeground),
               darkTheme: EvolveTheme.dark(EvolveColors.primaryStrong),
-              themeMode:
-                  container.read(desktopAppearanceControllerProvider).themeMode,
+              themeMode: container
+                  .read(desktopAppearanceControllerProvider)
+                  .themeMode,
               localizationsDelegates: GlobalMaterialLocalizations.delegates,
               supportedLocales: const [Locale('en')],
               home: const Scaffold(body: CommandPalette()),

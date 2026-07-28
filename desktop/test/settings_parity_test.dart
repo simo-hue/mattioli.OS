@@ -17,6 +17,10 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:evolve_desktop/features/settings/application/desktop_synced_settings.dart';
+import 'package:evolve_desktop/features/settings/presentation/settings_section.dart';
+import 'package:evolve_sync/evolve_sync.dart';
+import 'support/settings_navigation.dart';
 
 /// [withPreferences] false leaves `sharedPreferencesProvider` at its null
 /// default — the first-launch shape where `initState` early-returns before the
@@ -54,75 +58,101 @@ Future<SharedPreferences> _pumpSettings(
   return prefs;
 }
 
-Future<void> _openSection(WidgetTester tester, String label) async {
-  await tester.tap(find.text(label).first);
-  await tester.pumpAndSettle();
-}
-
 /// The toggle (kit EvolveSwitch) inside the row titled [rowLabel].
 Finder _switchIn(String rowLabel) => find.descendant(
-      of: find.widgetWithText(ListTile, rowLabel),
-      matching: find.byType(EvolveSwitch),
-    );
+  of: find.widgetWithText(ListTile, rowLabel),
+  matching: find.byType(EvolveSwitch),
+);
 
 void main() {
   setUp(() => LocaleSettings.setLocale(AppLocale.en));
 
-  testWidgets(
-      'application section shows the AI & System toggles and hides haptics',
-      (tester) async {
+  // The five controls below were verified dead on BOTH platforms: each one
+  // persisted to SharedPreferences, dual-wrote a `profiles` column and synced
+  // to the iPhone, where nothing read it either. They were internal AppSettings
+  // fields surfaced as switches, and iOS never rendered any of them.
+  //
+  // This asserts the ROWS are gone. The companion test asserts the KEYS are
+  // not — dropping them from the sync contract would be a migration, and the
+  // iPhone still round-trips all five.
+  testWidgets('the dead experience toggles no longer render anywhere', (
+    tester,
+  ) async {
     await _pumpSettings(tester);
-    await _openSection(tester, t.settingsPage.sectionApplication);
 
-    expect(find.text(t.settingsPage.aiSuggestions), findsOneWidget);
-    expect(find.text(t.settingsPage.focusMode), findsOneWidget);
-    expect(find.text(t.settingsPage.milestones), findsOneWidget);
-    expect(find.text(t.settingsPage.deepWorkInsights), findsOneWidget);
-    // macOS produces no haptics for this: the row must not render (the synced
-    // pref_haptic_feedback profile column is simply left untouched).
-    expect(find.text(t.settingsPage.hapticFeedback), findsNothing);
+    for (final section in [
+      SettingsSection.general,
+      SettingsSection.notifications,
+    ]) {
+      await openSettingsSection(tester, section);
+      for (final label in [
+        t.settingsPage.aiSuggestions,
+        t.settingsPage.milestones,
+        t.settingsPage.deepWorkInsights,
+        t.settingsPage.aiInsights,
+        t.settingsPage.weeklyReports,
+      ]) {
+        expect(
+          find.text(label),
+          findsNothing,
+          reason: '"$label" has no consumer on either platform',
+        );
+      }
+      // macOS produces no haptics: that row must not render either (the synced
+      // pref_haptic_feedback column is simply left untouched for mobile).
+      expect(find.text(t.settingsPage.hapticFeedback), findsNothing);
+    }
   });
 
-  testWidgets('focus mode toggle dual-writes the mobile pref key',
-      (tester) async {
-    final prefs = await _pumpSettings(tester);
-    await _openSection(tester, t.settingsPage.sectionApplication);
-
-    await tester.ensureVisible(_switchIn(t.settingsPage.focusMode));
-    await tester.tap(_switchIn(t.settingsPage.focusMode));
-    await tester.pumpAndSettle();
-
-    expect(prefs.getBool('pref_focus_mode'), isTrue);
-  });
-
-  testWidgets('AI suggestions is Pro-gated in cloud mode', (tester) async {
-    final prefs = await _pumpSettings(tester);
-    await _openSection(tester, t.settingsPage.sectionApplication);
-
-    await tester.ensureVisible(_switchIn(t.settingsPage.aiSuggestions));
-    await tester.tap(_switchIn(t.settingsPage.aiSuggestions));
-    await tester.pumpAndSettle();
-
-    // Not entitled: the Pro features dialog opens and nothing is persisted —
-    // mirrors mobile's toggleAi, which is a no-op for non-Pro users.
-    expect(find.text(t.proModal.title), findsOneWidget);
-    expect(prefs.getBool('pref_ai_suggestions'), isNull);
+  test('removing the rows did not remove them from the sync contract', () {
+    for (final key in const [
+      kSettingAiSuggestions,
+      kSettingMilestones,
+      kSettingDeepWorkInsights,
+      kSettingAiInsights,
+      kSettingWeeklyReports,
+    ]) {
+      expect(
+        PrivateDbSchema.syncedSettingKeys,
+        contains(key),
+        reason: 'the iPhone still reads, writes and syncs $key',
+      );
+    }
   });
 
   testWidgets(
-      'notifications section exposes AI insights and weekly reports rows',
-      (tester) async {
-    final prefs = await _pumpSettings(tester);
-    await _openSection(tester, t.settingsPage.notifications);
+    'focus mode lives in Notifications and dual-writes its pref key',
+    (tester) async {
+      final prefs = await _pumpSettings(tester);
+      // It used to sit in the Application pane's "AI & SYSTEM" card, three
+      // destinations away from the reminders it silences.
+      await openSettingsSection(tester, SettingsSection.general);
+      expect(find.text(t.settingsPage.focusMode), findsNothing);
 
-    expect(find.text(t.settingsPage.aiInsights), findsOneWidget);
-    expect(find.text(t.settingsPage.weeklyReports), findsOneWidget);
+      await openSettingsSection(tester, SettingsSection.notifications);
+      await tester.ensureVisible(_switchIn(t.settingsPage.focusMode));
+      await tester.tap(_switchIn(t.settingsPage.focusMode));
+      await tester.pumpAndSettle();
 
-    await tester.ensureVisible(_switchIn(t.settingsPage.weeklyReports));
-    await tester.tap(_switchIn(t.settingsPage.weeklyReports));
+      expect(prefs.getBool('pref_focus_mode'), isTrue);
+    },
+  );
+
+  testWidgets('a reminder time renders while its switch is off, disabled', (
+    tester,
+  ) async {
+    await _pumpSettings(tester);
+    await openSettingsSection(tester, SettingsSection.notifications);
+
+    // Turn the morning brief off. The time row must STAY — it used to be
+    // `if (_habitReminders)`, so the pane changed height under the cursor and
+    // every row below it jumped.
+    await tester.ensureVisible(_switchIn(t.settingsPage.habitReminders));
+    await tester.tap(_switchIn(t.settingsPage.habitReminders));
     await tester.pumpAndSettle();
 
-    expect(prefs.getBool('notif_weekly_reports'), isTrue);
+    expect(find.text(t.settingsPage.morningBriefTime), findsOneWidget);
+    expect(find.text(t.settingsPage.disabledTurnOnFirst), findsOneWidget);
   });
 
   // macOS's brief-time defaults said 08:00 / 20:30 and won on a first launch,
@@ -145,26 +175,33 @@ void main() {
     ('SharedPreferences is empty', false),
   ]) {
     testWidgets(
-        'the brief times are not the canonical 09:00 / 21:00 when $name',
-        (tester) async {
-      await _pumpSettings(tester, withPreferences: !absent);
-      await _openSection(tester, t.settingsPage.notifications);
+      'the brief times are not the canonical 09:00 / 21:00 when $name',
+      (tester) async {
+        await _pumpSettings(tester, withPreferences: !absent);
+        await openSettingsSection(tester, SettingsSection.notifications);
 
-      // The time the user actually READS, through the real initState path.
-      expect(_timePickerIn(t.settingsPage.morningBriefTime).value,
-          const TimeOfDay(hour: 9, minute: 0));
-      expect(_timePickerIn(t.settingsPage.eveningReviewTime).value,
-          const TimeOfDay(hour: 21, minute: 0));
-    });
+        // The time the user actually READS, through the real initState path.
+        expect(
+          _timePickerIn(t.settingsPage.morningBriefTime).value,
+          const TimeOfDay(hour: 9, minute: 0),
+        );
+        expect(
+          _timePickerIn(t.settingsPage.eveningReviewTime).value,
+          const TimeOfDay(hour: 21, minute: 0),
+        );
+      },
+    );
   }
 }
 
 /// The kit picker rendered inside the row titled [rowLabel].
-EvolveTimePicker _timePickerIn(String rowLabel) => find
-    .descendant(
-      of: find.widgetWithText(ListTile, rowLabel),
-      matching: find.byType(EvolveTimePicker),
-    )
-    .evaluate()
-    .single
-    .widget as EvolveTimePicker;
+EvolveTimePicker _timePickerIn(String rowLabel) =>
+    find
+            .descendant(
+              of: find.widgetWithText(ListTile, rowLabel),
+              matching: find.byType(EvolveTimePicker),
+            )
+            .evaluate()
+            .single
+            .widget
+        as EvolveTimePicker;

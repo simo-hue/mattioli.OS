@@ -25,6 +25,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:evolve_desktop/features/settings/presentation/settings_section.dart';
+import 'support/settings_navigation.dart';
 
 /// Pumps the settings page in PRIVATE mode with the synced-settings write
 /// replaced by [writer].
@@ -79,9 +81,9 @@ Future<SharedPreferences> _pumpPrivateSettings(
 }
 
 Finder _switchIn(String rowLabel) => find.descendant(
-      of: find.widgetWithText(ListTile, rowLabel),
-      matching: find.byType(EvolveSwitch),
-    );
+  of: find.widgetWithText(ListTile, rowLabel),
+  matching: find.byType(EvolveSwitch),
+);
 
 bool _switchValue(WidgetTester tester, String rowLabel) =>
     tester.widget<EvolveSwitch>(_switchIn(rowLabel)).value;
@@ -96,9 +98,14 @@ Future<void> _drainToast(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-Future<void> _openApplication(WidgetTester tester) async {
-  await tester.tap(find.text(t.settingsPage.sectionApplication).first);
-  await tester.pumpAndSettle();
+/// Focus mode now lives in Notifications, beside the reminders it silences.
+Future<void> _openFocusMode(WidgetTester tester) async {
+  await openSettingsSection(tester, SettingsSection.notifications);
+}
+
+/// Theme and accent live in General.
+Future<void> _openAppearance(WidgetTester tester) async {
+  await openSettingsSection(tester, SettingsSection.general);
 }
 
 void main() {
@@ -115,7 +122,7 @@ void main() {
         writer: (_) async => throw Exception('disk full'),
         stored: const {'pref_focus_mode': '0'},
       );
-      await _openApplication(tester);
+      await _openFocusMode(tester);
 
       expect(_switchValue(tester, t.settingsPage.focusMode), isFalse);
       await tester.ensureVisible(_switchIn(t.settingsPage.focusMode));
@@ -155,7 +162,7 @@ void main() {
         writer: (_) async => throw const PrivateDatabaseLockedException(),
         stored: const {},
       );
-      await _openApplication(tester);
+      await _openFocusMode(tester);
 
       expect(_switchValue(tester, t.settingsPage.focusMode), isFalse);
       await tester.ensureVisible(_switchIn(t.settingsPage.focusMode));
@@ -169,8 +176,9 @@ void main() {
     },
   );
 
-  testWidgets('a failed accent write leaves the wrong accent on screen',
-      (tester) async {
+  testWidgets('a failed accent write leaves the wrong accent on screen', (
+    tester,
+  ) async {
     // The accent picker calls `_syncProfile` directly rather than through
     // `_setBool`/`_setString`, so a fix that only touches those two helpers
     // still loses this one — and the accent is one of the two symptoms the
@@ -180,7 +188,7 @@ void main() {
       writer: (_) async => throw Exception('disk full'),
       stored: const {'accent_color': '#FF7A00'},
     );
-    await _openApplication(tester);
+    await _openAppearance(tester);
 
     final blue = find.byTooltip(t.settingsPage.useAccent(hex: '#3B82F6'));
     await tester.ensureVisible(blue);
@@ -210,7 +218,7 @@ void main() {
       writer: (values) async => written.addAll(values),
       stored: const {'pref_focus_mode': '0'},
     );
-    await _openApplication(tester);
+    await _openFocusMode(tester);
 
     await tester.ensureVisible(_switchIn(t.settingsPage.focusMode));
     await tester.tap(_switchIn(t.settingsPage.focusMode));

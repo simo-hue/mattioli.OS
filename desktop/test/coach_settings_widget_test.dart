@@ -1,7 +1,11 @@
-// Widget coverage for the AI Coach settings surface: the Settings rail exposes
-// an "AI Coach" section whose Configure row opens the shared engine dialog. In
-// account mode that dialog is the managed engine alone (no key prompt — the
-// Guideline 3.1.1 shape); in Private mode it is the BYOK + local engine cards.
+// Widget coverage for the AI Coach settings surface.
+//
+// The engine configuration IS the pane now — there is no Configure row and no
+// dialog. CoachSettingsDialog held the entire feature (engine cards, API key,
+// local server, model picker) two levels down behind a chevron, which is why
+// none of it was discoverable. In account mode the pane is the managed engine
+// alone (no key prompt — the Guideline 3.1.1 shape); in Private mode it is the
+// BYOK + local engine cards.
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
@@ -14,6 +18,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:evolve_desktop/features/settings/presentation/settings_section.dart';
+import 'support/settings_navigation.dart';
 
 Future<void> _pumpSettings(WidgetTester tester, {bool private = false}) async {
   SharedPreferences.setMockInitialValues({});
@@ -58,29 +64,22 @@ Future<void> _pumpSettings(WidgetTester tester, {bool private = false}) async {
   await tester.pumpAndSettle();
 }
 
-Future<void> _openCoachDialog(WidgetTester tester) async {
-  // Open the AI Coach rail section (the rail tile carries the label).
-  await tester.tap(find.text(t.coachSettings.settingsSectionLabel).first);
-  await tester.pumpAndSettle();
+Future<void> _openCoachPane(WidgetTester tester) async {
+  await openSettingsSection(tester, SettingsSection.aiCoach);
 
-  // The section exposes the active-engine status + the configure entry.
-  expect(find.text(t.coachSettings.settingsRowStatus), findsOneWidget);
-  expect(find.text(t.coachSettings.settingsRowConfigure), findsOneWidget);
-
-  await tester.tap(find.text(t.coachSettings.settingsRowConfigure));
-  await tester.pumpAndSettle();
-
-  // The dialog is open (its title also labels the settings card behind it).
-  expect(find.text(t.coachSettings.title), findsWidgets);
+  // No launcher row survives: the controls are the pane.
+  expect(find.text(t.coachSettings.settingsRowConfigure), findsNothing);
+  expect(find.text(t.coachSettings.groupEngine), findsOneWidget);
 }
 
 void main() {
   setUp(() => LocaleSettings.setLocale(AppLocale.en));
 
-  testWidgets('account mode opens on the managed engine with no key prompt',
-      (tester) async {
+  testWidgets('account mode opens on the managed engine with no key prompt', (
+    tester,
+  ) async {
     await _pumpSettings(tester);
-    await _openCoachDialog(tester);
+    await _openCoachPane(tester);
 
     // Account mode is Evolve-AI-only: the managed engine card is shown, and the
     // note points BYOK/local to Private mode.
@@ -99,10 +98,11 @@ void main() {
     expect(find.text(t.coachSettings.presetLmStudio), findsNothing);
   });
 
-  testWidgets('private mode shows the OpenRouter + Ollama + LM Studio cards',
-      (tester) async {
+  testWidgets('private mode shows the OpenRouter + Ollama + LM Studio cards', (
+    tester,
+  ) async {
     await _pumpSettings(tester, private: true);
-    await _openCoachDialog(tester);
+    await _openCoachPane(tester);
 
     // The redesign's core: local products are first-class, one-tap cards next to
     // BYOK — not options buried behind a preset dropdown.

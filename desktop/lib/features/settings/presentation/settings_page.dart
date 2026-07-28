@@ -21,11 +21,8 @@ import 'package:evolve_desktop/core/desktop_private_sync_service.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/auth/application/consent_controller.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
-import 'package:evolve_desktop/features/ai_coach/application/coach_controllers.dart';
 import 'package:evolve_desktop/features/ai_coach/application/coach_consent_controller.dart';
-import 'package:evolve_desktop/features/ai_coach/domain/coach_backend.dart';
-import 'package:evolve_desktop/features/ai_coach/presentation/coach_model_chip.dart';
-import 'package:evolve_desktop/features/ai_coach/presentation/coach_settings_dialog.dart';
+import 'package:evolve_desktop/features/ai_coach/presentation/coach_settings_panels.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/features/settings/application/desktop_biometric_controller.dart';
@@ -36,6 +33,11 @@ import 'package:evolve_desktop/features/settings/data/desktop_system_settings_se
 import 'package:evolve_desktop/features/settings/presentation/app_logs_dialog.dart';
 import 'package:evolve_desktop/features/statistics/data/private_analytics_source.dart';
 import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
+import 'package:evolve_desktop/features/settings/presentation/settings_section.dart';
+import 'package:evolve_desktop/features/settings/presentation/settings_search.dart';
+import 'package:evolve_desktop/features/settings/presentation/widgets/settings_about_footer.dart';
+import 'package:evolve_desktop/features/settings/presentation/widgets/settings_row_kit.dart';
+import 'package:evolve_desktop/features/settings/presentation/widgets/settings_search_widgets.dart';
 import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
@@ -46,8 +48,6 @@ import 'package:evolve_desktop/shared/widgets/evolve_toast.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_image_crop_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:evolve_desktop/shared/widgets/evolve_color_picker.dart';
-import 'package:evolve_desktop/shared/widgets/popover.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -57,18 +57,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:evolve_desktop/features/auth/application/desktop_profile_controller.dart';
 import 'package:evolve_desktop/features/goals/application/goal_categories_controller.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
-import 'package:evolve_desktop/core/rtl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
-
-enum _SettingsSection {
-  profile,
-  appearance,
-  notifications,
-  aiCoach,
-  privacy,
-  subscription,
-}
 
 /// Page size for the windowed export reads. A single unbounded PostgREST
 /// `select` is capped by the project's `db-max-rows` (1000 by default), so a
@@ -340,7 +330,21 @@ class SettingsPage extends ConsumerStatefulWidget {
 }
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
-  _SettingsSection _section = _SettingsSection.profile;
+  SettingsSection _section = SettingsSection.account;
+
+  /// The detail pane's own scroll position, separate from the page-level
+  /// PrimaryScrollController the whole page used to share.
+  final ScrollController _paneScroll = ScrollController();
+
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocus = FocusNode();
+  String _searchQuery = '';
+
+  /// The row the search just jumped to, tinted until the user does anything
+  /// else. Cleared on a timer so the page does not stay permanently marked.
+  String? _highlightedRow;
+  Timer? _highlightTimer;
+  final GlobalKey _highlightTarget = GlobalKey();
 
   /// The canonical theme CODE ('light'/'dark'/'system'), not a bool.
   ///
@@ -355,8 +359,17 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   bool _habitReminders = true;
   bool _eveningReview = true;
   bool _goalDeadlines = true;
-  bool _aiInsights = true;
-  bool _weeklyReport = true;
+  // FALSE, matching both the `?? false` a few lines into initState and mobile's
+  // AppSettings. They used to initialise to `true` here, and because initState
+  // early-returns when SharedPreferences is absent, the field initialiser won
+  // on a fresh install — so a first-launch Mac pushed `true` into the synced
+  // row and switched both features on for an iPhone that had them off.
+  //
+  // Neither has a UI row any more (nothing on either platform delivers an AI
+  // insight or a weekly report), but both still sync, so the value this holds
+  // still reaches the phone.
+  bool _aiInsights = false;
+  bool _weeklyReport = false;
   bool _crashReports = true;
   // Experience/Pro toggles (mobile parity — same keys and defaults as
   // mobile's AppSettings: ai/focus/deep-work OFF, milestones ON).
@@ -420,26 +433,32 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   bool _syncBusy = false;
 
   @override
+  void dispose() {
+    _highlightTimer?.cancel();
+    _searchController.dispose();
+    _searchFocus.dispose();
+    _paneScroll.dispose();
+    super.dispose();
+  }
+
+  @override
   void initState() {
     super.initState();
-    // Deep-link: the data-loss SyncOffBanner asked to open straight on the
-    // Privacy (iCloud-sync) section. Honour it here (pre-first-build, so no
-    // setState needed) and clear the one-shot flag after the frame so a normal
-    // visit still opens on Profile.
-    if (ref.read(privacySettingsRequestProvider)) {
-      _section = _SettingsSection.privacy;
+    // Deep-link: one request provider, one consumer. This used to be two
+    // ad-hoc booleans handled asymmetrically — the privacy one here, the
+    // subscription one in a build-time listener — and the subscription flag had
+    // no producer left anywhere in lib/ or test/.
+    final requested = ref.read(settingsSectionRequestProvider);
+    if (requested != null) {
+      _section = requested.section;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          ref.read(privacySettingsRequestProvider.notifier).consume();
+        if (!mounted) return;
+        // The highlight has to wait for first build — there is no row to tint
+        // or scroll to before the pane exists.
+        if (requested.rowId != null) {
+          _jumpToRow(requested.section, rowId: requested.rowId);
         }
-      });
-    }
-    if (ref.read(subscriptionSettingsRequestProvider)) {
-      _section = _SettingsSection.subscription;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          ref.read(subscriptionSettingsRequestProvider.notifier).consume();
-        }
+        ref.read(settingsSectionRequestProvider.notifier).consume();
       });
     }
     unawaited(_refreshSyncStatus());
@@ -496,10 +515,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(subscriptionSettingsRequestProvider, (_, request) {
-      if (request) {
-        setState(() => _section = _SettingsSection.subscription);
-        ref.read(subscriptionSettingsRequestProvider.notifier).consume();
+    // A request that arrives while Settings is already open (the chat header's
+    // engine chip, the coach page's banners) still has to land.
+    ref.listen(settingsSectionRequestProvider, (_, target) {
+      if (target != null) {
+        _jumpToRow(target.section, rowId: target.rowId);
+        ref.read(settingsSectionRequestProvider.notifier).consume();
       }
     });
 
@@ -516,93 +537,281 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final isPrivateMode = dataMode.isPrivate;
 
     // Filter available sections based on mode
-    final availableSections = _SettingsSection.values.where((section) {
-      if (isPrivateMode && section == _SettingsSection.subscription) {
+    final availableSections = SettingsSection.values.where((section) {
+      if (isPrivateMode && section == SettingsSection.subscription) {
         return false;
       }
       return true;
     }).toList();
 
-    return DesktopPage(
-      title: t.settingsPage.pageTitle,
-      subtitle: t.settingsPage.pageSubtitle,
-      // The group-card grid goes 2-up when the page content width (inside the
-      // 28px gutters, LAYOUT_SPEC scale) reaches ~1280; below that the cards
-      // stack full width.
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final twoColumn = constraints.maxWidth >= 1280;
-          return EvolvePanel(
-            padding: EdgeInsets.zero,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 225,
-                  child: Padding(
-                    padding: const EdgeInsets.all(13),
-                    child: Column(
-                      children: [
-                        for (final section in availableSections)
-                          _SettingsDestination(
-                            section: section,
-                            selected: section == _section,
-                            onTap: () => setState(() => _section = section),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                const VerticalDivider(width: 1),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(22),
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 200),
-                      switchInCurve: Curves.easeOutCubic,
-                      switchOutCurve: Curves.easeOutCubic,
-                      transitionBuilder: (child, animation) =>
-                          FadeTransition(opacity: animation, child: child),
-                      layoutBuilder: (currentChild, previousChildren) => Stack(
-                        alignment: AlignmentDirectional.topStart,
-                        children: [...previousChildren, ?currentChild],
-                      ),
-                      child: KeyedSubtree(
-                        key: ValueKey(_section),
-                        child: switch (_section) {
-                          _SettingsSection.profile => _profile(twoColumn),
-                          _SettingsSection.appearance => _appearance(twoColumn),
-                          _SettingsSection.notifications => _notifications(
-                            twoColumn,
-                          ),
-                          _SettingsSection.aiCoach => _aiCoach(twoColumn),
-                          _SettingsSection.privacy => _privacy(twoColumn),
-                          _SettingsSection.subscription =>
-                            _SubscriptionSettings(twoColumn: twoColumn),
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
+    return SettingsHighlight(
+      rowId: _highlightedRow,
+      targetKey: _highlightTarget,
+      child: CallbackShortcuts(
+        bindings: {
+          // ⌘F is the macOS convention for "find in this window", and the rail
+          // is where the field lives.
+          const SingleActivator(LogicalKeyboardKey.keyF, meta: true):
+              _searchFocus.requestFocus,
         },
+        // autofocus so CallbackShortcuts actually receives key events: it only
+        // hears them when something in its subtree holds focus, and with
+        // `autofocus: false` the binding was dead until the user happened to
+        // click a control first. Key events still bubble UP from here, so the
+        // shell's own ⌘1–⌘5 / ⌘K bindings keep working.
+        child: Focus(autofocus: true, child: _shell(availableSections)),
       ),
     );
   }
 
-  Widget _profile(bool twoColumn) {
+  Widget _shell(List<SettingsSection> availableSections) {
+    return DesktopPage(
+      title: t.settingsPage.pageTitle,
+      // `pinned` is what makes the rail a rail. Without it the page header, the
+      // sidebar and the pane all lived in one SingleChildScrollView, so on the
+      // taller panes the destinations scrolled off the top — a sidebar that
+      // scrolls away is not a sidebar. Now the page fills the viewport and the
+      // pane owns the only scrollable.
+      //
+      // The page subtitle is gone with it: it listed the panes, directly above
+      // the rail that lists them.
+      pinned: true,
+      child: EvolvePanel(
+        padding: EdgeInsets.zero,
+        child: Row(
+          // `stretch`, not `start`. Under `start` the rail was only as tall as
+          // its destinations and `const VerticalDivider(width: 1)` resolved to
+          // 1x0 logical pixels — it had never painted anything.
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(width: 236, child: _rail(availableSections)),
+            Container(
+              width: 1,
+              color: context.evolveColors.border.withValues(alpha: 0.6),
+            ),
+            Expanded(child: _paneBody()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// The fixed source list: destinations grouped You / App / Data, with the
+  /// expert pane separated at the bottom.
+  Widget _rail(List<SettingsSection> sections) {
+    final query = _searchQuery.trim();
+    if (query.isNotEmpty) {
+      return _searchRail(query);
+    }
+
+    final children = <Widget>[];
+    SettingsSectionGroup? previous;
+
+    for (final section in sections) {
+      if (section.group != previous) {
+        if (previous != null) children.add(const SizedBox(height: 10));
+        final caption = section.group.caption;
+        children.add(
+          caption != null
+              ? Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(11, 4, 11, 6),
+                  child: Text(
+                    caption,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.9,
+                      color: context.evolveColors.muted.withValues(alpha: 0.65),
+                    ),
+                  ),
+                )
+              : Padding(
+                  padding: const EdgeInsets.fromLTRB(11, 2, 11, 8),
+                  child: Container(
+                    height: 1,
+                    color: context.evolveColors.border.withValues(alpha: 0.5),
+                  ),
+                ),
+        );
+        previous = section.group;
+      }
+      children.add(
+        _SettingsDestination(
+          key: section.key,
+          section: section,
+          selected: section == _section,
+          onTap: () => _selectSection(section),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _searchField(),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(13, 0, 13, 13),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: children,
+            ),
+          ),
+        ),
+        // Docked below the destinations, outside the scrollable — the build
+        // number should be readable without scrolling to find it.
+        const SettingsAboutFooter(),
+      ],
+    );
+  }
+
+  Widget _searchField() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(13, 13, 13, 10),
+      child: EvolveSearchField(
+        controller: _searchController,
+        focusNode: _searchFocus,
+        hintText: t.settingsPage.searchPlaceholder,
+        clearTooltip: t.settingsPage.searchClear,
+        onChanged: (value) => setState(() => _searchQuery = value),
+      ),
+    );
+  }
+
+  /// The rail while a query is active: matching ROWS across every pane, not
+  /// just the panes themselves. Searching only pane names would answer
+  /// "language" with "General" and leave the user to hunt.
+  Widget _searchRail(String query) {
+    final isPrivateMode = ref.watch(activeDesktopDataModeProvider).isPrivate;
+    final results = searchSettings(query, isPrivateMode: isPrivateMode);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _searchField(),
+        Expanded(
+          child: results.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.fromLTRB(15, 6, 15, 0),
+                  child: Text(
+                    t.settingsPage.searchNoResults,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: context.evolveColors.muted,
+                    ),
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(13, 0, 13, 13),
+                  itemCount: results.length,
+                  itemBuilder: (context, index) {
+                    final entry = results[index];
+                    return SettingsSearchResult(
+                      key: ValueKey('settings.result.${entry.id}'),
+                      entry: entry,
+                      onTap: () => _jumpToRow(entry.section, rowId: entry.id),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  /// Opens [section] and, when [rowId] is given, tints that row so the eye
+  /// lands on it.
+  ///
+  /// Shared by the sidebar's own result list and by the ⌘K palette, which
+  /// deep-links through `settingsSectionRequestProvider`. Both are searching
+  /// the same index for the same query, so "found it" has to mean the same
+  /// thing in both — a palette hit that dumped the user at the top of General
+  /// while the sidebar scrolled and highlighted was the tell that one of them
+  /// was wrong.
+  ///
+  /// When called from the sidebar the query is deliberately left in the field:
+  /// the user may want the next match, and clearing it would throw the result
+  /// list away the instant they used it.
+  void _jumpToRow(SettingsSection section, {String? rowId}) {
+    _highlightTimer?.cancel();
+    setState(() {
+      _section = section;
+      _highlightedRow = rowId;
+    });
+    if (_paneScroll.hasClients) _paneScroll.jumpTo(0);
+
+    // Scroll the row into view once it exists. Two frames: the pane rebuilds on
+    // the first, and the row's RenderObject is only attached after that.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final target = _highlightTarget.currentContext;
+      if (target != null) {
+        unawaited(
+          Scrollable.ensureVisible(
+            target,
+            alignment: 0.15,
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut,
+          ),
+        );
+      }
+    });
+
+    if (rowId == null) return;
+    _highlightTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted) setState(() => _highlightedRow = null);
+    });
+  }
+
+  /// The detail pane. Owns its own scroll position, which is reset on every
+  /// pane change: the offset used to belong to the shared page-level
+  /// PrimaryScrollController, so switching from a tall pane to a short one left
+  /// the viewport parked past the end of the new content.
+  Widget _paneBody() {
+    return Scrollbar(
+      controller: _paneScroll,
+      child: SingleChildScrollView(
+        controller: _paneScroll,
+        padding: const EdgeInsets.all(22),
+        child: Align(
+          alignment: AlignmentDirectional.topStart,
+          child: ConstrainedBox(
+            // Capped rather than fluid. One column of full-width cards on a
+            // 27-inch display gives 1,600px-wide rows whose label and control
+            // are a screen apart.
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: switch (_section) {
+              SettingsSection.account => _account(),
+              SettingsSection.general => _general(),
+              SettingsSection.notifications => _notifications(),
+              SettingsSection.aiCoach => _aiCoach(),
+              SettingsSection.dataBackup => _dataBackup(),
+              SettingsSection.privacy => _privacy(),
+              SettingsSection.advanced => _advanced(),
+              SettingsSection.subscription => const _SubscriptionSettings(),
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _selectSection(SettingsSection section) {
+    if (section == _section) return;
+    setState(() => _section = section);
+    // Jump, not animate: changing panes is navigation, and a new document
+    // should appear at its top immediately.
+    if (_paneScroll.hasClients) _paneScroll.jumpTo(0);
+  }
+
+  Widget _account() {
     final auth = ref.watch(desktopAuthControllerProvider);
     final isPrivateMode = ref.watch(activeDesktopDataModeProvider).isPrivate;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SettingsHeading(
-          title: t.settingsPage.profileLabel,
-          subtitle: t.settingsPage.profileSubtitle,
-        ),
+        _SettingsHeading(section: SettingsSection.account),
         const SizedBox(height: 20),
         _ProfileCard(
           user: auth.user,
@@ -615,61 +824,81 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               : null,
         ),
         const SizedBox(height: 24),
-        _GroupGrid(
-          twoColumn: twoColumn,
+        _SettingsColumn(
           groups: [
-            _SettingsGroup(
-              title: t.settingsPage.accountAndOnboarding,
-              children: [
-                _InfoRow(
-                  icon: LucideIcons.mail,
-                  label: t.settingsPage.account,
-                  value: isPrivateMode
-                      ? t.settingsPage.privateMode
-                      : auth.user?.email ?? t.settingsPage.sessionUnavailable,
-                ),
-                _InfoRow(
-                  icon: LucideIcons.database,
-                  label: t.settingsPage.dataRepository,
-                  value: isPrivateMode
-                      ? t.settingsPage.encryptedLocalDatabase
-                      : t.settingsPage.supabaseWithEncryptedCache,
-                ),
-                if (!isPrivateMode) ...[
-                  _ActionRow(
-                    icon: LucideIcons.user,
-                    title: t.settingsPage.personalInfo,
-                    detail: t.settingsPage.personalInfoDetail,
-                    onTap: auth.isLoggedIn
-                        ? () => showEvolveDialog<void>(
-                            context: context,
-                            builder: (context) => const _PersonalInfoDialog(),
-                          )
-                        : () => _showGate(
-                            t.settingsPage.gateProfile,
+            // Editable in BOTH modes. The dialog these replace was gated
+            // behind `if (!isPrivateMode)`, so a Private-mode user could never
+            // change their own name or birthday — while
+            // `privateProfileProvider.updateProfile` sat fully implemented and
+            // unreachable.
+            SettingsGroup(
+              title: t.settingsPage.personalInfo,
+              children: const [_PersonalInfoRows()],
+            ),
+            if (!isPrivateMode)
+              SettingsGroup(
+                title: t.settingsPage.groupSignIn,
+                children: [
+                  SettingsInfoRow(
+                    id: 'account.email',
+                    label: t.settingsPage.email,
+                    value:
+                        auth.user?.email ?? t.settingsPage.sessionUnavailable,
+                  ),
+                  // Moved here from Privacy › "Access protection". Credential
+                  // management is account lifecycle, and scattering it across
+                  // two panes is what made "Privacy" mean nothing in
+                  // particular.
+                  SettingsActionRow(
+                    id: 'account.changePassword',
+                    title: t.settingsPage.changePassword,
+                    detail: t.settingsPage.changePasswordDetail,
+                    state: auth.isLoggedIn
+                        ? const SettingsRowState.enabled()
+                        : SettingsRowState.disabled(
                             t.settingsPage.gateRequiresActiveSession,
                           ),
+                    onTap: () => showEvolveDialog<void>(
+                      context: context,
+                      builder: (context) => const _ChangePasswordDialog(),
+                    ),
                   ),
-                  _ActionRow(
-                    icon: LucideIcons.camera,
-                    title: t.settingsPage.updateAvatar,
-                    detail: t.settingsPage.updateAvatarDetail,
-                    onTap: _pickAvatar,
-                  ),
-                  _ActionRow(
-                    icon: LucideIcons.fileText,
+                  SettingsActionRow(
+                    id: 'account.resetConsent',
                     title: t.settingsPage.reviewInitialConsent,
                     detail: t.settingsPage.reviewInitialConsentDetail,
                     onTap: _reviewConsent,
                   ),
                 ],
+              ),
+            // One row where there were two. "Account" and "Data repository" sat
+            // consecutively encoding the same fact — which data mode you are in
+            // — and the second said it in vendor language ("Supabase with
+            // encrypted cache"), duplicating the profile card directly above.
+            // Untitled: the card holds one row, and a group heading that reads
+            // identically to the row inside it is noise.
+            SettingsGroup(
+              children: [
+                SettingsInfoRow(
+                  id: 'account.dataStorage',
+                  label: t.settingsPage.dataStorage,
+                  value: isPrivateMode
+                      ? t.settingsPage.dataStorageThisMac
+                      : t.settingsPage.dataStorageAccount,
+                ),
               ],
             ),
+            // "Update avatar" is gone. In account mode — the ONLY mode it
+            // rendered in — `_pickAvatar` just sets a widget-local File that is
+            // never uploaded, never written to `profiles` and never restored at
+            // init, so the picture reverted on the next rebuild. The avatar in
+            // the card above is the one working affordance; see TO_SIMO_DO.md
+            // for the missing account-mode upload path.
           ],
         ),
         const SizedBox(height: 18),
         if (!isPrivateMode)
-          _DestructiveButton(
+          SettingsDestructiveButton(
             label: t.settingsPage.signOut,
             caption: auth.isLoggedIn
                 ? t.settingsPage.signOutDetailActive
@@ -682,7 +911,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   ),
           )
         else
-          _DestructiveButton(
+          SettingsDestructiveButton(
             label: t.settingsPage.goToLogin,
             caption: t.settingsPage.goToLoginDetail,
             onTap: () {
@@ -693,21 +922,16 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
-  Widget _appearance(bool twoColumn) {
-    final isPrivateMode = ref.watch(activeDesktopDataModeProvider).isPrivate;
+  Widget _general() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SettingsHeading(
-          title: t.settingsPage.appearanceTitle,
-          subtitle: t.settingsPage.appearanceSubtitle,
-        ),
+        _SettingsHeading(section: SettingsSection.general),
         const SizedBox(height: 20),
-        _GroupGrid(
-          twoColumn: twoColumn,
+        _SettingsColumn(
           groups: [
-            _SettingsGroup(
-              title: t.settingsPage.appearanceAndVisual,
+            SettingsGroup(
+              title: t.settingsPage.groupAppearance,
               children: [
                 // Three options, not a switch. A binary control cannot express
                 // `'system'` — which the schema permits and which every user
@@ -715,8 +939,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 // old switch wrote a concrete 'dark'/'light' to the synced
                 // store, pinned the iPhone too, and left no way back to "follow
                 // system" from the Mac.
-                _SelectRow<String>(
-                  icon: LucideIcons.moon,
+                SettingsSelectRow<String>(
+                  id: 'general.theme',
                   label: t.settingsPage.themeMode,
                   value: _themeMode,
                   options: [
@@ -752,12 +976,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     );
                   },
                 ),
-              ],
-            ),
-            _SettingsGroup(
-              title: t.settingsPage.calendarExperienceLanguage,
-              children: [
-                _ColorRow(
+                // Accent finally sits beside Theme. "Appearance and visuals"
+                // used to hold Theme alone while the most appearance-like
+                // control on the page lived one card further down, under
+                // "Calendar, experience and language".
+                SettingsColorRow(
+                  id: 'general.accent',
                   icon: LucideIcons.palette,
                   label: t.settingsPage.accentColor,
                   detail: t.settingsPage.accentColorDetail,
@@ -800,8 +1024,17 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   onCustomLocked: () =>
                       unawaited(showProFeaturesDialog(context, ref)),
                 ),
-                _SelectRow<String>(
-                  icon: LucideIcons.calendar,
+              ],
+            ),
+            SettingsGroup(
+              title: t.settingsPage.groupLanguageFormats,
+              // The code has always implemented this distinction and the UI has
+              // never shown it: these four dual-write the profiles row, so they
+              // reach the paired iPhone.
+              footnote: t.settingsPage.syncsToIPhoneNote,
+              children: [
+                SettingsSelectRow<String>(
+                  id: 'general.calendarView',
                   label: t.settingsPage.defaultCalendarView,
                   value: _calendarView,
                   options: [
@@ -822,8 +1055,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     profileColumn: 'pref_default_calendar_view',
                   ),
                 ),
-                _SelectRow<String>(
-                  icon: LucideIcons.languages,
+                SettingsSelectRow<String>(
+                  id: 'general.language',
                   label: t.settingsPage.language,
                   value: _language,
                   options: [
@@ -852,8 +1085,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     profileValue: value,
                   ),
                 ),
-                _SwitchRow(
-                  icon: LucideIcons.clock,
+                SettingsSwitchRow(
+                  id: 'general.timeFormat',
                   label: t.settingsPage.timeFormat24h,
                   detail: t.settingsPage.timeFormat24hDetail,
                   value: _timeFormat24h,
@@ -864,125 +1097,79 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     profileColumn: 'pref_time_format_24h',
                   ),
                 ),
-                // No haptic-feedback toggle on desktop: macOS generates no
-                // haptics for this, so the row is hidden. The
-                // pref_haptic_feedback column stays in the profiles row and
-                // keeps syncing untouched for the mobile clients.
-                _ActionRow(
-                  icon: LucideIcons.info,
+              ],
+            ),
+            SettingsGroup(
+              title: t.settingsPage.groupGettingStarted,
+              children: [
+                SettingsActionRow(
+                  id: 'general.replayTour',
                   title: t.settingsPage.resetTutorial,
                   detail: t.settingsPage.resetTutorialDetail,
                   onTap: _resetTutorials,
                 ),
-                _ActionRow(
-                  icon: LucideIcons.scrollText,
-                  title: t.settingsPage.appLogsTitle,
-                  detail: t.settingsPage.appLogsDetail,
-                  onTap: () => unawaited(showAppLogsDialog(context)),
-                ),
               ],
             ),
-            // AI & System — the experience toggles the mobile client models in
-            // AppSettings (same pref keys and defaults). In cloud mode they
-            // stay local like on mobile (the Supabase profiles upsert never
-            // includes them); in Private mode they persist to the encrypted
-            // profiles row so they iCloud-sync across devices.
-            _SettingsGroup(
-              title: t.settingsPage.aiAndSystem,
-              children: [
-                _SwitchRow(
-                  icon: LucideIcons.sparkles,
-                  label: t.settingsPage.aiSuggestions,
-                  detail: t.settingsPage.aiSuggestionsDetail,
-                  // Pro-gated feature: badge the row like mobile instead of
-                  // leaving it looking disabled.
-                  badge: const EvolveProBadge(),
-                  value: _aiSuggestions,
-                  onChanged: (value) {
-                    // Pro-gated exactly like mobile's toggleAi (Private mode
-                    // is always entitled via desktopIsProProvider).
-                    if (!ref.read(desktopIsProProvider)) {
-                      unawaited(showProFeaturesDialog(context, ref));
-                      return;
-                    }
-                    _setBool(
-                      'pref_ai_suggestions',
-                      value,
-                      (v) => _aiSuggestions = v,
-                      profileColumn: isPrivateMode
-                          ? 'pref_ai_suggestions'
-                          : null,
-                    );
-                  },
-                ),
-                _SwitchRow(
-                  icon: LucideIcons.crosshair,
-                  label: t.settingsPage.focusMode,
-                  detail: t.settingsPage.focusModeDetail,
-                  value: _focusMode,
-                  onChanged: (value) {
-                    _setBool(
-                      'pref_focus_mode',
-                      value,
-                      (v) => _focusMode = v,
-                      profileColumn: isPrivateMode ? 'pref_focus_mode' : null,
-                    );
-                    // Focus Mode suppresses local notifications (mobile
-                    // parity) — re-sync so schedules are cancelled/restored.
-                    unawaited(_syncNotifications());
-                  },
-                ),
-                _SwitchRow(
-                  icon: LucideIcons.flag,
-                  label: t.settingsPage.milestones,
-                  detail: t.settingsPage.milestonesDetail,
-                  value: _milestones,
-                  onChanged: (value) => _setBool(
-                    'pref_milestones',
-                    value,
-                    (v) => _milestones = v,
-                    profileColumn: isPrivateMode ? 'pref_milestones' : null,
-                  ),
-                ),
-                _SwitchRow(
-                  icon: LucideIcons.brain,
-                  label: t.settingsPage.deepWorkInsights,
-                  detail: t.settingsPage.deepWorkInsightsDetail,
-                  value: _deepWorkInsights,
-                  onChanged: (value) => _setBool(
-                    'pref_deep_work_insights',
-                    value,
-                    (v) => _deepWorkInsights = v,
-                    profileColumn: isPrivateMode
-                        ? 'pref_deep_work_insights'
-                        : null,
-                  ),
-                ),
-              ],
-            ),
+            // Gone from this pane:
+            //   * "AI & SYSTEM" entirely. AI Suggestions, Milestones and Deep
+            //     Work Insights have no consumer on EITHER platform — they are
+            //     internal AppSettings fields that were surfaced as switches,
+            //     and iOS never showed them. AI Suggestions also carried the
+            //     page's only PRO badge, so the Pro signal was attached to the
+            //     one control that did nothing. The pref keys and profile
+            //     columns stay; only the rows go.
+            //   * Focus mode, to Notifications, where the switches it silences
+            //     live.
+            //   * App Logs, to Advanced. A diagnostics viewer does not belong
+            //     under "Calendar, experience and language".
           ],
         ),
       ],
     );
   }
 
-  Widget _notifications(bool twoColumn) {
+  Widget _notifications() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SettingsHeading(
-          title: t.settingsPage.notifications,
-          subtitle: t.settingsPage.notificationsSubtitle,
-        ),
+        _SettingsHeading(section: SettingsSection.notifications),
         const SizedBox(height: 20),
-        _GroupGrid(
-          twoColumn: twoColumn,
+        _SettingsColumn(
           groups: [
-            _SettingsGroup(
-              title: t.settingsPage.operationalReminders,
+            // Focus mode leads the pane because it overrides everything under
+            // it. It used to live in the Application pane's "AI & SYSTEM" card,
+            // three destinations away from the switches it silences.
+            SettingsGroup(
+              title: t.settingsPage.groupFocus,
               children: [
-                _SwitchRow(
-                  icon: LucideIcons.calendarCheck,
+                SettingsSwitchRow(
+                  id: 'notifications.focusMode',
+                  label: t.settingsPage.focusMode,
+                  detail: t.settingsPage.focusModeDetail,
+                  value: _focusMode,
+                  onChanged: (value) {
+                    // Stays local in account mode (profileColumn is null
+                    // there), so this deliberately makes no cross-device claim.
+                    _setBool(
+                      'pref_focus_mode',
+                      value,
+                      (v) => _focusMode = v,
+                      profileColumn:
+                          ref.read(activeDesktopDataModeProvider).isPrivate
+                          ? 'pref_focus_mode'
+                          : null,
+                    );
+                    unawaited(_syncNotifications());
+                  },
+                ),
+              ],
+            ),
+            SettingsGroup(
+              title: t.settingsPage.groupDailyReminders,
+              footnote: t.settingsPage.perHabitRemindersNote,
+              children: [
+                SettingsSwitchRow(
+                  id: 'notifications.morningBrief',
                   label: t.settingsPage.habitReminders,
                   detail: t.settingsPage.habitRemindersDetail,
                   value: _habitReminders,
@@ -994,22 +1181,29 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     requestPermissions: value,
                   ),
                 ),
-                if (_habitReminders)
-                  _TimeRow(
-                    icon: LucideIcons.sunrise,
-                    label: t.settingsPage.morningBriefTime,
-                    value: _morningTime,
-                    use24hFormat: _timeFormat24h,
-                    onChanged: (value) => _setNotificationString(
-                      'notif_morning_brief_time',
-                      value,
-                      (v) => _morningTime = v,
-                      previous: _morningTime,
-                      profileColumn: 'morning_brief_time',
-                    ),
+                // Always rendered, disabled when its switch is off. It used to
+                // be `if (_habitReminders)`, so the pane changed height under
+                // the cursor and the rows below jumped on every toggle.
+                SettingsTimeRow(
+                  id: 'notifications.morningBriefTime',
+                  label: t.settingsPage.morningBriefTime,
+                  value: _morningTime,
+                  use24hFormat: _timeFormat24h,
+                  state: _habitReminders
+                      ? const SettingsRowState.enabled()
+                      : SettingsRowState.disabled(
+                          t.settingsPage.disabledTurnOnFirst,
+                        ),
+                  onChanged: (value) => _setNotificationString(
+                    'notif_morning_brief_time',
+                    value,
+                    (v) => _morningTime = v,
+                    previous: _morningTime,
+                    profileColumn: 'morning_brief_time',
                   ),
-                _SwitchRow(
-                  icon: LucideIcons.bellRing,
+                ),
+                SettingsSwitchRow(
+                  id: 'notifications.eveningReview',
                   label: t.settingsPage.eveningReview,
                   detail: t.settingsPage.eveningReviewDetail,
                   value: _eveningReview,
@@ -1021,21 +1215,44 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     requestPermissions: value,
                   ),
                 ),
-                if (_eveningReview)
-                  _TimeRow(
-                    icon: LucideIcons.sunset,
-                    label: t.settingsPage.eveningReviewTime,
-                    value: _eveningTime,
-                    use24hFormat: _timeFormat24h,
-                    onChanged: (value) => _setNotificationString(
-                      'notif_evening_review_time',
-                      value,
-                      (v) => _eveningTime = v,
-                      previous: _eveningTime,
-                      profileColumn: 'evening_review_time',
-                    ),
+                SettingsTimeRow(
+                  id: 'notifications.eveningReviewTime',
+                  label: t.settingsPage.eveningReviewTime,
+                  value: _eveningTime,
+                  use24hFormat: _timeFormat24h,
+                  state: _eveningReview
+                      ? const SettingsRowState.enabled()
+                      : SettingsRowState.disabled(
+                          t.settingsPage.disabledTurnOnFirst,
+                        ),
+                  onChanged: (value) => _setNotificationString(
+                    'notif_evening_review_time',
+                    value,
+                    (v) => _eveningTime = v,
+                    previous: _eveningTime,
+                    profileColumn: 'evening_review_time',
                   ),
-                _ActionRow(
+                ),
+                if (_focusMode)
+                  SettingsWarningRow(
+                    title: t.settingsPage.focusModeOnTitle,
+                    body: t.settingsPage.focusModeOnBody,
+                    destructive: false,
+                  ),
+              ],
+            ),
+            // "Insights and reports" is gone: notif_ai_insights and
+            // notif_weekly_reports have no scheduler on macOS
+            // (DesktopNotificationService.sync takes neither) and an empty
+            // placeholder on iOS, so nothing was ever delivered for either.
+            // Both keys and both profile columns stay — the iPhone still
+            // round-trips them.
+            SettingsGroup(
+              title: t.settingsPage.groupDelivery,
+              footnote: DesktopNotificationService.instance.platformSummary,
+              children: [
+                SettingsActionRow(
+                  id: 'notifications.permission',
                   icon: LucideIcons.bell,
                   title: t.settingsPage.requestNotificationPermissions,
                   detail: t.settingsPage.requestNotificationPermissionsDetail,
@@ -1043,183 +1260,322 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 ),
               ],
             ),
-            // Insights & reports — notif_ai_insights / notif_weekly_reports
-            // were already loaded and synced but had no rows here. Like the
-            // other notification toggles they dual-write prefs + profiles row
-            // and re-sync the local schedules; unlike the operational
-            // reminders they do not prompt for permissions (mobile parity —
-            // their delivery is still a placeholder there too).
-            _SettingsGroup(
-              title: t.settingsPage.insightsAndReports,
-              children: [
-                _SwitchRow(
-                  icon: LucideIcons.lightbulb,
-                  label: t.settingsPage.aiInsights,
-                  detail: t.settingsPage.aiInsightsDetail,
-                  value: _aiInsights,
-                  onChanged: (value) => _setNotificationBool(
-                    key: 'notif_ai_insights',
-                    value: value,
-                    update: (v) => _aiInsights = v,
-                    profileColumn: 'notif_ai_insights',
-                  ),
-                ),
-                _SwitchRow(
-                  icon: LucideIcons.chartColumn,
-                  label: t.settingsPage.weeklyReports,
-                  detail: t.settingsPage.weeklyReportsDetail,
-                  value: _weeklyReport,
-                  onChanged: (value) => _setNotificationBool(
-                    key: 'notif_weekly_reports',
-                    value: value,
-                    update: (v) => _weeklyReport = v,
-                    profileColumn: 'notif_weekly_reports',
-                  ),
-                ),
-              ],
-            ),
           ],
-        ),
-        const SizedBox(height: 18),
-        _PlatformNote(
-          title: t.settingsPage.nativeDeliveryTitle,
-          detail: DesktopNotificationService.instance.platformSummary,
         ),
       ],
     );
   }
 
-  Widget _privacy(bool twoColumn) {
-    final biometric = ref.watch(desktopBiometricControllerProvider);
+  /// Where the user's data is copied, how it gets in and out, and how it is
+  /// erased.
+  ///
+  /// New pane. All of this used to be crammed into Privacy alongside the device
+  /// lock, account credentials and crash-report consent. Note that the pane
+  /// exists in BOTH data modes: in account mode the iCloud card collapses to a
+  /// single status row rather than vanishing, so the dashboard's SyncOffBanner
+  /// has a deep-link target that does not disappear, and so export, import and
+  /// erase are never stranded.
+  Widget _dataBackup() {
     final isPrivateMode = ref.watch(activeDesktopDataModeProvider).isPrivate;
+    final syncEnabled = _syncStatus?.isEnabled ?? false;
+    final undecryptable = _syncStatus?.undecryptableCount ?? 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SettingsHeading(
-          title: t.settingsPage.privacyTitle,
-          subtitle: t.settingsPage.privacySubtitle,
-        ),
+        _SettingsHeading(section: SettingsSection.dataBackup),
         const SizedBox(height: 20),
-        _GroupGrid(
-          twoColumn: twoColumn,
+        _SettingsColumn(
           groups: [
-            // iCloud sync — Private mode on macOS only: the same E2E-encrypted
-            // CloudKit dataset the iPhone app syncs.
             if (isPrivateMode && Platform.isMacOS)
-              _SettingsGroup(
+              SettingsGroup(
                 title: t.icloudSync.title,
+                footnote: t.icloudSync.disclosureBody,
                 children: [
-                  _SwitchRow(
-                    icon: LucideIcons.cloud,
+                  // Promoted from an ordinary action row that sat two below
+                  // "Sync now" and looked identical to it — for the single most
+                  // cross-device-destructive action on the page. iOS already
+                  // shows this as a card.
+                  if (undecryptable > 0)
+                    SettingsWarningRow(
+                      title: t.icloudSync.keySplitTitle,
+                      body: t.icloudSync.keySplitBody(count: undecryptable),
+                      actionLabel: t.icloudSync.resetFromDevice,
+                      onAction: _onResetSyncFromThisDevice,
+                    ),
+                  SettingsSwitchRow(
+                    id: 'data.icloudSync',
                     label: t.icloudSync.enableTitle,
                     detail: _syncStatusLabel(),
-                    value: _syncStatus?.isEnabled ?? false,
+                    value: syncEnabled,
                     onChanged: _onSyncToggle,
                   ),
-                  _ActionRow(
-                    icon: LucideIcons.refreshCw,
+                  SettingsActionRow(
+                    id: 'data.syncNow',
                     title: t.icloudSync.syncNow,
                     detail: _lastSyncedLabel(),
+                    // It used to render fully tappable and then return early in
+                    // exactly these states, so the click did nothing and said
+                    // nothing. iOS disables it; now so do we.
+                    state: syncEnabled
+                        ? const SettingsRowState.enabled()
+                        : SettingsRowState.disabled(
+                            t.icloudSync.syncNowNeedsSync,
+                          ),
                     onTap: _onSyncNow,
                   ),
-                  // Only meaningful once there is a local store to inspect.
-                  if (_syncDiagnostics != null)
-                    _ActionRow(
-                      icon: LucideIcons.listChecks,
-                      title: t.icloudSync.detailsTitle,
-                      detail: _diagnosticsLabel(_syncDiagnostics!),
-                      onTap: () => _showDiagnosticsDialog(_syncDiagnostics!),
-                    ),
-                  // A key split cannot be resolved by waiting or retrying, so
-                  // the only remedy gets its own row rather than hiding behind
-                  // the diagnostics dialog.
-                  if ((_syncStatus?.undecryptableCount ?? 0) > 0)
-                    _ActionRow(
-                      icon: LucideIcons.triangleAlert,
-                      title: t.icloudSync.resetFromDevice,
-                      detail: t.icloudSync.keySplitBody(
-                        count: _syncStatus!.undecryptableCount,
-                      ),
-                      onTap: _onResetSyncFromThisDevice,
-                    ),
+                ],
+              )
+            else
+              SettingsGroup(
+                title: t.icloudSync.title,
+                children: [
+                  SettingsInfoRow(
+                    id: 'data.accountSync',
+                    label: t.icloudSync.title,
+                    value: isPrivateMode
+                        ? t.icloudSync.unavailablePlatform
+                        : t.settingsPage.accountSyncOn,
+                  ),
                 ],
               ),
-            _SettingsGroup(
-              title: t.settingsPage.accessProtection,
+            SettingsGroup(
+              title: t.settingsPage.groupBackups,
               children: [
-                _SwitchRow(
-                  icon: LucideIcons.shield,
-                  label: t.settingsPage.biometricLock,
-                  detail: t.settingsPage.biometricLockDetail,
-                  value: biometric.enabled,
-                  onChanged: _setBiometricLock,
-                ),
-                if (!isPrivateMode)
-                  _ActionRow(
-                    icon: LucideIcons.keyRound,
-                    title: t.settingsPage.changePassword,
-                    detail: t.settingsPage.changePasswordDetail,
-                    onTap: ref.watch(desktopAuthControllerProvider).isLoggedIn
-                        ? () => showEvolveDialog<void>(
-                            context: context,
-                            builder: (context) => const _ChangePasswordDialog(),
-                          )
-                        : () => _showGate(
-                            t.settingsPage.gateChangePassword,
-                            t.settingsPage.gateRequiresActiveSession,
-                          ),
-                  ),
-              ],
-            ),
-            _SettingsGroup(
-              title: t.settingsPage.dataAndConsents,
-              children: [
-                if (!isPrivateMode)
-                  _SwitchRow(
-                    icon: LucideIcons.circleAlert,
-                    label: t.settingsPage.sendCrashReports,
-                    detail: t.settingsPage.sendCrashReportsDetail,
-                    value: _crashReports,
-                    onChanged: _setCrashReportingConsent,
-                  ),
-                _ActionRow(
-                  icon: LucideIcons.download,
+                SettingsActionRow(
+                  id: 'data.export',
                   title: t.settingsPage.exportData,
                   detail: t.settingsPage.exportDataDetail,
                   onTap: _exportData,
                 ),
-                _ActionRow(
-                  icon: LucideIcons.upload,
+                SettingsActionRow(
+                  id: 'data.import',
                   title: t.settingsPage.importData,
                   detail: t.settingsPage.importDataDetail,
                   onTap: _importData,
-                ),
-                _ActionRow(
-                  icon: LucideIcons.externalLink,
-                  title: t.settingsPage.systemPermissionsManagement,
-                  detail: t.settingsPage.systemPermissionsManagementDetail,
-                  onTap: _openSystemPermissions,
                 ),
               ],
             ),
           ],
         ),
         const SizedBox(height: 18),
+        // Erasing content is a first-class action here rather than the hidden
+        // third option inside the "Delete account and data" dialog — the only
+        // route to a non-account-destroying maintenance action used to be the
+        // app's most frightening label. Deleting the ACCOUNT lives in Account.
         if (isPrivateMode)
-          _DestructiveButton(
+          SettingsDestructiveButton(
             label: t.settingsPage.deletePrivateData,
             caption: t.settingsPage.deletePrivateDataDetail,
             onTap: _deletePrivateData,
           )
         else
-          _DestructiveButton(
+          SettingsDestructiveButton(
             label: t.settingsPage.deleteAccountAndData,
             caption: t.settingsPage.deleteAccountAndDataDetail,
             onTap: _showDeleteOrResetDialog,
           ),
       ],
     );
+  }
+
+  /// Narrowed to what a user would actually call privacy. Sync, backups and
+  /// erasure moved to Data & Backup; account credentials moved to Account.
+  Widget _privacy() {
+    final biometric = ref.watch(desktopBiometricControllerProvider);
+    final isPrivateMode = ref.watch(activeDesktopDataModeProvider).isPrivate;
+    final privacyPolicy = LegalUrls.privacy(
+      LocaleSettings.currentLocale.languageCode,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SettingsHeading(section: SettingsSection.privacy),
+        const SizedBox(height: 20),
+        _SettingsColumn(
+          groups: [
+            // Hidden rather than disabled off macOS/Windows: the controller
+            // refuses outright on Linux, and a permanently impossible control
+            // is noise, not information.
+            if (ref
+                .read(desktopBiometricControllerProvider.notifier)
+                .isSupportedPlatform)
+              SettingsGroup(
+                title: t.settingsPage.groupAppLock,
+                children: [
+                  SettingsSwitchRow(
+                    id: 'privacy.appLock',
+                    label: t.settingsPage.biometricLock,
+                    detail: t.settingsPage.biometricLockDetail,
+                    value: biometric.enabled,
+                    onChanged: _setBiometricLock,
+                  ),
+                ],
+              ),
+            if (!isPrivateMode)
+              SettingsGroup(
+                title: t.settingsPage.groupDiagnosticsConsent,
+                children: [
+                  SettingsSwitchRow(
+                    id: 'privacy.crashReports',
+                    label: t.settingsPage.sendCrashReports,
+                    detail: t.settingsPage.sendCrashReportsDetail,
+                    value: _crashReports,
+                    onChanged: _setCrashReportingConsent,
+                  ),
+                ],
+              ),
+            SettingsGroup(
+              title: t.settingsPage.systemPermissionsTitle,
+              children: [
+                SettingsActionRow(
+                  id: 'privacy.systemPermissions',
+                  title: t.settingsPage.systemPermissionsManagement,
+                  detail: t.settingsPage.systemPermissionsManagementDetail,
+                  external: true,
+                  onTap: _openSystemPermissions,
+                ),
+              ],
+            ),
+            // These existed only inside the Pro purchase surface, which is
+            // filtered out of the rail entirely in Private mode — so a
+            // Private-mode user could not reach the privacy policy from
+            // Settings at all. They stay in the paywall too, for App Store
+            // compliance.
+            SettingsGroup(
+              title: t.settingsPage.groupLegal,
+              children: [
+                SettingsActionRow(
+                  id: 'privacy.privacyPolicy',
+                  title: t.settingsPage.privacyPolicy,
+                  external: true,
+                  onTap: () => unawaited(
+                    launchUrl(
+                      privacyPolicy,
+                      mode: LaunchMode.externalApplication,
+                    ),
+                  ),
+                ),
+                SettingsActionRow(
+                  id: 'privacy.terms',
+                  title: t.settingsPage.termsEula,
+                  external: true,
+                  onTap: () => unawaited(
+                    launchUrl(
+                      LegalUrls.appleEula,
+                      mode: LaunchMode.externalApplication,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// Expert and developer-adjacent surface, in one place at the bottom of the
+  /// rail where Mac users expect it.
+  ///
+  /// App Logs used to be the last row of the Application pane's "Calendar,
+  /// experience and language" card, directly under "Reset tutorial".
+  Widget _advanced() {
+    final isPrivateMode = ref.watch(activeDesktopDataModeProvider).isPrivate;
+    final diagnostics = _syncDiagnostics;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SettingsHeading(section: SettingsSection.advanced),
+        const SizedBox(height: 20),
+        _SettingsColumn(
+          groups: [
+            // System prompt and temperature were a collapsed disclosure inside
+            // the coach modal. They are genuinely expert controls — a Pro
+            // subscriber can rewrite the prompt for the managed engine — so
+            // they belong here rather than in front of everyone configuring an
+            // engine.
+            SettingsGroup(
+              title: t.coachSettings.groupTuning,
+              footnote: t.coachSettings.tuningFootnote,
+              children: const [
+                Padding(
+                  padding: EdgeInsets.fromLTRB(16, 4, 16, 8),
+                  child: CoachAdvancedPanel(),
+                ),
+              ],
+            ),
+            SettingsGroup(
+              title: t.settingsPage.groupDiagnostics,
+              children: [
+                SettingsActionRow(
+                  id: 'advanced.appLogs',
+                  title: t.settingsPage.appLogsTitle,
+                  detail: t.settingsPage.appLogsDetail,
+                  onTap: () => unawaited(showAppLogsDialog(context)),
+                ),
+                if (isPrivateMode && Platform.isMacOS && diagnostics != null)
+                  SettingsActionRow(
+                    id: 'advanced.syncReport',
+                    title: t.icloudSync.detailsTitle,
+                    detail: _diagnosticsLabel(diagnostics),
+                    onTap: () => _showDiagnosticsDialog(diagnostics),
+                  ),
+              ],
+            ),
+            // Previously reachable ONLY by pressing the red "Delete account and
+            // data" button and picking the third option in the dialog that
+            // opened — a settings reset hidden behind the app's most
+            // destructive label.
+            SettingsGroup(
+              title: t.settingsPage.sectionAdvanced,
+              children: [
+                SettingsActionRow(
+                  id: 'advanced.restoreDefaults',
+                  title: t.settingsPage.restoreDefaults,
+                  detail: t.settingsPage.restoreDefaultsDetail,
+                  destructive: true,
+                  onTap: _confirmRestoreDefaults,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _confirmRestoreDefaults() async {
+    final confirmed = await showEvolveDialog<bool>(
+      context: context,
+      builder: (dialogContext) => EvolveAlertDialog(
+        icon: LucideIcons.rotateCcw,
+        title: Text(t.settingsPage.restoreDefaults),
+        content: Text(
+          t.settingsPage.restoreDefaultsDetail,
+          style: TextStyle(
+            color: dialogContext.evolveColors.muted,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            height: 1.5,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(t.settingsPage.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(t.settingsPage.confirm),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await _resetSettingsToDefaults();
   }
 
   Future<void> _exportData() async {
@@ -1298,7 +1654,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           habitProgress = await rows('goal_progress');
         } catch (error, stack) {
           AppLogger.error(
-              'goal_progress export read skipped (pre-migration?)', error, stack);
+            'goal_progress export read skipped (pre-migration?)',
+            error,
+            stack,
+          );
           habitProgress = const [];
         }
 
@@ -2045,8 +2404,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
     // A key split is never "Up to date": syncing runs, reports success and
     // applies nothing, which is exactly how it stayed invisible for weeks.
+    //
+    // The headline moved to the warning banner above this row, which also
+    // carries the remedy. This line stays a STATUS — repeating the banner's
+    // title three lines below it read as a rendering bug.
     if (status.undecryptableCount > 0) {
-      return t.icloudSync.keySplitTitle;
+      return t.icloudSync.statusNotSynced;
     }
     if (!status.hasKey) {
       // Enabled + iCloud fine, but the E2E key hasn't arrived through iCloud
@@ -2784,12 +3147,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
 class _SettingsDestination extends StatelessWidget {
   const _SettingsDestination({
+    super.key,
     required this.section,
     required this.selected,
     required this.onTap,
   });
 
-  final _SettingsSection section;
+  final SettingsSection section;
   final bool selected;
   final VoidCallback onTap;
 
@@ -2798,55 +3162,74 @@ class _SettingsDestination extends StatelessWidget {
     final contentColor = selected
         ? Theme.of(context).colorScheme.onPrimary
         : context.evolveColors.muted;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 5),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeInOut,
-        decoration: BoxDecoration(
-          color: selected ? context.evolveAccent : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Material(
-          type: MaterialType.transparency,
-          borderRadius: BorderRadius.circular(12),
-          child: InkWell(
-            onTap: onTap,
+    // `selected` was conveyed by accent fill and FontWeight.w800 alone, which
+    // VoiceOver cannot see: the rail read as six identical buttons with no
+    // indication of where you were. `button` is explicit because the InkWell
+    // sits under a Material of type transparency, which does not imply it.
+    return Semantics(
+      selected: selected,
+      button: true,
+      label: section.label,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 5),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          decoration: BoxDecoration(
+            color: selected ? context.evolveAccent : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
-            hoverColor: selected
-                ? Colors.transparent
-                : context.evolveColors.panel.withValues(alpha: 0.4),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
-              child: Row(
-                children: [
-                  Icon(section.icon, color: contentColor, size: 18),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      section.label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13,
-                        letterSpacing: -0.2,
-                        color: contentColor,
-                        fontWeight: selected
-                            ? FontWeight.w800
-                            : FontWeight.w600,
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Material(
+            type: MaterialType.transparency,
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(12),
+              hoverColor: selected
+                  ? Colors.transparent
+                  : context.evolveColors.panel.withValues(alpha: 0.4),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 11,
+                  vertical: 10,
+                ),
+                child: Row(
+                  children: [
+                    Icon(section.icon, color: contentColor, size: 18),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      // German and Arabic overflow the 171px text box; without a
+                      // tooltip an ellipsised destination is unreadable and
+                      // unidentifiable.
+                      child: Tooltip(
+                        message: section.label,
+                        waitDuration: const Duration(milliseconds: 600),
+                        child: Text(
+                          section.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13,
+                            letterSpacing: -0.2,
+                            color: contentColor,
+                            fontWeight: selected
+                                ? FontWeight.w800
+                                : FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -2857,61 +3240,59 @@ class _SettingsDestination extends StatelessWidget {
 }
 
 extension _AiCoachSection on _SettingsPageState {
-  /// AI Coach engine settings: current engine at a glance + an entry into the
-  /// full backend/local-server/model configuration dialog (the single config
-  /// editor shared with the chat header).
-  Widget _aiCoach(bool twoColumn) {
-    final config = ref.watch(coachConfigProvider);
-    // Shared with the chat header's chip rather than restated here: the two
-    // labels naming the same engine differently is a bug waiting to be written,
-    // and this copy had already grown its own three-way conditional.
-    final backend = ref.watch(effectiveCoachBackendProvider);
-    final engineValue = CoachModelChip.activeLabel(config, backend);
-    final engineIcon = switch (backend) {
-      CoachBackendKind.local => LucideIcons.cpu,
-      CoachBackendKind.standard => LucideIcons.sparkles,
-      CoachBackendKind.cloud => LucideIcons.cloud,
-    };
+  /// AI Coach: the engine configuration itself, inline, plus what the coach is
+  /// allowed to see.
+  Widget _aiCoach() {
+    final hasConsent =
+        ref.watch(hasAnyCoachConsentProvider).asData?.value ?? false;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SettingsHeading(
-          title: t.coachSettings.settingsTitle,
-          subtitle: t.coachSettings.settingsSubtitle,
-        ),
+        _SettingsHeading(section: SettingsSection.aiCoach),
         const SizedBox(height: 20),
-        _GroupGrid(
-          twoColumn: twoColumn,
+        _SettingsColumn(
           groups: [
-            _SettingsGroup(
-              // Distinct from the section heading ("AI Coach") above it.
-              title: t.coachSettings.title,
+            // The engine configuration IS the pane now. There is no launcher
+            // row and no modal: CoachSettingsDialog held the whole feature —
+            // engine cards, API key, local server address, model picker — two
+            // levels down behind a chevron, which is why none of it was
+            // discoverable.
+            SettingsGroup(
+              title: t.coachSettings.groupEngine,
+              children: const [
+                Padding(
+                  padding: EdgeInsets.fromLTRB(16, 4, 16, 12),
+                  child: CoachEnginePanel(),
+                ),
+              ],
+            ),
+            SettingsGroup(
+              title: t.coachSettings.groupPrivacy,
               children: [
-                _InfoRow(
-                  icon: engineIcon,
-                  label: t.coachSettings.settingsRowStatus,
-                  value: engineValue,
-                ),
-                _ActionRow(
-                  icon: LucideIcons.slidersHorizontal,
-                  title: t.coachSettings.settingsRowConfigure,
-                  detail: t.coachSettings.subtitle,
-                  onTap: () => showCoachSettingsDialog(context),
-                ),
                 // Withdrawing consent must be as easy as giving it (GDPR Art.
                 // 7(3) — Simone is the named controller), and Guideline 5.1.2
-                // expects the same. Granting is one click in a dialog, so taking
-                // it back is one click here. Renders only once a consent exists:
-                // there is nothing to withdraw before that.
-                if (ref.watch(hasAnyCoachConsentProvider).asData?.value ??
-                    false)
-                  _ActionRow(
-                    icon: LucideIcons.shieldCheck,
-                    title: t.ai.consent.rowTitle,
-                    detail: t.ai.consent.statusGranted,
-                    onTap: () => _revokeCoachConsent(context),
-                  ),
+                // expects the same.
+                //
+                // Always rendered, both states. It used to appear ONLY while a
+                // consent existed, so the row erased itself the moment it was
+                // used: there was no way to see that sharing was off, and no
+                // way back. Splitting the status from the action is what lets
+                // it stay.
+                SettingsStatusRow(
+                  id: 'coach.dataSharing',
+                  label: t.ai.consent.rowTitle,
+                  status: hasConsent
+                      ? t.ai.consent.statusGranted
+                      : t.ai.consent.consentStatusRevoked,
+                  actionLabel: hasConsent
+                      ? t.ai.consent.consentStopSharing
+                      : null,
+                  destructiveAction: true,
+                  onAction: hasConsent
+                      ? () => _revokeCoachConsent(context)
+                      : null,
+                ),
               ],
             ),
           ],
@@ -2954,583 +3335,55 @@ extension _AiCoachSection on _SettingsPageState {
   }
 }
 
+/// The pane heading, derived from the destination itself.
+///
+/// It used to take a free-text title and subtitle, and four of the six panes
+/// then disagreed with the rail entry that opened them ("Application" opened
+/// "Appearance and application"). Taking the [SettingsSection] makes one string
+/// the name of the destination in both places, by construction.
 class _SettingsHeading extends StatelessWidget {
-  const _SettingsHeading({required this.title, required this.subtitle});
+  const _SettingsHeading({required this.section});
 
-  final String title;
-  final String subtitle;
+  final SettingsSection section;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: Theme.of(context).textTheme.headlineSmall),
+        Text(section.label, style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 5),
-        Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
+        Text(section.purpose, style: Theme.of(context).textTheme.bodyMedium),
       ],
     );
   }
 }
 
-/// One settings group as a single titled card: the tiny uppercase muted label
-/// sits inside an [EvolvePanel] (radius 20) above its rows, which render as
-/// flat list tiles separated by hairline dividers — the macOS
-/// grouped-settings look in the Evolve skin.
-class _SettingsGroup extends StatelessWidget {
-  const _SettingsGroup({required this.title, required this.children});
+/// The pane body: one column of group cards.
+///
+/// It replaces `_GroupGrid`, which above a 1280px breakpoint packed the cards
+/// into two columns greedily by `children.length`. Three things were wrong with
+/// that and only the first was cosmetic. Reading order broke — the Application
+/// pane's groups of 1, 6 and 4 rows rendered as left = 1, 3 and right = 2, so
+/// the eye met them out of order. Row COUNT is not height, so a 56px switch and
+/// a ~90px colour row balanced as equals. And the breakpoint measured
+/// `constraints.maxWidth` of the whole panel, rail included, so the cards
+/// actually split at ~1030px of usable content width rather than the 1280 the
+/// code named. macOS Settings puts one column in a pane; so do we.
+class _SettingsColumn extends StatelessWidget {
+  const _SettingsColumn({required this.groups});
 
-  final String title;
-  final List<Widget> children;
-
-  /// Row count used by [_GroupGrid] to balance the two columns.
-  int get rowCount => children.length;
-
-  @override
-  Widget build(BuildContext context) {
-    return EvolvePanel(
-      padding: EdgeInsets.zero,
-      radius: 20,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 16, 6),
-            child: EvolveSectionLabel(title, withRule: false),
-          ),
-          for (var i = 0; i < children.length; i++) ...[
-            if (i > 0) const _RowHairline(),
-            children[i],
-          ],
-          const SizedBox(height: 6),
-        ],
-      ),
-    );
-  }
-}
-
-/// 1px divider between the flat rows of a group card, indented past the icon
-/// chip (16 content padding + 36 chip + 16 title gap).
-class _RowHairline extends StatelessWidget {
-  const _RowHairline();
+  final List<Widget> groups;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 1,
-      margin: const EdgeInsetsDirectional.only(start: 68),
-      color: context.evolveColors.border.withValues(alpha: 0.35),
-    );
-  }
-}
-
-/// Adaptive tiling for the group cards: a single full-width column, or — when
-/// the page content is wide enough — two columns filled greedily by row count
-/// so their heights stay balanced. Cards never split across columns.
-class _GroupGrid extends StatelessWidget {
-  const _GroupGrid({required this.twoColumn, required this.groups});
-
-  final bool twoColumn;
-  final List<_SettingsGroup> groups;
-
-  static const _gap = 18.0;
-
-  Widget _column(List<_SettingsGroup> items) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (var i = 0; i < items.length; i++) ...[
-          if (i > 0) const SizedBox(height: _gap),
-          items[i],
+        for (var i = 0; i < groups.length; i++) ...[
+          if (i > 0) const SizedBox(height: 18),
+          groups[i],
         ],
-      ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!twoColumn || groups.length < 2) return _column(groups);
-    final start = <_SettingsGroup>[];
-    final end = <_SettingsGroup>[];
-    var startRows = 0;
-    var endRows = 0;
-    for (final group in groups) {
-      if (startRows <= endRows) {
-        start.add(group);
-        startRows += group.rowCount;
-      } else {
-        end.add(group);
-        endRows += group.rowCount;
-      }
-    }
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(child: _column(start)),
-        const SizedBox(width: _gap),
-        Expanded(child: _column(end)),
-      ],
-    );
-  }
-}
-
-TextStyle _rowTitleStyle(BuildContext context) => TextStyle(
-  color: context.evolveColors.foreground,
-  fontSize: 15,
-  fontWeight: FontWeight.w700,
-  letterSpacing: -0.2,
-);
-
-TextStyle _rowSubtitleStyle(BuildContext context) => TextStyle(
-  color: context.evolveColors.muted.withValues(alpha: 0.8),
-  fontSize: 12,
-  fontWeight: FontWeight.w500,
-);
-
-Widget _rowIconChip(BuildContext context, IconData icon) => EvolveIconChip(
-  icon: icon,
-  color: context.evolveAccent,
-  size: 36,
-  iconSize: 18,
-  outlined: true,
-);
-
-/// Full-width destructive action styled exactly like the mobile
-/// "Go to login" button (destructive .1 fill, .2 border, radius 14), with the
-/// row's original detail text kept as a small muted caption underneath.
-class _DestructiveButton extends StatelessWidget {
-  const _DestructiveButton({
-    required this.label,
-    required this.caption,
-    required this.onTap,
-  });
-
-  final String label;
-  final String caption;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Material(
-            color: EvolveColors.destructive.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(14),
-            child: InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(14),
-              child: Container(
-                height: 48,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: EvolveColors.destructive.withValues(alpha: 0.2),
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    label,
-                    style: const TextStyle(
-                      color: EvolveColors.destructive,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            caption,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: context.evolveColors.muted.withValues(alpha: 0.5),
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SwitchRow extends StatelessWidget {
-  const _SwitchRow({
-    required this.icon,
-    required this.label,
-    required this.detail,
-    required this.value,
-    required this.onChanged,
-    this.badge,
-  });
-
-  final IconData icon;
-  final String label;
-  final String detail;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  /// Optional trailing chip after the title (e.g. the PRO badge on
-  /// Pro-gated rows).
-  final Widget? badge;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-      leading: _rowIconChip(context, icon),
-      title: badge == null
-          ? Text(label, style: _rowTitleStyle(context))
-          : Row(
-              children: [
-                Flexible(
-                  child: Text(
-                    label,
-                    style: _rowTitleStyle(context),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                badge!,
-              ],
-            ),
-      subtitle: Text(detail, style: _rowSubtitleStyle(context)),
-      trailing: EvolveSwitch(value: value, onChanged: onChanged),
-    );
-  }
-}
-
-/// Settings row wrapping an [EvolveSelect]. [value] and the options' values are
-/// canonical CODES, never the rendered labels: [EvolveSelect] matches [value]
-/// against the option values, so a localized label must not be the identity —
-/// it would stop matching as soon as the UI language changes.
-class _SelectRow<T> extends StatelessWidget {
-  const _SelectRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.options,
-    required this.onChanged,
-  });
-
-  final IconData icon;
-  final String label;
-  final T value;
-  final List<EvolveSelectOption<T>> options;
-  final ValueChanged<T> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-      leading: _rowIconChip(context, icon),
-      title: Text(label, style: _rowTitleStyle(context)),
-      trailing: EvolveSelect<T>(
-        value: value,
-        options: options,
-        onChanged: onChanged,
-      ),
-    );
-  }
-}
-
-class _TimeRow extends StatelessWidget {
-  const _TimeRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.use24hFormat,
-    required this.onChanged,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final bool use24hFormat;
-  final ValueChanged<String> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final parts = value.split(':');
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-      leading: _rowIconChip(context, icon),
-      title: Text(label, style: _rowTitleStyle(context)),
-      trailing: EvolveTimePicker(
-        value: TimeOfDay(
-          hour: int.tryParse(parts.first) ?? 9,
-          minute: parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0,
-        ),
-        use24hFormat: use24hFormat,
-        onChanged: (selected) => onChanged(
-          '${selected.hour.toString().padLeft(2, '0')}:'
-          '${selected.minute.toString().padLeft(2, '0')}',
-        ),
-      ),
-    );
-  }
-}
-
-class _ColorRow extends StatelessWidget {
-  const _ColorRow({
-    required this.icon,
-    required this.label,
-    required this.detail,
-    required this.selected,
-    required this.onChanged,
-    this.customLocked = false,
-    this.onCustomLocked,
-  });
-
-  final IconData icon;
-  final String label;
-  final String detail;
-  final Color selected;
-  final ValueChanged<Color> onChanged;
-
-  /// When true, the custom-color swatch is a Pro feature (mobile parity): it
-  /// shows a lock and invokes [onCustomLocked] instead of opening the picker.
-  final bool customLocked;
-  final VoidCallback? onCustomLocked;
-
-  @override
-  Widget build(BuildContext context) {
-    // RAW values, deliberately NOT mapped through `_visibleAccent` here. The
-    // whole list used to be mapped before this loop, so `onChanged(color)`
-    // below handed over the MAPPED colour: in a light theme, tapping the
-    // leftmost "white" swatch stored and synced `#09090B` — a near-black the
-    // user never chose — to every device. Mapping is a PAINT concern and now
-    // happens per-swatch, one line above the widget that paints it.
-    //
-    // The first entry is the seed itself rather than a parallel literal, so it
-    // cannot drift from what a fresh profile actually holds.
-    final colors = [
-      DesktopAppearanceController.defaultAccent,
-      const Color(0xFFEAB308),
-      const Color(0xFF3B82F6),
-      const Color(0xFF10B981),
-      const Color(0xFF8B5CF6),
-      const Color(0xFFEC4899),
-      const Color(0xFFF97316),
-    ];
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          _rowIconChip(context, icon),
-          const SizedBox(width: 16),
-          Expanded(
-            child: _RowCopy(label: label, detail: detail),
-          ),
-          SizedBox(
-            width: 220,
-            child: Wrap(
-              alignment: WrapAlignment.end,
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final color in colors)
-                  // `color` is the stored identity — tooltip, equality and what
-                  // gets published. `display` is pixels only.
-                  Builder(
-                    builder: (context) {
-                      final display = _visibleAccent(context, color);
-                      final isSelected = selected == color;
-                      return Tooltip(
-                        message: t.settingsPage.useAccent(hex: _toHex(color)),
-                        child: InkWell(
-                          onTap: () => onChanged(color),
-                          customBorder: const CircleBorder(),
-                          child: _Swatch(
-                            color: display,
-                            isSelected: isSelected,
-                            child: isSelected
-                                ? Icon(
-                                    LucideIcons.check,
-                                    size: 12,
-                                    color: _checkColor(display),
-                                  )
-                                : null,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                Tooltip(
-                  message: t.settingsPage.customColor,
-                  child: InkWell(
-                    onTap: customLocked
-                        ? onCustomLocked
-                        : () => _showFullColorPicker(context, colors.toList()),
-                    customBorder: const CircleBorder(),
-                    child: _Swatch(
-                      color: context.evolveColors.panelRaised,
-                      isSelected: false,
-                      outlined: true,
-                      child: Icon(
-                        customLocked ? LucideIcons.lock : LucideIcons.plus,
-                        size: 14,
-                        color: context.evolveColors.foreground,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showFullColorPicker(BuildContext context, List<Color> colors) {
-    showPopover(
-      context: context,
-      targetAlignment: Alignment.bottomCenter,
-      popoverAlignment: Alignment.topCenter,
-      offset: const Offset(0, 8),
-      builder: (context) {
-        return EvolveColorPickerContent(
-          initialColor: selected,
-          onColorChanged: onChanged,
-        );
-      },
-    );
-  }
-
-  /// Paint-time substitution ONLY — never what gets stored or compared.
-  ///
-  /// Keyed off [DesktopAppearanceController.defaultAccent] rather than a
-  /// repeated hex literal: the two were independent constants and drifted, so
-  /// the substitution silently stopped firing for the seed white and the page
-  /// painted an invisible swatch on a light background.
-  Color _visibleAccent(BuildContext context, Color color) {
-    if (Theme.of(context).brightness == Brightness.light &&
-        color.toARGB32() ==
-            DesktopAppearanceController.defaultAccent.toARGB32()) {
-      return const Color(0xFF09090B);
-    }
-    return color;
-  }
-
-  Color _checkColor(Color color) =>
-      color.computeLuminance() > 0.45 ? const Color(0xFF09090B) : Colors.white;
-
-  String _toHex(Color color) =>
-      '#${color.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
-}
-
-/// 24px color swatch circle; the selected one gets a foreground ring and a
-/// soft tint glow (mobile color-picker recipe).
-class _Swatch extends StatelessWidget {
-  const _Swatch({
-    required this.color,
-    required this.isSelected,
-    this.outlined = false,
-    this.child,
-  });
-
-  final Color color;
-  final bool isSelected;
-  final bool outlined;
-  final Widget? child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 24,
-      height: 24,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-        border: isSelected
-            ? Border.all(color: context.evolveColors.foreground, width: 2)
-            : outlined
-            ? Border.all(color: context.evolveColors.border)
-            : null,
-        boxShadow: isSelected
-            ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 8)]
-            : null,
-      ),
-      child: child == null ? null : Center(child: child),
-    );
-  }
-}
-
-class _ActionRow extends StatelessWidget {
-  const _ActionRow({
-    required this.icon,
-    required this.title,
-    required this.detail,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String detail;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-      leading: _rowIconChip(context, icon),
-      title: Text(title, style: _rowTitleStyle(context)),
-      subtitle: Text(detail, style: _rowSubtitleStyle(context)),
-      trailing: DirectionalIcon(
-        LucideIcons.chevronRight,
-        LucideIcons.chevronLeft,
-        size: 18,
-        color: context.evolveColors.muted,
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-      leading: _rowIconChip(context, icon),
-      title: Text(label, style: _rowTitleStyle(context)),
-      subtitle: Text(value, style: _rowSubtitleStyle(context)),
-    );
-  }
-}
-
-class _RowCopy extends StatelessWidget {
-  const _RowCopy({required this.label, required this.detail});
-
-  final String label;
-  final String detail;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: _rowTitleStyle(context)),
-        const SizedBox(height: 3),
-        Text(detail, style: _rowSubtitleStyle(context)),
       ],
     );
   }
@@ -3674,7 +3527,7 @@ class _PlatformNote extends StatelessWidget {
           ),
           const SizedBox(width: 13),
           Expanded(
-            child: _RowCopy(label: title, detail: detail),
+            child: SettingsRowCopy(label: title, detail: detail),
           ),
         ],
       ),
@@ -3722,7 +3575,6 @@ Future<void> showPaywallDialog(BuildContext context) {
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
         child: _SubscriptionSettings(
-          twoColumn: false,
           showFeaturePitch: false,
           // A successful purchase should return the user to the feature they
           // were trying to unlock, so close this modal once Pro is active.
@@ -3735,12 +3587,9 @@ Future<void> showPaywallDialog(BuildContext context) {
 
 class _SubscriptionSettings extends ConsumerStatefulWidget {
   const _SubscriptionSettings({
-    required this.twoColumn,
     this.showFeaturePitch = true,
     this.onProActivated,
   });
-
-  final bool twoColumn;
 
   /// When false, the upsell panel + feature list at the top are omitted — used by
   /// [showPaywallDialog], where the preceding Pro-features dialog already pitched
@@ -3758,18 +3607,13 @@ class _SubscriptionSettings extends ConsumerStatefulWidget {
 }
 
 class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
-  String _plan = 'yearly';
-
   @override
   Widget build(BuildContext context) {
     final subscription = ref.watch(desktopSubscriptionControllerProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SettingsHeading(
-          title: t.settingsPage.proTitle,
-          subtitle: t.settingsPage.proSubtitle,
-        ),
+        _SettingsHeading(section: SettingsSection.subscription),
         const SizedBox(height: 20),
         // A subscribed user gets the status + details panel; everyone else gets
         // the purchase surface. Mirrors the mobile paywall's two states.
@@ -3788,6 +3632,7 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
     DesktopSubscriptionState subscription,
   ) {
     final busy = subscription.isLoading;
+    final plan = ref.watch(desktopSelectedPlanProvider);
     return [
       if (widget.showFeaturePitch) ...[
         _featurePitch(context),
@@ -3815,55 +3660,98 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
         children: [
           Expanded(
             child: _PlanCard(
+              key: SettingsKeys.row('subscription.planMonthly'),
               title: t.settingsPage.planMonthly,
               // Never fall back to the plan NAME here: that renders the title
               // twice where Guideline 3.1.2 requires the price per period. The
               // product resolves from the Offering or the direct-product fetch.
               price: subscription.monthlyProduct?.priceString,
-              selected: _plan == 'monthly',
-              onTap: () => setState(() => _plan = 'monthly'),
+              selected: plan == DesktopPlan.monthly,
+              onTap: () => ref
+                  .read(desktopSelectedPlanProvider.notifier)
+                  .select(DesktopPlan.monthly),
             ),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: _PlanCard(
+              key: SettingsKeys.row('subscription.planAnnual'),
               title: t.settingsPage.planAnnual,
               price: subscription.yearlyProduct?.priceString,
               // Honest per-month + saving from live store prices, or the neutral
               // "best value" line when no price resolved — never an invented %.
               detail: _annualSubtitle(subscription) ?? t.settingsPage.bestValue,
-              selected: _plan == 'yearly',
-              onTap: () => setState(() => _plan = 'yearly'),
+              selected: plan == DesktopPlan.yearly,
+              onTap: () => ref
+                  .read(desktopSelectedPlanProvider.notifier)
+                  .select(DesktopPlan.yearly),
             ),
           ),
         ],
       ),
-      const SizedBox(height: 16),
+      const SizedBox(height: 18),
+      // The money step, as the loudest thing on the surface rather than the
+      // quietest. It was a chevron row rendered identically to "Replay the
+      // guided tour", two rows below the plan cards, naming neither the plan
+      // the user had picked nor what it would cost — so the confirmation of
+      // what you were about to buy lived only in a tint on a card above it.
+      SettingsPrimaryButton(
+        id: 'subscription.subscribe',
+        icon: LucideIcons.sparkles,
+        label: _subscribeLabel(subscription, plan),
+        caption: t.settingsPage.activateEvolveProStart,
+        busy: busy,
+        onPressed: () => unawaited(_activate()),
+      ),
+      const SizedBox(height: 18),
       const _ComplianceLinks(),
       const SizedBox(height: 24),
-      _GroupGrid(
-        twoColumn: widget.twoColumn,
+      _SettingsColumn(
         groups: [
-          _SettingsGroup(
+          SettingsGroup(
             title: t.settingsPage.planManagement,
-            children: [
-              _ActionRow(
-                icon: LucideIcons.sparkles,
-                title: t.settingsPage.activateEvolvePro,
-                detail: t.settingsPage.activateEvolveProStart,
-                onTap: busy ? () {} : () => unawaited(_activate()),
-              ),
-              _ActionRow(
-                icon: LucideIcons.refreshCw,
-                title: t.settingsPage.restorePurchases,
-                detail: t.settingsPage.restorePurchasesDetail,
-                onTap: busy ? () {} : () => unawaited(_restore()),
-              ),
-            ],
+            children: [_restoreRow(busy)],
           ),
         ],
       ),
     ];
+  }
+
+  /// Names the plan being bought and what it costs.
+  ///
+  /// Falls back to the plan alone when no store price has resolved: a CTA is
+  /// the last place to invent a figure, and the card beside it already says
+  /// "Price unavailable".
+  String _subscribeLabel(
+    DesktopSubscriptionState subscription,
+    DesktopPlan plan,
+  ) {
+    final planName = switch (plan) {
+      DesktopPlan.monthly => t.settingsPage.planMonthly,
+      DesktopPlan.yearly => t.settingsPage.planAnnual,
+    };
+    final price = subscription.productFor(plan)?.priceString;
+    return price == null
+        ? t.settingsPage.subscribeCtaNoPrice(plan: planName)
+        : t.settingsPage.subscribeCta(plan: planName, price: price);
+  }
+
+  /// The ONE restore row, rendered by both states.
+  ///
+  /// It stays visible after subscribing on purpose: a Pro user whose
+  /// entitlement has desynced (new Mac, reinstall, a purchase made on the
+  /// iPhone) has no other way back, which is the gap the iPhone still has —
+  /// it renders restore only in the non-Pro branch. Defined once so the two
+  /// states cannot drift, and so neither can grow a second copy.
+  Widget _restoreRow(bool busy) {
+    return SettingsActionRow(
+      id: 'subscription.restore',
+      icon: LucideIcons.refreshCw,
+      title: t.settingsPage.restorePurchases,
+      detail: t.settingsPage.restorePurchasesDetail,
+      busy: busy,
+      onTap: () => unawaited(_restore()),
+    );
   }
 
   Widget _featurePitch(BuildContext context) {
@@ -3998,30 +3886,24 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
         ),
       ),
       const SizedBox(height: 24),
-      _GroupGrid(
-        twoColumn: widget.twoColumn,
+      _SettingsColumn(
         groups: [
-          _SettingsGroup(
+          SettingsGroup(
             title: t.settingsPage.detailsHeader,
             children: _detailRows(context, details),
           ),
-          _SettingsGroup(
+          SettingsGroup(
             title: t.settingsPage.planManagement,
             children: [
-              _ActionRow(
+              SettingsActionRow(
+                id: 'subscription.manage',
                 icon: LucideIcons.creditCard,
                 title: t.settingsPage.manageSubscription,
                 detail: t.settingsPage.manageSubscriptionDetail,
+                external: true,
                 onTap: () => unawaited(_manage()),
               ),
-              _ActionRow(
-                icon: LucideIcons.refreshCw,
-                title: t.settingsPage.restorePurchases,
-                detail: t.settingsPage.restorePurchasesDetail,
-                onTap: subscription.isLoading
-                    ? () {}
-                    : () => unawaited(_restore()),
-              ),
+              _restoreRow(subscription.isLoading),
             ],
           ),
         ],
@@ -4043,18 +3925,18 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
       LocaleSettings.currentLocale.languageCode,
     );
     return [
-      _InfoRow(
+      SettingsInfoRow(
         icon: LucideIcons.sparkles,
         label: t.settingsPage.planLabel,
         value: planLabel,
       ),
-      _InfoRow(
+      SettingsInfoRow(
         icon: LucideIcons.circleCheck,
         label: t.settingsPage.statusLabel,
         value: t.settingsPage.statusActive,
       ),
       if (expiration != null)
-        _InfoRow(
+        SettingsInfoRow(
           icon: LucideIcons.calendar,
           label: (details?.willRenew ?? false)
               ? t.settingsPage.nextRenewal
@@ -4062,7 +3944,7 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
           value: dateFormat.format(expiration),
         ),
       if (details?.isAppStorePayment ?? false)
-        _InfoRow(
+        SettingsInfoRow(
           icon: LucideIcons.creditCard,
           label: t.settingsPage.paymentMethod,
           value: t.settingsPage.paymentMethodValue,
@@ -4074,19 +3956,19 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
 
   Future<void> _activate() async {
     final controller = ref.read(desktopSubscriptionControllerProvider.notifier);
-    var package = _plan == 'monthly'
-        ? ref.read(desktopSubscriptionControllerProvider).monthlyPackage
-        : ref.read(desktopSubscriptionControllerProvider).yearlyPackage;
+    final plan = ref.read(desktopSelectedPlanProvider);
+    var package = ref
+        .read(desktopSubscriptionControllerProvider)
+        .packageFor(plan);
 
     // Prices may be showing via the direct-product fallback while no Offering is
     // published — but a purchase needs a Package. Retry the offering load once,
     // then purchase if one materialised; otherwise surface the failure.
     if (package == null) {
       await controller.refresh();
-      final refreshed = ref.read(desktopSubscriptionControllerProvider);
-      package = _plan == 'monthly'
-          ? refreshed.monthlyPackage
-          : refreshed.yearlyPackage;
+      package = ref
+          .read(desktopSubscriptionControllerProvider)
+          .packageFor(plan);
       if (package == null) {
         if (mounted) {
           showEvolveToast(
@@ -4325,8 +4207,18 @@ class _LegalLink extends StatelessWidget {
   }
 }
 
+/// One of the two plan choices.
+///
+/// Selection used to be carried by an accent tint and an accent border and
+/// nothing else — on a card whose price is already painted in that same
+/// accent. Colour alone is a weak signal for the one control that decides what
+/// the user is charged, it is no signal at all to anyone who cannot separate
+/// the two hues, and it never reached the accessibility tree: both cards
+/// announced identically. There is now a radio indicator that fills and
+/// carries a checkmark, and a `selected` flag a screen reader can read.
 class _PlanCard extends StatelessWidget {
   const _PlanCard({
+    super.key,
     required this.title,
     required this.price,
     required this.selected,
@@ -4346,172 +4238,193 @@ class _PlanCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(
-          color: selected
-              ? context.evolveAccent.withValues(alpha: 0.08)
-              : context.evolveColors.panel.withValues(alpha: 0.4),
+    // MergeSemantics so the card announces as ONE choice — "Annual, €29.99,
+    // selected" — rather than as three unrelated strings next to a button.
+    return MergeSemantics(
+      child: Semantics(
+        button: true,
+        selected: selected,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: selected
-                ? context.evolveAccent
-                : context.evolveColors.border.withValues(alpha: 0.5),
-          ),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: context.evolveAccent.withValues(alpha: 0.15),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
-                  ),
-                ]
-              : null,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Text(
-              price ?? t.settingsPage.priceUnavailable,
-              style: price == null
-                  ? TextStyle(
-                      color: context.evolveColors.muted,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    )
-                  : TextStyle(
-                      color: context.evolveAccent,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.8,
-                    ),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            padding: const EdgeInsets.all(15),
+            decoration: BoxDecoration(
+              color: selected
+                  ? context.evolveAccent.withValues(alpha: 0.08)
+                  : context.evolveColors.panel.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: selected
+                    ? context.evolveAccent
+                    : context.evolveColors.border.withValues(alpha: 0.5),
+              ),
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                        color: context.evolveAccent.withValues(alpha: 0.15),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
+                      ),
+                    ]
+                  : null,
             ),
-            if (detail != null) ...[
-              const SizedBox(height: 5),
-              Text(detail!, style: _rowSubtitleStyle(context)),
-            ],
-          ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _PlanRadio(selected: selected),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  price ?? t.settingsPage.priceUnavailable,
+                  style: price == null
+                      ? TextStyle(
+                          color: context.evolveColors.muted,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        )
+                      : TextStyle(
+                          color: context.evolveAccent,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.8,
+                        ),
+                ),
+                if (detail != null) ...[
+                  const SizedBox(height: 5),
+                  Text(detail!, style: settingsRowSubtitleStyle(context)),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-class _PersonalInfoDialog extends ConsumerStatefulWidget {
-  const _PersonalInfoDialog();
+/// The plan card's selection indicator: a radio ring that fills with the accent
+/// and carries a checkmark when chosen. Shape and glyph both change, so the
+/// state survives being read in greyscale.
+class _PlanRadio extends StatelessWidget {
+  const _PlanRadio({required this.selected});
+
+  final bool selected;
 
   @override
-  ConsumerState<_PersonalInfoDialog> createState() =>
-      _PersonalInfoDialogState();
+  Widget build(BuildContext context) {
+    final accent = context.evolveAccent;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: selected ? accent : Colors.transparent,
+        border: Border.all(
+          color: selected ? accent : context.evolveColors.border,
+          width: selected ? 1 : 1.5,
+        ),
+      ),
+      child: selected
+          ? Icon(
+              LucideIcons.check,
+              size: 13,
+              color: Theme.of(context).colorScheme.onPrimary,
+            )
+          : null,
+    );
+  }
 }
 
-class _PersonalInfoDialogState extends ConsumerState<_PersonalInfoDialog> {
-  late final TextEditingController _nameController;
+/// Full name and date of birth, editable inline in the Account pane.
+///
+/// This was `_PersonalInfoDialog`. Two things were wrong with it beyond being a
+/// modal for a routine edit. It was gated behind `if (!isPrivateMode)`, so a
+/// Private-mode user could never change their own name or birthday — even
+/// though `privateProfileProvider.updateProfile` was fully implemented and
+/// simply unreachable. And its Email field was a labelled `hintText` with no
+/// controller, which renders as an empty focusable box: the address was
+/// invisible until you clicked into it. Email is now a read-only value row in
+/// the pane, where it belongs.
+///
+/// Commits on blur, not per keystroke — the profile is synced, and writing on
+/// every character would push a partial name to the iPhone.
+class _PersonalInfoRows extends ConsumerStatefulWidget {
+  const _PersonalInfoRows();
+
+  @override
+  ConsumerState<_PersonalInfoRows> createState() => _PersonalInfoRowsState();
+}
+
+class _PersonalInfoRowsState extends ConsumerState<_PersonalInfoRows> {
+  final TextEditingController _name = TextEditingController();
   DateTime? _birthDate;
-  bool _isSaving = false;
+
+  /// What the store last confirmed, so a rejected edit can be put back. The
+  /// dialog swallowed write failures whole (`catch (_)`), leaving the field
+  /// showing a name nothing had stored — the same class of silent lie the rest
+  /// of this page was fixed for.
+  String _storedName = '';
 
   @override
   void initState() {
     super.initState();
+    _hydrate();
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  void _hydrate() {
     final isPrivate = ref.read(activeDesktopDataModeProvider).isPrivate;
     final String? storedBirthDate;
     if (isPrivate) {
       final profile = ref.read(privateProfileProvider).value;
-      _nameController = TextEditingController(text: profile?.fullName);
+      _storedName = profile?.fullName ?? '';
       storedBirthDate = profile?.dateOfBirth;
     } else {
       final user = ref.read(desktopAuthControllerProvider).user;
-      _nameController = TextEditingController(
-        text: user?.userMetadata?['full_name'] as String?,
-      );
+      _storedName = user?.userMetadata?['full_name'] as String? ?? '';
       storedBirthDate = user?.userMetadata?['date_of_birth'] as String?;
     }
+    _name.text = _storedName;
     // The profile stores an ISO `yyyy-MM-dd` string (or empty).
     _birthDate = storedBirthDate == null || storedBirthDate.trim().isEmpty
         ? null
         : DateTime.tryParse(storedBirthDate.trim());
   }
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
+  /// The ISO `yyyy-MM-dd` shape the free-text field used to produce (empty
+  /// string when unset), so profiles round-trip unchanged.
+  String get _isoBirthDate {
+    final date = _birthDate;
+    if (date == null) return '';
+    return '${date.year.toString().padLeft(4, '0')}-'
+        '${date.month.toString().padLeft(2, '0')}-'
+        '${date.day.toString().padLeft(2, '0')}';
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final isPrivate = ref.watch(activeDesktopDataModeProvider).isPrivate;
-    final email = ref.watch(desktopAuthControllerProvider).user?.email;
-    return EvolveAlertDialog(
-      icon: LucideIcons.user,
-      title: Text(t.settingsPage.personalInfo),
-      content: SizedBox(
-        width: 460,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _nameController,
-              decoration: InputDecoration(labelText: t.settingsPage.fullName),
-            ),
-            if (!isPrivate) ...[
-              const SizedBox(height: 10),
-              TextField(
-                readOnly: true,
-                decoration: InputDecoration(
-                  labelText: t.settingsPage.email,
-                  hintText: email ?? t.settingsPage.sessionUnavailable,
-                ),
-              ),
-            ],
-            const SizedBox(height: 10),
-            EvolveDateField(
-              value: _birthDate,
-              label: t.settingsPage.dateOfBirth,
-              hint: t.settingsPage.dateOfBirthHint,
-              firstDate: DateTime(1900),
-              lastDate: DateTime.now(),
-              onChanged: (date) => setState(() => _birthDate = date),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(t.settingsPage.cancel),
-        ),
-        FilledButton(
-          onPressed: _isSaving ? null : _save,
-          child: _isSaving
-              ? const SizedBox.square(
-                  dimension: 18,
-                  child: EvolveSpinner(radius: 9),
-                )
-              : Text(t.settingsPage.save),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _save() async {
-    final name = _nameController.text.trim();
-    if (name.isEmpty) return;
-    // Persist the same ISO `yyyy-MM-dd` shape the free-text field produced
-    // (empty string when unset), so profiles round-trip unchanged.
-    final birthDate = _birthDate == null
-        ? ''
-        : '${_birthDate!.year.toString().padLeft(4, '0')}-'
-              '${_birthDate!.month.toString().padLeft(2, '0')}-'
-              '${_birthDate!.day.toString().padLeft(2, '0')}';
-    setState(() => _isSaving = true);
+  Future<void> _persist({
+    required String name,
+    required String birthDate,
+  }) async {
     try {
       final isPrivate = ref.read(activeDesktopDataModeProvider).isPrivate;
       if (isPrivate) {
@@ -4523,10 +4436,81 @@ class _PersonalInfoDialogState extends ConsumerState<_PersonalInfoDialog> {
             .read(desktopAuthControllerProvider.notifier)
             .updatePersonalInfo(fullName: name, dateOfBirth: birthDate);
       }
-      if (mounted) Navigator.pop(context);
-    } catch (_) {
-      if (mounted) setState(() => _isSaving = false);
+      _storedName = name;
+    } catch (error, stack) {
+      AppLogger.error('Unable to save personal information', error, stack);
+      if (!mounted) return;
+      setState(() {
+        _name.text = _storedName;
+        _hydrateBirthDateFromStore();
+      });
+      showEvolveToast(
+        context,
+        message: t.settingsPage.settingSaveFailed,
+        kind: EvolveToastKind.error,
+      );
     }
+  }
+
+  void _hydrateBirthDateFromStore() {
+    final isPrivate = ref.read(activeDesktopDataModeProvider).isPrivate;
+    final stored = isPrivate
+        ? ref.read(privateProfileProvider).value?.dateOfBirth
+        : ref
+                  .read(desktopAuthControllerProvider)
+                  .user
+                  ?.userMetadata?['date_of_birth']
+              as String?;
+    _birthDate = stored == null || stored.trim().isEmpty
+        ? null
+        : DateTime.tryParse(stored.trim());
+  }
+
+  void _commitName(String value) {
+    final name = value.trim();
+    // An empty name is not a change, it is a mistake — the dialog's Save button
+    // refused it too. Put the stored one back so the row does not sit there
+    // blank, implying it saved.
+    if (name.isEmpty) {
+      setState(() => _name.text = _storedName);
+      return;
+    }
+    if (name == _storedName) return;
+    unawaited(_persist(name: name, birthDate: _isoBirthDate));
+  }
+
+  void _commitBirthDate(DateTime? date) {
+    setState(() => _birthDate = date);
+    final name = _name.text.trim();
+    // Both fields go in one write, so a birthday change must not blank a name
+    // the user has not filled in yet.
+    if (name.isEmpty) return;
+    unawaited(_persist(name: name, birthDate: _isoBirthDate));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SettingsTextRow(
+          id: 'account.fullName',
+          label: t.settingsPage.fullName,
+          controller: _name,
+          onCommit: _commitName,
+        ),
+        const SettingsRowHairline(),
+        SettingsDateRow(
+          id: 'account.dateOfBirth',
+          label: t.settingsPage.dateOfBirth,
+          value: _birthDate,
+          hint: t.settingsPage.dateOfBirthHint,
+          firstDate: DateTime(1900),
+          lastDate: DateTime.now(),
+          onChanged: _commitBirthDate,
+        ),
+      ],
+    );
   }
 }
 
@@ -4648,24 +4632,4 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
       }
     }
   }
-}
-
-extension on _SettingsSection {
-  String get label => switch (this) {
-    _SettingsSection.profile => t.settingsPage.profileLabel,
-    _SettingsSection.appearance => t.settingsPage.sectionApplication,
-    _SettingsSection.notifications => t.settingsPage.notifications,
-    _SettingsSection.aiCoach => t.coachSettings.settingsSectionLabel,
-    _SettingsSection.privacy => t.settingsPage.sectionPrivacy,
-    _SettingsSection.subscription => t.settingsPage.subscription,
-  };
-
-  IconData get icon => switch (this) {
-    _SettingsSection.profile => LucideIcons.user,
-    _SettingsSection.appearance => LucideIcons.settings,
-    _SettingsSection.notifications => LucideIcons.bell,
-    _SettingsSection.aiCoach => LucideIcons.bot,
-    _SettingsSection.privacy => LucideIcons.shield,
-    _SettingsSection.subscription => LucideIcons.sparkles,
-  };
 }

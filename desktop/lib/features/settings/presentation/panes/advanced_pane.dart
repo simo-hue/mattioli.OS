@@ -6,6 +6,7 @@ import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/core/desktop_private_sync_service.dart';
 import 'package:evolve_desktop/features/ai_coach/presentation/coach_settings_panels.dart';
 import 'package:evolve_desktop/features/settings/application/settings_form_controller.dart';
+import 'package:evolve_desktop/features/settings/application/sync_settings_controller.dart';
 import 'package:evolve_desktop/features/settings/presentation/app_logs_dialog.dart';
 import 'package:evolve_desktop/features/settings/presentation/dialogs/sync_diagnostics_dialog.dart';
 import 'package:evolve_desktop/features/settings/presentation/settings_section.dart';
@@ -23,17 +24,19 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 /// App Logs used to be the last row of the Application pane's "Calendar,
 /// experience and language" card, directly under "Reset tutorial".
 ///
-/// [syncDiagnostics] is owned by the page, which also refreshes it: the Data &
-/// Backup pane's status line is derived from the same read.
+/// The sync diagnostics come from [syncSettingsControllerProvider], which owns
+/// the read: the Data & Backup pane's status line is derived from the same
+/// snapshot, and routing it through the page only to hand it back down made two
+/// panes depend on one widget's fields.
 class SettingsAdvancedPane extends ConsumerWidget {
-  const SettingsAdvancedPane({super.key, required this.syncDiagnostics});
-
-  final SyncDiagnostics? syncDiagnostics;
+  const SettingsAdvancedPane({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isPrivateMode = ref.watch(activeDesktopDataModeProvider).isPrivate;
-    final diagnostics = syncDiagnostics;
+    final diagnostics = ref.watch(
+      syncSettingsControllerProvider.select((sync) => sync.diagnostics),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

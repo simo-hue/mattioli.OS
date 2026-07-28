@@ -122,12 +122,9 @@ class SettingsAccountPane extends ConsumerWidget {
                 ),
               ],
             ),
-            // "Update avatar" is gone. In account mode — the ONLY mode it
-            // rendered in — `_pickAvatar` just sets a widget-local File that is
-            // never uploaded, never written to `profiles` and never restored at
-            // init, so the picture reverted on the next rebuild. The avatar in
-            // the card above is the one working affordance; see TO_SIMO_DO.md
-            // for the missing account-mode upload path.
+            // "Update avatar" is gone, and the avatar in the card above is
+            // tappable in Private mode only — in account mode the picker
+            // persists nothing. See TO_SIMO_DO.md for the missing upload path.
           ],
         ),
         const SizedBox(height: 18),
@@ -216,7 +213,15 @@ class _ProfileCard extends StatelessWidget {
       child: Row(
         children: [
           InkWell(
-            onTap: onPickAvatar,
+            // Private mode ONLY. There is the whole of the account-mode avatar
+            // problem in one line: `_pickAvatar` writes through
+            // `updateAvatar()` in Private mode, but in account mode it only
+            // sets a page-local File that is never uploaded — no Supabase
+            // Storage call exists anywhere in desktop/lib — so the picture
+            // reverted on the next rebuild. The "Update avatar" ROW was deleted
+            // for this; the picture stayed tappable and kept the dead
+            // affordance alive. See TO_SIMO_DO.md for the missing upload path.
+            onTap: isPrivateMode ? onPickAvatar : null,
             customBorder: const CircleBorder(),
             child: Container(
               padding: const EdgeInsets.all(2),

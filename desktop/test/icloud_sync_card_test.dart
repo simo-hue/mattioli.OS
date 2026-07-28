@@ -32,6 +32,10 @@ class _FakeSyncService implements PrivateSyncService {
   /// than render it claiming everything is fine.
   final SyncDiagnostics? diagnosticsResult;
 
+  /// Set by [_pumpPrivacy] so the fake can persist the enabled flag the way the
+  /// real service does.
+  SharedPreferences? prefsForFake;
+
   PrivateSyncStatus current;
   int enableCalls = 0;
   int disableCalls = 0;
@@ -47,6 +51,9 @@ class _FakeSyncService implements PrivateSyncService {
   @override
   Future<PrivateSyncStatus> enable({bool force = false}) async {
     enableCalls++;
+    // The real service persists this; the fake must too, or the cached
+    // desktopSyncEnabledProvider can never be observed going stale.
+    await prefsForFake?.setBool(kSyncEnabledPrefKey, true);
     current = PrivateSyncStatus(
       isAvailable: true,
       isEnabled: true,
@@ -117,7 +124,10 @@ SyncDiagnostics _diagnostics({
 
 /// Pumps the settings page in Private mode with [fake] as the sync service and
 /// navigates to the Privacy section.
-Future<void> _pumpPrivacy(WidgetTester tester, _FakeSyncService fake) async {
+Future<ProviderContainer> _pumpPrivacy(
+  WidgetTester tester,
+  _FakeSyncService fake,
+) async {
   SharedPreferences.setMockInitialValues({
     'active_data_mode': DesktopDataMode.private.name,
   });
@@ -125,7 +135,9 @@ Future<void> _pumpPrivacy(WidgetTester tester, _FakeSyncService fake) async {
   final container = ProviderContainer(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
-      desktopPrivateSyncServiceProvider.overrideWithValue(fake),
+      desktopPrivateSyncServiceProvider.overrideWithValue(
+        fake..prefsForFake = prefs,
+      ),
     ],
   );
   addTearDown(container.dispose);
@@ -148,6 +160,7 @@ Future<void> _pumpPrivacy(WidgetTester tester, _FakeSyncService fake) async {
   );
   await tester.pumpAndSettle();
   await openSettingsSection(tester, SettingsSection.dataBackup);
+  return container;
 }
 
 /// The enable toggle = the kit EvolveSwitch inside the row titled with
@@ -189,6 +202,35 @@ void main() {
     expect(fake.enableCalls, 1);
     expect(find.text(t.icloudSync.statusIdle), findsOneWidget);
     expect(find.textContaining('Last synced'), findsOneWidget);
+  });
+
+  testWidgets('enabling refreshes the cached sync-enabled flag', (
+    tester,
+  ) async {
+    // desktopSyncEnabledProvider is a plain Provider over a SharedPreferences
+    // bool. The prefs instance identity never changes, so the value is cached
+    // forever unless the toggle explicitly invalidates it — without that call
+    // the dashboard's data-loss banner only clears after an app restart.
+    //
+    // This had no coverage: deleting refreshDesktopSyncEnabled(ref) left the
+    // whole suite green.
+    final fake = _FakeSyncService();
+    final container = await _pumpPrivacy(tester, fake);
+    expect(container.read(desktopSyncEnabledProvider), isFalse);
+
+    await tester.tap(_syncToggle());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(t.settingsPage.confirm));
+    await tester.pumpAndSettle();
+
+    expect(fake.enableCalls, 1);
+    expect(
+      container.read(desktopSyncEnabledProvider),
+      isTrue,
+      reason:
+          'the toggle must invalidate the cached flag, not wait for a '
+          'restart',
+    );
   });
 
   testWidgets('cancelling the disclosure leaves sync off', (tester) async {

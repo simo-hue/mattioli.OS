@@ -290,3 +290,36 @@ commas) — verified programmatically; largest is `ro` at 3929 chars.
       and every desktop `description.txt` is a single 90–310 char sentence. If desktop and
       mobile share the one App Store record (id6770482363), decide which tree is authoritative
       before `deliver` runs against either.
+
+## Desktop AI Coach paywall gate (2026-07-28) — on-device QA on the Mac mini
+
+Code + tests are done and green here (analyze clean, desktop 663/663), but nothing below
+can be verified without Xcode. Run these in a **release-ish build signed into a FREE account**
+(account mode, no Evolve Pro), then repeat the starred ones as a Pro user.
+
+- [ ] **The reported bug.** Overview → tap the "AI Chat" tile → the Pro-features modal opens
+      and you stay on Overview. Previously it walked straight into the Coach page.
+- [ ] **⌘K palette.** Open the palette, type "coach" (or "ai" / "chat"), hit Enter → palette
+      closes, Pro modal opens, no navigation. This was a second leak, not the one you reported.
+- [ ] **Sidebar + ⌘5** still behave exactly as before (modal, no navigation) — they were the
+      two that already worked, and they now go through the same shared helper.
+- [ ] **⌘] cannot resurrect the Coach.** In Private mode open the Coach → ⌘[ → Settings →
+      switch to your account (free) → press ⌘] and two-finger swipe-left. Neither should land
+      on the Coach. This is the vector no call-site check could close.
+- [ ] **The eviction guard has NO automated test** — please exercise it. Sit on the Coach page
+      as a Pro user and let / make the entitlement drop (RevenueCat sandbox expiry, or sign out
+      and back in as free): you should be moved to Overview silently, with no dialog, and ⌘[
+      must not take you back to the Coach.
+- [ ] ***The tour finale, on a fresh install of a free account.*** Highest-risk change. Delete
+      the app's prefs so the tour runs, walk it to the end, press "Fine" on the Coach segment:
+      the app should land on Overview FIRST and show the completion dialog there. Watch for any
+      flicker of the Coach page sliding out behind the dialog — that is precisely what the
+      reorder is meant to prevent, and it is the ordinary path for every new free signup.
+- [ ] ***As a Pro user***, confirm the Coach is still reachable from all four entry points and
+      that the tour finale looks right for you too.
+
+### Noted, deliberately NOT changed (pre-existing, outside the bug)
+- [ ] On **Windows/Linux** a signed-in free user gets the Pro upsell for the Coach with no way
+      to purchase (the paywall is informative off macOS). The sidebar already behaved this way;
+      the fix just makes the other three doors consistent with it. Decide separately whether
+      those platforms should pitch Pro at all.

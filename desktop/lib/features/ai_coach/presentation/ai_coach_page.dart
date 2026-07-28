@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
+import 'package:evolve_desktop/core/navigator_key.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
@@ -987,12 +988,25 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
   ];
 
   /// Finishes the FINAL tour segment: marks the whole tour done (unlocking
-  /// navigation), shows a completion dialog, then returns the user to Overview.
+  /// navigation), returns the user to Overview, and congratulates them there.
+  ///
+  /// The navigation happens BEFORE the dialog, not after. `complete()` clears
+  /// `active`, and for a free account in account mode the Coach is Pro-gated —
+  /// so the shell's eviction guard fires on the very next frame and would slide
+  /// this page out from under a dialog anchored to it. (That is the ordinary
+  /// path for a new free user: the tour runs on first launch and ends here.)
+  /// Navigating first makes the race impossible; the dialog is then shown on
+  /// the root navigator, which outlives this page.
   Future<void> _finishCoachTour() async {
     await ref.read(tourControllerProvider.notifier).complete();
     if (!mounted) return;
+    ref
+        .read(navigationControllerProvider.notifier)
+        .select(DesktopSection.overview);
+    final rootContext = navigatorKey.currentContext;
+    if (rootContext == null || !rootContext.mounted) return;
     await showEvolveDialog<void>(
-      context: context,
+      context: rootContext,
       barrierDismissible: false,
       builder: (context) => EvolveAlertDialog(
         icon: LucideIcons.sparkles,
@@ -1013,10 +1027,8 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
         ),
       ),
     );
-    if (!mounted) return;
-    ref
-        .read(navigationControllerProvider.notifier)
-        .select(DesktopSection.overview);
+    // Nothing after the await: this State is disposed the moment the navigation
+    // above lands, so `ref`/`context` are off-limits here by design.
   }
 }
 

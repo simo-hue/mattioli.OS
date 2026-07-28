@@ -14,6 +14,7 @@ import 'package:evolve_desktop/features/search/application/period_parser.dart';
 import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
 import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
 import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
+import 'package:evolve_desktop/features/shell/presentation/section_navigation.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
@@ -410,6 +411,15 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
   }
 
   void _goTo(DesktopSection section) {
+    // Gated sections (the Pro-only AI Coach) get the upsell instead, exactly
+    // like the sidebar and ⌘5. Decided HERE, while our [WidgetRef] is still
+    // alive: `_closeThen` runs after the palette route is popped and this State
+    // is disposed, so the shared `openSection` helper cannot be called from
+    // inside it — only the predicate, from out here.
+    if (sectionNeedsPaywall(ref, section)) {
+      _closeThen((ctx) => showProFeaturesDialog(ctx, ref));
+      return;
+    }
     ref.read(navigationControllerProvider.notifier).select(section);
     _dismiss();
   }

@@ -62,19 +62,42 @@ final desktopSyncedSettingsWriterProvider =
 /// Keys absent from [values] are left alone: the store distinguishes "never
 /// set" from "set to null", and neither is a reason to overwrite a live choice.
 void applyDesktopSyncedSettings(WidgetRef ref, Map<String, String?> values) {
+  _applyDesktopSyncedSettings(
+    values,
+    appearance: () => ref.read(desktopAppearanceControllerProvider.notifier),
+    locale: () => ref.read(desktopLocaleControllerProvider.notifier),
+  );
+}
+
+/// [applyDesktopSyncedSettings] for a provider [Ref].
+///
+/// `WidgetRef` and `Ref` share no supertype in Riverpod 3, and the settings
+/// form controller — which owns the read-back — holds the latter. Both spellings
+/// delegate to the same body so the "which keys travel" decision cannot fork.
+void applyDesktopSyncedSettingsFromRef(Ref ref, Map<String, String?> values) {
+  _applyDesktopSyncedSettings(
+    values,
+    appearance: () => ref.read(desktopAppearanceControllerProvider.notifier),
+    locale: () => ref.read(desktopLocaleControllerProvider.notifier),
+  );
+}
+
+/// The notifiers are LAZY: a controller must only be instantiated when the key
+/// it owns actually travelled, exactly as the two inline `ref.read`s did.
+void _applyDesktopSyncedSettings(
+  Map<String, String?> values, {
+  required DesktopAppearanceController Function() appearance,
+  required DesktopLocaleController Function() locale,
+}) {
   if (values.containsKey(kSettingThemeMode) ||
       values.containsKey(kSettingAccentColor)) {
-    ref
-        .read(desktopAppearanceControllerProvider.notifier)
-        .applyProfile(
-          themeMode: values[kSettingThemeMode],
-          accentColor: values[kSettingAccentColor],
-        );
+    appearance().applyProfile(
+      themeMode: values[kSettingThemeMode],
+      accentColor: values[kSettingAccentColor],
+    );
   }
   if (values.containsKey(kSettingLanguage)) {
-    ref
-        .read(desktopLocaleControllerProvider.notifier)
-        .applyProfile(values[kSettingLanguage]);
+    locale().applyProfile(values[kSettingLanguage]);
   }
 }
 

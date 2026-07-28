@@ -338,3 +338,8 @@ can be verified without Xcode. Run these in a **release-ish build signed into a 
 ## Personal info inlining (2026-07-28)
 
 - **Verify the Private-mode profile write end to end.** Editing your name or date of birth in Private mode now calls `privateProfileProvider.updateProfile` → `DesktopPrivateDb.updateProfileFields` → `notifyWrite`. That path was fully implemented but unreachable from desktop Settings until now, so it has never actually run here. Change your name on the Mac in Private mode and confirm it reaches the iPhone.
+
+## Settings state hoist + pane split (2026-07-28)
+
+- **Two timing nuances the widget suite cannot see.** The form state now lives in a keep-alive Riverpod controller rather than a per-mount `State`, which changes two things on a real machine: (1) the synced read-back applies one microtask after `initState` instead of inside it, so there is at most one frame of pre-hydration values when Settings opens; (2) the controller survives closing Settings, so re-opening re-arms the hydration latch and re-reads the appearance instead of rebuilding from SharedPreferences. Open Settings, change a preference on the iPhone, then close and re-open Settings on the Mac and confirm the Mac shows the iPhone's value.
+- **Pre-existing, not introduced:** `settings_page.dart` `_deletePrivateData` opens its loading dialog after an `await` with no `mounted` check. If the page is disposed while the confirm dialog is open, it uses a defunct context. Worth fixing, but it is not a regression from this work.

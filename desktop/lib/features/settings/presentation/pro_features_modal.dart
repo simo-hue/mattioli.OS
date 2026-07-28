@@ -1,5 +1,5 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
-import 'package:evolve_desktop/features/settings/presentation/settings_page.dart';
+import 'package:evolve_desktop/features/settings/presentation/panes/subscription_pane.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:flutter/material.dart';

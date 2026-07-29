@@ -194,6 +194,28 @@ class DashboardHabit {
   bool get isCompoundVerified =>
       additionalConditions != null && additionalConditions!.isNotEmpty;
 
+  /// Whether the CURRENT [verificationRule] is the one that was in force on
+  /// [date] — `max(startDate, verifyEffectiveFrom) <= date`, the same
+  /// forward-only anchor (D10) the iPhone's engine evaluates against.
+  ///
+  /// Rule edits never re-derive history, so a day judged against "≥ 10,000" must
+  /// not be *labelled* with a rule raised to "≥ 12,000" afterwards. Display code
+  /// that names the threshold has to ask this first. Mirrors mobile's
+  /// `Goal.verificationRuleAppliesOn`; unlike mobile, [startDate] is nullable
+  /// here, and with no date to anchor on at all there is nothing to contradict
+  /// the rule, so it reads as in effect.
+  bool verificationRuleAppliesOn(DateTime date) {
+    if (verificationRule == null) return false;
+    final anchor = verifyEffectiveFrom ?? startDate;
+    if (anchor == null) return true;
+    final start = startDate;
+    final effective =
+        start != null && anchor.isBefore(start) ? start : anchor;
+    final day = DateTime(date.year, date.month, date.day);
+    final from = DateTime(effective.year, effective.month, effective.day);
+    return !day.isBefore(from);
+  }
+
   /// Whether the habit's active *range* covers [date] (start ≤ date ≤ end),
   /// ignoring the weekly schedule. Use [isScheduledOn] for day-view display.
   bool isActiveOn(DateTime date) {

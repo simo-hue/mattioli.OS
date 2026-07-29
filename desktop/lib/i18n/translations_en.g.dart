@@ -40,6 +40,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	Translations $copyWith({TranslationMetadata<AppLocale, Translations>? meta}) => Translations(meta: meta ?? this.$meta);
 
 	// Translations
+	late final Translations$verification$en verification = Translations$verification$en.internal(_root);
 	late final Translations$macroTargets$en macroTargets = Translations$macroTargets$en.internal(_root);
 	late final Translations$auth$en auth = Translations$auth$en.internal(_root);
 	late final Translations$privateData$en privateData = Translations$privateData$en.internal(_root);
@@ -105,6 +106,22 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$palette$en palette = Translations$palette$en.internal(_root);
 	late final Translations$targets$en targets = Translations$targets$en.internal(_root);
 	late final Translations$trackingMode$en trackingMode = Translations$trackingMode$en.internal(_root);
+}
+
+// Path: verification
+class Translations$verification$en {
+	Translations$verification$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Auto-verified'
+	String get autoVerified => 'Auto-verified';
+
+	late final Translations$verification$compound$en compound = Translations$verification$compound$en.internal(_root);
+	late final Translations$verification$templates$en templates = Translations$verification$templates$en.internal(_root);
+	late final Translations$verification$units$en units = Translations$verification$units$en.internal(_root);
 }
 
 // Path: macroTargets
@@ -3979,6 +3996,81 @@ class Translations$trackingMode$en {
 	String get automaticLocked => 'Verified — edit on iPhone';
 }
 
+// Path: verification.compound
+class Translations$verification$compound$en {
+	Translations$verification$compound$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'All {count} conditions'
+	String summaryAll({required Object count}) => 'All ${count} conditions';
+
+	/// en: 'Any of {count} conditions'
+	String summaryAny({required Object count}) => 'Any of ${count} conditions';
+}
+
+// Path: verification.templates
+class Translations$verification$templates$en {
+	Translations$verification$templates$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Steps'
+	String get steps => 'Steps';
+
+	/// en: 'Exercise minutes'
+	String get exerciseMinutes => 'Exercise minutes';
+
+	/// en: 'Active energy'
+	String get activeEnergy => 'Active energy';
+
+	/// en: 'Stand hours'
+	String get standHours => 'Stand hours';
+
+	/// en: 'Distance'
+	String get distance => 'Distance';
+
+	/// en: 'Mindful minutes'
+	String get mindfulMinutes => 'Mindful minutes';
+
+	/// en: 'Sleep hours'
+	String get sleepHours => 'Sleep hours';
+
+	/// en: 'Workout'
+	String get workout => 'Workout';
+
+	/// en: 'Total device usage'
+	String get screenTimeTotal => 'Total device usage';
+
+	/// en: 'Time in chosen apps'
+	String get screenTimeApps => 'Time in chosen apps';
+}
+
+// Path: verification.units
+class Translations$verification$units$en {
+	Translations$verification$units$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'min'
+	String get minutes => 'min';
+
+	/// en: 'h'
+	String get hours => 'h';
+
+	/// en: 'kcal'
+	String get kilocalories => 'kcal';
+
+	/// en: 'km'
+	String get kilometers => 'km';
+}
+
 // Path: common.actions
 class Translations$common$actions$en {
 	Translations$common$actions$en.internal(this._root);
@@ -4610,6 +4702,23 @@ class Translations$targets$presets$limitDurationDaily$en {
 extension on Translations {
 	dynamic _flatMapFunction(String path) {
 		return switch (path) {
+			'verification.autoVerified' => 'Auto-verified',
+			'verification.compound.summaryAll' => ({required Object count}) => 'All ${count} conditions',
+			'verification.compound.summaryAny' => ({required Object count}) => 'Any of ${count} conditions',
+			'verification.templates.steps' => 'Steps',
+			'verification.templates.exerciseMinutes' => 'Exercise minutes',
+			'verification.templates.activeEnergy' => 'Active energy',
+			'verification.templates.standHours' => 'Stand hours',
+			'verification.templates.distance' => 'Distance',
+			'verification.templates.mindfulMinutes' => 'Mindful minutes',
+			'verification.templates.sleepHours' => 'Sleep hours',
+			'verification.templates.workout' => 'Workout',
+			'verification.templates.screenTimeTotal' => 'Total device usage',
+			'verification.templates.screenTimeApps' => 'Time in chosen apps',
+			'verification.units.minutes' => 'min',
+			'verification.units.hours' => 'h',
+			'verification.units.kilocalories' => 'kcal',
+			'verification.units.kilometers' => 'km',
 			'macroTargets.sectionTitle' => 'Numeric target',
 			'macroTargets.none' => 'None',
 			'macroTargets.amountLabel' => 'Target amount',
@@ -5105,6 +5214,8 @@ extension on Translations {
 			'stats.correlationAnalysisSubtitle' => 'Low vs high mood completion',
 			'stats.moodEnergyTrendTitle' => 'Mood & energy',
 			'stats.moodEnergyTrendSubtitle' => ({required Object days}) => 'Last ${days} days',
+			_ => null,
+		} ?? switch (path) {
 			'stats.allTimeBest' => 'All-time record',
 			'stats.topPerformerLabel' => 'Top performer',
 			'stats.currentStreakShort' => 'Now',
@@ -5122,8 +5233,6 @@ extension on Translations {
 			'stats.gapSubtitle' => 'Days between completions',
 			'stats.gapAvg' => 'Avg gap',
 			'stats.gapLongest' => 'Longest',
-			_ => null,
-		} ?? switch (path) {
 			'stats.gapSince' => 'Since last',
 			'stats.habitBounceBackShort' => 'Bounce-back',
 			'stats.habitConsistencyDetail' => 'Regularity score',
@@ -5619,6 +5728,8 @@ extension on Translations {
 			'settingsPage.updatePassword' => 'Update password',
 			'settingsPage.useAccent' => ({required Object hex}) => 'Use accent ${hex}',
 			'settingsPage.verified' => 'Verified',
+			_ => null,
+		} ?? switch (path) {
 			'settingsPage.weeklyReports' => 'Weekly Reports',
 			'settingsPage.weeklyReportsDetail' => 'A weekly summary of your progress.',
 			'settingsPage.youArePro' => 'You are a Pro user!',
@@ -5636,8 +5747,6 @@ extension on Translations {
 			'consentPage.subtitle' => 'Before using Evolve Desktop, confirm the terms, privacy policy and the data processing required for syncing.',
 			'consentPage.acceptTerms' => 'I accept the terms and privacy policy',
 			'consentPage.termsSubtitle' => 'I confirm I have read the documents and I am at least 14 years old.',
-			_ => null,
-		} ?? switch (path) {
 			'consentPage.crashDiagnostics' => 'Crash diagnostics',
 			'consentPage.crashSubtitle' => 'Allow sending anonymized technical reports.',
 			'consentPage.openPrivacy' => 'Open the privacy policy',

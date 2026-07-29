@@ -186,6 +186,7 @@ class DayDetailsModal extends ConsumerWidget {
 
                       return GoalLogCard(
                         habit: habit,
+                        date: date,
                         status: status,
                         streak: streak,
                         couldNotVerify: couldNotVerify,
@@ -260,6 +261,11 @@ class GoalLogCard extends ConsumerWidget {
   final int streak;
   final VoidCallback onTap;
 
+  /// The day this card represents. Needed to decide whether the habit's CURRENT
+  /// verification rule is the one that governed this day — rule edits apply
+  /// forward only, so naming a threshold on an earlier day would misreport it.
+  final DateTime date;
+
   /// True when this is an auto-verified habit whose day couldn't be verified
   /// (D6): renders the "?" resolve affordance in place of the pending circle.
   final bool couldNotVerify;
@@ -276,6 +282,7 @@ class GoalLogCard extends ConsumerWidget {
     required this.status,
     required this.streak,
     required this.onTap,
+    required this.date,
     this.couldNotVerify = false,
     this.target,
     this.verdict,
@@ -333,11 +340,38 @@ class GoalLogCard extends ConsumerWidget {
         ? context.t.verification.couldNotVerifyTapToResolve
         : context.t.a11y.statusPending;
 
+    // Whether the verification line gives up its rule for the resolve prompt.
+    // ONE predicate drives both the visible line and the spoken label — they
+    // desynced when only the widget was narrowed, so a hybrid card showed the
+    // rule on screen while VoiceOver said nothing about it.
+    final lineShowsPrompt = couldNotVerify && target == null;
+    final ruleInEffect = habit.verificationRuleAppliesOn(date);
+
+    // The card excludes its children's semantics, so the verification line is
+    // silent unless spoken here. The generic "auto-verified" word leads, because
+    // the shield icon carries that meaning visually and a bare "≥ 30 min" has no
+    // context read aloud. Skipped when the line is the prompt — [a11yStatus] is
+    // then already that prompt, and the line would only repeat it. On a day that
+    // predates a rule edit the threshold is omitted for the same reason the
+    // visible line omits it: it would name a rule this day was not judged
+    // against.
+    final a11yVerification = !habit.isVerified || lineShowsPrompt
+        ? ''
+        : ruleInEffect
+            ? ', ${context.t.verification.autoVerified}, '
+                '${habitVerificationLabel(
+                context.t,
+                conditions: habit.verificationConditions,
+                join: habit.verificationJoin,
+                habitTitle: habit.title,
+              )}'
+            : ', ${context.t.verification.autoVerified}';
+
     return Semantics(
       button: true,
       container: true,
       excludeSemantics: true,
-      label: '${habit.title}, $a11yStatus',
+      label: '${habit.title}, $a11yStatus$a11yVerification',
       hint: context.t.a11y.toggleHint,
       child: GestureDetector(
         onTap: () {
@@ -400,32 +434,37 @@ class GoalLogCard extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            habit.title,
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 17,
-                              fontWeight: FontWeight.w600,
-                              color: textColor,
-                              decoration: hasStrikethrough
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                              decorationColor: const Color(
-                                0xFFEF4444,
-                              ).withValues(alpha: 0.5),
-                              decorationThickness: 2,
-                            ),
-                          ),
-                        ),
-                        if (habit.isVerified) ...[
-                          const SizedBox(width: 8),
-                          const VerificationBadge(),
-                        ],
-                      ],
+                    // The name owns the whole of row 1. It used to share it with
+                    // an auto-verified pill, which took its intrinsic width and
+                    // left the name breaking mid-word; the marker now lives on
+                    // row 2 (see [VerificationLine]). Two lines of budget, then
+                    // an ellipsis — the app doesn't clamp Dynamic Type, so 17pt
+                    // can render far larger than this.
+                    Text(
+                      habit.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                        color: textColor,
+                        decoration: hasStrikethrough
+                            ? TextDecoration.lineThrough
+                            : null,
+                        decorationColor: const Color(
+                          0xFFEF4444,
+                        ).withValues(alpha: 0.5),
+                        decorationThickness: 2,
+                      ),
                     ),
+                    // A habit can be BOTH auto-verified and carry a manual
+                    // target — the two are orthogonal (see `displayTargetFor`),
+                    // and while mobile's tracking-mode picker keeps them
+                    // exclusive, the macOS editor writes a target without
+                    // clearing the rule. So these are separate `if`s, not a
+                    // chain: the progress readout must never be swallowed by the
+                    // verification line.
                     if (target != null) ...[
                       const SizedBox(height: 2),
                       Text(
@@ -438,10 +477,31 @@ class GoalLogCard extends ConsumerWidget {
                           color: context.appColors.mutedForeground,
                         ),
                       ),
-                    ] else if (couldNotVerify) ...[
+                    ],
+                    if (habit.isVerified) ...[
+                      const SizedBox(height: 2),
+                      VerificationLine(
+                        conditions: habit.verificationConditions,
+                        join: habit.verificationJoin,
+                        habitTitle: habit.title,
+                        ruleInEffect: ruleInEffect,
+                        // With a target present the leading slot is the ring and
+                        // the tap opens the entry sheet, which cannot resolve a
+                        // verification — so the "tap to fix it" prompt would be a
+                        // lie. Show the rule instead.
+                        couldNotVerify: lineShowsPrompt,
+                      ),
+                    ] else if (lineShowsPrompt) ...[
+                      // A marker left behind after its rule was removed: the
+                      // habit reads as manual now, so there is no rule to show
+                      // beside the prompt, but the day is still resolvable. Kept
+                      // to one ellipsized line like [VerificationLine] — the long
+                      // string wrapped to three rows here and made the card jump.
                       const SizedBox(height: 2),
                       Text(
-                        context.t.verification.couldNotVerifyTapToResolve,
+                        context.t.verification.couldNotVerifyShort,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 12,

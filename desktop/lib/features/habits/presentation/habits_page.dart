@@ -28,7 +28,7 @@ import 'package:evolve_desktop/shared/widgets/evolve_period_switcher.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_weekday_selector.dart';
 import 'package:evolve_desktop/shared/widgets/habit_day_dots.dart';
 import 'package:evolve_desktop/shared/widgets/target_ring.dart';
-import 'package:evolve_desktop/shared/widgets/verified_habit_badge.dart';
+import 'package:evolve_desktop/shared/widgets/verified_habit_line.dart';
 import 'package:evolve_targets/evolve_targets.dart';
 import 'dart:math' as math;
 import 'dart:ui';
@@ -1098,29 +1098,36 @@ class _HabitRowState extends State<_HabitRow> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                habit.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: context.evolveColors.foreground,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: -0.2,
-                                ),
-                              ),
-                            ),
-                            // Read-only marker for iPhone-verified habits
-                            // (mobile parity).
-                            if (habit.verificationRule != null) ...[
-                              const SizedBox(width: 6),
-                              const VerifiedHabitBadge(),
-                            ],
-                          ],
+                        Text(
+                          habit.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: context.evolveColors.foreground,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.2,
+                          ),
                         ),
+                        // Read-only marker for iPhone-verified habits (mobile
+                        // parity). On its own row, so naming the rule can never
+                        // steal width from the habit's name — the bug that put
+                        // this line here in the first place.
+                        //
+                        // `ruleInEffect` stays at its default here, unlike the
+                        // dashboard and day-detail rows: this is the manage
+                        // surface (edit / delete / reminder columns), describing
+                        // the habit as it is configured now rather than any
+                        // particular day, so the current rule is the right one to
+                        // name.
+                        if (habit.verificationRule != null) ...[
+                          const SizedBox(height: 2),
+                          VerifiedHabitLine(
+                            conditions: habit.verificationConditions,
+                            join: habit.verificationJoin,
+                            habitTitle: habit.title,
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -2089,8 +2096,8 @@ class _LifeMetric extends StatelessWidget {
 }
 
 /// Opens the calendar day-detail dialog for [date] — the read-only-aware habit
-/// completion list for a single day, including the "Verified" badge on
-/// auto-verified habits. Public so widget tests can drive the real dialog; the
+/// completion list for a single day, including the rule line beneath an
+/// auto-verified habit. Public so widget tests can drive the real dialog; the
 /// page itself calls it from the calendar's day tap.
 Future<void> showDayDetailsDialog(BuildContext context, DateTime date) {
   return showEvolveDialog<void>(
@@ -2152,7 +2159,14 @@ class _DayDetailsDialog extends ConsumerWidget {
               streak: habit.streak,
               done: snapshot.resolvedHabitStatus(habit, date) == 'done',
               missed: snapshot.resolvedHabitStatus(habit, date) == 'missed',
-              verified: habit.verificationRule != null,
+              verificationLine: habit.verificationRule == null
+                  ? null
+                  : VerifiedHabitLine(
+                      conditions: habit.verificationConditions,
+                      join: habit.verificationJoin,
+                      habitTitle: habit.title,
+                      ruleInEffect: habit.verificationRuleAppliesOn(date),
+                    ),
               statusLabel: habitStatusLabel(
                 snapshot.resolvedHabitStatus(habit, date),
               ),
@@ -2186,7 +2200,7 @@ class _DayHabitRow extends StatelessWidget {
     required this.streak,
     required this.done,
     required this.missed,
-    required this.verified,
+    required this.verificationLine,
     required this.statusLabel,
     required this.onToggle,
   });
@@ -2197,11 +2211,12 @@ class _DayHabitRow extends StatelessWidget {
   final bool done;
   final bool missed;
 
-  /// Whether this habit is auto-verified from the iPhone (HealthKit / Screen
-  /// Time) — i.e. `verificationRule != null`. Drives the read-only "Verified"
-  /// badge, mirroring the Protocol table's `_HabitRow`.
-  final bool verified;
   final String statusLabel;
+
+  /// The auto-verified marker, or null for a manual habit. Built by the caller,
+  /// which knows both the habit and the day on screen and so can decide whether
+  /// the habit's current rule is the one that governed this day.
+  final Widget? verificationLine;
   final VoidCallback? onToggle;
 
   @override
@@ -2240,27 +2255,15 @@ class _DayHabitRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: colors.foreground,
-                        ),
-                      ),
-                    ),
-                    // Read-only marker for iPhone-verified habits, matching the
-                    // Protocol table's `_HabitRow` (mobile parity).
-                    if (verified) ...[
-                      const SizedBox(width: 6),
-                      const VerifiedHabitBadge(),
-                    ],
-                  ],
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: colors.foreground,
+                  ),
                 ),
                 const SizedBox(height: 1),
                 Text(
@@ -2271,6 +2274,12 @@ class _DayHabitRow extends StatelessWidget {
                     color: colors.muted,
                   ),
                 ),
+                // Read-only marker for iPhone-verified habits, matching the
+                // Protocol table's `_HabitRow` (mobile parity). Below the status
+                // line rather than beside the name: the status is about today,
+                // the rule is about the habit, and neither should crowd the other.
+                if (verificationLine != null) const SizedBox(height: 2),
+                ?verificationLine,
               ],
             ),
           ),

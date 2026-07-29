@@ -1463,31 +1463,15 @@ class _HabitListItem extends StatelessWidget {
                 ),
                 // Auto-verified habits carry their indicator on a quiet second
                 // line (plain icon + muted text, no pill) so the name keeps the
-                // full row-1 width instead of collapsing into it.
+                // full row-1 width instead of collapsing into it. Shares
+                // [VerificationLine] with the day card, so the rule a habit is
+                // measured against is worded identically wherever it appears.
                 if (habit.isVerified) ...[
                   const SizedBox(height: 2),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        LucideIcons.shieldCheck,
-                        size: 12,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          context.t.verification.autoVerified,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: context.appColors.mutedForeground,
-                          ),
-                        ),
-                      ),
-                    ],
+                  VerificationLine(
+                    conditions: habit.verificationConditions,
+                    join: habit.verificationJoin,
+                    habitTitle: habit.title,
                   ),
                 ],
               ],

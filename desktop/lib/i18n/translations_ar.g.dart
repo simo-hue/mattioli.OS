@@ -39,6 +39,7 @@ class TranslationsAr extends Translations with BaseTranslations<AppLocale, Trans
 	TranslationsAr $copyWith({TranslationMetadata<AppLocale, Translations>? meta}) => TranslationsAr(meta: meta ?? this.$meta);
 
 	// Translations
+	@override late final _Translations$verification$ar verification = _Translations$verification$ar._(_root);
 	@override late final _Translations$macroTargets$ar macroTargets = _Translations$macroTargets$ar._(_root);
 	@override late final _Translations$auth$ar auth = _Translations$auth$ar._(_root);
 	@override late final _Translations$privateData$ar privateData = _Translations$privateData$ar._(_root);
@@ -87,6 +88,19 @@ class TranslationsAr extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$palette$ar palette = _Translations$palette$ar._(_root);
 	@override late final _Translations$targets$ar targets = _Translations$targets$ar._(_root);
 	@override late final _Translations$trackingMode$ar trackingMode = _Translations$trackingMode$ar._(_root);
+}
+
+// Path: verification
+class _Translations$verification$ar extends Translations$verification$en {
+	_Translations$verification$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get autoVerified => 'تم التحقق تلقائيًا';
+	@override late final _Translations$verification$compound$ar compound = _Translations$verification$compound$ar._(_root);
+	@override late final _Translations$verification$templates$ar templates = _Translations$verification$templates$ar._(_root);
+	@override late final _Translations$verification$units$ar units = _Translations$verification$units$ar._(_root);
 }
 
 // Path: macroTargets
@@ -1655,6 +1669,49 @@ class _Translations$trackingMode$ar extends Translations$trackingMode$en {
 	@override String get automaticLocked => 'مُحقّقة — عدّلها على iPhone';
 }
 
+// Path: verification.compound
+class _Translations$verification$compound$ar extends Translations$verification$compound$en {
+	_Translations$verification$compound$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String summaryAll({required Object count}) => 'كلّ الشروط (${count})';
+	@override String summaryAny({required Object count}) => 'أيّ شرط من ${count}';
+}
+
+// Path: verification.templates
+class _Translations$verification$templates$ar extends Translations$verification$templates$en {
+	_Translations$verification$templates$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get steps => 'الخطوات';
+	@override String get exerciseMinutes => 'دقائق التمرين';
+	@override String get activeEnergy => 'الطاقة النشطة';
+	@override String get standHours => 'ساعات الوقوف';
+	@override String get distance => 'المسافة';
+	@override String get mindfulMinutes => 'دقائق التأمل';
+	@override String get sleepHours => 'ساعات النوم';
+	@override String get workout => 'التمرين';
+	@override String get screenTimeTotal => 'إجمالي استخدام الجهاز';
+	@override String get screenTimeApps => 'الوقت في التطبيقات المختارة';
+}
+
+// Path: verification.units
+class _Translations$verification$units$ar extends Translations$verification$units$en {
+	_Translations$verification$units$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get minutes => 'دقيقة';
+	@override String get hours => 'ساعة';
+	@override String get kilocalories => 'سعرة';
+	@override String get kilometers => 'كم';
+}
+
 // Path: common.actions
 class _Translations$common$actions$ar extends Translations$common$actions$en {
 	_Translations$common$actions$ar._(TranslationsAr root) : this._root = root, super.internal(root);
@@ -2054,6 +2111,23 @@ class _Translations$targets$presets$limitDurationDaily$ar extends Translations$t
 extension on TranslationsAr {
 	dynamic _flatMapFunction(String path) {
 		return switch (path) {
+			'verification.autoVerified' => 'تم التحقق تلقائيًا',
+			'verification.compound.summaryAll' => ({required Object count}) => 'كلّ الشروط (${count})',
+			'verification.compound.summaryAny' => ({required Object count}) => 'أيّ شرط من ${count}',
+			'verification.templates.steps' => 'الخطوات',
+			'verification.templates.exerciseMinutes' => 'دقائق التمرين',
+			'verification.templates.activeEnergy' => 'الطاقة النشطة',
+			'verification.templates.standHours' => 'ساعات الوقوف',
+			'verification.templates.distance' => 'المسافة',
+			'verification.templates.mindfulMinutes' => 'دقائق التأمل',
+			'verification.templates.sleepHours' => 'ساعات النوم',
+			'verification.templates.workout' => 'التمرين',
+			'verification.templates.screenTimeTotal' => 'إجمالي استخدام الجهاز',
+			'verification.templates.screenTimeApps' => 'الوقت في التطبيقات المختارة',
+			'verification.units.minutes' => 'دقيقة',
+			'verification.units.hours' => 'ساعة',
+			'verification.units.kilocalories' => 'سعرة',
+			'verification.units.kilometers' => 'كم',
 			'macroTargets.sectionTitle' => 'هدف رقمي',
 			'macroTargets.none' => 'بدون',
 			'macroTargets.amountLabel' => 'القيمة المستهدفة',
@@ -2549,6 +2623,8 @@ extension on TranslationsAr {
 			'stats.correlationAnalysisSubtitle' => 'الإنجاز عند المزاج المنخفض مقابل المرتفع',
 			'stats.moodEnergyTrendTitle' => 'المزاج والطاقة',
 			'stats.moodEnergyTrendSubtitle' => ({required Object days}) => 'آخر ${days} يومًا',
+			_ => null,
+		} ?? switch (path) {
 			'stats.allTimeBest' => 'الرقم القياسي',
 			'stats.topPerformerLabel' => 'الأفضل',
 			'stats.currentStreakShort' => 'الآن',
@@ -2566,8 +2642,6 @@ extension on TranslationsAr {
 			'stats.gapSubtitle' => 'الأيام بين الإنجازات',
 			'stats.gapAvg' => 'المتوسط',
 			'stats.gapLongest' => 'الأطول',
-			_ => null,
-		} ?? switch (path) {
 			'stats.gapSince' => 'منذ الأخير',
 			'stats.habitBounceBackShort' => 'التعافي',
 			'stats.habitConsistencyDetail' => 'درجة الانتظام',
@@ -3063,6 +3137,8 @@ extension on TranslationsAr {
 			'settingsPage.updatePassword' => 'تحديث كلمة المرور',
 			'settingsPage.useAccent' => ({required Object hex}) => 'استخدم التمييز ${hex}',
 			'settingsPage.verified' => 'موثّق',
+			_ => null,
+		} ?? switch (path) {
 			'settingsPage.weeklyReports' => 'تقارير أسبوعية',
 			'settingsPage.weeklyReportsDetail' => 'ملخص أسبوعي لتقدمك.',
 			'settingsPage.youArePro' => 'أنت مستخدم Pro!',
@@ -3080,8 +3156,6 @@ extension on TranslationsAr {
 			'consentPage.subtitle' => 'قبل استخدام Evolve Desktop، أكّد الشروط وسياسة الخصوصية ومعالجة البيانات اللازمة للمزامنة.',
 			'consentPage.acceptTerms' => 'أوافق على الشروط وسياسة الخصوصية',
 			'consentPage.termsSubtitle' => 'أؤكّد أنني قرأت المستندات وأن عمري 14 عامًا على الأقل.',
-			_ => null,
-		} ?? switch (path) {
 			'consentPage.crashDiagnostics' => 'تشخيص الأعطال',
 			'consentPage.crashSubtitle' => 'اسمح بإرسال تقارير تقنية مجهّلة الهوية.',
 			'consentPage.openPrivacy' => 'افتح سياسة الخصوصية',

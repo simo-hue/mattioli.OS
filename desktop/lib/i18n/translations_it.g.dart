@@ -39,6 +39,7 @@ class TranslationsIt extends Translations with BaseTranslations<AppLocale, Trans
 	TranslationsIt $copyWith({TranslationMetadata<AppLocale, Translations>? meta}) => TranslationsIt(meta: meta ?? this.$meta);
 
 	// Translations
+	@override late final _Translations$verification$it verification = _Translations$verification$it._(_root);
 	@override late final _Translations$macroTargets$it macroTargets = _Translations$macroTargets$it._(_root);
 	@override late final _Translations$auth$it auth = _Translations$auth$it._(_root);
 	@override late final _Translations$privateData$it privateData = _Translations$privateData$it._(_root);
@@ -87,6 +88,19 @@ class TranslationsIt extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$palette$it palette = _Translations$palette$it._(_root);
 	@override late final _Translations$targets$it targets = _Translations$targets$it._(_root);
 	@override late final _Translations$trackingMode$it trackingMode = _Translations$trackingMode$it._(_root);
+}
+
+// Path: verification
+class _Translations$verification$it extends Translations$verification$en {
+	_Translations$verification$it._(TranslationsIt root) : this._root = root, super.internal(root);
+
+	final TranslationsIt _root; // ignore: unused_field
+
+	// Translations
+	@override String get autoVerified => 'Verificato automaticamente';
+	@override late final _Translations$verification$compound$it compound = _Translations$verification$compound$it._(_root);
+	@override late final _Translations$verification$templates$it templates = _Translations$verification$templates$it._(_root);
+	@override late final _Translations$verification$units$it units = _Translations$verification$units$it._(_root);
 }
 
 // Path: macroTargets
@@ -1655,6 +1669,49 @@ class _Translations$trackingMode$it extends Translations$trackingMode$en {
 	@override String get automaticLocked => 'Verificata — modifica su iPhone';
 }
 
+// Path: verification.compound
+class _Translations$verification$compound$it extends Translations$verification$compound$en {
+	_Translations$verification$compound$it._(TranslationsIt root) : this._root = root, super.internal(root);
+
+	final TranslationsIt _root; // ignore: unused_field
+
+	// Translations
+	@override String summaryAll({required Object count}) => 'Tutte le ${count} condizioni';
+	@override String summaryAny({required Object count}) => 'Almeno 1 di ${count} condizioni';
+}
+
+// Path: verification.templates
+class _Translations$verification$templates$it extends Translations$verification$templates$en {
+	_Translations$verification$templates$it._(TranslationsIt root) : this._root = root, super.internal(root);
+
+	final TranslationsIt _root; // ignore: unused_field
+
+	// Translations
+	@override String get steps => 'Passi';
+	@override String get exerciseMinutes => 'Minuti di attività';
+	@override String get activeEnergy => 'Energia attiva';
+	@override String get standHours => 'Ore in piedi';
+	@override String get distance => 'Distanza';
+	@override String get mindfulMinutes => 'Minuti di mindfulness';
+	@override String get sleepHours => 'Ore di sonno';
+	@override String get workout => 'Allenamento';
+	@override String get screenTimeTotal => 'Utilizzo totale del dispositivo';
+	@override String get screenTimeApps => 'Tempo nelle app scelte';
+}
+
+// Path: verification.units
+class _Translations$verification$units$it extends Translations$verification$units$en {
+	_Translations$verification$units$it._(TranslationsIt root) : this._root = root, super.internal(root);
+
+	final TranslationsIt _root; // ignore: unused_field
+
+	// Translations
+	@override String get minutes => 'min';
+	@override String get hours => 'h';
+	@override String get kilocalories => 'kcal';
+	@override String get kilometers => 'km';
+}
+
 // Path: common.actions
 class _Translations$common$actions$it extends Translations$common$actions$en {
 	_Translations$common$actions$it._(TranslationsIt root) : this._root = root, super.internal(root);
@@ -2054,6 +2111,23 @@ class _Translations$targets$presets$limitDurationDaily$it extends Translations$t
 extension on TranslationsIt {
 	dynamic _flatMapFunction(String path) {
 		return switch (path) {
+			'verification.autoVerified' => 'Verificato automaticamente',
+			'verification.compound.summaryAll' => ({required Object count}) => 'Tutte le ${count} condizioni',
+			'verification.compound.summaryAny' => ({required Object count}) => 'Almeno 1 di ${count} condizioni',
+			'verification.templates.steps' => 'Passi',
+			'verification.templates.exerciseMinutes' => 'Minuti di attività',
+			'verification.templates.activeEnergy' => 'Energia attiva',
+			'verification.templates.standHours' => 'Ore in piedi',
+			'verification.templates.distance' => 'Distanza',
+			'verification.templates.mindfulMinutes' => 'Minuti di mindfulness',
+			'verification.templates.sleepHours' => 'Ore di sonno',
+			'verification.templates.workout' => 'Allenamento',
+			'verification.templates.screenTimeTotal' => 'Utilizzo totale del dispositivo',
+			'verification.templates.screenTimeApps' => 'Tempo nelle app scelte',
+			'verification.units.minutes' => 'min',
+			'verification.units.hours' => 'h',
+			'verification.units.kilocalories' => 'kcal',
+			'verification.units.kilometers' => 'km',
 			'macroTargets.sectionTitle' => 'Obiettivo numerico',
 			'macroTargets.none' => 'Nessuno',
 			'macroTargets.amountLabel' => 'Valore obiettivo',
@@ -2549,6 +2623,8 @@ extension on TranslationsIt {
 			'stats.correlationAnalysisSubtitle' => 'Completamento umore basso vs alto',
 			'stats.moodEnergyTrendTitle' => 'Umore ed energia',
 			'stats.moodEnergyTrendSubtitle' => ({required Object days}) => 'Ultimi ${days} giorni',
+			_ => null,
+		} ?? switch (path) {
 			'stats.allTimeBest' => 'Record assoluto',
 			'stats.topPerformerLabel' => 'Migliore',
 			'stats.currentStreakShort' => 'Ora',
@@ -2566,8 +2642,6 @@ extension on TranslationsIt {
 			'stats.gapSubtitle' => 'Giorni tra un completamento e l\'altro',
 			'stats.gapAvg' => 'Media',
 			'stats.gapLongest' => 'Massimo',
-			_ => null,
-		} ?? switch (path) {
 			'stats.gapSince' => 'Dall\'ultimo',
 			'stats.habitBounceBackShort' => 'Ripresa',
 			'stats.habitConsistencyDetail' => 'Punteggio regolarità',
@@ -3063,6 +3137,8 @@ extension on TranslationsIt {
 			'settingsPage.updatePassword' => 'Aggiorna password',
 			'settingsPage.useAccent' => ({required Object hex}) => 'Usa accento ${hex}',
 			'settingsPage.verified' => 'Verificato',
+			_ => null,
+		} ?? switch (path) {
 			'settingsPage.weeklyReports' => 'Resoconti Settimanali',
 			'settingsPage.weeklyReportsDetail' => 'Un riepilogo settimanale dei tuoi progressi.',
 			'settingsPage.youArePro' => 'Sei un utente Pro!',
@@ -3080,8 +3156,6 @@ extension on TranslationsIt {
 			'consentPage.subtitle' => 'Prima di usare Evolve Desktop conferma termini, privacy policy e trattamento dei dati necessari alla sincronizzazione.',
 			'consentPage.acceptTerms' => 'Accetto termini e privacy policy',
 			'consentPage.termsSubtitle' => 'Confermo di aver letto i documenti e di avere almeno 14 anni.',
-			_ => null,
-		} ?? switch (path) {
 			'consentPage.crashDiagnostics' => 'Diagnostica crash',
 			'consentPage.crashSubtitle' => 'Consenti l\'invio di segnalazioni tecniche anonimizzate.',
 			'consentPage.openPrivacy' => 'Apri la privacy policy',

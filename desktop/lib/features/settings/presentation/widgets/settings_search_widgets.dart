@@ -1,11 +1,20 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/features/settings/presentation/settings_search.dart';
 import 'package:evolve_desktop/features/settings/presentation/settings_section.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_search_chrome.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 /// The filter field at the top of the Settings sidebar.
-class EvolveSearchField extends StatelessWidget {
+///
+/// It wears [EvolveSearchChrome], the same pill as the shell's ⌘K trigger:
+/// both are "type here to find things", and a rail field with its own smaller
+/// radius and heavier border read as a different, lesser control.
+///
+/// The trailing slot advertises ⌘F — the shortcut that focuses this field has
+/// existed all along with nothing on screen to reveal it — and hands the slot
+/// over to the clear button the moment there is something to clear.
+class EvolveSearchField extends StatefulWidget {
   const EvolveSearchField({
     super.key,
     required this.controller,
@@ -13,6 +22,7 @@ class EvolveSearchField extends StatelessWidget {
     required this.onChanged,
     this.focusNode,
     this.clearTooltip,
+    this.shortcutHint,
   });
 
   final TextEditingController controller;
@@ -21,69 +31,102 @@ class EvolveSearchField extends StatelessWidget {
   final String? clearTooltip;
   final ValueChanged<String> onChanged;
 
+  /// Keyboard hint shown while the field is empty, e.g. `⌘ F`.
+  final String? shortcutHint;
+
+  @override
+  State<EvolveSearchField> createState() => _EvolveSearchFieldState();
+}
+
+class _EvolveSearchFieldState extends State<EvolveSearchField> {
+  /// Owned only when the caller supplies none — the focus ring has to react to
+  /// focus whether or not the parent cares about it.
+  FocusNode? _ownedFocus;
+
+  FocusNode get _focus => widget.focusNode ?? (_ownedFocus ??= FocusNode());
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(_onFocusChanged);
+  }
+
+  @override
+  void didUpdateWidget(EvolveSearchField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.focusNode != widget.focusNode) {
+      oldWidget.focusNode?.removeListener(_onFocusChanged);
+      _ownedFocus?.removeListener(_onFocusChanged);
+      _focus.addListener(_onFocusChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.focusNode?.removeListener(_onFocusChanged);
+    _ownedFocus?.removeListener(_onFocusChanged);
+    _ownedFocus?.dispose();
+    super.dispose();
+  }
+
+  void _onFocusChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.evolveColors;
     return ValueListenableBuilder<TextEditingValue>(
-      valueListenable: controller,
+      valueListenable: widget.controller,
       builder: (context, value, _) {
-        return Container(
-          height: 30,
-          padding: const EdgeInsetsDirectional.only(start: 9, end: 4),
-          decoration: BoxDecoration(
-            color: colors.panel.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: colors.border.withValues(alpha: 0.7)),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                LucideIcons.search,
-                size: 13,
-                color: colors.muted.withValues(alpha: 0.8),
-              ),
-              const SizedBox(width: 7),
-              Expanded(
-                child: TextField(
-                  key: const Key('settings.searchField'),
-                  controller: controller,
-                  focusNode: focusNode,
-                  onChanged: onChanged,
-                  textAlignVertical: TextAlignVertical.center,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w500,
-                    color: colors.foreground,
-                  ),
-                  decoration: InputDecoration(
-                    isDense: true,
-                    border: InputBorder.none,
-                    hintText: hintText,
-                    hintStyle: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w500,
-                      color: colors.muted.withValues(alpha: 0.7),
-                    ),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ),
-              if (value.text.isNotEmpty)
-                Tooltip(
-                  message: clearTooltip ?? '',
+        final hasText = value.text.isNotEmpty;
+        return EvolveSearchChrome.wrap(
+          context,
+          focused: _focus.hasFocus,
+          trailing: hasText
+              ? Tooltip(
+                  message: widget.clearTooltip ?? '',
                   child: InkWell(
                     borderRadius: BorderRadius.circular(6),
                     onTap: () {
-                      controller.clear();
-                      onChanged('');
+                      widget.controller.clear();
+                      widget.onChanged('');
                     },
                     child: Padding(
                       padding: const EdgeInsets.all(3),
-                      child: Icon(LucideIcons.x, size: 13, color: colors.muted),
+                      child: Icon(LucideIcons.x, size: 14, color: colors.muted),
                     ),
                   ),
-                ),
-            ],
+                )
+              : widget.shortcutHint == null
+              ? null
+              : EvolveSearchChrome.badge(context, widget.shortcutHint!),
+          child: TextField(
+            key: const Key('settings.searchField'),
+            controller: widget.controller,
+            focusNode: _focus,
+            onChanged: widget.onChanged,
+            textAlignVertical: TextAlignVertical.center,
+            style: EvolveSearchChrome.labelStyle(
+              context,
+            ).copyWith(color: colors.foreground),
+            decoration: InputDecoration(
+              isDense: true,
+              // All four, not just `border`. The global InputDecorationTheme
+              // sets `enabledBorder`/`focusedBorder` and `filled: true`, and
+              // state-specific borders win over `border` — so a lone
+              // `border: InputBorder.none` left Flutter painting the theme's
+              // radius-12 outlined box *inside* this pill, around the text
+              // only. That ghost ring is the double outline users saw.
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              disabledBorder: InputBorder.none,
+              filled: false,
+              hintText: widget.hintText,
+              hintStyle: EvolveSearchChrome.labelStyle(context),
+              contentPadding: EdgeInsets.zero,
+            ),
           ),
         );
       },

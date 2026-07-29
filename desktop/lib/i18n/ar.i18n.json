@@ -1,4 +1,29 @@
 {
+  "verification": {
+    "autoVerified": "تم التحقق تلقائيًا",
+    "compound": {
+      "summaryAll": "كلّ الشروط ({count})",
+      "summaryAny": "أيّ شرط من {count}"
+    },
+    "templates": {
+      "steps": "الخطوات",
+      "exerciseMinutes": "دقائق التمرين",
+      "activeEnergy": "الطاقة النشطة",
+      "standHours": "ساعات الوقوف",
+      "distance": "المسافة",
+      "mindfulMinutes": "دقائق التأمل",
+      "sleepHours": "ساعات النوم",
+      "workout": "التمرين",
+      "screenTimeTotal": "إجمالي استخدام الجهاز",
+      "screenTimeApps": "الوقت في التطبيقات المختارة"
+    },
+    "units": {
+      "minutes": "دقيقة",
+      "hours": "ساعة",
+      "kilocalories": "سعرة",
+      "kilometers": "كم"
+    }
+  },
   "macroTargets": {
     "sectionTitle": "هدف رقمي",
     "none": "بدون",

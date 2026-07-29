@@ -121,6 +121,25 @@ class Goal {
   bool get isCompoundVerified =>
       additionalConditions != null && additionalConditions!.isNotEmpty;
 
+  /// Whether the CURRENT [verificationRule] is the one that was in force on
+  /// [date] — i.e. `max(startDate, verifyEffectiveFrom) <= date`, the same
+  /// forward-only anchor (D10) that reconcile evaluates against.
+  ///
+  /// Rule edits never re-derive history, so a day judged against "≥ 10,000" must
+  /// not be *labelled* with a rule that was raised to "≥ 12,000" afterwards.
+  /// Display code that names the threshold has to ask this first; display code
+  /// that only says "auto-verified" never can be wrong and needn't.
+  bool verificationRuleAppliesOn(DateTime date) {
+    if (verificationRule == null) return false;
+    final edited = verifyEffectiveFrom;
+    final anchor = edited == null || edited.isBefore(startDate)
+        ? startDate
+        : edited;
+    final day = DateTime(date.year, date.month, date.day);
+    final from = DateTime(anchor.year, anchor.month, anchor.day);
+    return !day.isBefore(from);
+  }
+
   /// Whether [other] has the same verification *meaning* — the same ordered
   /// conditions AND operator. Drives the D10 re-stamp decision so that changing
   /// any condition, adding/removing one, or flipping the operator counts as a

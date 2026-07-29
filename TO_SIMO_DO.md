@@ -1,7 +1,56 @@
 # TO_SIMO_DO.md
 - [ ] Widget for iPhone & MacOS
-- [ ] what happens if I modify manually an automatic habits?
+- [ ] 
 - [ ] Macro goals still need a numeric target + progress bar (status already cycles active/completed/failed). Habits are DONE — the Checkbox / Number / Automatic picker and quantitative targets are live; MacroTargetsConfig.enabled is still false on both apps.
+
+---
+
+# TO DOUBLE CHECK:
+
+- [ ]
+
+## Arabic device QA — auto-verified habit line (2026-07-29)
+
+Only a real Arabic-locale device can settle these two. Set the app to العربية, open a
+day with an auto-verified habit, and look at the line under the habit name.
+
+- [ ] **Does `≥` render mirrored (looking like `≤`)?** U+2264/U+2265 are
+  `Bidi_Mirrored=Yes`, and in an RTL run a conforming shaper (HarfBuzz, which Flutter
+  uses) may flip the glyph. It is Unicode-correct, but `≥` (goal) and `≤` (limit) mean
+  OPPOSITE things here, so a reader who scans math symbols Latin-first could read the
+  rule backwards. If it does mirror and you dislike it, the fix is a locale-owned
+  summary pattern using the words already in the file — `على الأقل` / `على الأكثر`,
+  which in Arabic follow the quantity: `التمرين: 30 دقيقة على الأقل`. That costs a new
+  pattern key per locale and is much longer, so decide from what you actually see.
+- [ ] **Does 11pt SF Arabic clip dots or diacritics** in that single-line row? Arabic
+  reads smaller than Latin at the same point size; may need +1pt or an explicit line
+  height for `ar`.
+
+## Arabic grammar defects found while reviewing (pre-existing, NOT from this change)
+
+These are shipped bugs an Arabic native-speaker review surfaced. Numbers do not agree
+with their unit words: Arabic needs the dual for 2 and the plural for 3–10, and the
+`units` tokens are all singular. Concrete, reachable cases:
+
+- [ ] `sleepHours` default **8** renders `≥ 8 ساعة` — must be `8 ساعات`. Typical sleep
+  goals (6–9) sit entirely inside the broken band, so this is the DEFAULT state of a
+  shipped template.
+- [ ] `mindfulMinutes` default **10** renders `≥ 10 دقيقة` — must be `10 دقائق`.
+- [ ] `activeEnergy` (`سعرة`) breaks the same way for 2–10.
+- [ ] `screenTime.selectionSummary` (`"{count} محدد"`) has both the agreement bug and a
+  gender bug — apps/categories are non-human plurals, so `محددة`.
+- [ ] Unit/label stutter, all locales, worst in Arabic: the summary appends a unit to a
+  label that already names it — `≥ 30 دقيقة دقائق التمرين`, `≥ 8 ساعة ساعات النوم`.
+  English has it too (`≥ 30 min Exercise minutes`); Arabic repeats the same root twice.
+- [ ] Three different verbs for "tap" across `ar.i18n.json` (`انقر` ×6, `اضغط` ×1,
+  `المس` ×0) and none is the Apple-iOS-Arabic `المس`. `a11y.toggleHint` currently tells
+  iPhone users to double-*click*. Wants one sweep, not per-string edits.
+- [ ] `CouldNotVerifyChip` hardcodes ASCII `'?'`; Arabic is `؟` (U+061F).
+
+Cheapest fix for the agreement family, if you want it: make the Arabic unit tokens
+invariant abbreviations (`د`, `س`) the way `كم` already is — abbreviations don't
+inflect. The thorough fix is slang plural categories for `ar`, which means
+`verificationUnitSuffix` has to take the count.
 
 ## prompt to run 2
 /grill-me We are working on the flutter implementation, so both desktop and mobile. And as we have connected the screen time option for the auto-verifiable habits, I want you to ask this question as obviously I set a timer of 10 minutes for example on a specific app but what I was thinking about as it's obviously true at the beginning of the day. The problem is that how is handled the fact that the number obviously increases during the day? Is the habits checked every time? Or whenever it gets it first state then it's fixed and never checked again?
@@ -45,6 +94,11 @@ flutter build ipa --release
 - **Two timing nuances the widget suite cannot see.** The form state now lives in a keep-alive Riverpod controller rather than a per-mount `State`, which changes two things on a real machine: (1) the synced read-back applies one microtask after `initState` instead of inside it, so there is at most one frame of pre-hydration values when Settings opens; (2) the controller survives closing Settings, so re-opening re-arms the hydration latch and re-reads the appearance instead of rebuilding from SharedPreferences. Open Settings, change a preference on the iPhone, then close and re-open Settings on the Mac and confirm the Mac shows the iPhone's value.
 - **Pre-existing, not introduced:** `settings_page.dart` `_deletePrivateData` opens its loading dialog after an `await` with no `mounted` check. If the page is disposed while the confirm dialog is open, it uses a defunct context. Worth fixing, but it is not a regression from this work.
 
+## Sync + data flow hoist (2026-07-28)
+
+- **Account-mode avatar is now inert by design.** The profile picture is tappable in Private mode only, because account mode has no upload path anywhere in `desktop/lib` (no Supabase Storage call exists). If you want it back, the upload needs building first — the affordance was live but silently discarded every pick.
+
+
 ## Screen Time on-device test checklist (2026-07-28)
 
 Code audit of the Screen Time verification stack found 5 blockers to fix **before**
@@ -65,3 +119,9 @@ iPhone can settle, ordered by how much they change:
 - **T10 — spring-forward.** Set the date to a spring-forward Sunday and let 23:59 pass. The App Group buffer must gain a `stayedUnder` row. This is the mirror of T4b: the day is 23 hours long, and any logic that measures the interval end in *elapsed* rather than *wall-clock* minutes silently drops every goal's pass that day.
 
 - **T8 — notification permission.** The extension's real-time "limit reached" push is the feature's headline output, but the habit-editor path never requests notification permission. Confirm whether you get the banner without first visiting Settings › Screen Time.
+
+- **Settings search bar — eyeball it on device.** The rail filter now wears the same pill as the ⌘K bar (38px tall, radius 12), which is 8px taller than before. Check on a real display that (a) the double outline inside the field is gone, (b) the new `⌘ F` badge does not crowd the "Search settings" hint at the 236px rail width in the longest locale — German and Portuguese are the ones to look at, and (c) the accent focus ring reads as focus rather than as an error state on a light accent. No macOS build was possible here (no Xcode).
+
+## HealthKit measurement leak fix (2026-07-28)
+
+- **Audit existing Supabase accounts for already-leaked measurements.** The code fix stops FUTURE uploads, but any account that received a Private-mode restore under the old logic may already hold real Apple Health quantities in `goal_logs.value` — specifically for habits whose HealthKit rule was removed, or that were converted to a compound (multi-condition) habit before the restore. A later restore now clears them (the strip writes an explicit `null`, not an omitted key), and `applyAutoVerdict` clears them on the next verdict for goals still verified — but neither happens on its own. If you want them gone now, run a one-off cleanup against `goal_logs`: null `value` for every row whose goal is not verified by `screentime`. Worth doing before the App Store submission, given Guideline 5.1.x and the HealthKit data-use rules.

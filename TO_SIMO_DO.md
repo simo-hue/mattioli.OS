@@ -347,3 +347,7 @@ can be verified without Xcode. Run these in a **release-ish build signed into a 
 ## Sync + data flow hoist (2026-07-28)
 
 - **Account-mode avatar is now inert by design.** The profile picture is tappable in Private mode only, because account mode has no upload path anywhere in `desktop/lib` (no Supabase Storage call exists). If you want it back, the upload needs building first — the affordance was live but silently discarded every pick.
+
+## HealthKit measurement leak fix (2026-07-28)
+
+- **Audit existing Supabase accounts for already-leaked measurements.** The code fix stops FUTURE uploads, but any account that received a Private-mode restore under the old logic may already hold real Apple Health quantities in `goal_logs.value` — specifically for habits whose HealthKit rule was removed, or that were converted to a compound (multi-condition) habit before the restore. A later restore now clears them (the strip writes an explicit `null`, not an omitted key), and `applyAutoVerdict` clears them on the next verdict for goals still verified — but neither happens on its own. If you want them gone now, run a one-off cleanup against `goal_logs`: null `value` for every row whose goal is not verified by `screentime`. Worth doing before the App Store submission, given Guideline 5.1.x and the HealthKit data-use rules.

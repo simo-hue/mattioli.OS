@@ -62,20 +62,21 @@ void main() {
   test('the shared implementation still nulls a health-derived value', () {
     // A canary tying this file to real behaviour: if the function stops
     // stripping, the source check above would still pass while the guarantee is
-    // gone.
+    // gone. `screen` is the control — a Screen Time number is the one value the
+    // strip is allowed to keep, so an all-null result would pass this vacuously.
     final out = stripHealthMeasurements(
       logs: [
         {'goal_id': 'steps', 'date': '2026-07-27', 'status': 'done', 'value': 12043},
-        {'goal_id': 'water', 'date': '2026-07-27', 'status': 'done', 'value': 2},
+        {'goal_id': 'screen', 'date': '2026-07-27', 'status': 'done', 'value': 45},
       ],
       backupGoals: [
         {'id': 'steps', 'verify_provider': VerificationProvider.healthKit.wireName},
-        {'id': 'water', 'verify_provider': null},
+        {'id': 'screen', 'verify_provider': VerificationProvider.screenTime.wireName},
       ],
     );
 
     expect(out.firstWhere((l) => l['goal_id'] == 'steps')['value'], isNull);
-    expect(out.firstWhere((l) => l['goal_id'] == 'water')['value'], 2);
+    expect(out.firstWhere((l) => l['goal_id'] == 'screen')['value'], 45);
   });
 }
 

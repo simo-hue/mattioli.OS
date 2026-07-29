@@ -21,7 +21,7 @@ import 'package:evolve_targets/evolve_targets.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/coach_tutorial.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
-import 'package:evolve_desktop/shared/widgets/verified_habit_badge.dart';
+import 'package:evolve_desktop/shared/widgets/verified_habit_line.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:evolve_desktop/features/dashboard/presentation/create_goal_dialog.dart';
@@ -969,6 +969,7 @@ class _HabitPanel extends ConsumerWidget {
                       );
                 return _HabitRow(
                   habit: habit,
+                  date: today,
                   status: snapshot.habitStatusFor(habit.id, today),
                   windowStatuses: snapshot.habitWindowStatuses(habit, today),
                   windowDays: habitWindowDays(today),
@@ -997,6 +998,7 @@ class _HabitPanel extends ConsumerWidget {
 class _HabitRow extends StatelessWidget {
   const _HabitRow({
     required this.habit,
+    required this.date,
     required this.onTap,
     required this.windowStatuses,
     required this.windowDays,
@@ -1016,6 +1018,12 @@ class _HabitRow extends StatelessWidget {
   /// The last 7 days' outcomes, oldest → today, and the days they describe.
   final List<String?> windowStatuses;
   final List<DateTime> windowDays;
+
+  /// The day this row is about. The panel is today-scoped, so the verification
+  /// line needs it to tell whether the habit's CURRENT rule is the one that
+  /// governed today — a rule edited on a device ahead of this Mac's timezone
+  /// stamps an anchor in the local future.
+  final DateTime date;
 
   final VoidCallback onTap;
 
@@ -1082,31 +1090,33 @@ class _HabitRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          habit.title,
-                          style: TextStyle(
-                            color: isDone
-                                ? context.evolveColors.muted
-                                : context.evolveColors.foreground,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            decoration: isDone
-                                ? TextDecoration.lineThrough
-                                : null,
-                          ),
-                        ),
-                      ),
-                      // Read-only marker for iPhone-verified habits (mobile
-                      // parity), so they don't look identical to manual ones.
-                      if (habit.verificationRule != null) ...[
-                        const SizedBox(width: 6),
-                        const VerifiedHabitBadge(),
-                      ],
-                    ],
+                  Text(
+                    habit.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: isDone
+                          ? context.evolveColors.muted
+                          : context.evolveColors.foreground,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      decoration:
+                          isDone ? TextDecoration.lineThrough : null,
+                    ),
                   ),
+                  // Read-only marker for iPhone-verified habits (mobile parity),
+                  // so they don't look identical to manual ones. On its own row —
+                  // naming the rule beside the title would starve the title of
+                  // width, which is the bug this whole line replaced.
+                  if (habit.verificationRule != null) ...[
+                    const SizedBox(height: 2),
+                    VerifiedHabitLine(
+                      conditions: habit.verificationConditions,
+                      join: habit.verificationJoin,
+                      habitTitle: habit.title,
+                      ruleInEffect: habit.verificationRuleAppliesOn(date),
+                    ),
+                  ],
                 ],
               ),
             ),

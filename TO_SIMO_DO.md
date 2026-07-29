@@ -9,6 +9,49 @@
 
 - [ ]
 
+## Arabic device QA — auto-verified habit line (2026-07-29)
+
+Only a real Arabic-locale device can settle these two. Set the app to العربية, open a
+day with an auto-verified habit, and look at the line under the habit name.
+
+- [ ] **Does `≥` render mirrored (looking like `≤`)?** U+2264/U+2265 are
+  `Bidi_Mirrored=Yes`, and in an RTL run a conforming shaper (HarfBuzz, which Flutter
+  uses) may flip the glyph. It is Unicode-correct, but `≥` (goal) and `≤` (limit) mean
+  OPPOSITE things here, so a reader who scans math symbols Latin-first could read the
+  rule backwards. If it does mirror and you dislike it, the fix is a locale-owned
+  summary pattern using the words already in the file — `على الأقل` / `على الأكثر`,
+  which in Arabic follow the quantity: `التمرين: 30 دقيقة على الأقل`. That costs a new
+  pattern key per locale and is much longer, so decide from what you actually see.
+- [ ] **Does 11pt SF Arabic clip dots or diacritics** in that single-line row? Arabic
+  reads smaller than Latin at the same point size; may need +1pt or an explicit line
+  height for `ar`.
+
+## Arabic grammar defects found while reviewing (pre-existing, NOT from this change)
+
+These are shipped bugs an Arabic native-speaker review surfaced. Numbers do not agree
+with their unit words: Arabic needs the dual for 2 and the plural for 3–10, and the
+`units` tokens are all singular. Concrete, reachable cases:
+
+- [ ] `sleepHours` default **8** renders `≥ 8 ساعة` — must be `8 ساعات`. Typical sleep
+  goals (6–9) sit entirely inside the broken band, so this is the DEFAULT state of a
+  shipped template.
+- [ ] `mindfulMinutes` default **10** renders `≥ 10 دقيقة` — must be `10 دقائق`.
+- [ ] `activeEnergy` (`سعرة`) breaks the same way for 2–10.
+- [ ] `screenTime.selectionSummary` (`"{count} محدد"`) has both the agreement bug and a
+  gender bug — apps/categories are non-human plurals, so `محددة`.
+- [ ] Unit/label stutter, all locales, worst in Arabic: the summary appends a unit to a
+  label that already names it — `≥ 30 دقيقة دقائق التمرين`, `≥ 8 ساعة ساعات النوم`.
+  English has it too (`≥ 30 min Exercise minutes`); Arabic repeats the same root twice.
+- [ ] Three different verbs for "tap" across `ar.i18n.json` (`انقر` ×6, `اضغط` ×1,
+  `المس` ×0) and none is the Apple-iOS-Arabic `المس`. `a11y.toggleHint` currently tells
+  iPhone users to double-*click*. Wants one sweep, not per-string edits.
+- [ ] `CouldNotVerifyChip` hardcodes ASCII `'?'`; Arabic is `؟` (U+061F).
+
+Cheapest fix for the agreement family, if you want it: make the Arabic unit tokens
+invariant abbreviations (`د`, `س`) the way `كم` already is — abbreviations don't
+inflect. The thorough fix is slang plural categories for `ar`, which means
+`verificationUnitSuffix` has to take the count.
+
 ## prompt to run 2
 /grill-me We are working on the flutter implementation, so both desktop and mobile. And as we have connected the screen time option for the auto-verifiable habits, I want you to ask this question as obviously I set a timer of 10 minutes for example on a specific app but what I was thinking about as it's obviously true at the beginning of the day. The problem is that how is handled the fact that the number obviously increases during the day? Is the habits checked every time? Or whenever it gets it first state then it's fixed and never checked again?
 

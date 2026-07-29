@@ -2,6 +2,7 @@ import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -36,22 +37,28 @@ String verificationUnitSuffix(Translations t, VerificationUnit unit) =>
       VerificationUnit.kilometers => t.verification.units.kilometers,
     };
 
-String _formatThreshold(double value, VerificationUnit unit) {
+/// Formats a threshold for display in [localeCode]'s own conventions — grouping
+/// and decimal separators both, so 10000 reads "10,000" in English but "10.000"
+/// in Italian and German, and 0.5 reads "0,5" rather than "0.5". Previously this
+/// hardcoded "," as the group separator for every language, which was invisible
+/// while rule summaries only appeared in the editor and wrong everywhere else.
+///
+/// [localeCode] defaults to the app's current locale, for the widget call sites
+/// that format outside `build` and so cannot reach an inherited [Translations].
+/// [verificationRuleSummary] passes it explicitly, keeping that helper pure and
+/// testable against any locale.
+///
+/// Safe for the editable threshold field even though it inserts separators: for
+/// an integer metric [_VerificationRuleFieldState._parse] strips every non-digit,
+/// and focusing the field swaps this form for [_editThreshold]'s plain digits
+/// before the user can type over it.
+String _formatThreshold(double value, {String? localeCode}) {
+  final code = localeCode ?? LocaleSettings.currentLocale.languageCode;
   final isWhole = value == value.roundToDouble();
-  final number = isWhole
-      ? value.round().toString()
-      : value.toStringAsFixed(1);
-  // Thousands separators for plain counts (e.g. 10,000 steps).
-  if (unit == VerificationUnit.count && isWhole) {
-    final digits = value.round().toString();
-    final buf = StringBuffer();
-    for (var i = 0; i < digits.length; i++) {
-      if (i > 0 && (digits.length - i) % 3 == 0) buf.write(',');
-      buf.write(digits[i]);
-    }
-    return buf.toString();
-  }
-  return number;
+  final format = NumberFormat.decimalPattern(code)
+    ..minimumFractionDigits = isWhole ? 0 : 1
+    ..maximumFractionDigits = isWhole ? 0 : 1;
+  return format.format(value);
 }
 
 /// Localized header for a template [category] (Activity / Mindfulness / …).
@@ -79,13 +86,64 @@ List<MapEntry<VerificationCategory, List<VerificationTemplate>>>
 }
 
 /// Human summary of a rule, e.g. "≥ 10,000 Steps" or "≤ 120 min Screen time".
-String verificationRuleSummary(Translations t, VerificationRule rule) {
+///
+/// Set [includeMetricLabel] false for the threshold alone ("≥ 10,000") — used
+/// where the metric is already named by its surroundings, so repeating it would
+/// only cost width. See [habitVerificationLabel].
+String verificationRuleSummary(
+  Translations t,
+  VerificationRule rule, {
+  bool includeMetricLabel = true,
+}) {
   final comparator =
       rule.comparator == VerificationComparator.atLeast ? '≥' : '≤';
-  final number = _formatThreshold(rule.threshold, rule.unit);
+  final number = _formatThreshold(
+    rule.threshold,
+    localeCode: t.$meta.locale.languageCode,
+  );
   final unit = verificationUnitSuffix(t, rule.unit);
   final amount = unit.isEmpty ? number : '$number $unit';
+  if (!includeMetricLabel) return '$comparator $amount';
   return '$comparator $amount ${verificationTemplateLabel(t, rule.metricKey)}';
+}
+
+/// The one-line label describing what an auto-verified habit is measured
+/// against, as shown beneath the habit's name.
+///
+/// A single rule reads as its summary ("≥ 30 min Workout"), except that the
+/// metric label is dropped when it merely echoes [habitTitle] ("Workout /
+/// ≥ 30 min Workout"). That echo is the COMMON case, not an edge one: creating a
+/// rule auto-fills the habit name from this very label, so most auto-verified
+/// habits are named after their metric until the user renames them. The
+/// comparison is a plain locale-bound string match — create a habit in Italian,
+/// switch the app to English, and it misses, yielding the full summary. That
+/// degrades toward more information, never toward a wrong or empty line, which
+/// is why no persisted flag backs it.
+///
+/// A compound habit reads as its join plus condition count ("All 2
+/// conditions"), because two or three full summaries never fit one row. A null
+/// join means "any", matching how the engine reads it (`verification_wiring`
+/// coerces a null join to [VerificationJoin.or]) — the label must never claim a
+/// stricter rule than the one actually evaluated.
+///
+/// Empty for a manual habit, so callers can render nothing without a null check.
+String habitVerificationLabel(
+  Translations t, {
+  required List<VerificationRule> conditions,
+  required VerificationJoin? join,
+  required String habitTitle,
+}) {
+  if (conditions.isEmpty) return '';
+  if (conditions.length > 1) {
+    return join == VerificationJoin.and
+        ? t.verification.compound.summaryAll(count: conditions.length)
+        : t.verification.compound.summaryAny(count: conditions.length);
+  }
+  final rule = conditions.first;
+  final echoesTitle =
+      verificationTemplateLabel(t, rule.metricKey).trim().toLowerCase() ==
+          habitTitle.trim().toLowerCase();
+  return verificationRuleSummary(t, rule, includeMetricLabel: !echoesTitle);
 }
 
 /// A "?" indicator for a day whose auto-verification couldn't be determined
@@ -124,40 +182,93 @@ class CouldNotVerifyChip extends StatelessWidget {
   }
 }
 
-/// A small "auto-verified" indicator shown on verified habits.
-class VerificationBadge extends StatelessWidget {
-  const VerificationBadge({super.key, this.size = 11});
+/// The quiet second line marking a habit as auto-verified, shown directly under
+/// the habit's name: a shield plus the rule the habit is measured against
+/// ("≥ 30 min"), or — when a day's verification couldn't be determined — the
+/// actionable "not verified" prompt.
+///
+/// It replaced an inline pill that shared row 1 with the habit name. The pill was
+/// laid out at its intrinsic width (~180pt for the Italian "Verificato
+/// automaticamente"), leaving the name so little room it broke mid-word; giving
+/// the name the whole of row 1 and the marker its own row fixes that while also
+/// making space for something more useful than a generic label.
+///
+/// Always exactly ONE row: every variant is `maxLines: 1` with an ellipsis, so a
+/// card carrying this line keeps the same height in every state and the list
+/// doesn't jump when a day resolves. The line stays muted while the card is
+/// pending / done / missed — the rule is metadata, not status, and a green
+/// "≥ 30 min" would read as "you did 30 min" — and takes the accent colour only
+/// in the couldn't-verify state, where the line IS the actionable status.
+///
+/// Takes the rule pieces rather than a `Goal` so this file stays free of a
+/// `models/` dependency and the label logic can be unit-tested without one.
+/// Renders nothing when there are no conditions and [couldNotVerify] is false.
+class VerificationLine extends StatelessWidget {
+  const VerificationLine({
+    super.key,
+    required this.conditions,
+    required this.join,
+    required this.habitTitle,
+    this.couldNotVerify = false,
+    this.ruleInEffect = true,
+  });
 
-  final double size;
+  final List<VerificationRule> conditions;
+  final VerificationJoin? join;
+  final String habitTitle;
+
+  /// True for a habit-day whose auto-verification is unresolved (D6). Swaps the
+  /// line's content for the resolve prompt instead of adding a second row.
+  final bool couldNotVerify;
+
+  /// Whether [conditions] is the rule that actually governed the day being shown
+  /// (`Goal.verificationRuleAppliesOn`). False on a day that predates a rule edit,
+  /// where naming a threshold would misreport what the day was judged against —
+  /// the line falls back to the generic "auto-verified", which cannot be wrong.
+  /// Callers with no particular day in view leave this true.
+  final bool ruleInEffect;
 
   @override
   Widget build(BuildContext context) {
-    final appColors = context.appColors;
-    return Tooltip(
-      message: context.t.verification.autoVerified,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(
-          color: appColors.muted,
-          borderRadius: BorderRadius.circular(6),
+    final t = context.t;
+    final accent = Theme.of(context).colorScheme.primary;
+    final label = couldNotVerify
+        ? t.verification.couldNotVerifyShort
+        : !ruleInEffect
+            ? (conditions.isEmpty ? '' : t.verification.autoVerified)
+            : habitVerificationLabel(
+                t,
+                conditions: conditions,
+                join: join,
+                habitTitle: habitTitle,
+              );
+    if (label.isEmpty) return const SizedBox.shrink();
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          couldNotVerify ? LucideIcons.shieldAlert : LucideIcons.shieldCheck,
+          size: 12,
+          color: accent,
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(LucideIcons.shieldCheck, size: size, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(width: 3),
-            Text(
-              context.t.verification.autoVerified,
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: appColors.mutedForeground,
-              ),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: couldNotVerify
+                  ? accent
+                  : context.appColors.mutedForeground,
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -280,7 +391,7 @@ class _VerificationRuleFieldState extends State<VerificationRuleField> {
     super.initState();
     _focusNode.addListener(_onFocusChange);
     final r = widget.rule;
-    if (r != null) _controller.text = _formatThreshold(r.threshold, r.unit);
+    if (r != null) _controller.text = _formatThreshold(r.threshold);
   }
 
   @override
@@ -291,7 +402,7 @@ class _VerificationRuleFieldState extends State<VerificationRuleField> {
     // user is actively typing.
     final r = widget.rule;
     if (r == null || _focusNode.hasFocus) return;
-    final desired = _formatThreshold(r.threshold, r.unit);
+    final desired = _formatThreshold(r.threshold);
     if (_controller.text != desired) _controller.text = desired;
   }
 
@@ -379,7 +490,7 @@ class _VerificationRuleFieldState extends State<VerificationRuleField> {
       // commit the final value.
       final value =
           _currentTemplate.clampThreshold(_parse(_controller.text) ?? r.threshold);
-      _controller.text = _formatThreshold(value, r.unit);
+      _controller.text = _formatThreshold(value);
       if (value != r.threshold) widget.onChanged(r.copyWith(threshold: value));
     }
   }
@@ -401,8 +512,9 @@ class _VerificationRuleFieldState extends State<VerificationRuleField> {
   /// field so a typed value that gets clamped isn't a surprise.
   String _rangeHint(Translations t, VerificationTemplate tmpl) {
     final unit = verificationUnitSuffix(t, tmpl.unit);
-    final range = '${_formatThreshold(tmpl.minThreshold, tmpl.unit)}'
-        '–${_formatThreshold(tmpl.maxThreshold, tmpl.unit)}';
+    final locale = t.$meta.locale.languageCode;
+    final range = '${_formatThreshold(tmpl.minThreshold, localeCode: locale)}'
+        '–${_formatThreshold(tmpl.maxThreshold, localeCode: locale)}';
     return unit.isEmpty ? range : '$range $unit';
   }
 

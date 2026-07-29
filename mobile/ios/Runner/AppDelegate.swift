@@ -1,4 +1,5 @@
 import CloudKit
+import CryptoKit
 import DeviceActivity
 import FamilyControls
 import Flutter
@@ -881,9 +882,27 @@ enum VerificationAppGroup {
   /// `["goalId": String, "date": "yyyy-MM-dd", "kind": "reachedThreshold" | "stayedUnder"]`.
   static let pendingSignalsKey = "pending_screen_time_signals"
 
-  /// Key holding the app-written monitor specs the extension reads to know which
-  /// goal each DeviceActivity event maps to:
-  /// `["<eventName>": ["goalId": String]]`.
+  /// Key holding the specs of every goal CURRENTLY monitored, as
+  /// `["<goalId>": ["minutes": Int, "mode": String, "selection": String]]`.
+  /// Rewritten by the app after each `syncMonitoredGoals`.
+  ///
+  /// Two consumers, and the record has to serve both:
+  ///
+  ///  1. **The extension** reads `minutes` to date a `reachedThreshold`. Usage
+  ///     accrues only from the interval start (00:00), so a crossing of a
+  ///     T-minute threshold cannot have happened before 00:00 + T; a wake earlier
+  ///     than that is necessarily reporting the interval that just closed. An
+  ///     exact deduction, which matters because the minimum threshold is one
+  ///     minute so no fixed post-midnight window would be safe for every goal.
+  ///  2. **The app itself** diffs against it to decide what actually needs
+  ///     re-registering. `DeviceActivityCenter.activities` reports only WHICH
+  ///     activities are live, never the threshold or selection they were
+  ///     registered with, so this is the only record of that — and re-registering
+  ///     an unchanged goal restarts its usage counter for the day.
+  ///
+  /// `selection` is a digest of the FamilyActivitySelection blob, not the blob:
+  /// it only ever needs to answer "did the picked set change", and the extension
+  /// reads this whole dictionary under a ~6 MB memory cap.
   static let monitorSpecsKey = "screen_time_monitor_specs"
 
   /// Key holding the current-locale copy for the extension's "limit reached"
@@ -1087,6 +1106,11 @@ enum ScreenTimeBridge {
   /// the extension maps signals back with `activity.rawValue`.
   private static let eventName = DeviceActivityEvent.Name("limit")
 
+  /// Whether the missing-App-Group error has already been reported this process.
+  /// The condition is permanent and the sync is called often; one report carries
+  /// all the information there is.
+  private static var loggedMissingAppGroup = false
+
   static func register(_ messenger: FlutterBinaryMessenger) {
     let channel = FlutterMethodChannel(name: "evolve/screentime", binaryMessenger: messenger)
     channel.setMethodCallHandler { call, result in handle(call, result) }
@@ -1136,68 +1160,283 @@ enum ScreenTimeBridge {
     // DeviceActivity threshold monitoring is iOS 16+. On iOS 15 there is nothing
     // to reconcile — the Dart side never reaches an approved status there.
     guard #available(iOS 16.0, *) else { result(nil); return }
-    let goals = (args?["goals"] as? [[String: Any]]) ?? []
+    // An absent or mistyped `goals` key is NOT the same as "no goals": the empty
+    // path below is the only destructive one in this function, and answering a
+    // payload we could not read by stopping everything is the wrong failure.
+    // Cast to `[Any]` and filter, rather than to `[[String: Any]]` wholesale. An
+    // all-or-nothing cast would make "the list is empty" depend on an empty
+    // `NSArray` bridging successfully — and if it ever did not, deleting your
+    // last Screen Time habit would answer `bad_payload` and monitoring would
+    // never stop. Malformed entries are dropped here, matching the per-goal
+    // guards below.
+    guard let rawGoals = args?["goals"] as? [Any] else {
+      result(FlutterError(code: "bad_payload",
+                          message: "syncMonitoredGoals: 'goals' missing or not a list",
+                          details: nil))
+      return
+    }
+    let goals = rawGoals.compactMap { $0 as? [String: Any] }
+    // A list we could read no entry from is a bad payload, not "no goals" — and
+    // "no goals" is the one destructive answer this function gives.
+    guard rawGoals.isEmpty || !goals.isEmpty else {
+      result(FlutterError(code: "bad_payload",
+                          message: "syncMonitoredGoals: no readable entry in 'goals'",
+                          details: nil))
+      return
+    }
     let center = DeviceActivityCenter()
-    // Reconcile by clearing everything and re-adding the current set (idempotent,
-    // simplest correct approach for the small v1 goal count).
-    center.stopMonitoring()
-    guard !goals.isEmpty else { result(nil); return }
+    let defaults = VerificationAppGroup.defaults
+    if defaults == nil, !Self.loggedMissingAppGroup {
+      // Loud, because the silent version is indistinguishable from success: with
+      // no App Group the diff below sees an empty `previous`, re-registers every
+      // goal on every sync (resetting each counter), and the extension never gets
+      // the thresholds it needs to date a crossing. The feature would look wired
+      // up and do nothing.
+      //
+      // Once per process. This routes to `AppLogger.error`, which captures a
+      // Sentry event in release, and a missing App Group never heals — while
+      // syncs are now goal-list-driven, so this runs on every foreground and
+      // every habit edit. Everything after the first emission is noise.
+      Self.loggedMissingAppGroup = true
+      CloudKitSyncBridge.logNative(
+        "error",
+        "[ScreenTime] App Group \(VerificationAppGroup.suiteName) is unavailable — "
+          + "monitoring cannot be diffed and the extension has no specs to read"
+      )
+    }
 
+    guard !goals.isEmpty else {
+      // The one case that still stops everything. Deleting your last Screen Time
+      // habit must actually stop monitoring — the native side is the only thing
+      // that can, and it only does so when called.
+      center.stopMonitoring()
+      // Clear the record too, so "it describes exactly what is monitored" is an
+      // unconditional invariant rather than one that happens to hold.
+      defaults?.set([String: Any](), forKey: VerificationAppGroup.monitorSpecsKey)
+      result(nil)
+      return
+    }
+
+    // ⚠️ The extension DECODES these bounds rather than being told them: the
+    // 00:00 start is what makes `dayForCrossing`'s "T minutes into the day"
+    // deduction valid, and the 23:59 end is what `dayThatEnded` tests against.
+    // Changing either without updating DeviceActivityMonitorExtension.swift
+    // silently mis-dates every signal — nothing here will fail to compile or
+    // test.
     let schedule = DeviceActivitySchedule(
       intervalStart: DateComponents(hour: 0, minute: 0),
       intervalEnd: DateComponents(hour: 23, minute: 59),
       repeats: true
     )
-    do {
-      for goal in goals {
+    // Every registration input that is NOT per-goal, folded into one string that
+    // travels in each goal's spec. Without this the diff below would compare only
+    // threshold/mode/selection, so changing the schedule or the event name would
+    // leave every existing goal registered under the OLD one for the life of the
+    // install — the diff would see "nothing changed" and skip them all, while the
+    // extension decoded the new bounds.
+    //
+    // Interpolating the whole `DateComponents` rather than hand-picking hour and
+    // minute is deliberate: its description enumerates every field that is set,
+    // so adding `second:` — or moving to a weekday-scoped schedule — changes this
+    // string automatically. Hand-picking fields is exactly the forgettable step
+    // this is meant to remove. The honest cost: that description is Foundation's
+    // rendering rather than a documented contract, so an OS release that changed
+    // it would cost one full re-registration for everybody, once.
+    //
+    // ⚠️ Anything new passed to `startMonitoring` belongs here too — in
+    // particular `includesPastActivity` when the iOS 17.4 TODO below lands, or
+    // the build that introduces it will skip every existing goal and never apply
+    // it.
+    //
+    // ⚠️ And never set `.calendar` or `.timeZone` on these `DateComponents`. Their
+    // description then carries the device's locale AND time zone
+    // (`calendar: gregorian … locale: … time zone: Europe/Rome firstWeekday: 1
+    // …`), so the fingerprint would change when the user travels or switches
+    // language — re-registering every goal and resetting every counter on
+    // landing. Verified across en/ar/th/ja/hi/fa: with only hour and minute set,
+    // the rendering is byte-identical, because Swift never localizes integer
+    // interpolation.
+    let registrationFingerprint =
+      "\(schedule.intervalStart)-\(schedule.intervalEnd)"
+      + "|repeats:\(schedule.repeats)|\(eventName.rawValue)"
+
+    // What the app believes is registered, from the last sync. Persisted rather
+    // than in-memory: the diff has to survive process death, since iOS keeps
+    // monitoring across launches and a fresh process would otherwise consider
+    // every goal new and re-register it — which is the exact churn this avoids.
+    //
+    // One unavoidable exception: the FIRST sync after the build that introduced
+    // this record. No previous version ever wrote it, so `previous` is empty
+    // while `live` still holds the old build's registrations, and every goal
+    // takes the stop-then-start path. That is one counter reset, once, on update
+    // day — not the per-launch reset this replaces.
+    let previous =
+      defaults?.dictionary(forKey: VerificationAppGroup.monitorSpecsKey) ?? [:]
+    // What the system actually holds. The app's record can drift from this (iOS
+    // may drop monitoring on reboot or purge), so a goal counts as live only if
+    // BOTH agree — otherwise a dropped activity would be diffed away as "already
+    // registered" and never come back.
+    let live = Set(center.activities.map { $0.rawValue })
+
+    // Desired specs, built before any mutation so the diff sees the whole
+    // picture. `order` preserves the caller's goal order: at Apple's 20-activity
+    // cap it decides WHICH goals win, and iterating a Dictionary would make that
+    // arbitrary and different on every launch (Swift seeds its hash per process).
+    var order: [String] = []
+    var desired: [String: (spec: [String: Any], event: DeviceActivityEvent)] = [:]
+    for goal in goals {
+      guard
+        let goalId = goal["goalId"] as? String,
+        let minutes = (goal["thresholdMinutes"] as? NSNumber)?.intValue
+      else { continue }
+      let mode = (goal["mode"] as? String) ?? "total"
+
+      let event: DeviceActivityEvent
+      var selectionDigest = ""
+      if mode == "apps" {
+        // Mode A: decode the picked FamilyActivitySelection and monitor its
+        // COMBINED app/category/web usage. A goal whose selection can't be
+        // decoded is SKIPPED (never registered), so it records couldn't-verify
+        // rather than silently monitoring nothing.
         guard
-          let goalId = goal["goalId"] as? String,
-          let minutes = (goal["thresholdMinutes"] as? NSNumber)?.intValue
+          let blob = goal["selection"] as? String,
+          let selection = decodeSelection(blob)
         else { continue }
+        selectionDigest = digest(blob)
+        event = DeviceActivityEvent(
+          applications: selection.applicationTokens,
+          categories: selection.categoryTokens,
+          webDomains: selection.webDomainTokens,
+          threshold: DateComponents(minute: minutes)
+        )
+      } else {
+        // Mode B: empty selection = total device usage.
+        event = DeviceActivityEvent(
+          applications: [],
+          categories: [],
+          webDomains: [],
+          threshold: DateComponents(minute: minutes)
+        )
+      }
+      // Keep this record to Int and String ONLY. The comparison below is
+      // `NSNumber.isEqual:`, which is NUMERIC — a Bool `true` would compare equal
+      // to an Int `1`, and adding a Double would drag plist real round-tripping
+      // into a decision that must never produce a false "unchanged".
+      if desired[goalId] == nil { order.append(goalId) }
+      desired[goalId] = (
+        spec: [
+          "minutes": minutes,
+          "mode": mode,
+          "selection": selectionDigest,
+          "reg": registrationFingerprint,
+        ],
+        event: event
+      )
+    }
 
-        let event: DeviceActivityEvent
-        if (goal["mode"] as? String) == "apps" {
-          // Mode A: decode the picked FamilyActivitySelection and monitor its
-          // COMBINED app/category/web usage. A goal whose selection can't be
-          // decoded is SKIPPED (never registered), so it records couldn't-verify
-          // rather than silently monitoring nothing.
-          guard
-            let blob = goal["selection"] as? String,
-            let selection = decodeSelection(blob)
-          else { continue }
-          event = DeviceActivityEvent(
-            applications: selection.applicationTokens,
-            categories: selection.categoryTokens,
-            webDomains: selection.webDomainTokens,
-            threshold: DateComponents(minute: minutes)
-          )
-        } else {
-          // Mode B: empty selection = total device usage.
-          event = DeviceActivityEvent(
-            applications: [],
-            categories: [],
-            webDomains: [],
-            threshold: DateComponents(minute: minutes)
-          )
+    // Stop only what is no longer wanted. Anything else keeps running — and keeps
+    // its accumulated usage for the day, which is the entire point of this
+    // function's shape. The old code opened with an unconditional
+    // `stopMonitoring()` of every activity and re-registered from scratch, so the
+    // first foreground of every process reset each goal's counter:
+    // `DeviceActivityEvent` has no `includesPastActivity` before iOS 17.4 and we
+    // do not pass it, so a re-registered event counts from zero. A user who
+    // relaunched after lunch had their morning usage forgiven, and an `atMost`
+    // limit could never be reached.
+    //
+    // The teardown set unions the RECORD's keys with `activities`, not just the
+    // latter. `stopMonitoring` on a name that is not monitored is a documented
+    // no-op, so including a goal the record remembers but `activities` omits
+    // costs nothing — and it is the only thing that can clean up an orphan if
+    // `activities` ever under-reports. The old unconditional teardown gave that
+    // guarantee for free; this is what restores it.
+    let stale = live.union(previous.keys).subtracting(desired.keys)
+    if !stale.isEmpty {
+      center.stopMonitoring(stale.map { DeviceActivityName($0) })
+    }
+
+    // The record must describe everything MONITORED, not everything registered by
+    // this call — a goal left alone because it was unchanged is still monitored,
+    // and the extension reads its threshold from here to date a crossing.
+    var registered: [String: Any] = [:]
+    var toRegister: [String] = []
+    for goalId in order {
+      guard let entry = desired[goalId] else { continue }
+      // Unchanged AND actually live ⇒ leave it alone. Both halves matter: the
+      // record alone would keep a goal iOS has silently dropped, and `activities`
+      // alone cannot tell whether the parameters still match.
+      if live.contains(goalId),
+         let was = previous[goalId] as? [String: Any],
+         NSDictionary(dictionary: was).isEqual(to: entry.spec) {
+        registered[goalId] = entry.spec
+      } else {
+        toRegister.append(goalId)
+      }
+    }
+
+    // Publish the untouched set BEFORE mutating anything, so the record is only
+    // ever added to from here on. Writing it incrementally from an empty map
+    // would republish a PREFIX on the first successful registration — wiping
+    // every goal not yet visited, including live unchanged ones — and an
+    // extension woken in that window would find no threshold and silently skip
+    // the crossing-date correction. This write also correctly drops the old
+    // specs of goals that are about to be stopped and re-registered.
+    defaults?.set(registered, forKey: VerificationAppGroup.monitorSpecsKey)
+
+    var firstError: Error?
+    for goalId in toRegister {
+      guard let entry = desired[goalId] else { continue }
+      do {
+        // Re-registering an existing activity with new parameters requires
+        // stopping it first; starting over a live name is not defined to replace.
+        // This DOES reset that goal's accrued usage for the day — unavoidable
+        // before iOS 17.4, where `DeviceActivityEvent(…, includesPastActivity:)`
+        // would let a changed goal keep its history. TODO: pass it under
+        // `if #available(iOS 17.4, *)` once the deployment target allows.
+        if live.contains(goalId) {
+          center.stopMonitoring([DeviceActivityName(goalId)])
         }
-
         try center.startMonitoring(
           DeviceActivityName(goalId),
           during: schedule,
-          events: [eventName: event]
+          events: [eventName: entry.event]
         )
-      }
-      result(nil)
-    } catch {
-      // Surface Apple's 20-activity cap as the typed Dart exception; everything
-      // else is a generic monitoring failure.
-      if case DeviceActivityCenter.MonitoringError.excessiveActivities = error {
-        result(FlutterError(code: "monitor_limit", message: "\(error)",
-                            details: ["attempted": goals.count, "limit": 20]))
-      } else {
-        result(FlutterError(code: "monitoring_failed", message: "\(error)", details: nil))
+        // Appended immediately after the registration it describes, never later.
+        // A single write after the whole loop would leave a window in which the
+        // daemon holds the new parameters and the record still holds the old
+        // ones — and a process killed there strands the extension reading a stale
+        // threshold until the next foreground.
+        registered[goalId] = entry.spec
+        defaults?.set(registered, forKey: VerificationAppGroup.monitorSpecsKey)
+      } catch {
+        // Per-goal, not per-batch: one goal hitting Apple's cap must not abort
+        // the goals after it. The old code wrapped the whole loop, so a single
+        // failure left an arbitrary suffix unregistered.
+        if firstError == nil { firstError = error }
       }
     }
+
+    defaults?.set(registered, forKey: VerificationAppGroup.monitorSpecsKey)
+
+    guard let error = firstError else { result(nil); return }
+    // Surface Apple's 20-activity cap as the typed Dart exception; everything
+    // else is a generic monitoring failure.
+    if case DeviceActivityCenter.MonitoringError.excessiveActivities = error {
+      result(FlutterError(code: "monitor_limit", message: "\(error)",
+                          details: ["attempted": goals.count, "limit": 20]))
+    } else {
+      result(FlutterError(code: "monitoring_failed", message: "\(error)", details: nil))
+    }
+  }
+
+  /// A short, stable fingerprint of a selection blob — enough to answer "did the
+  /// picked set change" without carrying the blob itself into a record the
+  /// memory-capped extension reads. SHA-256 rather than `hashValue`, which Swift
+  /// seeds per process and so would report a change on every launch.
+  private static func digest(_ blob: String) -> String {
+    SHA256.hash(data: Data(blob.utf8))
+      .map { String(format: "%02x", $0) }
+      .joined()
   }
 
   // MARK: - Mode A: FamilyActivityPicker + selection codec

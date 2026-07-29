@@ -32,6 +32,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/data_mode.dart';
 import 'core/private_local_database.dart';
 import 'core/verification_config.dart';
+import 'core/verification_providers.dart';
 import 'core/verification_wiring.dart';
 import 'core/private_sync_service.dart';
 import 'providers/sync_refresh.dart';
@@ -402,6 +403,49 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
     _periodicSync =
         Timer.periodic(_periodicSyncInterval, (_) => _syncIfPrivate('poll'));
 
+    // Auto-verified habits: keep DeviceActivity monitoring in step with the goal
+    // list. Creating, editing and deleting a Screen Time habit all land here, as
+    // does the initial asynchronous load — so registration no longer waits for a
+    // background→foreground round trip, which is what it used to do (the resumed
+    // hook below was the only caller, so a cold-launched session that never
+    // backgrounded registered nothing at all). Listening to the goal list rather
+    // than calling the bridge from each mutation site keeps the trigger in one
+    // place, so no future write path can forget it.
+    //
+    // `weak: true` is load-bearing, not an optimization. A normal subscription
+    // would INSTANTIATE `GoalsNotifier` here in `initState`, and its `build()`
+    // opens the encrypted private database (goal_provider.dart →
+    // `_loadFromPrivateStore`). That would run before `PrivateModeGate` — which
+    // owns key recovery — has had its turn, and on a device left mid-recovery an
+    // early open mints a fresh key against a missing file, turning a recoverable
+    // "locked" state into a permanently undecryptable one. Weak listening keeps
+    // that ordering intact: it observes the provider without keeping it alive.
+    //
+    // So the first callback lands when something below the gate first watches
+    // goals — carrying the not-yet-loaded `[]`, which is why the sync awaits
+    // `ensureLoaded()` rather than trusting an empty list. `fireImmediately` is
+    // not merely unnecessary here, it is forbidden: Riverpod asserts on
+    // `weak && fireImmediately`.
+    if (VerificationConfig.screenTimeEnabled) {
+      ref.listenManual(
+        goalsProvider,
+        (_, _) {
+          _goalsAlive = true;
+          _syncScreenTimeMonitoring();
+        },
+        weak: true,
+      );
+      // The Mode-A selection blob is stored separately from the goal, so both a
+      // re-pick that leaves the goal untouched AND the initial pick (committed
+      // after the goal is saved, keyed by the final id) have to reach
+      // DeviceActivity through here.
+      ref.listenManual(
+        screenTimeSelectionsProvider,
+        (_, _) => _syncScreenTimeMonitoring(),
+        weak: true,
+      );
+    }
+
     // CloudKit zone-change push: the low-latency path. It routes into the SAME
     // mode-gated sync as every other trigger — push changes only WHEN sync runs.
     // The timer above is deliberately kept: iOS drops silent pushes at its own
@@ -437,6 +481,115 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
     if (!mounted) return;
     if (ref.read(activeDataModeProvider) != AppDataMode.private) return;
     unawaited(_syncAndRefresh(reason: reason));
+  }
+
+  /// True while a Screen Time monitoring sync is running. Set BEFORE the async
+  /// body starts, so no synchronous early return inside it can invert the flag.
+  bool _screenTimeSyncRunning = false;
+
+  /// Set when a trigger arrives while a sync is running: the in-flight pass
+  /// re-runs once it finishes, with freshly-read state (latest-wins).
+  bool _screenTimeSyncQueued = false;
+
+  /// Whether `goalsProvider` is known to be alive, i.e. its weak listener has
+  /// fired at least once.
+  ///
+  /// Gating on this rather than reading the provider is what preserves the
+  /// `weak: true` guarantee above: a strong `ref.read` from the SELECTIONS
+  /// listener could instantiate `GoalsNotifier` — and with it the private
+  /// database — ahead of `PrivateModeGate`, which is exactly what weak listening
+  /// exists to prevent.
+  bool _goalsAlive = false;
+
+  /// Pushes the current Screen Time goals to DeviceActivity.
+  ///
+  /// Coalesced and serialized: the goal list changes identity several times per
+  /// launch (cache seed, then server sync) and again per mutation (optimistic
+  /// insert with a temporary id, then the persisted one). Overlapping passes
+  /// would each read the same stale `cache.last` and could race to leave the
+  /// cache describing something native does not hold — including re-registering
+  /// a goal that was deleted mid-flight. One at a time, latest wins.
+  ///
+  /// Fire-and-forget and fully guarded: monitoring is best-effort infrastructure,
+  /// so a failure here must never surface in the UI or break the write that
+  /// triggered it.
+  void _syncScreenTimeMonitoring() {
+    if (!mounted || !_goalsAlive) return;
+    if (_screenTimeSyncRunning) {
+      _screenTimeSyncQueued = true;
+      return;
+    }
+    _screenTimeSyncRunning = true;
+    unawaited(_runScreenTimeSync());
+  }
+
+  Future<void> _runScreenTimeSync() async {
+    try {
+      do {
+        _screenTimeSyncQueued = false;
+        // Wait out the load before believing an empty list. `build()` returns
+        // `[]` and fills in asynchronously, and it re-runs on EVERY applied
+        // iCloud sync (`invalidatePrivateDataProviders`), which the 60s poll can
+        // reach once a minute. Without this barrier each of those passes would
+        // hand DeviceActivity an empty spec list — which means "stop monitoring
+        // everything" — and then re-register moments later, re-zeroing every
+        // goal's accumulated usage for the day.
+        //
+        // Bounded, because this await sits INSIDE the serialized region: while
+        // it is pending every other trigger only sets `_screenTimeSyncQueued`
+        // and returns, so an unbounded wait would deafen the feature for as long
+        // as the load takes — and `_syncFromSupabase` has no request deadline of
+        // its own, so a black-hole or captive-portal network can hold it for
+        // minutes.
+        // Two ways this can fail to give a trustworthy answer, and both must
+        // land on the same cautious branch: the load never finishing (timeout),
+        // and the barrier giving up because rebuilds kept outpacing loads
+        // (`ensureLoaded` returning false). Neither is "the list is empty".
+        final loaded = await ref
+            .read(goalsProvider.notifier)
+            .ensureLoaded()
+            .timeout(const Duration(seconds: 10), onTimeout: () => false);
+        if (!mounted) return;
+        final goals = ref.read(goalsProvider);
+        // A timed-out barrier leaves an empty list ambiguous again, and empty is
+        // the DESTRUCTIVE direction — it tells DeviceActivity to stop watching
+        // everything. So skip the pass rather than acting on it: monitoring
+        // stays exactly as it is, and the load landing later fires the listener
+        // again. A non-empty list needs no barrier — it is real data either way.
+        if (!loaded && goals.isEmpty) {
+          AppLogger.warning(
+            '[Verification] goal load did not settle in time — leaving Screen '
+            'Time monitoring untouched rather than stopping it',
+          );
+          // `continue`, NOT `return`. A trigger that arrived while the barrier
+          // was stalled has only set `_screenTimeSyncQueued`; returning here
+          // would clear `_screenTimeSyncRunning` in the `finally` with that flag
+          // still set and nothing left to read it. `continue` re-tests the
+          // condition, so a queued trigger gets another attempt.
+          //
+          // It narrows the window rather than closing it: if the barrier is
+          // still stalled on the retry, the pass is deferred — the resume
+          // reconcile calls the sync unbarriered and is the real backstop. That
+          // is inherent to the policy, since nothing here can distinguish "empty
+          // because unloaded" from "empty because deleted".
+          continue;
+        }
+        // Read inside the loop: a pass queued while this one was awaiting native
+        // must act on the goal list as it stands NOW, not as it stood then.
+        await syncScreenTimeMonitoringFor(
+          goals: goals,
+          bridge: ref.read(screenTimeBridgeProvider),
+          cache: ref.read(screenTimeSyncCacheProvider),
+          selectionFor: (id) => ref.read(screenTimeSelectionsProvider)[id]?.blob,
+          onMonitorLimit: (e) =>
+              ref.read(screenTimeMonitorLimitProvider.notifier).report(e),
+        );
+      } while (_screenTimeSyncQueued && mounted);
+    } catch (e, stack) {
+      AppLogger.error('[Verification] monitoring sync failed', e, stack);
+    } finally {
+      _screenTimeSyncRunning = false;
+    }
   }
 
   void _onPrivateWrite() {

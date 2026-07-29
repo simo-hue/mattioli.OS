@@ -1,0 +1,42 @@
+// Base configuration for the DeviceActivityMonitorExtension app extension.
+//
+// The extension deliberately does NOT use Flutter/Debug.xcconfig or
+// Flutter/Release.xcconfig. Those exist for the Runner app and their first line
+// pulls in `Pods-Runner.<config>.xcconfig`, the CocoaPods aggregate config for
+// the HOST APP — which carries OTHER_LDFLAGS / FRAMEWORK_SEARCH_PATHS for the
+// app's entire pod graph (Flutter.framework, SQLCipher, FMDB, …). The extension
+// links none of that: its own Frameworks phase carries only DeviceActivity, and
+// its source imports only DeviceActivity, Foundation and UserNotifications.
+//
+// The live risk is the RUNTIME one, not a build failure: this project has
+// archived successfully with the old configuration, so the appex did link. ld64
+// reports a non-extension-safe dylib as a warning, not an error. What that
+// buys you is an .appex whose dyld load commands pull the Flutter engine into a
+// process running under a ~6 MB memory cap — jetsammed before it can append a
+// signal to the App Group, silently, so every Screen Time day lands on
+// couldn't-verify with no error anywhere. Confirm on a real archive with:
+//
+//   otool -L Runner.app/PlugIns/DeviceActivityMonitorExtension.appex/DeviceActivityMonitorExtension
+//
+// System frameworks only. Any @rpath/Flutter.framework or @rpath/SQLCipher is
+// the bug.
+//
+// Generated.xcconfig IS needed: the extension's Info.plist resolves
+// $(FLUTTER_BUILD_NAME) / $(FLUTTER_BUILD_NUMBER) for CFBundleShortVersionString
+// and CFBundleVersion, and App Store validation requires the .appex version to
+// match the host app's. It defines Flutter build variables only — no link flags.
+//
+// NB: this file is hand-written and CHECKED IN, unlike its neighbour
+// Generated.xcconfig, which the flutter tool rewrites and .gitignore excludes.
+#include "Generated.xcconfig"
+
+// Stated rather than inherited from the product-type default, so that any future
+// re-linking of a non-extension-safe framework fails loudly at build time
+// instead of silently at runtime under the memory cap.
+//
+// Caveat worth knowing: an xcconfig loses to a value written into the target's
+// own buildSettings, and Xcode writes one there if anyone toggles "Require Only
+// App-Extension-Safe API" in the Build Settings UI. Nothing sets it in
+// project.pbxproj today, so this line is authoritative — but if it ever stops
+// being, the check it documents will be silently gone.
+APPLICATION_EXTENSION_API_ONLY = YES

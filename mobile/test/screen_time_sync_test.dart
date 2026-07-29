@@ -1,18 +1,18 @@
 // DeviceActivity monitoring reconcile — the two bugs found by the 2026-07-17
 // Screen Time survey, and the guard that fixes them.
 //
-// The feature is dark (`VerificationConfig.screenTimeEnabled == false`), so none
-// of this runs in the shipped app yet. It is fixed now because these are the
-// defects that would have been enabled along with it, and because they are the
+// Mode A is LIVE (`VerificationConfig.screenTimeAppsEnabled == true`, so
+// `screenTimeEnabled` is true) — this is shipped code, not dark code. It is the
 // part of the Screen Time surface that CAN be verified on this machine: there is
 // no iOS SDK here, and FamilyControls does not run in the Simulator at all.
 //
-// Note what is deliberately NOT asserted. The native handler answers a sync with
-// a bare `center.stopMonitoring()` (every activity, unconditionally) and then
-// re-registers the set (AppDelegate.swift:621-660). Whether that resets
-// DeviceActivity's accumulated usage counters is a claim about Apple's framework
-// that cannot be tested from here, so no test here pretends to. What is testable
-// — and tested — is that the churn does not happen when nothing changed.
+// Note what is deliberately NOT asserted. `ScreenTimeBridge.syncMonitoredGoals`
+// now DIFFS its registrations natively — it stops only what is no longer wanted
+// and leaves an unchanged, still-live goal running with its accrued usage — but
+// that behaviour lives in Swift and cannot be tested from here (no iOS SDK, and
+// FamilyControls does not run in the Simulator). What is testable, and tested, is
+// the Dart half: which specs are derived, and that the channel is not dialled
+// when nothing the app knows about has changed.
 import 'package:evolve_verification/evolve_verification.dart';
 // Test doubles are exported separately so they never ship in app code.
 import 'package:evolve_verification/testing.dart';
@@ -195,7 +195,7 @@ void main() {
     group('authorization', () {
       test('UNAUTHORIZED DOES NOT DIAL startMonitoring', () async {
         // The native handler calls `center.startMonitoring` with no
-        // authorization check of its own (AppDelegate.swift:644), and
+        // authorization check of its own (`ScreenTimeBridge.syncMonitoredGoals`), and
         // DeviceActivity throws when unauthorized — on every foreground.
         for (final status in [
           ScreenTimeAuthorizationStatus.notDetermined,
@@ -339,6 +339,130 @@ void main() {
         selectionBlob: 'Y',
       );
       expect(screenTimeSpecsChanged(const [before], const [after]), isTrue);
+    });
+  });
+
+  // ── syncScreenTimeMonitoringFor — the goal-list-driven entry point ─────────
+  //
+  // Registration used to be reachable ONLY from the `AppLifecycleState.resumed`
+  // hook in main.dart, so a habit created, edited or deleted in an ordinary
+  // session never reached DeviceActivity, and a cold-launched session that never
+  // backgrounded registered nothing at all. This entry point is what the goal
+  // list now drives.
+  group('syncScreenTimeMonitoringFor', () {
+    test('derives specs from a raw goal list and registers them', () async {
+      final bridge = FakeScreenTimeBridge();
+      final cache = ScreenTimeSyncCache();
+
+      await syncScreenTimeMonitoringFor(
+        goals: [appsGoal('a', threshold: 45)],
+        bridge: bridge,
+        cache: cache,
+        selectionFor: (_) => 'BLOB',
+      );
+
+      expect(bridge.syncCallCount, 1);
+      expect(bridge.lastSyncedSpecs.single.goalId, 'a');
+      expect(bridge.lastSyncedSpecs.single.thresholdMinutes, 45);
+      expect(bridge.lastSyncedSpecs.single.selectionBlob, 'BLOB');
+    });
+
+    test(
+        'a Mode-A goal with no selection yet registers NOTHING — the blob is '
+        'written after the goal, so the goal-change fire must not half-register',
+        () async {
+      final bridge = FakeScreenTimeBridge();
+      final cache = ScreenTimeSyncCache();
+
+      await syncScreenTimeMonitoringFor(
+        goals: [appsGoal('a')],
+        bridge: bridge,
+        cache: cache,
+        selectionFor: (_) => null,
+      );
+
+      expect(bridge.lastSyncedSpecs, isEmpty);
+    });
+
+    test(
+        'REFRESHES THE EXTENSION NOTIFICATION COPY — this path can make a habit '
+        'monitored, and the extension falls back to English without it',
+        () async {
+      final bridge = FakeScreenTimeBridge();
+
+      await syncScreenTimeMonitoringFor(
+        goals: [appsGoal('a')],
+        bridge: bridge,
+        cache: ScreenTimeSyncCache(),
+        selectionFor: (_) => 'BLOB',
+      );
+
+      expect(bridge.lastNotificationCopy, isNotNull);
+      expect(bridge.lastNotificationCopy!.title, isNotEmpty);
+      expect(bridge.lastNotificationCopy!.body, isNotEmpty);
+    });
+
+    test('the spec diff still suppresses an unchanged re-sync', () async {
+      final bridge = FakeScreenTimeBridge();
+      final cache = ScreenTimeSyncCache();
+      final goals = [appsGoal('a')];
+
+      await syncScreenTimeMonitoringFor(
+        goals: goals,
+        bridge: bridge,
+        cache: cache,
+        selectionFor: (_) => 'BLOB',
+      );
+      await syncScreenTimeMonitoringFor(
+        goals: goals,
+        bridge: bridge,
+        cache: cache,
+        selectionFor: (_) => 'BLOB',
+      );
+
+      expect(bridge.syncCallCount, 1);
+    });
+
+    test('a deleted goal is removed from the registered set', () async {
+      final bridge = FakeScreenTimeBridge();
+      final cache = ScreenTimeSyncCache();
+
+      await syncScreenTimeMonitoringFor(
+        goals: [appsGoal('a'), appsGoal('b')],
+        bridge: bridge,
+        cache: cache,
+        selectionFor: (_) => 'BLOB',
+      );
+      await syncScreenTimeMonitoringFor(
+        goals: [appsGoal('a')],
+        bridge: bridge,
+        cache: cache,
+        selectionFor: (_) => 'BLOB',
+      );
+
+      expect(bridge.syncCallCount, 2);
+      expect(bridge.lastSyncedSpecs.map((s) => s.goalId), ['a']);
+    });
+
+    test('DELETING THE LAST GOAL still tells DeviceActivity to stop', () async {
+      final bridge = FakeScreenTimeBridge();
+      final cache = ScreenTimeSyncCache();
+
+      await syncScreenTimeMonitoringFor(
+        goals: [appsGoal('a')],
+        bridge: bridge,
+        cache: cache,
+        selectionFor: (_) => 'BLOB',
+      );
+      await syncScreenTimeMonitoringFor(
+        goals: const [],
+        bridge: bridge,
+        cache: cache,
+        selectionFor: (_) => null,
+      );
+
+      expect(bridge.syncCallCount, 2);
+      expect(bridge.lastSyncedSpecs, isEmpty);
     });
   });
 }

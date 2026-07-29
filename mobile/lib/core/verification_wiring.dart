@@ -259,14 +259,14 @@ final screenTimeSyncCacheProvider = Provider<ScreenTimeSyncCache>(
 ///     went on watching for a goal that no longer existed, for the life of the
 ///     install, with no UI anywhere admitting it. Syncing an empty list is the
 ///     whole point of the empty case, not a case to skip.
-///  2. **It ran on every single foreground**, and the native handler answers
+///  2. **It ran on every single foreground.** The native handler used to answer
 ///     with a bare `center.stopMonitoring()` — every activity, unconditionally —
-///     followed by re-registering the same set from scratch
-///     (`AppDelegate.swift:621-660`). Whether that resets DeviceActivity's
-///     accumulated usage counters is a claim about the framework that CANNOT be
-///     verified on this machine (no iOS SDK, and FamilyControls does not run in
-///     the Simulator), so it is not asserted here. What is verifiable is that
-///     the churn is pure waste when nothing changed, and the guard removes it.
+///     and re-register the set from scratch, which resets each goal's accrued
+///     usage for the day. `ScreenTimeBridge.syncMonitoredGoals` now DIFFS
+///     instead: it stops only what is no longer wanted and leaves an unchanged,
+///     still-live goal alone. This guard is therefore no longer load-bearing for
+///     correctness, but it is still worth keeping — it avoids a channel round
+///     trip and a native reconcile when nothing the app knows about has changed.
 /// Takes its collaborators directly rather than a `WidgetRef` so the ordering
 /// above — the part that actually broke — is testable without pumping a widget.
 @visibleForTesting
@@ -282,15 +282,14 @@ Future<void> syncScreenTimeMonitoring({
 
   try {
     // Checked before dialling: the native side calls `center.startMonitoring`
-    // with no authorization check of its own (AppDelegate.swift:644), and
-    // DeviceActivity throws when unauthorized. Nothing in the app requests this
-    // authorization yet — there is no Screen Time opt-in UI, because the feature
-    // is dark (`VerificationConfig.screenTimeEnabled == false`). When it ships,
-    // the REQUEST belongs at that opt-in, where the user has just asked for the
-    // feature and a system prompt makes sense; a prompt fired from a background
-    // reconcile arrives out of nowhere. Until then this stays a check, not a
-    // request, so an unauthorized install degrades to "no signal" rather than to
-    // a thrown channel call on every foreground.
+    // with no authorization check of its own (`ScreenTimeBridge.syncMonitoredGoals`), and
+    // DeviceActivity throws when unauthorized. The request itself lives at the
+    // two opt-in points, where the user has just asked for the feature and a
+    // system prompt makes sense (`screen_time_form.dart:36`,
+    // `habit_management_modal.dart:604`); a prompt fired from a background
+    // reconcile would arrive out of nowhere. This stays a check, not a request,
+    // so an unauthorized install degrades to "no signal" rather than to a thrown
+    // channel call on every foreground.
     //
     // Skipping an empty sync would strand monitoring (bug 1 above), so the
     // authorization gate deliberately does not apply to it: telling
@@ -315,6 +314,62 @@ Future<void> syncScreenTimeMonitoring({
   } catch (e, stack) {
     AppLogger.error('[Verification] syncMonitoredGoals failed', e, stack);
   }
+}
+
+/// Reconciles DeviceActivity monitoring with the CURRENT goal list, without
+/// running a verdict pass.
+///
+/// This is the registration half of [runVerificationReconcile], split out so it
+/// can be driven by goal-list changes rather than only by a foreground resume.
+/// Before this existed, `syncScreenTimeMonitoring` was reachable from exactly
+/// one place — the `AppLifecycleState.resumed` hook in `main.dart` — which meant
+/// a habit created, edited or deleted in an ordinary session was not registered
+/// with (or removed from) DeviceActivity until the user happened to background
+/// the app and come back. A cold-launched session that never backgrounded never
+/// registered anything at all.
+///
+/// Takes its collaborators directly rather than a `WidgetRef`/`Ref` so it can be
+/// driven from either layer — Riverpod gives those two no common supertype — and
+/// so the goal-list → spec-list derivation is testable without pumping a widget.
+///
+/// Also refreshes the extension's localized notification copy, because this is
+/// now a path on which a habit can become monitored: the DeviceActivityMonitor
+/// extension cannot read Flutter's translations and falls back to hard-coded
+/// English, so a user who cold-launches, creates a Screen Time habit and crosses
+/// the limit without ever backgrounding would otherwise get an English banner.
+Future<void> syncScreenTimeMonitoringFor({
+  required List<Goal> goals,
+  required ScreenTimeBridge bridge,
+  required ScreenTimeSyncCache cache,
+  required String? Function(String goalId) selectionFor,
+  void Function(ScreenTimeMonitorLimitException)? onMonitorLimit,
+}) async {
+  if (!VerificationConfig.screenTimeEnabled) return;
+  // Isolated: the copy is cosmetic (the extension has an English fallback), so a
+  // channel failure here must never stop the registration below — and must never
+  // escape to abort a coalescing caller's queued re-run.
+  try {
+    await bridge.setLocalizedNotificationCopy(
+      title: t.verification.screenTime.limitReachedTitle,
+      body: t.verification.screenTime.limitReachedBody,
+    );
+  } catch (e, stack) {
+    AppLogger.error('[Verification] notification copy write failed', e, stack);
+  }
+  await syncScreenTimeMonitoring(
+    bridge: bridge,
+    cache: cache,
+    goals: verifiableGoalsFrom(
+      goals,
+      healthKitEnabled: VerificationConfig.healthKitEnabled,
+      screenTimeAppsEnabled: VerificationConfig.screenTimeAppsEnabled,
+      screenTimeTotalEnabled: VerificationConfig.screenTimeTotalEnabled,
+      compoundEnabled: VerificationConfig.compoundVerificationEnabled,
+      screenTimeSelectionFor: selectionFor,
+    ),
+    selectionFor: selectionFor,
+    onMonitorLimit: onMonitorLimit,
+  );
 }
 
 /// A single couldn't-verify nudge to surface to the user (D11).

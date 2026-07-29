@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:evolve_targets/evolve_targets.dart';
 import 'package:evolve_verification/evolve_verification.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/goal.dart';
@@ -77,6 +78,57 @@ Future<void> rememberCacheOwner(String userId) => SecureStorageUtils.tryWrite(
 
 // ─── Goals Provider (Offline-First) ─────────────────────────────────────────
 
+/// Joins the loaders a notifier kicks off in `build()` into one barrier future.
+///
+/// The property that matters, and the one that is easy to get wrong: the barrier
+/// must not resolve until **every** loader has settled. The loaders are
+/// independent and the fast one is routinely the one that FAILS — a Supabase call
+/// returns in milliseconds when offline, while the cache seed first awaits a
+/// Keychain round trip to confirm ownership. Barriering on the server call alone
+/// therefore resolves with empty state on exactly the degraded networks where the
+/// offline mirror matters most, and a caller that treats empty as real then acts
+/// destructively on it.
+///
+/// Errors are contained per-future so one failure cannot short-circuit the join
+/// (`Future.wait` completes with the first error otherwise). Each loader already
+/// handles its own errors internally; this only stops them escaping.
+///
+/// Shared rather than inlined because it was inlined, and the second notifier
+/// silently got a different — wrong — composition.
+@visibleForTesting
+Future<void> loadBarrier(Iterable<Future<void>> loaders) =>
+    Future.wait([for (final f in loaders) f.catchError((Object _) {})]);
+
+/// Awaits [current] until the barrier it captured is still the current one.
+///
+/// `build()` re-runs on the SAME notifier instance (Riverpod reuses it across
+/// `invalidate`), reassigning the barrier and resetting state to empty — so a
+/// rebuild landing mid-await would otherwise let a caller return satisfied by a
+/// stale load while the fresh one is still in flight, holding exactly the empty
+/// state the barrier exists to disbelieve.
+///
+/// Bounded rather than `while (true)`: a caller without its own timeout must not
+/// be able to wait forever if invalidations keep outpacing loads.
+///
+/// Returns **true if the barrier settled**, false if it gave up. That return is
+/// load-bearing, not informational: every caller of this treats "state is empty"
+/// as destructive (stop monitoring / sweep and delete), so a give-up that looked
+/// like a settle would hand them a possibly-unloaded state with the confidence of
+/// a loaded one — resolving the ambiguity in the one direction that loses data.
+Future<bool> awaitStableBarrier(Future<void>? Function() current) async {
+  for (var i = 0; i < 5; i++) {
+    final pending = current();
+    if (pending == null) return true;
+    try {
+      await pending;
+    } catch (_) {
+      // The loaders handle their own errors; this is only a barrier.
+    }
+    if (identical(current(), pending)) return true;
+  }
+  return false;
+}
+
 class GoalsNotifier extends Notifier<List<Goal>> {
   static const String _cacheKey = 'goals_cache';
 
@@ -84,11 +136,24 @@ class GoalsNotifier extends Notifier<List<Goal>> {
   /// resolves after it can't overwrite fresher state with the mirror.
   bool _serverStateApplied = false;
 
+  /// The in-flight initial load, so a caller that must not mistake "not loaded
+  /// yet" for "this user has no habits" can wait for the real list.
+  ///
+  /// [build] returns `[]` and fills in asynchronously, and it re-runs far more
+  /// often than a launch: `invalidatePrivateDataProviders` invalidates this
+  /// provider on every applied iCloud sync (sync_refresh.dart), which the 60s
+  /// poll can reach once a minute. Every one of those passes back through the
+  /// empty state. The Screen Time monitoring sync is destructive on empty — an
+  /// empty spec list means "stop monitoring everything" — so it awaits this
+  /// before believing a `[]`. Mirrors [HabitProgressNotifier._initialLoad],
+  /// which exists for the identical hazard on the progress sweep.
+  Future<void>? _initialLoad;
+
   @override
   List<Goal> build() {
     final dataMode = ref.watch(activeDataModeProvider);
     if (dataMode == AppDataMode.private) {
-      _loadFromPrivateStore();
+      _initialLoad = _loadFromPrivateStore();
       return [];
     }
 
@@ -96,7 +161,11 @@ class GoalsNotifier extends Notifier<List<Goal>> {
 
     ref.listen(authProvider, (previous, next) {
       if (next.isLoggedIn && next.user != null) {
-        _syncFromSupabase();
+        // Re-arm the barrier: a transient logout empties `state` (below) without
+        // rebuilding the notifier, so without this `ensureLoaded` would be
+        // satisfied by the PREVIOUS, already-completed load and a caller would
+        // read the empty list as "this user has no habits".
+        _initialLoad = _syncFromSupabase();
       } else if (!next.isLoggedIn) {
         // Clear only the in-memory state for the /login redirect. Do NOT wipe the
         // on-disk cache: a transient logout (refresh-token expiry / rotation
@@ -111,12 +180,20 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     final authState = ref.read(authProvider);
     final user = authState.user;
     if (authState.isLoggedIn && user != null) {
-      _seedFromCache(user.id);
-      _syncFromSupabase();
+      // BOTH loaders — see [loadBarrier].
+      _initialLoad = loadBarrier([_seedFromCache(user.id), _syncFromSupabase()]);
+    } else {
+      _initialLoad = null;
     }
 
     return [];
   }
+
+  /// Awaits the in-flight initial load, if any, so a caller can tell "no habits"
+  /// apart from "not loaded yet". Returns false if the load never settled, so a
+  /// caller that would act destructively on an empty list can decline to.
+  /// Never rethrows — see [awaitStableBarrier].
+  Future<bool> ensureLoaded() => awaitStableBarrier(() => _initialLoad);
 
   /// Serves the offline mirror as initial state, but only once the cache is
   /// confirmed to belong to [userId] — the owner marker lives in the keychain,
@@ -1192,7 +1269,11 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
     _serverStateApplied = false;
     ref.listen(authProvider, (previous, next) {
       if (next.isLoggedIn && next.user != null) {
-        _syncFromSupabase();
+        // Re-arm the barrier: the logout branch below empties `state` without
+        // rebuilding the notifier, so leaving the old completed future in place
+        // would let the sweep read `{}` as "no progress recorded" and delete
+        // real rows.
+        _initialLoad = _syncFromSupabase();
       } else if (!next.isLoggedIn) {
         state = {};
       }
@@ -1201,8 +1282,13 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
     final authState = ref.read(authProvider);
     final user = authState.user;
     if (authState.isLoggedIn && user != null) {
-      _seedFromCache(user.id);
-      _initialLoad = _syncFromSupabase();
+      // BOTH loaders — see [loadBarrier]. Barriering on the server call alone
+      // resolves with an empty map whenever it fails fast (offline, a 5xx) while
+      // the cache seed is still awaiting its Keychain round trip. Here that is
+      // not churn but DATA LOSS: an `atMost` habit-day with no progress entry
+      // resolves to a quiet success, and applying that verdict writes amount 0,
+      // which deletes the stored row and tombstones the deletion to CloudKit.
+      _initialLoad = loadBarrier([_seedFromCache(user.id), _syncFromSupabase()]);
     } else {
       _initialLoad = null;
     }
@@ -1210,18 +1296,9 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
   }
 
   /// Awaits the in-flight initial load, if any, so a caller that must not
-  /// mistake "not loaded yet" for "no data" can wait for the real map. Failures
-  /// are already swallowed by the loaders (which fall back to an empty map), so
-  /// this never rethrows.
-  Future<void> _ensureLoaded() async {
-    final pending = _initialLoad;
-    if (pending == null) return;
-    try {
-      await pending;
-    } catch (_) {
-      // The loaders handle their own errors; this is only a barrier.
-    }
-  }
+  /// mistake "not loaded yet" for "no data" can wait for the real map. Returns
+  /// false if it never settled. Never rethrows — see [awaitStableBarrier].
+  Future<bool> _ensureLoaded() => awaitStableBarrier(() => _initialLoad);
 
   Future<void> _seedFromCache(String userId) async {
     if (!await cacheSeedAllowed(userId)) return;
@@ -1433,12 +1510,20 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
   /// re-derives and persists exactly as a live edit would, streaks included.
   /// [now] is injectable for tests.
   Future<void> reconcileManualTargets({DateTime? now}) async {
-    await _ensureLoaded();
-    if (!ref.mounted) return;
     // Never sweep a map that has not finished loading: for an `atMost` target an
     // absent entry means "quiet success", so an unloaded map resolves every
     // stored breach to 'done' and DELETES the amount behind it. See
-    // [_initialLoad].
+    // [_initialLoad]. A barrier that gave up is NOT a load — decline the sweep
+    // rather than run it on a map that may be mid-flight; the next foreground
+    // will try again.
+    if (!await _ensureLoaded()) {
+      AppLogger.warning(
+        '[Targets] goal progress did not settle — skipping the manual-target '
+        'sweep rather than resolving days from a possibly-unloaded map',
+      );
+      return;
+    }
+    if (!ref.mounted) return;
     final today = now ?? DateTime.now();
     final logs = ref.read(habitLogsProvider);
     final changes = <TargetReconcileChange>[];

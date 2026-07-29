@@ -1,6 +1,6 @@
 # TO_SIMO_DO.md
 - [ ] Widget for iPhone & MacOS
-- [ ] what happens if I modify manually an automatic habits?
+- [ ] 
 - [ ] Macro goals still need a numeric target + progress bar (status already cycles active/completed/failed). Habits are DONE — the Checkbox / Number / Automatic picker and quantitative targets are live; MacroTargetsConfig.enabled is still false on both apps.
 
 ---
@@ -348,6 +348,7 @@ can be verified without Xcode. Run these in a **release-ish build signed into a 
 
 - **Account-mode avatar is now inert by design.** The profile picture is tappable in Private mode only, because account mode has no upload path anywhere in `desktop/lib` (no Supabase Storage call exists). If you want it back, the upload needs building first — the affordance was live but silently discarded every pick.
 
+
 ## Screen Time on-device test checklist (2026-07-28)
 
 Code audit of the Screen Time verification stack found 5 blockers to fix **before**
@@ -368,3 +369,5 @@ iPhone can settle, ordered by how much they change:
 - **T10 — spring-forward.** Set the date to a spring-forward Sunday and let 23:59 pass. The App Group buffer must gain a `stayedUnder` row. This is the mirror of T4b: the day is 23 hours long, and any logic that measures the interval end in *elapsed* rather than *wall-clock* minutes silently drops every goal's pass that day.
 
 - **T8 — notification permission.** The extension's real-time "limit reached" push is the feature's headline output, but the habit-editor path never requests notification permission. Confirm whether you get the banner without first visiting Settings › Screen Time.
+
+- **Settings search bar — eyeball it on device.** The rail filter now wears the same pill as the ⌘K bar (38px tall, radius 12), which is 8px taller than before. Check on a real display that (a) the double outline inside the field is gone, (b) the new `⌘ F` badge does not crowd the "Search settings" hint at the 236px rail width in the longest locale — German and Portuguese are the ones to look at, and (c) the accent focus ring reads as focus rather than as an error state on a light accent. No macOS build was possible here (no Xcode).

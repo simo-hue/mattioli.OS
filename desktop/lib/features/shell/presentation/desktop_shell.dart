@@ -20,6 +20,7 @@ import 'package:evolve_desktop/features/statistics/presentation/statistics_page.
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_search_chrome.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_spinner.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -570,46 +571,15 @@ class _TopBar extends ConsumerWidget {
               width: 240,
               child: InkWell(
                 onTap: onOpenSearch,
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  height: 38,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: context.evolveColors.panel.withValues(alpha: 0.4),
-                    border: Border.all(
-                      color: context.evolveColors.border.withValues(alpha: 0.5),
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        LucideIcons.search,
-                        size: 15,
-                        color: context.evolveColors.muted,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          t.shell.searchHint,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: context.evolveColors.muted,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        '⌘ K',
-                        style: TextStyle(
-                          color: context.evolveColors.subtle,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                borderRadius: BorderRadius.circular(EvolveSearchChrome.radius),
+                child: EvolveSearchChrome.wrap(
+                  context,
+                  trailing: EvolveSearchChrome.badge(context, '⌘ K'),
+                  child: Text(
+                    t.shell.searchHint,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: EvolveSearchChrome.labelStyle(context),
                   ),
                 ),
               ),

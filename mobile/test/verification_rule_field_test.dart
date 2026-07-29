@@ -83,6 +83,139 @@ void main() {
     });
   });
 
+  group('verificationRuleSummary number formatting', () {
+    // Non-base locales are deferred, so they have to be built asynchronously —
+    // `buildSync` throws "Deferred library not loaded" for anything but `en`.
+    test('groups thousands in the locale\'s own convention', () async {
+      // Italian and German group with "." — this used to hardcode "," for every
+      // language, which was wrong everywhere but English.
+      expect(
+        verificationRuleSummary(
+            await AppLocale.it.build(), VerificationCatalog.steps.ruleWith(10000)),
+        '≥ 10.000 Passi',
+      );
+      expect(
+        verificationRuleSummary(
+            await AppLocale.de.build(), VerificationCatalog.steps.ruleWith(10000)),
+        startsWith('≥ 10.000 '),
+      );
+    });
+
+    test('a fractional threshold uses the locale decimal separator', () async {
+      expect(
+        verificationRuleSummary(
+            await AppLocale.it.build(), VerificationCatalog.distance.ruleWith(2.5)),
+        startsWith('≥ 2,5 '),
+      );
+      expect(
+        verificationRuleSummary(t, VerificationCatalog.distance.ruleWith(2.5)),
+        startsWith('≥ 2.5 '),
+      );
+    });
+
+    test('no decimal-capable template can reach a grouped threshold', () {
+      // Guards a latent 1000x data loss. `_formatThreshold` now groups for EVERY
+      // unit, but `_parse` only strips separators for INTEGER templates; for a
+      // decimal-capable one it just maps "," to ".". So an Italian "1.500" would
+      // parse as 1.5 on blur. Unreachable today only because every fractional
+      // template maxes out below 1,000 — this pins that assumption so raising a
+      // range fails here instead of silently dividing a user's threshold.
+      final decimalCapable = VerificationCatalog.all
+          .where((t) => t.step != t.step.roundToDouble())
+          .toList();
+      expect(decimalCapable, isNotEmpty, reason: 'sanity: distance, sleep_hours');
+      for (final tmpl in decimalCapable) {
+        expect(tmpl.maxThreshold, lessThan(1000),
+            reason: '${tmpl.key} can now reach a grouped number; make _parse '
+                'locale-aware before raising this range');
+      }
+    });
+
+    test('omits the metric label when asked', () {
+      expect(
+        verificationRuleSummary(t, VerificationCatalog.steps.ruleWith(10000),
+            includeMetricLabel: false),
+        '≥ 10,000',
+      );
+    });
+  });
+
+  group('habitVerificationLabel', () {
+    VerificationRule steps(double n) => VerificationCatalog.steps.ruleWith(n);
+
+    test('drops the metric label when it only echoes the habit name', () {
+      // The common case: creating a rule auto-fills the name from this label.
+      expect(
+        habitVerificationLabel(t,
+            conditions: [steps(10000)], join: null, habitTitle: 'Steps'),
+        '≥ 10,000',
+      );
+    });
+
+    test('the echo check ignores case and surrounding whitespace', () {
+      expect(
+        habitVerificationLabel(t,
+            conditions: [steps(10000)], join: null, habitTitle: '  steps '),
+        '≥ 10,000',
+      );
+    });
+
+    test('keeps the metric label when the habit is named something else', () {
+      expect(
+        habitVerificationLabel(t,
+            conditions: [steps(10000)], join: null, habitTitle: 'Morning walk'),
+        '≥ 10,000 Steps',
+      );
+    });
+
+    test('a compound habit reads as its join and condition count', () {
+      expect(
+        habitVerificationLabel(
+          t,
+          conditions: [steps(8000), VerificationCatalog.workout.ruleWith(30)],
+          join: VerificationJoin.and,
+          habitTitle: 'Full training',
+        ),
+        'All 2 conditions',
+      );
+      expect(
+        habitVerificationLabel(
+          t,
+          conditions: [
+            steps(8000),
+            VerificationCatalog.workout.ruleWith(30),
+            VerificationCatalog.standHours.ruleWith(10),
+          ],
+          join: VerificationJoin.or,
+          habitTitle: 'Movement',
+        ),
+        'Any of 3 conditions',
+      );
+    });
+
+    test('a compound with no join reads as "any", like the engine treats it', () {
+      // verification_wiring coerces a null join to OR before evaluating, so the
+      // label must not claim a stricter rule than the one actually run.
+      expect(
+        habitVerificationLabel(
+          t,
+          conditions: [steps(8000), VerificationCatalog.workout.ruleWith(30)],
+          join: null,
+          habitTitle: 'Movement',
+        ),
+        'Any of 2 conditions',
+      );
+    });
+
+    test('a manual habit has no label', () {
+      expect(
+        habitVerificationLabel(t,
+            conditions: const [], join: null, habitTitle: 'Read'),
+        '',
+      );
+    });
+  });
+
   group('groupTemplatesByCategory', () {
     test('groups in category order, preserves within-group order', () {
       final groups = groupTemplatesByCategory(VerificationCatalog.all);
@@ -217,11 +350,64 @@ void main() {
     });
   });
 
-  testWidgets('VerificationBadge renders a verified indicator', (tester) async {
-    await tester.pumpWidget(_app(const VerificationBadge()));
-    // The badge moved from Icons.verified to the Lucide set with the rest of
-    // the kit; the assertion had been left behind on the Material icon.
-    expect(find.byIcon(LucideIcons.shieldCheck), findsOneWidget);
+  group('VerificationLine', () {
+    testWidgets('shows a shield and the rule it is measured against',
+        (tester) async {
+      await tester.pumpWidget(_app(VerificationLine(
+        conditions: [VerificationCatalog.steps.ruleWith(10000)],
+        join: null,
+        habitTitle: 'Morning walk',
+      )));
+
+      expect(find.byIcon(LucideIcons.shieldCheck), findsOneWidget);
+      expect(find.text('≥ 10,000 Steps'), findsOneWidget);
+    });
+
+    testWidgets('swaps to the alert variant when the day is unresolved',
+        (tester) async {
+      await tester.pumpWidget(_app(VerificationLine(
+        conditions: [VerificationCatalog.steps.ruleWith(10000)],
+        join: null,
+        habitTitle: 'Morning walk',
+        couldNotVerify: true,
+      )));
+
+      expect(find.byIcon(LucideIcons.shieldAlert), findsOneWidget);
+      expect(find.text('Not verified — tap'), findsOneWidget);
+      // Never both: the card's height has to stay constant across states.
+      expect(find.text('≥ 10,000 Steps'), findsNothing);
+      expect(find.byIcon(LucideIcons.shieldCheck), findsNothing);
+    });
+
+    testWidgets('renders nothing for a habit with no conditions',
+        (tester) async {
+      await tester.pumpWidget(_app(const VerificationLine(
+        conditions: [],
+        join: null,
+        habitTitle: 'Read',
+      )));
+
+      expect(find.byIcon(LucideIcons.shieldCheck), findsNothing);
+      expect(find.byType(Text), findsNothing);
+    });
+
+    testWidgets('keeps to one line when the label cannot fit', (tester) async {
+      // The Italian screen-time label is the longest combination the line can
+      // be asked to render; it must ellipsize, never wrap into a second row.
+      await tester.pumpWidget(_app(SizedBox(
+        width: 120,
+        child: VerificationLine(
+          conditions: [VerificationCatalog.screenTimeTotal.ruleWith(120)],
+          join: null,
+          habitTitle: 'Detox',
+        ),
+      )));
+
+      final text = tester.widget<Text>(find.text('≤ 120 min Total device usage'));
+      expect(text.maxLines, 1);
+      expect(text.overflow, TextOverflow.ellipsis);
+      expect(tester.takeException(), isNull);
+    });
   });
 
   testWidgets('CouldNotVerifyChip shows "?" and is tappable', (tester) async {

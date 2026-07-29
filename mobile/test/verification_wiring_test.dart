@@ -25,6 +25,73 @@ void main() {
   final steps = VerificationCatalog.steps.ruleWith(10000);
   final screen = VerificationCatalog.screenTimeTotal.ruleWith(120);
 
+  group('Goal.verificationRuleAppliesOn', () {
+    // The display side duplicates the engine's forward-only anchor (the engine's
+    // own `_ruleEffectiveFrom` is private). Nothing structural stops the two
+    // drifting, so this pins them: if the engine's anchor moves, the label that
+    // names a threshold has to move with it or this fails.
+    DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
+    bool engineSaysApplies(Goal g, DateTime day) {
+      final effectiveFrom = verifiableGoalsFrom(
+        [g],
+        healthKitEnabled: true,
+        screenTimeAppsEnabled: true,
+        screenTimeTotalEnabled: true,
+      ).single.effectiveFrom;
+      return !dateOnly(day).isBefore(dateOnly(effectiveFrom));
+    }
+
+    test('agrees with the engine across anchors and boundaries', () {
+      final anchors = <DateTime?>[
+        null,
+        DateTime(2025, 6, 1), // before startDate — must clamp to startDate
+        DateTime(2026, 1, 1), // exactly startDate
+        DateTime(2026, 6, 10),
+        DateTime(2026, 6, 10, 23, 59), // with a time component
+      ];
+      for (final anchor in anchors) {
+        final g = goal('steps',
+            rule: steps,
+            startDate: DateTime(2026, 1, 1),
+            verifyEffectiveFrom: anchor);
+        for (final day in [
+          DateTime(2025, 12, 31),
+          DateTime(2026, 1, 1),
+          DateTime(2026, 6, 9),
+          DateTime(2026, 6, 10),
+          DateTime(2026, 6, 10, 18, 30),
+          DateTime(2026, 6, 11),
+        ]) {
+          expect(g.verificationRuleAppliesOn(day), engineSaysApplies(g, day),
+              reason: 'anchor=$anchor day=$day');
+        }
+      }
+    });
+
+    test('a null anchor falls back to startDate', () {
+      final g = goal('steps', rule: steps, startDate: DateTime(2026, 3, 5));
+      expect(g.verificationRuleAppliesOn(DateTime(2026, 3, 4)), isFalse);
+      expect(g.verificationRuleAppliesOn(DateTime(2026, 3, 5)), isTrue);
+    });
+
+    test('an anchor before startDate cannot pull the rule earlier', () {
+      final g = goal('steps',
+          rule: steps,
+          startDate: DateTime(2026, 3, 5),
+          verifyEffectiveFrom: DateTime(2026, 1, 1));
+      expect(g.verificationRuleAppliesOn(DateTime(2026, 3, 4)), isFalse);
+      expect(g.verificationRuleAppliesOn(DateTime(2026, 3, 5)), isTrue);
+    });
+
+    test('a manual habit has no rule in effect on any day', () {
+      expect(
+        goal('manual').verificationRuleAppliesOn(DateTime(2026, 6, 1)),
+        isFalse,
+      );
+    });
+  });
+
   group('verifiableGoalsFrom', () {
     test('keeps only verified goals honoring the per-provider flags', () {
       final goals = [

@@ -7,7 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../application/coach_controllers.dart';
 import '../domain/coach_backend.dart';
 import '../domain/coach_config.dart';
-import 'coach_settings_dialog.dart';
+import 'coach_settings_panels.dart';
 
 /// Header state-selector: a professional pill naming the active engine + model
 /// with a live status dot, that opens the full "AI coach engine" popup on tap.
@@ -46,7 +46,7 @@ class CoachModelChip extends ConsumerWidget {
     return _SelectorButton(
       label: label,
       statusColor: _statusColor(context, ref, config, backend),
-      onTap: () => showCoachSettingsDialog(context),
+      onTap: () => openCoachSettings(ref),
     );
   }
 

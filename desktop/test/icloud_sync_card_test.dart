@@ -15,18 +15,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:evolve_desktop/features/settings/presentation/settings_section.dart';
+import 'support/settings_navigation.dart';
 
 class _FakeSyncService implements PrivateSyncService {
   _FakeSyncService([PrivateSyncStatus? initial, this.diagnosticsResult])
-      : current = initial ??
-            const PrivateSyncStatus(
-                isAvailable: true,
-                isEnabled: false,
-                account: CloudAccountStatus.available);
+    : current =
+          initial ??
+          const PrivateSyncStatus(
+            isAvailable: true,
+            isEnabled: false,
+            account: CloudAccountStatus.available,
+          );
 
   /// Null ⇒ no local store to inspect, which must HIDE the details row rather
   /// than render it claiming everything is fine.
   final SyncDiagnostics? diagnosticsResult;
+
+  /// Set by [_pumpPrivacy] so the fake can persist the enabled flag the way the
+  /// real service does.
+  SharedPreferences? prefsForFake;
 
   PrivateSyncStatus current;
   int enableCalls = 0;
@@ -43,6 +51,9 @@ class _FakeSyncService implements PrivateSyncService {
   @override
   Future<PrivateSyncStatus> enable({bool force = false}) async {
     enableCalls++;
+    // The real service persists this; the fake must too, or the cached
+    // desktopSyncEnabledProvider can never be observed going stale.
+    await prefsForFake?.setBool(kSyncEnabledPrefKey, true);
     current = PrivateSyncStatus(
       isAvailable: true,
       isEnabled: true,
@@ -56,9 +67,10 @@ class _FakeSyncService implements PrivateSyncService {
   Future<PrivateSyncStatus> disable() async {
     disableCalls++;
     current = const PrivateSyncStatus(
-        isAvailable: true,
-        isEnabled: false,
-        account: CloudAccountStatus.available);
+      isAvailable: true,
+      isEnabled: false,
+      account: CloudAccountStatus.available,
+    );
     return current;
   }
 
@@ -72,9 +84,10 @@ class _FakeSyncService implements PrivateSyncService {
   Future<PrivateSyncStatus> requestFullReset() async {
     fullResetCalls++;
     current = const PrivateSyncStatus(
-        isAvailable: true,
-        isEnabled: false,
-        account: CloudAccountStatus.available);
+      isAvailable: true,
+      isEnabled: false,
+      account: CloudAccountStatus.available,
+    );
     return current;
   }
 
@@ -99,21 +112,22 @@ SyncDiagnostics _diagnostics({
   int pending = 0,
   int errors = 0,
   int parked = 0,
-}) =>
-    SyncDiagnostics(
-      localRowsByTable: {'goals': 12, 'long_term_goals': pending},
-      pendingByTable: pending > 0 ? {'long_term_goals': pending} : const {},
-      pendingDeletesByTable: const {},
-      errorsByReason:
-          errors > 0 ? {'CKError 7 rate limited': errors} : const {},
-      parkedByReason: parked > 0 ? {'row rejected by schema': parked} : const {},
-      hasChangeToken: true,
-      lastFullSyncAt: DateTime.utc(2026, 7, 20, 9),
-    );
+}) => SyncDiagnostics(
+  localRowsByTable: {'goals': 12, 'long_term_goals': pending},
+  pendingByTable: pending > 0 ? {'long_term_goals': pending} : const {},
+  pendingDeletesByTable: const {},
+  errorsByReason: errors > 0 ? {'CKError 7 rate limited': errors} : const {},
+  parkedByReason: parked > 0 ? {'row rejected by schema': parked} : const {},
+  hasChangeToken: true,
+  lastFullSyncAt: DateTime.utc(2026, 7, 20, 9),
+);
 
 /// Pumps the settings page in Private mode with [fake] as the sync service and
 /// navigates to the Privacy section.
-Future<void> _pumpPrivacy(WidgetTester tester, _FakeSyncService fake) async {
+Future<ProviderContainer> _pumpPrivacy(
+  WidgetTester tester,
+  _FakeSyncService fake,
+) async {
   SharedPreferences.setMockInitialValues({
     'active_data_mode': DesktopDataMode.private.name,
   });
@@ -121,7 +135,9 @@ Future<void> _pumpPrivacy(WidgetTester tester, _FakeSyncService fake) async {
   final container = ProviderContainer(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
-      desktopPrivateSyncServiceProvider.overrideWithValue(fake),
+      desktopPrivateSyncServiceProvider.overrideWithValue(
+        fake..prefsForFake = prefs,
+      ),
     ],
   );
   addTearDown(container.dispose);
@@ -143,28 +159,32 @@ Future<void> _pumpPrivacy(WidgetTester tester, _FakeSyncService fake) async {
     ),
   );
   await tester.pumpAndSettle();
-  await tester.tap(find.text(t.settingsPage.sectionPrivacy).first);
-  await tester.pumpAndSettle();
+  await openSettingsSection(tester, SettingsSection.dataBackup);
+  return container;
 }
 
 /// The enable toggle = the kit EvolveSwitch inside the row titled with
 /// enableTitle (the row's ListTile itself has no onTap).
 Finder _syncToggle() => find.descendant(
-      of: find.widgetWithText(ListTile, t.icloudSync.enableTitle),
-      matching: find.byType(EvolveSwitch),
-    );
+  of: find.widgetWithText(ListTile, t.icloudSync.enableTitle),
+  matching: find.byType(EvolveSwitch),
+);
 
 void main() {
   setUp(() => LocaleSettings.setLocale(AppLocale.en));
 
-  testWidgets('privacy section shows the iCloud Sync card in private mode',
-      (tester) async {
+  testWidgets('privacy section shows the iCloud Sync card in private mode', (
+    tester,
+  ) async {
     await _pumpPrivacy(tester, _FakeSyncService());
 
     expect(find.text(t.icloudSync.enableTitle), findsOneWidget);
     expect(find.text(t.icloudSync.syncNow), findsOneWidget);
     expect(find.text(t.icloudSync.statusOff), findsOneWidget);
-    expect(find.text(t.icloudSync.lastSyncedNever), findsOneWidget);
+    // Was `lastSyncedNever`. "Sync now" is disabled while sync is off — it
+    // used to render fully tappable and then return early in exactly this
+    // state — so its help slot states the reason instead.
+    expect(find.text(t.icloudSync.syncNowNeedsSync), findsOneWidget);
   });
 
   testWidgets('enabling flows through the disclosure dialog', (tester) async {
@@ -184,6 +204,35 @@ void main() {
     expect(find.textContaining('Last synced'), findsOneWidget);
   });
 
+  testWidgets('enabling refreshes the cached sync-enabled flag', (
+    tester,
+  ) async {
+    // desktopSyncEnabledProvider is a plain Provider over a SharedPreferences
+    // bool. The prefs instance identity never changes, so the value is cached
+    // forever unless the toggle explicitly invalidates it — without that call
+    // the dashboard's data-loss banner only clears after an app restart.
+    //
+    // This had no coverage: deleting refreshDesktopSyncEnabled(ref) left the
+    // whole suite green.
+    final fake = _FakeSyncService();
+    final container = await _pumpPrivacy(tester, fake);
+    expect(container.read(desktopSyncEnabledProvider), isFalse);
+
+    await tester.tap(_syncToggle());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(t.settingsPage.confirm));
+    await tester.pumpAndSettle();
+
+    expect(fake.enableCalls, 1);
+    expect(
+      container.read(desktopSyncEnabledProvider),
+      isTrue,
+      reason:
+          'the toggle must invalidate the cached flag, not wait for a '
+          'restart',
+    );
+  });
+
   testWidgets('cancelling the disclosure leaves sync off', (tester) async {
     final fake = _FakeSyncService();
     await _pumpPrivacy(tester, fake);
@@ -197,8 +246,9 @@ void main() {
     expect(find.text(t.icloudSync.statusOff), findsOneWidget);
   });
 
-  testWidgets('waiting-for-keychain state surfaces the iPhone-update hint',
-      (tester) async {
+  testWidgets('waiting-for-keychain state surfaces the iPhone-update hint', (
+    tester,
+  ) async {
     final fake = _FakeSyncService(
       const PrivateSyncStatus(
         isAvailable: true,
@@ -212,14 +262,14 @@ void main() {
     expect(find.text(t.icloudSync.statusWaitingKeychain), findsOneWidget);
   });
 
-  testWidgets(
-      'delete private data runs the full sync reset and mentions the '
+  testWidgets('delete private data runs the full sync reset and mentions the '
       'multi-device caveat', (tester) async {
     final fake = _FakeSyncService(
       const PrivateSyncStatus(
-          isAvailable: true,
-          isEnabled: true,
-          account: CloudAccountStatus.available),
+        isAvailable: true,
+        isEnabled: true,
+        account: CloudAccountStatus.available,
+      ),
     );
     await _pumpPrivacy(tester, fake);
 
@@ -242,8 +292,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 20));
     }
 
-    expect(fake.fullResetCalls, 1,
-        reason: 'cloud wipe queued/performed before the local wipe');
+    expect(
+      fake.fullResetCalls,
+      1,
+      reason: 'cloud wipe queued/performed before the local wipe',
+    );
   });
 
   testWidgets('the details row reports stranded records', (tester) async {
@@ -258,13 +311,16 @@ void main() {
       _diagnostics(pending: 5000),
     );
     await _pumpPrivacy(tester, fake);
+    // The sync report moved to Advanced, beside App Logs.
+    await openSettingsSection(tester, SettingsSection.advanced);
 
     expect(find.text(t.icloudSync.detailsTitle), findsOneWidget);
     expect(find.text(t.icloudSync.detailsPending(count: 5000)), findsOneWidget);
   });
 
-  testWidgets('the details row is hidden when there is no store to inspect',
-      (tester) async {
+  testWidgets('the details row is hidden when there is no store to inspect', (
+    tester,
+  ) async {
     final fake = _FakeSyncService(
       const PrivateSyncStatus(
         isAvailable: true,
@@ -273,6 +329,7 @@ void main() {
       ),
     );
     await _pumpPrivacy(tester, fake);
+    await openSettingsSection(tester, SettingsSection.advanced);
 
     expect(find.text(t.icloudSync.detailsTitle), findsNothing);
   });
@@ -288,13 +345,17 @@ void main() {
       account: CloudAccountStatus.available,
     );
 
-    testWidgets('a pending backlog is never reported as "Up to date"',
-        (tester) async {
+    testWidgets('a pending backlog is never reported as "Up to date"', (
+      tester,
+    ) async {
       final fake = _FakeSyncService(healthy, _diagnostics(pending: 5000));
       await _pumpPrivacy(tester, fake);
 
-      expect(find.text(t.icloudSync.statusIdle), findsNothing,
-          reason: '5000 macro goals never left the device');
+      expect(
+        find.text(t.icloudSync.statusIdle),
+        findsNothing,
+        reason: '5000 macro goals never left the device',
+      );
       expect(find.text(t.icloudSync.statusNotSynced), findsOneWidget);
     });
 
@@ -307,22 +368,30 @@ void main() {
       expect(find.text(t.icloudSync.statusNotSynced), findsOneWidget);
     });
 
-    testWidgets('records PARKED forever are never reported as "Up to date"',
-        (tester) async {
+    testWidgets('records PARKED forever are never reported as "Up to date"', (
+      tester,
+    ) async {
       final fake = _FakeSyncService(healthy, _diagnostics(parked: 2));
       await _pumpPrivacy(tester, fake);
 
-      expect(find.text(t.icloudSync.statusIdle), findsNothing,
-          reason: 'nothing will retry a parked record on its own');
+      expect(
+        find.text(t.icloudSync.statusIdle),
+        findsNothing,
+        reason: 'nothing will retry a parked record on its own',
+      );
     });
 
-    testWidgets('"Up to date" still shows when genuinely nothing is stranded',
-        (tester) async {
+    testWidgets('"Up to date" still shows when genuinely nothing is stranded', (
+      tester,
+    ) async {
       final fake = _FakeSyncService(healthy, _diagnostics());
       await _pumpPrivacy(tester, fake);
 
-      expect(find.text(t.icloudSync.statusIdle), findsOneWidget,
-          reason: 'the fix must not be a blanket refusal to report success');
+      expect(
+        find.text(t.icloudSync.statusIdle),
+        findsOneWidget,
+        reason: 'the fix must not be a blanket refusal to report success',
+      );
     });
   });
 
@@ -339,19 +408,27 @@ void main() {
       undecryptableCount: 3485,
     );
 
-    testWidgets('the status line names the split instead of "Up to date"',
-        (tester) async {
+    testWidgets('the status line names the split instead of "Up to date"', (
+      tester,
+    ) async {
       await _pumpPrivacy(tester, _FakeSyncService(split));
 
       expect(find.text(t.icloudSync.keySplitTitle), findsOneWidget);
-      expect(find.text(t.icloudSync.statusIdle), findsNothing,
-          reason: 'no amount of syncing makes an unreadable record readable');
-      expect(find.text(t.icloudSync.resetFromDevice), findsOneWidget,
-          reason: 'the reset-from-this-device recovery row must be offered');
+      expect(
+        find.text(t.icloudSync.statusIdle),
+        findsNothing,
+        reason: 'no amount of syncing makes an unreadable record readable',
+      );
+      expect(
+        find.text(t.icloudSync.resetFromDevice),
+        findsOneWidget,
+        reason: 'the reset-from-this-device recovery row must be offered',
+      );
     });
 
-    testWidgets('the reset row runs resetSyncFromThisDevice after confirming',
-        (tester) async {
+    testWidgets('the reset row runs resetSyncFromThisDevice after confirming', (
+      tester,
+    ) async {
       final fake = _FakeSyncService(split);
       await _pumpPrivacy(tester, fake);
 
@@ -360,15 +437,20 @@ void main() {
       await tester.pumpAndSettle();
 
       // Destructive: nothing runs until the user accepts the confirmation.
-      expect(find.textContaining('erases everything currently stored in iCloud'),
-          findsOneWidget);
+      expect(
+        find.textContaining('erases everything currently stored in iCloud'),
+        findsOneWidget,
+      );
       expect(fake.resetCalls, 0);
 
       await tester.tap(find.text(t.settingsPage.confirm));
       await tester.pumpAndSettle();
 
-      expect(fake.resetCalls, 1,
-          reason: 'the iPhone-authoritative zone re-key must actually run');
+      expect(
+        fake.resetCalls,
+        1,
+        reason: 'the iPhone-authoritative zone re-key must actually run',
+      );
     });
   });
 }

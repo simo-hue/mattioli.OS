@@ -1,1 +1,1 @@
-nettovarallisuus, budjetti, kulu, tulo, kassavirta, sijoitussalkku, sijoitus, kryptovaluutta
+tavat,tavoitteet,seuranta,rutiini,putki,tuottavuus,kasvu,ajattelutapa,haasteet,päiväkirja,mieliala

@@ -13,9 +13,9 @@ import 'package:evolve_desktop/features/goals/presentation/goals_page.dart';
 import 'package:evolve_desktop/features/habits/presentation/habits_page.dart';
 import 'package:evolve_desktop/features/search/presentation/command_palette.dart';
 import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
-import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
 import 'package:evolve_desktop/features/settings/presentation/settings_page.dart';
 import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
+import 'package:evolve_desktop/features/shell/presentation/section_navigation.dart';
 import 'package:evolve_desktop/features/statistics/presentation/statistics_page.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
@@ -92,7 +92,6 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
   Widget build(BuildContext context) {
     final section = ref.watch(navigationControllerProvider);
     final navigation = ref.read(navigationControllerProvider.notifier);
-    final select = navigation.select;
     final isRtl = Directionality.of(context) == TextDirection.rtl;
     // While the guided tour runs, navigation is locked (all six vectors route
     // through the controller, which no-ops). Here we also dim + freeze the
@@ -101,29 +100,39 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
     final tourActive = ref.watch(tourControllerProvider).active;
 
     // In account mode the coach is Pro-only; Private mode is free (BYOK/Local
-    // are its self-served paths). Watched via a provider so the gate reacts the
-    // instant entitlement or data mode changes mid-session.
+    // are its self-served paths). WATCHED, not read: this is what rebuilds the
+    // shell when an entitlement lapses mid-session, which is what lets the
+    // eviction guard below notice.
     final needsPaywall = ref.watch(coachNeedsPaywallProvider);
+
+    // Eviction: the doors keep a paywalled user out of the Coach, but they
+    // cannot help someone already standing inside it when Pro lapses. Handled
+    // here in build rather than with a `ref.listen` so it also survives a shell
+    // remount (a fresh listener has no previous value and would never fire).
+    // The tour is exempt — its final segment IS the Coach page. Its finale
+    // navigates home on its own before congratulating the user, precisely so
+    // this guard never has to race the completion dialog.
+    if (section == DesktopSection.coach && needsPaywall && !tourActive) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        navigation.select(DesktopSection.overview);
+      });
+    }
 
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.digit1, meta: true): () =>
-            select(DesktopSection.overview),
+            openSection(context, ref, DesktopSection.overview),
         const SingleActivator(LogicalKeyboardKey.digit2, meta: true): () =>
-            select(DesktopSection.habits),
+            openSection(context, ref, DesktopSection.habits),
         const SingleActivator(LogicalKeyboardKey.digit3, meta: true): () =>
-            select(DesktopSection.insights),
+            openSection(context, ref, DesktopSection.insights),
         const SingleActivator(LogicalKeyboardKey.digit4, meta: true): () =>
-            select(DesktopSection.goals),
-        const SingleActivator(LogicalKeyboardKey.digit5, meta: true): () {
-          if (needsPaywall) {
-            showProFeaturesDialog(context, ref);
-          } else {
-            select(DesktopSection.coach);
-          }
-        },
+            openSection(context, ref, DesktopSection.goals),
+        const SingleActivator(LogicalKeyboardKey.digit5, meta: true): () =>
+            openSection(context, ref, DesktopSection.coach),
         const SingleActivator(LogicalKeyboardKey.comma, meta: true): () =>
-            select(DesktopSection.settings),
+            openSection(context, ref, DesktopSection.settings),
         // ⌘[ / ⌘] — move back / forward through the visited-section history,
         // matching the two-finger trackpad swipe-right / swipe-left.
         const SingleActivator(LogicalKeyboardKey.bracketLeft, meta: true):
@@ -262,13 +271,7 @@ class _DesktopSidebar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(navigationControllerProvider);
-    final navigation = ref.read(navigationControllerProvider.notifier);
     final width = collapsed ? 76.0 : 232.0;
-
-    // In account mode the coach is Pro-only; Private mode is free (BYOK/Local
-    // are its self-served paths). Watched via a provider so the gate reacts the
-    // instant entitlement or data mode changes mid-session.
-    final needsPaywall = ref.watch(coachNeedsPaywallProvider);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
@@ -284,13 +287,7 @@ class _DesktopSidebar extends ConsumerWidget {
               collapsed: collapsed,
               section: section,
               selected: selected == section,
-              onTap: () {
-                if (section == DesktopSection.coach && needsPaywall) {
-                  showProFeaturesDialog(context, ref);
-                } else {
-                  navigation.select(section);
-                }
-              },
+              onTap: () => openSection(context, ref, section),
             ),
           const Spacer(),
           Padding(
@@ -301,7 +298,7 @@ class _DesktopSidebar extends ConsumerWidget {
             collapsed: collapsed,
             section: DesktopSection.settings,
             selected: selected == DesktopSection.settings,
-            onTap: () => navigation.select(DesktopSection.settings),
+            onTap: () => openSection(context, ref, DesktopSection.settings),
           ),
           const SizedBox(height: 14),
         ],

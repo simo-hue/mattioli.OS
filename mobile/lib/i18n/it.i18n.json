@@ -307,6 +307,20 @@
       "Novembre",
       "Dicembre"
     ],
+    "monthsShort": [
+      "GEN",
+      "FEB",
+      "MAR",
+      "APR",
+      "MAG",
+      "GIU",
+      "LUG",
+      "AGO",
+      "SET",
+      "OTT",
+      "NOV",
+      "DIC"
+    ],
     "weekdaysShort": {
       "mon": "Lun",
       "tue": "Mar",
@@ -1137,7 +1151,8 @@
     "nameRequired": "Inserisci un nome per l'abitudine",
     "habitAdded": "Abitudine aggiunta",
     "habitUpdated": "Abitudine aggiornata",
-    "freeSlotsFullBanner": "Hai riempito gli slot abitudini gratuite ({used}/{limit}). Sblocca slot illimitati con Evolve Pro."
+    "freeSlotsFullBanner": "Hai riempito gli slot abitudini gratuite ({used}/{limit}). Sblocca slot illimitati con Evolve Pro.",
+    "protocol": "PROTOCOLLO"
   },
   "tutorial": {
     "aiChat": "AI Chat",

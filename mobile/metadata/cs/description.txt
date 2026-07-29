@@ -1,21 +1,41 @@
-Wealth Compass je soukromý, místní osobní finanční panel, který vám pomůže porozumět vašemu čistému jmění, peněžnímu toku, investicím, kryptografickým aktivům a závazkům na jednom místě.
+Evolve je sledovač návyků a cílů pro ty, kdo si chtějí vybudovat rutinu, která opravdu vydrží - a pochopit, proč vydrží. Jedna aplikace pro iPhone, iPad i Mac, bez reklam a bez zbytečného hluku, s analytickým jádrem, které z vašich denních záznamů udělá něco použitelného.
 
-Udělejte si jasný obrázek o svých financích:
+ČTYŘI POHLEDY NA ČAS
+Přepínejte přehled mezi Týdnem, Měsícem, Rokem a Životem. Pohled Život vykreslí týdny, které jste už prožili, a ty, které máte před sebou, podle vašeho data narození - tichá připomínka toho, čím svůj čas trávíte.
 
-- Podívejte se na čisté jmění, peněžní zůstatek, investice a krypto na první pohled
-- Sledujte příjmy a výdaje pomocí kategorií a vizuálních trendů
-- Naplánujte si opakované transakce a získejte volitelná místní připomenutí
-- Sledujte držení akcií, ETF a kryptoměn
-- Zkontrolujte nákladovou základnu, zisk a ztrátu a rozdělení portfolia
-- Sledujte závazky vedle svých aktiv
-- Sledujte historii čistého jmění pomocí automatických místních snímků
-- Převeďte hodnoty pomocí referenčních směnných kurzů ECB uložených v mezipaměti
-- Okamžitě skryjte citlivé částky pomocí režimu soukromí
-- Chraňte aplikaci pomocí Face ID nebo Touch ID
-- Exportujte, importujte a mažte svá místní data, kdykoli budete chtít
+NÁVYKY, KTERÉ SE ZAZNAMENAJÍ SAMY
+- Každý návyk má vlastní týdenní frekvenci, barvu a čas připomenutí.
+- Odškrtněte návyk přímo z oznámení, bez otevírání aplikace.
+- Aktuální, nejlepší i nejhorší série se počítají průběžně.
+- Automatické ověření přes Zdraví: kroky, minuty cvičení, aktivní energie, hodiny ve stoje, vzdálenost, minuty všímavosti, spánek a tréninky.
+- Automatické ověření přes Čas u obrazovky: celkové využití zařízení nebo čas ve vybraných aplikacích a kategoriích.
+- Kombinujte podmínky pomocí "kterákoli z nich" nebo "všechny", když jedna nestačí.
 
-Vaše finanční záznamy zůstanou na vašem zařízení. Wealth Compass nevyžaduje účet a neukládá vaše portfolio ani historii transakcí na serverech provozovaných vývojáři.
+CÍLE NA VŠECHNY HORIZONTY
+Týdenní, měsíční, čtvrtletní, roční i celoživotní cíle, seskupené do oblastí života, které si sami určíte. Přidejte číselné cíle, propojte cíl s návykem, který ho živí, a sledujte výkon, sezónnost i meziroční vývoj.
 
-Volitelné aktualizace tržní ceny využívají pověření API, které poskytnete. Přihlašovací údaje jsou bezpečně uloženy v iOS Keychain.
+STATISTIKY, KTERÉ NĚCO ŘÍKAJÍ
+- Trendy plnění za 7, 14 a 30 dní a roční kalendář pro každý návyk.
+- Analýza korelací: které návyky táhnou ostatní nahoru a které si tiše konkurují o stejnou hodinu.
+- Záznam nálady a energie ve vztahu k tomu, co jste opravdu splnili.
+- Klíčové, kritické, odolné a na náladu citlivé návyky rozpozná aplikace sama.
+- Analýza nejhorších sérií, aby se špatné období stalo informací, ne pocitem viny.
 
-Wealth Compass je informační nástroj pro sledování. Nepřipojuje se k finančním institucím, neprovádí obchody, neposkytuje finanční poradenství ani nezaručuje přesnost údajů o trhu třetích stran.
+AI KOUČ
+Chat, který už zná vaše návyky, vaše cíle i průběh tohoto týdne, s návrhy na jedno klepnutí jako "sprav můj nejslabší návyk" nebo "jdu podle plánu?". Vidí jen kontext, který sami sdílíte, a vždy se předem zeptá.
+
+DVA ZPŮSOBY, JAK UCHOVAT DATA
+- Soukromý režim: žádný účet. Data zůstávají v šifrované databázi ve vašem zařízení.
+- Režim s účtem: přihlaste se přes Apple nebo Google a synchronizujte mezi zařízeními.
+V obou případech Evolve funguje offline. Synchronizace přes iCloud je volitelná, koncově šifrovaná přes váš vlastní účet iCloud a není placenou funkcí. Kdykoli můžete vše exportovat, importovat nebo smazat a aplikaci zamknout přes Face ID nebo Touch ID.
+
+ZDARMA A PRO
+Evolve se stahuje zdarma. Bezplatný plán omezuje, kolik návyků a cílů si můžete najednou vést. Evolve PRO tyto limity ruší a přidává podrobné grafy, pokročilou analýzu trendů a cílů a AI kouče bez jakéhokoli nastavování.
+
+INFORMACE O PŘEDPLATNÉM EVOLVE PRO
+Evolve PRO je automaticky obnovované předplatné: 4,99 EUR měsíčně nebo 49,99 EUR ročně. Cena v místní měně se zobrazí v aplikaci před potvrzením. Platba se strhne z vašeho účtu Apple při potvrzení nákupu. Předplatné se obnovuje automaticky, pokud automatické obnovování nevypnete alespoň 24 hodin před koncem probíhajícího období; obnovení je účtováno během 24 hodin před koncem období. Předplatné spravujete a automatické obnovování vypnete v nastavení účtu Apple.
+
+V soukromém režimu neexistuje účet, takže AI kouč běží na vašem vlastním účtu OpenRouter - zdarma, s klíčem, který zadáte vy.
+
+Podmínky použití (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Zásady ochrany soukromí: https://simo-hue.github.io/evolve/privacy.html

@@ -73,6 +73,9 @@ dependencies:
   url_launcher: ^6.3.2
   sqflite_sqlcipher: ^3.4.0
   path_provider: ^2.1.6
+  # Already resolved transitively; promoted to a direct dependency for the
+  # About footer's version/build string. No new native plugin registration.
+  package_info_plus: ^8.3.0
   path: ^1.9.1
   uuid: ^4.5.3
   fl_chart: ^1.2.0

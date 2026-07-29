@@ -1,5 +1,7 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
+import 'package:evolve_desktop/features/settings/presentation/settings_section.dart';
+import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
@@ -15,30 +17,45 @@ import '../domain/coach_config.dart';
 import '../domain/local_server_target.dart';
 import 'start_local_server_button.dart';
 
-/// Opens the reusable coach-engine configuration dialog (engine cards, local
-/// server, model discovery, system prompt, temperature). Used from both the chat
-/// header and the Settings page.
-Future<void> showCoachSettingsDialog(BuildContext context) {
-  return showEvolveDialog<void>(
-    context: context,
-    builder: (_) => const CoachSettingsDialog(),
-  );
+/// Takes the user to Settings › AI Coach, where the engine configuration now
+/// lives inline.
+///
+/// Replaces `showCoachSettingsDialog`. All four of its old callers — this
+/// helper's callers — used to open a modal on top of whatever they were doing;
+/// they now navigate to the one canonical place, so there is a single surface
+/// to learn and the chat header stops being a second, hidden settings screen.
+void openCoachSettings(WidgetRef ref) {
+  ref
+      .read(settingsSectionRequestProvider.notifier)
+      .request(SettingsSection.aiCoach);
+  ref
+      .read(navigationControllerProvider.notifier)
+      .select(DesktopSection.settings);
 }
 
-class CoachSettingsDialog extends ConsumerStatefulWidget {
-  const CoachSettingsDialog({super.key});
+/// The coach-engine configuration, rendered inline in Settings › AI Coach.
+///
+/// This used to be `CoachSettingsDialog`: a 1,335-line modal that contained the
+/// entire feature, launched from a three-row pane. Nothing in it was
+/// discoverable — the engine picker, the API key field, the local-server
+/// address and the model picker all lived two levels down behind a chevron that
+/// promised a detail pane and delivered a dialog. macOS settings edit in place.
+///
+/// The Save button went with the dialog. Every field already committed on blur
+/// (a multiline field's `onSubmitted` never fires, so that was never optional)
+/// and Save was only ever a belt-and-braces sweep for a modal that could also
+/// be dismissed by its header X or the barrier. There is no dismissal here.
+class CoachEnginePanel extends ConsumerStatefulWidget {
+  const CoachEnginePanel({super.key});
 
   @override
-  ConsumerState<CoachSettingsDialog> createState() =>
-      _CoachSettingsDialogState();
+  ConsumerState<CoachEnginePanel> createState() => _CoachEnginePanelState();
 }
 
-class _CoachSettingsDialogState extends ConsumerState<CoachSettingsDialog> {
+class _CoachEnginePanelState extends ConsumerState<CoachEnginePanel> {
   late final TextEditingController _baseUrl;
   late final TextEditingController _manualModel;
-  late final TextEditingController _systemPrompt;
   final FocusNode _baseUrlFocus = FocusNode();
-  bool _advancedOpen = false;
 
   /// Whether the custom-server fields (free-form base URL + manual model) are
   /// revealed. Named products hide the URL entirely — their card IS the URL — so
@@ -52,10 +69,6 @@ class _CoachSettingsDialogState extends ConsumerState<CoachSettingsDialog> {
     final config = ref.read(coachConfigProvider);
     _baseUrl = TextEditingController(text: config.localBaseUrl);
     _manualModel = TextEditingController();
-    _systemPrompt = TextEditingController(
-      text: config.systemPromptOverride ?? '',
-    );
-    _advancedOpen = config.systemPromptOverride != null;
     // A saved custom endpoint (one that matches no named preset) opens straight
     // into its editable fields rather than looking like an unselected picker.
     _customExpanded =
@@ -68,7 +81,6 @@ class _CoachSettingsDialogState extends ConsumerState<CoachSettingsDialog> {
   void dispose() {
     _baseUrl.dispose();
     _manualModel.dispose();
-    _systemPrompt.dispose();
     _baseUrlFocus.dispose();
     super.dispose();
   }
@@ -83,17 +95,6 @@ class _CoachSettingsDialogState extends ConsumerState<CoachSettingsDialog> {
     }
     // Reflect the canonical form back into the field.
     _baseUrl.text = normalized;
-  }
-
-  void _commitSystemPrompt() =>
-      _controller.setSystemPromptOverride(_systemPrompt.text);
-
-  /// Persists every pending field so NO close path (Save, header X, barrier
-  /// tap) can drop an edit — the fields also commit live/on-blur, this is the
-  /// belt-and-suspenders sweep for the Save button.
-  void _commitAll() {
-    if (_customExpanded) _commitBaseUrl();
-    _commitSystemPrompt();
   }
 
   /// Switch to a named local product in one tap: point the local endpoint at its
@@ -116,61 +117,102 @@ class _CoachSettingsDialogState extends ConsumerState<CoachSettingsDialog> {
   Widget build(BuildContext context) {
     final config = ref.watch(coachConfigProvider);
     // What will actually serve — not what is persisted. In Private mode a stored
-    // Standard choice resolves to BYOK, and the dialog must show the engine the
+    // Standard choice resolves to BYOK, and the panel must show the engine the
     // user can act on rather than one that can only fail.
     final backend = ref.watch(effectiveCoachBackendProvider);
     final standardStatus = ref.watch(standardCoachStatusProvider);
     // Private mode keeps no account, so Standard is not a choice there. Its
-    // absence is what flips the dialog from the single managed engine to the
+    // absence is what flips the panel from the single managed engine to the
     // BYOK + local engine cards.
     final offerStandard =
         standardStatus != StandardCoachStatus.unavailablePrivate;
 
-    return EvolveAlertDialog(
-      maxWidth: 560,
-      icon: LucideIcons.sparkles,
-      iconColor: EvolveColors.violet,
-      title: Text(t.coachSettings.title),
-      subtitle: t.coachSettings.subtitle,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (offerStandard)
-            _StandardEngine(status: standardStatus)
-          else
-            _PrivateEngines(
-              config: config,
-              backend: backend,
-              customExpanded: _customExpanded,
-              baseUrlController: _baseUrl,
-              baseUrlFocus: _baseUrlFocus,
-              manualModelController: _manualModel,
-              onSelectCloud: () {
-                _controller.setBackend(CoachBackendKind.cloud);
-                setState(() => _customExpanded = false);
-              },
-              onSelectProduct: _selectLocalProduct,
-              onUseCustomServer: _useCustomServer,
-              onCommitBaseUrl: _commitBaseUrl,
+    if (offerStandard) return _StandardEngine(status: standardStatus);
+    return _PrivateEngines(
+      config: config,
+      backend: backend,
+      customExpanded: _customExpanded,
+      baseUrlController: _baseUrl,
+      baseUrlFocus: _baseUrlFocus,
+      manualModelController: _manualModel,
+      onSelectCloud: () {
+        _controller.setBackend(CoachBackendKind.cloud);
+        setState(() => _customExpanded = false);
+      },
+      onSelectProduct: _selectLocalProduct,
+      onUseCustomServer: _useCustomServer,
+      onCommitBaseUrl: _commitBaseUrl,
+    );
+  }
+}
+
+/// System prompt + temperature, rendered in Settings › Advanced.
+///
+/// These were a collapsed "Advanced" disclosure inside the modal. They are
+/// genuinely expert controls — a Pro subscriber can rewrite the system prompt
+/// for the managed engine — so they belong in the Advanced pane rather than in
+/// front of everyone configuring an engine.
+class CoachAdvancedPanel extends ConsumerStatefulWidget {
+  const CoachAdvancedPanel({super.key});
+
+  @override
+  ConsumerState<CoachAdvancedPanel> createState() => _CoachAdvancedPanelState();
+}
+
+class _CoachAdvancedPanelState extends ConsumerState<CoachAdvancedPanel> {
+  late final TextEditingController _systemPrompt;
+
+  @override
+  void initState() {
+    super.initState();
+    _systemPrompt = TextEditingController(
+      text: ref.read(coachConfigProvider).systemPromptOverride ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _systemPrompt.dispose();
+    super.dispose();
+  }
+
+  void _commitSystemPrompt() => ref
+      .read(coachConfigProvider.notifier)
+      .setSystemPromptOverride(_systemPrompt.text);
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.evolveColors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: EvolveFieldLabel(t.coachSettings.systemPromptLabel),
             ),
-          const SizedBox(height: 18),
-          _AdvancedSection(
-            open: _advancedOpen,
-            onToggle: () => setState(() => _advancedOpen = !_advancedOpen),
-            systemPromptController: _systemPrompt,
-            onCommitSystemPrompt: _commitSystemPrompt,
-            temperature: config.temperature,
+            _ResetSystemPrompt(controller: _systemPrompt),
+          ],
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _systemPrompt,
+          minLines: 2,
+          maxLines: 4,
+          style: TextStyle(color: colors.foreground, fontSize: 13, height: 1.4),
+          decoration: InputDecoration(
+            hintText: t.coachSettings.systemPromptHint,
           ),
-        ],
-      ),
-      actions: [
-        FilledButton(
-          onPressed: () {
-            _commitAll();
-            Navigator.pop(context);
+          // A multiline field's onSubmitted never fires (Enter inserts a
+          // newline), so commit on blur.
+          onTapOutside: (_) {
+            FocusManager.instance.primaryFocus?.unfocus();
+            _commitSystemPrompt();
           },
-          child: Text(t.coachSettings.save),
+        ),
+        const SizedBox(height: 16),
+        _TemperatureRow(
+          temperature: ref.watch(coachConfigProvider).temperature,
         ),
       ],
     );
@@ -305,7 +347,10 @@ class _PrivateEngines extends ConsumerWidget {
         .asData
         ?.value;
 
-    final (ollamaColor, ollamaLabel) = _localStatusChip(context, ollamaReachable);
+    final (ollamaColor, ollamaLabel) = _localStatusChip(
+      context,
+      ollamaReachable,
+    );
     final (lmColor, lmLabel) = _localStatusChip(context, lmStudioReachable);
 
     return Column(
@@ -1155,91 +1200,6 @@ class _ManualModelField extends ConsumerWidget {
 }
 
 /// Collapsible advanced block: system-prompt override + temperature stepper.
-class _AdvancedSection extends ConsumerWidget {
-  const _AdvancedSection({
-    required this.open,
-    required this.onToggle,
-    required this.systemPromptController,
-    required this.onCommitSystemPrompt,
-    required this.temperature,
-  });
-
-  final bool open;
-  final VoidCallback onToggle;
-  final TextEditingController systemPromptController;
-  final VoidCallback onCommitSystemPrompt;
-  final double temperature;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final colors = context.evolveColors;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        InkWell(
-          onTap: onToggle,
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              children: [
-                Icon(
-                  open ? LucideIcons.chevronDown : LucideIcons.chevronRight,
-                  size: 16,
-                  color: colors.muted,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  t.coachSettings.advanced,
-                  style: TextStyle(
-                    color: colors.foreground,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        if (open) ...[
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: EvolveFieldLabel(t.coachSettings.systemPromptLabel),
-              ),
-              _ResetSystemPrompt(controller: systemPromptController),
-            ],
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: systemPromptController,
-            minLines: 2,
-            maxLines: 4,
-            style: TextStyle(
-              color: colors.foreground,
-              fontSize: 13,
-              height: 1.4,
-            ),
-            decoration: InputDecoration(
-              hintText: t.coachSettings.systemPromptHint,
-            ),
-            // A multiline field's onSubmitted never fires (Enter inserts a
-            // newline), so commit on blur — this is what survives closing the
-            // dialog via the header X or the barrier instead of Save.
-            onTapOutside: (_) {
-              FocusManager.instance.primaryFocus?.unfocus();
-              onCommitSystemPrompt();
-            },
-          ),
-          const SizedBox(height: 16),
-          _TemperatureRow(temperature: temperature),
-        ],
-      ],
-    );
-  }
-}
-
 class _ResetSystemPrompt extends ConsumerWidget {
   const _ResetSystemPrompt({required this.controller});
 

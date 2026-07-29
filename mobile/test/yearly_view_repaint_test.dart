@@ -1,4 +1,5 @@
 import 'package:mattioli_os/core/theme.dart';
+import 'package:mattioli_os/i18n/translations.g.dart';
 import 'package:mattioli_os/models/goal.dart';
 import 'package:mattioli_os/providers/goal_provider.dart';
 import 'package:mattioli_os/ui/widgets/yearly_view_widget.dart';
@@ -21,15 +22,22 @@ class _EmptyLogs extends HabitLogsNotifier {
 }
 
 void main() {
+  // The month labels come from `context.t`, so the widget needs slang's
+  // provider above it — and a pinned locale, or the bars carry whatever
+  // language the host machine happens to be set to.
+  setUp(() => LocaleSettings.setLocaleSync(AppLocale.en));
+
   Widget app(ThemeData theme) => ProviderScope(
     overrides: [
       goalsProvider.overrideWith(_EmptyGoals.new),
       habitLogsProvider.overrideWith(_EmptyLogs.new),
     ],
-    child: MaterialApp(
-      theme: theme,
-      home: const Scaffold(
-        body: SizedBox(height: 700, width: 380, child: YearlyViewWidget()),
+    child: TranslationProvider(
+      child: MaterialApp(
+        theme: theme,
+        home: const Scaffold(
+          body: SizedBox(height: 700, width: 380, child: YearlyViewWidget()),
+        ),
       ),
     ),
   );

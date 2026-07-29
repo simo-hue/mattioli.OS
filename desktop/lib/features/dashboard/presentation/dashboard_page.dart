@@ -28,6 +28,7 @@ import 'package:evolve_desktop/features/dashboard/presentation/create_goal_dialo
 import 'package:evolve_desktop/features/habits/presentation/habits_page.dart';
 import 'package:evolve_desktop/features/dashboard/presentation/sync_off_banner.dart';
 import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
+import 'package:evolve_desktop/features/shell/presentation/section_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -353,9 +354,10 @@ class _ProtocolloSection extends ConsumerWidget {
                   label: t.dashboard.aiChat,
                   subtitle: t.ai.macroGoals,
                   color: EvolveColors.violet,
-                  onTap: () => ref
-                      .read(navigationControllerProvider.notifier)
-                      .select(DesktopSection.coach),
+                  // Via [openSection], so this tile is gated exactly like the
+                  // sidebar entry and ⌘5 — in account mode the coach is
+                  // Pro-only (mobile's own AI Chat tile gates identically).
+                  onTap: () => openSection(context, ref, DesktopSection.coach),
                 ),
               ),
               const SizedBox(width: 12),
@@ -366,9 +368,7 @@ class _ProtocolloSection extends ConsumerWidget {
                   label: t.dashboard.manager,
                   subtitle: t.ai.dailyHabits,
                   color: context.evolveAccent,
-                  onTap: () => ref
-                      .read(navigationControllerProvider.notifier)
-                      .select(DesktopSection.habits),
+                  onTap: () => openSection(context, ref, DesktopSection.habits),
                 ),
               ),
             ],

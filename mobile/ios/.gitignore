@@ -32,3 +32,9 @@ Runner/GeneratedPluginRegistrant.*
 !default.mode2v3
 !default.pbxuser
 !default.perspectivev3
+
+# Hand-written, checked in: the DeviceActivityMonitorExtension base config.
+# Its neighbours under Flutter/ are tool-generated and ignored above, so make the
+# exception explicit — a future "Flutter/*.xcconfig" rule would otherwise strand
+# three baseConfigurationReference pointers on a file no fresh clone has.
+!Flutter/Extension.xcconfig

@@ -1,5 +1,6 @@
 import 'package:evolve_desktop/app/theme/desktop_appearance_controller.dart';
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
+import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
@@ -13,7 +14,10 @@ import 'package:evolve_desktop/features/search/application/palette_models.dart';
 import 'package:evolve_desktop/features/search/application/period_parser.dart';
 import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
 import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
+import 'package:evolve_desktop/features/settings/presentation/settings_search.dart';
+import 'package:evolve_desktop/features/settings/presentation/settings_section.dart';
 import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
+import 'package:evolve_desktop/features/shell/presentation/section_navigation.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
@@ -40,6 +44,7 @@ class CommandPalette extends ConsumerStatefulWidget {
 const int _kMaxGoals = 6;
 const int _kMaxHabits = 4;
 const int _kMaxThisWeek = 5;
+const int _kMaxSettings = 5;
 
 class _CommandPaletteState extends ConsumerState<CommandPalette> {
   final _controller = TextEditingController();
@@ -76,13 +81,20 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
 
   List<PaletteGroup> _buildGroups(
     List<DashboardGoal> goals,
-    List<DashboardHabit> habits,
-    bool isDark,
-  ) {
+    List<DashboardHabit> habits, {
+    required bool isDark,
+    required bool isPrivateMode,
+  }) {
     final query = _query;
     return query.isEmpty
         ? _launchpadGroups(goals)
-        : _searchGroups(query, goals, habits, isDark);
+        : _searchGroups(
+            query,
+            goals,
+            habits,
+            isDark: isDark,
+            isPrivateMode: isPrivateMode,
+          );
   }
 
   /// The empty-query launchpad: quick actions, this week's active goals, and
@@ -100,7 +112,9 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
               g.weekNumber == week,
         )
         .take(_kMaxThisWeek)
-        .map((g) => GoalEntry(goal: g, periodLabel: _goalPeriodLabel(g), score: 0))
+        .map(
+          (g) => GoalEntry(goal: g, periodLabel: _goalPeriodLabel(g), score: 0),
+        )
         .toList();
 
     return [
@@ -154,9 +168,10 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
   List<PaletteGroup> _searchGroups(
     String query,
     List<DashboardGoal> goals,
-    List<DashboardHabit> habits,
-    bool isDark,
-  ) {
+    List<DashboardHabit> habits, {
+    required bool isDark,
+    required bool isPrivateMode,
+  }) {
     // Goals — match title and category; rank by score, then active-first, then
     // period nearest to today.
     final now = DateTime.now();
@@ -175,15 +190,21 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
     final goalEntries = goalMatches
         .take(_kMaxGoals)
         .map(
-          (e) =>
-              GoalEntry(goal: e.$1, periodLabel: _goalPeriodLabel(e.$1), score: e.$2),
+          (e) => GoalEntry(
+            goal: e.$1,
+            periodLabel: _goalPeriodLabel(e.$1),
+            score: e.$2,
+          ),
         )
         .toList();
 
     // Habits — match title and description.
     final habitMatches = <(DashboardHabit, int)>[];
     for (final h in habits) {
-      final m = fuzzyMatchBest(query, [h.title, if (h.description != null) h.description!]);
+      final m = fuzzyMatchBest(query, [
+        h.title,
+        if (h.description != null) h.description!,
+      ]);
       if (m != null) habitMatches.add((h, m.score));
     }
     habitMatches.sort((a, b) => b.$2.compareTo(a.$2));
@@ -199,9 +220,26 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
         section.label,
         ..._sectionSynonyms(section),
       ]);
-      if (m != null) sectionEntries.add(SectionEntry(section: section, score: m.score));
+      if (m != null) {
+        sectionEntries.add(SectionEntry(section: section, score: m.score));
+      }
     }
     sectionEntries.sort((a, b) => b.score.compareTo(a.score));
+
+    // Individual settings — read from the Settings sidebar's own index, so the
+    // two searches can never disagree about what exists, and gated by the SAME
+    // data-mode rule the sidebar applies: a Private-mode user is not offered
+    // "Send crash reports", which their build has no consent switch for.
+    final settingsHits = searchSettingsRanked(
+      query,
+      isPrivateMode: isPrivateMode,
+    ).take(_kMaxSettings).toList();
+    final settingEntries = [
+      for (final (i, hit) in settingsHits.indexed)
+        // The index already returned them best-first; the score only has to
+        // preserve that order inside the group.
+        SettingEntry(setting: hit.entry, score: 100 - i),
+    ];
 
     // Actions — parsed period jumps, the two always-available create rows, plus
     // any command whose label/keywords fuzzily match.
@@ -254,6 +292,24 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
     }
     actionEntries.sort((a, b) => b.score.compareTo(a.score));
 
+    // Where the settings group lands relative to Actions. Actions ALWAYS
+    // contains the two catch-all "Create goal/habit “<query>”" rows, so putting
+    // settings unconditionally below them would bury a literal "language" under
+    // an offer to create a goal called "language". Putting it unconditionally
+    // above them is just as wrong the other way: "week" is a keyword of the
+    // calendar-view setting, and it must not displace the parsed jump to that
+    // week. So: the user typed the setting's NAME → above; anything softer than
+    // that (keywords, help text) → below.
+    final settingsGroup = settingEntries.isEmpty
+        ? null
+        : PaletteGroup(
+            kind: PaletteGroupKind.settings,
+            title: t.palette.groupSettings,
+            entries: settingEntries,
+          );
+    final settingsLeadActions =
+        settingsHits.isNotEmpty && settingsHits.first.isLabelMatch;
+
     return [
       if (goalEntries.isNotEmpty)
         PaletteGroup(
@@ -267,12 +323,14 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
           title: t.palette.groupHabits,
           entries: habitEntries,
         ),
+      if (settingsGroup != null && settingsLeadActions) settingsGroup,
       if (actionEntries.isNotEmpty)
         PaletteGroup(
           kind: PaletteGroupKind.actions,
           title: t.palette.groupActions,
           entries: actionEntries,
         ),
+      if (settingsGroup != null && !settingsLeadActions) settingsGroup,
       if (sectionEntries.isNotEmpty)
         PaletteGroup(
           kind: PaletteGroupKind.sections,
@@ -410,13 +468,40 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
   }
 
   void _goTo(DesktopSection section) {
+    // Gated sections (the Pro-only AI Coach) get the upsell instead, exactly
+    // like the sidebar and ⌘5. Decided HERE, while our [WidgetRef] is still
+    // alive: `_closeThen` runs after the palette route is popped and this State
+    // is disposed, so the shared `openSection` helper cannot be called from
+    // inside it — only the predicate, from out here.
+    if (sectionNeedsPaywall(ref, section)) {
+      _closeThen((ctx) => showProFeaturesDialog(ctx, ref));
+      return;
+    }
     ref.read(navigationControllerProvider.notifier).select(section);
     _dismiss();
   }
 
+  /// Opens Settings on the pane that owns a settings row.
+  ///
+  /// The request goes in FIRST, then the navigation: `SettingsPage` reads the
+  /// provider in `initState` when it is being mounted, and through a
+  /// `ref.listen` when it is already on screen (⌘K works from inside Settings),
+  /// so both arrival orders have to find the request already set.
+  void _openSetting(SettingEntry entry) {
+    // Carries the ROW, not just the pane: the sidebar's own result list scrolls
+    // to the setting and tints it, and a ⌘K hit on the same index for the same
+    // query has to mean the same thing.
+    ref
+        .read(settingsSectionRequestProvider.notifier)
+        .request(entry.section, rowId: entry.setting.id);
+    _goTo(DesktopSection.settings);
+  }
+
   void _jump(GoalNavTarget target) {
     ref.read(goalNavTargetProvider.notifier).set(target);
-    ref.read(navigationControllerProvider.notifier).select(DesktopSection.goals);
+    ref
+        .read(navigationControllerProvider.notifier)
+        .select(DesktopSection.goals);
     _dismiss();
   }
 
@@ -430,6 +515,8 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
         _goTo(DesktopSection.habits);
       case SectionEntry():
         _goTo(entry.section);
+      case SettingEntry():
+        _openSetting(entry);
       case ActionEntry():
         _runAction(entry);
     }
@@ -553,7 +640,9 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
       ),
     );
     if (confirmed == true) {
-      await ref.read(dashboardControllerProvider.notifier).deleteHabit(habit.id);
+      await ref
+          .read(dashboardControllerProvider.notifier)
+          .deleteHabit(habit.id);
     }
   }
 
@@ -566,7 +655,12 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
     // ThemeMode.system) relabels the command.
     ref.watch(desktopAppearanceControllerProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final groups = _buildGroups(snapshot.goals, snapshot.habits, isDark);
+    final groups = _buildGroups(
+      snapshot.goals,
+      snapshot.habits,
+      isDark: isDark,
+      isPrivateMode: ref.watch(activeDesktopDataModeProvider).isPrivate,
+    );
     _flat = [for (final g in groups) ...g.entries];
     if (_highlightIndex >= _flat.length) {
       _highlightIndex = _flat.isEmpty ? 0 : _flat.length - 1;
@@ -710,12 +804,11 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
     GlobalKey? rowKey,
   }) {
     final accent = context.evolveAccent;
-    final bg = selected
-        ? accent.withValues(alpha: 0.14)
-        : Colors.transparent;
+    final bg = selected ? accent.withValues(alpha: 0.14) : Colors.transparent;
 
     final leading = _entryLeading(context, entry);
     final title = _entryTitle(entry);
+    final subtitle = _entrySubtitle(entry);
     final trailing = _entryTrailing(context, entry, selected);
 
     return Padding(
@@ -734,15 +827,33 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
                 leading,
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                      color: context.evolveColors.foreground,
-                    ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: selected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                          color: context.evolveColors.foreground,
+                        ),
+                      ),
+                      if (subtitle != null)
+                        Text(
+                          subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: context.evolveColors.muted,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 if (trailing != null) ...[const SizedBox(width: 10), trailing],
@@ -766,6 +877,10 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
         color = entry.habit.color;
       case SectionEntry():
         icon = entry.section.icon;
+      case SettingEntry():
+        // The PANE's icon, not a generic cog: it is the second half of the
+        // "which of the eight panes is this in" answer the subtitle gives.
+        icon = entry.section.icon;
       case ActionEntry():
         icon = entry.icon;
         color = context.evolveAccent;
@@ -777,7 +892,16 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
     GoalEntry() => entry.goal.title,
     HabitEntry() => entry.habit.title,
     SectionEntry() => entry.section.label,
+    SettingEntry() => entry.setting.label(),
     ActionEntry() => entry.label,
+  };
+
+  /// The second line under the title. A settings row is the only entry that
+  /// needs one: "Language" alone does not say where it lives, and the eight
+  /// panes are the map users navigate Settings by.
+  String? _entrySubtitle(PaletteEntry entry) => switch (entry) {
+    SettingEntry() => entry.section.label,
+    _ => null,
   };
 
   Widget? _entryTrailing(
@@ -805,6 +929,10 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
           entry.section.shortcut,
           style: TextStyle(fontSize: 12, color: context.evolveColors.subtle),
         );
+      case SettingEntry():
+        // The pane is already on the subtitle line; a ⌘, badge here would only
+        // repeat what the group header says.
+        return null;
       case ActionEntry():
         return entry.subtitle == null
             ? null
@@ -856,7 +984,8 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
           EvolveMenuItem(
             leading: const Icon(LucideIcons.check, size: 15),
             label: t.palette.rowComplete,
-            onTap: () => controller.updateGoalState(goal.id, GoalState.completed),
+            onTap: () =>
+                controller.updateGoalState(goal.id, GoalState.completed),
           ),
         if (goal.type != GoalType.lifetime)
           EvolveMenuItem(

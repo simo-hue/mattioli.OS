@@ -247,107 +247,113 @@ class Translations$icloudSync$en {
 
 	// Translations
 
-	/// en: 'iCloud Sync'
-	String get title => 'iCloud Sync';
-
-	/// en: 'Enable iCloud Sync'
-	String get enableTitle => 'Enable iCloud Sync';
-
-	/// en: 'Sync now'
-	String get syncNow => 'Sync now';
-
-	/// en: 'End-to-end encrypted'
-	String get disclosureTitle => 'End-to-end encrypted';
-
-	/// en: 'Your private data syncs only through your own iCloud account, end-to-end encrypted — never through our servers. The encryption key lives in your iCloud Keychain; if you turn iCloud Keychain off, synced data can't be recovered.'
-	String get disclosureBody => 'Your private data syncs only through your own iCloud account, end-to-end encrypted — never through our servers. The encryption key lives in your iCloud Keychain; if you turn iCloud Keychain off, synced data can\'t be recovered.';
-
-	/// en: 'Enable'
-	String get disclosureAccept => 'Enable';
-
-	/// en: 'Up to date'
-	String get statusIdle => 'Up to date';
-
-	/// en: 'Not everything has synced'
-	String get statusNotSynced => 'Not everything has synced';
-
-	/// en: 'Syncing…'
-	String get statusSyncing => 'Syncing…';
-
-	/// en: 'Sync is off'
-	String get statusOff => 'Sync is off';
-
-	/// en: 'Sign in to iCloud to sync'
-	String get statusNoAccount => 'Sign in to iCloud to sync';
-
-	/// en: 'iCloud is unavailable right now'
-	String get statusUnavailable => 'iCloud is unavailable right now';
-
-	/// en: 'Waiting for iCloud Keychain — make sure the app on your iPhone is up to date'
-	String get statusWaitingKeychain => 'Waiting for iCloud Keychain — make sure the app on your iPhone is up to date';
-
-	/// en: 'Never synced'
-	String get lastSyncedNever => 'Never synced';
-
-	/// en: 'Last synced {time}'
-	String lastSyncedAt({required Object time}) => 'Last synced ${time}';
-
-	/// en: 'iCloud Sync is on: this also deletes the synced copy in your iCloud and turns sync off. Other devices keep their local copy — run this on each device to erase everywhere.'
-	String get deleteSyncNote => 'iCloud Sync is on: this also deletes the synced copy in your iCloud and turns sync off. Other devices keep their local copy — run this on each device to erase everywhere.';
+	/// en: 'Turn on'
+	String get bannerAction => 'Turn on';
 
 	/// en: 'iCloud sync is off — your habits live only on this device and are lost if you reset or replace it.'
 	String get bannerText => 'iCloud sync is off — your habits live only on this device and are lost if you reset or replace it.';
 
-	/// en: 'Turn on'
-	String get bannerAction => 'Turn on';
-
-	/// en: 'Sync details'
-	String get detailsTitle => 'Sync details';
+	/// en: 'iCloud Sync is on: this also deletes the synced copy in your iCloud and turns sync off. Other devices keep their local copy — run this on each device to erase everywhere.'
+	String get deleteSyncNote => 'iCloud Sync is on: this also deletes the synced copy in your iCloud and turns sync off. Other devices keep their local copy — run this on each device to erase everywhere.';
 
 	/// en: 'Everything uploaded'
 	String get detailsAllSynced => 'Everything uploaded';
 
-	/// en: '{count} items waiting to upload'
-	String detailsPending({required Object count}) => '${count} items waiting to upload';
-
-	/// en: '{count} items failed to upload'
-	String detailsFailed({required Object count}) => '${count} items failed to upload';
+	/// en: 'Report copied'
+	String get detailsCopied => 'Report copied';
 
 	/// en: 'Copy report'
 	String get detailsCopy => 'Copy report';
 
-	/// en: 'Report copied'
-	String get detailsCopied => 'Report copied';
+	/// en: '{count} items failed to upload'
+	String detailsFailed({required Object count}) => '${count} items failed to upload';
 
-	/// en: 'Some iCloud data can't be read'
-	String get keySplitTitle => 'Some iCloud data can\'t be read';
+	/// en: '{count} items waiting to upload'
+	String detailsPending({required Object count}) => '${count} items waiting to upload';
 
-	/// en: '{count} records in iCloud were encrypted on another device with a different key, so this device can't read them. Reset sync from whichever device holds the data you want to keep.'
-	String keySplitBody({required Object count}) => '${count} records in iCloud were encrypted on another device with a different key, so this device can\'t read them. Reset sync from whichever device holds the data you want to keep.';
+	/// en: 'Sync details'
+	String get detailsTitle => 'Sync details';
 
-	/// en: 'Reset sync from this device'
-	String get resetFromDevice => 'Reset sync from this device';
+	/// en: 'Enable'
+	String get disclosureAccept => 'Enable';
 
-	/// en: 'Replace everything in iCloud with this device's data'
-	String get resetFromDeviceDetail => 'Replace everything in iCloud with this device\'s data';
+	/// en: 'Your private data syncs only through your own iCloud account, end-to-end encrypted — never through our servers. The encryption key lives in your iCloud Keychain; if you turn iCloud Keychain off, synced data can't be recovered.'
+	String get disclosureBody => 'Your private data syncs only through your own iCloud account, end-to-end encrypted — never through our servers. The encryption key lives in your iCloud Keychain; if you turn iCloud Keychain off, synced data can\'t be recovered.';
 
-	/// en: 'This erases everything currently stored in iCloud and uploads this device's data in its place. Your other devices will then download this copy. Only do this from the device that holds the data you want to keep. This cannot be undone.'
-	String get resetFromDeviceConfirm => 'This erases everything currently stored in iCloud and uploads this device\'s data in its place. Your other devices will then download this copy. Only do this from the device that holds the data you want to keep. This cannot be undone.';
+	/// en: 'End-to-end encrypted'
+	String get disclosureTitle => 'End-to-end encrypted';
 
-	/// en: 'Sync reset. This device's data is now the copy in iCloud.'
-	String get resetFromDeviceDone => 'Sync reset. This device\'s data is now the copy in iCloud.';
+	/// en: 'Enable iCloud Sync'
+	String get enableTitle => 'Enable iCloud Sync';
 
-	/// en: 'Waiting for the encryption key from your other device'
-	String get statusWaitingKey => 'Waiting for the encryption key from your other device';
-
-	/// en: 'Start fresh from this device'
-	String get forceEnableTitle => 'Start fresh from this device';
+	/// en: 'Start fresh'
+	String get forceEnable => 'Start fresh';
 
 	/// en: 'Another device's data is already in iCloud, but its encryption key hasn't reached this device yet. Waiting is usually enough — it can take a few minutes. Starting fresh erases what is in iCloud and replaces it with this device's data. This cannot be undone.'
 	String get forceEnableBody => 'Another device\'s data is already in iCloud, but its encryption key hasn\'t reached this device yet. Waiting is usually enough — it can take a few minutes. Starting fresh erases what is in iCloud and replaces it with this device\'s data. This cannot be undone.';
 
-	/// en: 'Start fresh'
-	String get forceEnable => 'Start fresh';
+	/// en: 'Start fresh from this device'
+	String get forceEnableTitle => 'Start fresh from this device';
+
+	/// en: '{count} records in iCloud were encrypted on another device with a different key, so this device can't read them. Reset sync from whichever device holds the data you want to keep.'
+	String keySplitBody({required Object count}) => '${count} records in iCloud were encrypted on another device with a different key, so this device can\'t read them. Reset sync from whichever device holds the data you want to keep.';
+
+	/// en: 'Some iCloud data can't be read'
+	String get keySplitTitle => 'Some iCloud data can\'t be read';
+
+	/// en: 'Last synced {time}'
+	String lastSyncedAt({required Object time}) => 'Last synced ${time}';
+
+	/// en: 'Never synced'
+	String get lastSyncedNever => 'Never synced';
+
+	/// en: 'Reset sync from this device'
+	String get resetFromDevice => 'Reset sync from this device';
+
+	/// en: 'This erases everything currently stored in iCloud and uploads this device's data in its place. Your other devices will then download this copy. Only do this from the device that holds the data you want to keep. This cannot be undone.'
+	String get resetFromDeviceConfirm => 'This erases everything currently stored in iCloud and uploads this device\'s data in its place. Your other devices will then download this copy. Only do this from the device that holds the data you want to keep. This cannot be undone.';
+
+	/// en: 'Replace everything in iCloud with this device's data'
+	String get resetFromDeviceDetail => 'Replace everything in iCloud with this device\'s data';
+
+	/// en: 'Sync reset. This device's data is now the copy in iCloud.'
+	String get resetFromDeviceDone => 'Sync reset. This device\'s data is now the copy in iCloud.';
+
+	/// en: 'Up to date'
+	String get statusIdle => 'Up to date';
+
+	/// en: 'Sign in to iCloud to sync'
+	String get statusNoAccount => 'Sign in to iCloud to sync';
+
+	/// en: 'Not everything has synced'
+	String get statusNotSynced => 'Not everything has synced';
+
+	/// en: 'Sync is off'
+	String get statusOff => 'Sync is off';
+
+	/// en: 'Syncing…'
+	String get statusSyncing => 'Syncing…';
+
+	/// en: 'iCloud is unavailable right now'
+	String get statusUnavailable => 'iCloud is unavailable right now';
+
+	/// en: 'Waiting for the encryption key from your other device'
+	String get statusWaitingKey => 'Waiting for the encryption key from your other device';
+
+	/// en: 'Waiting for iCloud Keychain — make sure the app on your iPhone is up to date'
+	String get statusWaitingKeychain => 'Waiting for iCloud Keychain — make sure the app on your iPhone is up to date';
+
+	/// en: 'Sync now'
+	String get syncNow => 'Sync now';
+
+	/// en: 'Turn on iCloud sync first.'
+	String get syncNowNeedsSync => 'Turn on iCloud sync first.';
+
+	/// en: 'iCloud Sync'
+	String get title => 'iCloud Sync';
+
+	/// en: 'Not available on this device'
+	String get unavailablePlatform => 'Not available on this device';
 }
 
 // Path: privateRecovery
@@ -2164,140 +2170,14 @@ class Translations$settingsPage$en {
 
 	// Translations
 
-	/// en: 'Account'
-	String get account => 'Account';
+	/// en: 'Version details copied'
+	String get aboutCopied => 'Version details copied';
 
-	/// en: 'Notifications'
-	String get notifications => 'Notifications';
+	/// en: 'Copy version details'
+	String get aboutCopyTooltip => 'Copy version details';
 
-	/// en: 'Language'
-	String get language => 'Language';
-
-	/// en: '24h Format'
-	String get timeFormat24h => '24h Format';
-
-	/// en: 'Subscription'
-	String get subscription => 'Subscription';
-
-	/// en: 'Evolve Pro'
-	String get proName => 'Evolve Pro';
-
-	/// en: 'Monthly'
-	String get planMonthly => 'Monthly';
-
-	/// en: 'Annual'
-	String get planAnnual => 'Annual';
-
-	/// en: 'Restore purchases'
-	String get restorePurchases => 'Restore purchases';
-
-	/// en: 'Delete private data'
-	String get deletePrivateData => 'Delete private data';
-
-	/// en: 'Importing data...'
-	String get importInProgress => 'Importing data...';
-
-	/// en: 'Passwords do not match.'
-	String get passwordsDontMatch => 'Passwords do not match.';
-
-	/// en: 'Email'
-	String get email => 'Email';
-
-	/// en: 'Cancel'
-	String get cancel => 'Cancel';
-
-	/// en: 'Confirm'
-	String get confirm => 'Confirm';
-
-	/// en: 'Save'
-	String get save => 'Save';
-
-	/// en: 'Settings'
-	String get pageTitle => 'Settings';
-
-	/// en: 'Manage your profile, desktop behavior, privacy and Evolve plan.'
-	String get pageSubtitle => 'Manage your profile, desktop behavior, privacy and Evolve plan.';
-
-	/// en: 'Profile'
-	String get profileLabel => 'Profile';
-
-	/// en: 'Personal information and sync status'
-	String get profileSubtitle => 'Personal information and sync status';
-
-	/// en: 'Account and onboarding'
-	String get accountAndOnboarding => 'Account and onboarding';
-
-	/// en: 'Private Mode'
-	String get privateMode => 'Private Mode';
-
-	/// en: 'Session unavailable'
-	String get sessionUnavailable => 'Session unavailable';
-
-	/// en: 'Data repository'
-	String get dataRepository => 'Data repository';
-
-	/// en: 'Encrypted local database'
-	String get encryptedLocalDatabase => 'Encrypted local database';
-
-	/// en: 'Supabase with encrypted cache'
-	String get supabaseWithEncryptedCache => 'Supabase with encrypted cache';
-
-	/// en: 'Personal information'
-	String get personalInfo => 'Personal information';
-
-	/// en: 'First name, last name, email and date of birth'
-	String get personalInfoDetail => 'First name, last name, email and date of birth';
-
-	/// en: 'Update avatar'
-	String get updateAvatar => 'Update avatar';
-
-	/// en: 'Choose a local image for the desktop profile.'
-	String get updateAvatarDetail => 'Choose a local image for the desktop profile.';
-
-	/// en: 'Review initial consent'
-	String get reviewInitialConsent => 'Review initial consent';
-
-	/// en: 'Terms, privacy, notifications and crash reporting'
-	String get reviewInitialConsentDetail => 'Terms, privacy, notifications and crash reporting';
-
-	/// en: 'Sign out of your account'
-	String get signOut => 'Sign out of your account';
-
-	/// en: 'Close the session on this device'
-	String get signOutDetailActive => 'Close the session on this device';
-
-	/// en: 'Available with an active Supabase session'
-	String get availableWithActiveSession => 'Available with an active Supabase session';
-
-	/// en: 'Go to Login'
-	String get goToLogin => 'Go to Login';
-
-	/// en: 'Suspend private mode and sign in to Supabase.'
-	String get goToLoginDetail => 'Suspend private mode and sign in to Supabase.';
-
-	/// en: 'Appearance and application'
-	String get appearanceTitle => 'Appearance and application';
-
-	/// en: 'Local preferences adapted to desktop'
-	String get appearanceSubtitle => 'Local preferences adapted to desktop';
-
-	/// en: 'Appearance and visuals'
-	String get appearanceAndVisual => 'Appearance and visuals';
-
-	/// en: 'Theme'
-	String get themeMode => 'Theme';
-
-	/// en: 'Light'
-	String get themeLight => 'Light';
-
-	/// en: 'Dark'
-	String get themeDark => 'Dark';
-
-	/// en: 'Follow system'
-	String get themeSystem => 'Follow system';
-
-	/// en: 'Calendar, experience and language'
-	String get calendarExperienceLanguage => 'Calendar, experience and language';
+	/// en: 'Version {version} ({build})'
+	String aboutVersion({required Object version, required Object build}) => 'Version ${version} (${build})';
 
 	/// en: 'Accent color'
 	String get accentColor => 'Accent color';
@@ -2305,23 +2185,44 @@ class Translations$settingsPage$en {
 	/// en: 'Extended palette reserved for Evolve Pro.'
 	String get accentColorDetail => 'Extended palette reserved for Evolve Pro.';
 
-	/// en: 'Default calendar view'
-	String get defaultCalendarView => 'Default calendar view';
+	/// en: 'Access protection'
+	String get accessProtection => 'Access protection';
 
-	late final Translations$settingsPage$calendarViewOptions$en calendarViewOptions = Translations$settingsPage$calendarViewOptions$en.internal(_root);
-	late final Translations$settingsPage$languageOptions$en languageOptions = Translations$settingsPage$languageOptions$en.internal(_root);
+	/// en: 'Account'
+	String get account => 'Account';
 
-	/// en: 'Use times like 20:30 instead of 8:30 PM.'
-	String get timeFormat24hDetail => 'Use times like 20:30 instead of 8:30 PM.';
+	/// en: 'Account and onboarding'
+	String get accountAndOnboarding => 'Account and onboarding';
 
-	/// en: 'Haptic feedback'
-	String get hapticFeedback => 'Haptic feedback';
+	/// en: 'Choose whether to delete the data while keeping the account active or to permanently delete the account.'
+	String get accountDataManagementContent => 'Choose whether to delete the data while keeping the account active or to permanently delete the account.';
 
-	/// en: 'The desktop keeps the preference but does not generate vibrations.'
-	String get hapticFeedbackDetail => 'The desktop keeps the preference but does not generate vibrations.';
+	/// en: 'Account and data management'
+	String get accountDataManagementTitle => 'Account and data management';
+
+	/// en: 'Account deleted.'
+	String get accountDeleted => 'Account deleted.';
+
+	/// en: 'Who you're signed in as, and where your data lives.'
+	String get accountPaneSubtitle => 'Who you\'re signed in as, and where your data lives.';
+
+	/// en: 'On — through your account'
+	String get accountSyncOn => 'On — through your account';
+
+	/// en: 'Subscribe with your Apple account.'
+	String get activateEvolveProStart => 'Subscribe with your Apple account.';
+
+	/// en: 'Expert settings and diagnostics.'
+	String get advancedPaneSubtitle => 'Expert settings and diagnostics.';
 
 	/// en: 'AI & SYSTEM'
 	String get aiAndSystem => 'AI & SYSTEM';
+
+	/// en: 'AI Insights'
+	String get aiInsights => 'AI Insights';
+
+	/// en: 'Personalized analysis and advice from AI.'
+	String get aiInsightsDetail => 'Personalized analysis and advice from AI.';
 
 	/// en: 'AI Suggestions'
 	String get aiSuggestions => 'AI Suggestions';
@@ -2329,17 +2230,127 @@ class Translations$settingsPage$en {
 	/// en: 'Intelligent habit analysis'
 	String get aiSuggestionsDetail => 'Intelligent habit analysis';
 
-	/// en: 'Focus Mode'
-	String get focusMode => 'Focus Mode';
+	/// en: 'View diagnostic logs from this session'
+	String get appLogsDetail => 'View diagnostic logs from this session';
 
-	/// en: 'Pauses all reminders and notifications.'
-	String get focusModeDetail => 'Pauses all reminders and notifications.';
+	/// en: 'App Logs'
+	String get appLogsTitle => 'App Logs';
 
-	/// en: 'Milestones'
-	String get milestones => 'Milestones';
+	/// en: 'Appearance and visuals'
+	String get appearanceAndVisual => 'Appearance and visuals';
 
-	/// en: 'Celebrations when you reach key milestones.'
-	String get milestonesDetail => 'Celebrations when you reach key milestones.';
+	/// en: 'Local preferences adapted to desktop'
+	String get appearanceSubtitle => 'Local preferences adapted to desktop';
+
+	/// en: 'Appearance and application'
+	String get appearanceTitle => 'Appearance and application';
+
+	/// en: 'Apply'
+	String get applyAction => 'Apply';
+
+	/// en: 'Available with an active Supabase session'
+	String get availableWithActiveSession => 'Available with an active Supabase session';
+
+	/// en: 'Avatar'
+	String get avatarGateTitle => 'Avatar';
+
+	/// en: 'Image selection failed.'
+	String get avatarPickFailed => 'Image selection failed.';
+
+	/// en: 'Best value'
+	String get bestValue => 'Best value';
+
+	/// en: 'Your subscription is purchased and managed with your Apple account.'
+	String get billingAppleDetail => 'Your subscription is purchased and managed with your Apple account.';
+
+	/// en: 'Billed through Apple'
+	String get billingAppleTitle => 'Billed through Apple';
+
+	/// en: 'In-app purchases aren't available on this platform.'
+	String get billingPlatformUnsupported => 'In-app purchases aren\'t available on this platform.';
+
+	/// en: 'Subscriptions are temporarily unavailable. Please try again later.'
+	String get billingUnavailableDetail => 'Subscriptions are temporarily unavailable. Please try again later.';
+
+	/// en: 'Activation cancelled.'
+	String get biometricActivationCancelled => 'Activation cancelled.';
+
+	/// en: 'Biometric lock'
+	String get biometricLock => 'Biometric lock';
+
+	/// en: 'Available with the native adapter on macOS and Windows; not supported on Linux.'
+	String get biometricLockDetail => 'Available with the native adapter on macOS and Windows; not supported on Linux.';
+
+	/// en: 'Calendar, experience and language'
+	String get calendarExperienceLanguage => 'Calendar, experience and language';
+
+	late final Translations$settingsPage$calendarViewOptions$en calendarViewOptions = Translations$settingsPage$calendarViewOptions$en.internal(_root);
+
+	/// en: 'Cancel'
+	String get cancel => 'Cancel';
+
+	/// en: 'Change password'
+	String get changePassword => 'Change password';
+
+	/// en: 'Credential update via Supabase Auth.'
+	String get changePasswordDetail => 'Credential update via Supabase Auth.';
+
+	/// en: 'Purchases unavailable'
+	String get commercialChannelRequired => 'Purchases unavailable';
+
+	/// en: 'Confirm'
+	String get confirm => 'Confirm';
+
+	/// en: 'The account and all associated data will be permanently deleted. This action is irreversible.'
+	String get confirmDeleteAccountMessage => 'The account and all associated data will be permanently deleted. This action is irreversible.';
+
+	/// en: 'Confirm account deletion'
+	String get confirmDeleteAccountTitle => 'Confirm account deletion';
+
+	/// en: 'Confirm new password'
+	String get confirmNewPassword => 'Confirm new password';
+
+	/// en: 'Habits, goals and preferences will be deleted. The account will remain active. This action cannot be undone.'
+	String get confirmResetDataMessage => 'Habits, goals and preferences will be deleted. The account will remain active. This action cannot be undone.';
+
+	/// en: 'Confirm data reset'
+	String get confirmResetDataTitle => 'Confirm data reset';
+
+	/// en: 'Are you sure you want to sign out? You will need to re-enter your credentials to sign in again.'
+	String get confirmSignOutMessage => 'Are you sure you want to sign out? You will need to re-enter your credentials to sign in again.';
+
+	/// en: 'Confirm sign out'
+	String get confirmSignOutTitle => 'Confirm sign out';
+
+	/// en: 'Current password'
+	String get currentPassword => 'Current password';
+
+	/// en: 'Custom color'
+	String get customColor => 'Custom color';
+
+	/// en: 'Data and consents'
+	String get dataAndConsents => 'Data and consents';
+
+	/// en: 'Where your data is copied, how you get it in and out, and how you erase it.'
+	String get dataBackupPaneSubtitle => 'Where your data is copied, how you get it in and out, and how you erase it.';
+
+	/// en: 'Data repository'
+	String get dataRepository => 'Data repository';
+
+	/// en: 'Data storage'
+	String get dataStorage => 'Data storage';
+
+	/// en: 'Your Evolve account'
+	String get dataStorageAccount => 'Your Evolve account';
+
+	/// en: 'This Mac only, encrypted'
+	String get dataStorageThisMac => 'This Mac only, encrypted';
+
+	/// en: 'Date of birth'
+	String get dateOfBirth => 'Date of birth';
+
+	/// en: 'YYYY-MM-DD'
+	String get dateOfBirthHint => 'YYYY-MM-DD';
 
 	/// en: 'Deep Work Insights'
 	String get deepWorkInsights => 'Deep Work Insights';
@@ -2347,26 +2358,41 @@ class Translations$settingsPage$en {
 	/// en: 'Advanced analysis of your focus sessions.'
 	String get deepWorkInsightsDetail => 'Advanced analysis of your focus sessions.';
 
-	/// en: 'Reset tutorial'
-	String get resetTutorial => 'Reset tutorial';
+	/// en: 'Default calendar view'
+	String get defaultCalendarView => 'Default calendar view';
 
-	/// en: 'Reopens the dashboard and goals walkthroughs.'
-	String get resetTutorialDetail => 'Reopens the dashboard and goals walkthroughs.';
+	/// en: 'Delete account'
+	String get deleteAccountAction => 'Delete account';
 
-	/// en: 'Operational reminders from the desktop client'
-	String get notificationsSubtitle => 'Operational reminders from the desktop client';
+	/// en: 'Delete account and data'
+	String get deleteAccountAndData => 'Delete account and data';
 
-	/// en: 'Operational reminders'
-	String get operationalReminders => 'Operational reminders';
+	/// en: 'Irreversible operation protected by confirmation.'
+	String get deleteAccountAndDataDetail => 'Irreversible operation protected by confirmation.';
 
-	/// en: 'Habit reminders'
-	String get habitReminders => 'Habit reminders';
+	/// en: 'Delete account'
+	String get deleteAccountGateTitle => 'Delete account';
 
-	/// en: 'Sends the daily morning briefing.'
-	String get habitRemindersDetail => 'Sends the daily morning briefing.';
+	/// en: 'Delete private data'
+	String get deletePrivateData => 'Delete private data';
 
-	/// en: 'Morning brief time'
-	String get morningBriefTime => 'Morning brief time';
+	/// en: 'Permanently deletes the encrypted local database.'
+	String get deletePrivateDataDetail => 'Permanently deletes the encrypted local database.';
+
+	/// en: 'SUBSCRIPTION DETAILS'
+	String get detailsHeader => 'SUBSCRIPTION DETAILS';
+
+	/// en: 'Turn the reminder on to set a time.'
+	String get disabledTurnOnFirst => 'Turn the reminder on to set a time.';
+
+	/// en: 'Email'
+	String get email => 'Email';
+
+	/// en: 'Encrypted local database'
+	String get encryptedLocalDatabase => 'Encrypted local database';
+
+	/// en: 'Enter your current password.'
+	String get enterCurrentPassword => 'Enter your current password.';
 
 	/// en: 'Evening review'
 	String get eveningReview => 'Evening review';
@@ -2377,59 +2403,8 @@ class Translations$settingsPage$en {
 	/// en: 'Evening review time'
 	String get eveningReviewTime => 'Evening review time';
 
-	/// en: 'Insights and reports'
-	String get insightsAndReports => 'Insights and reports';
-
-	/// en: 'AI Insights'
-	String get aiInsights => 'AI Insights';
-
-	/// en: 'Personalized analysis and advice from AI.'
-	String get aiInsightsDetail => 'Personalized analysis and advice from AI.';
-
-	/// en: 'Weekly Reports'
-	String get weeklyReports => 'Weekly Reports';
-
-	/// en: 'A weekly summary of your progress.'
-	String get weeklyReportsDetail => 'A weekly summary of your progress.';
-
-	/// en: 'Request notification permissions'
-	String get requestNotificationPermissions => 'Request notification permissions';
-
-	/// en: 'Opens the native prompt on the supported target.'
-	String get requestNotificationPermissionsDetail => 'Opens the native prompt on the supported target.';
-
-	/// en: 'Native delivery per operating system'
-	String get nativeDeliveryTitle => 'Native delivery per operating system';
-
-	/// en: 'Privacy and security'
-	String get privacyTitle => 'Privacy and security';
-
-	/// en: 'Access protection, consents and data management'
-	String get privacySubtitle => 'Access protection, consents and data management';
-
-	/// en: 'Access protection'
-	String get accessProtection => 'Access protection';
-
-	/// en: 'Biometric lock'
-	String get biometricLock => 'Biometric lock';
-
-	/// en: 'Available with the native adapter on macOS and Windows; not supported on Linux.'
-	String get biometricLockDetail => 'Available with the native adapter on macOS and Windows; not supported on Linux.';
-
-	/// en: 'Change password'
-	String get changePassword => 'Change password';
-
-	/// en: 'Credential update via Supabase Auth.'
-	String get changePasswordDetail => 'Credential update via Supabase Auth.';
-
-	/// en: 'Data and consents'
-	String get dataAndConsents => 'Data and consents';
-
-	/// en: 'Send crash reports'
-	String get sendCrashReports => 'Send crash reports';
-
-	/// en: 'Separate consent for Sentry.'
-	String get sendCrashReportsDetail => 'Separate consent for Sentry.';
+	/// en: 'Expires On'
+	String get expiresOn => 'Expires On';
 
 	/// en: 'Export data'
 	String get exportData => 'Export data';
@@ -2437,26 +2412,17 @@ class Translations$settingsPage$en {
 	/// en: 'Shares a complete JSON export of the available data.'
 	String get exportDataDetail => 'Shares a complete JSON export of the available data.';
 
-	/// en: 'Import data'
-	String get importData => 'Import data';
+	/// en: 'The JSON is on the clipboard: Linux does not support file sharing.'
+	String get exportDoneClipboard => 'The JSON is on the clipboard: Linux does not support file sharing.';
 
-	/// en: 'Restores a backup (JSON or ZIP) from Evolve.'
-	String get importDataDetail => 'Restores a backup (JSON or ZIP) from Evolve.';
+	/// en: 'The JSON file was saved to the selected location.'
+	String get exportDoneSaved => 'The JSON file was saved to the selected location.';
 
-	/// en: 'System permissions management'
-	String get systemPermissionsManagement => 'System permissions management';
+	/// en: 'The JSON was sent to the share selector.'
+	String get exportDoneShare => 'The JSON was sent to the share selector.';
 
-	/// en: 'Notifications, calendar and security.'
-	String get systemPermissionsManagementDetail => 'Notifications, calendar and security.';
-
-	/// en: 'Permanently deletes the encrypted local database.'
-	String get deletePrivateDataDetail => 'Permanently deletes the encrypted local database.';
-
-	/// en: 'Delete account and data'
-	String get deleteAccountAndData => 'Delete account and data';
-
-	/// en: 'Irreversible operation protected by confirmation.'
-	String get deleteAccountAndDataDetail => 'Irreversible operation protected by confirmation.';
+	/// en: 'Export complete'
+	String get exportDoneTitle => 'Export complete';
 
 	/// en: 'My private data exported from Evolve'
 	String get exportPrivateShareText => 'My private data exported from Evolve';
@@ -2464,182 +2430,113 @@ class Translations$settingsPage$en {
 	/// en: 'My data exported from Evolve'
 	String get exportShareText => 'My data exported from Evolve';
 
-	/// en: 'Export complete'
-	String get exportDoneTitle => 'Export complete';
+	/// en: 'Focus Mode'
+	String get focusMode => 'Focus Mode';
 
-	/// en: 'The JSON is on the clipboard: Linux does not support file sharing.'
-	String get exportDoneClipboard => 'The JSON is on the clipboard: Linux does not support file sharing.';
+	/// en: 'Pauses all reminders and notifications.'
+	String get focusModeDetail => 'Pauses all reminders and notifications.';
 
-	/// en: 'The JSON was sent to the share selector.'
-	String get exportDoneShare => 'The JSON was sent to the share selector.';
+	/// en: 'These reminders are paused until you turn it off.'
+	String get focusModeOnBody => 'These reminders are paused until you turn it off.';
 
-	/// en: 'Avatar'
-	String get avatarGateTitle => 'Avatar';
+	/// en: 'Focus mode is on'
+	String get focusModeOnTitle => 'Focus mode is on';
 
-	/// en: 'Image selection failed.'
-	String get avatarPickFailed => 'Image selection failed.';
-
-	/// en: 'Confirm sign out'
-	String get confirmSignOutTitle => 'Confirm sign out';
-
-	/// en: 'Are you sure you want to sign out? You will need to re-enter your credentials to sign in again.'
-	String get confirmSignOutMessage => 'Are you sure you want to sign out? You will need to re-enter your credentials to sign in again.';
-
-	/// en: 'Profile'
-	String get gateProfile => 'Profile';
-
-	/// en: 'Logout'
-	String get gateLogout => 'Logout';
+	/// en: 'Full name'
+	String get fullName => 'Full name';
 
 	/// en: 'Change password'
 	String get gateChangePassword => 'Change password';
 
+	/// en: 'Logout'
+	String get gateLogout => 'Logout';
+
+	/// en: 'Profile'
+	String get gateProfile => 'Profile';
+
 	/// en: 'Requires an active Supabase session.'
 	String get gateRequiresActiveSession => 'Requires an active Supabase session.';
 
-	/// en: 'Activation cancelled.'
-	String get biometricActivationCancelled => 'Activation cancelled.';
+	/// en: 'How Evolve looks and reads.'
+	String get generalPaneSubtitle => 'How Evolve looks and reads.';
 
-	/// en: 'Notification permissions'
-	String get notificationPermissionsTitle => 'Notification permissions';
+	/// en: 'Go to Login'
+	String get goToLogin => 'Go to Login';
 
-	/// en: 'Permissions available for this system.'
-	String get notificationPermissionsGranted => 'Permissions available for this system.';
+	/// en: 'Suspend private mode and sign in to Supabase.'
+	String get goToLoginDetail => 'Suspend private mode and sign in to Supabase.';
 
-	/// en: 'Permission not granted. You can change it from the system settings.'
-	String get notificationPermissionsDenied => 'Permission not granted. You can change it from the system settings.';
+	/// en: 'App lock'
+	String get groupAppLock => 'App lock';
 
-	/// en: 'System permissions'
-	String get systemPermissionsTitle => 'System permissions';
+	/// en: 'Appearance'
+	String get groupAppearance => 'Appearance';
 
-	/// en: 'Unable to open the settings.'
-	String get systemPermissionsOpenFailed => 'Unable to open the settings.';
+	/// en: 'Backups'
+	String get groupBackups => 'Backups';
 
-	/// en: 'Tutorials reset'
-	String get tutorialResetTitle => 'Tutorials reset';
+	/// en: 'Daily reminders'
+	String get groupDailyReminders => 'Daily reminders';
 
-	/// en: 'The guides will be shown again in the relevant sections.'
-	String get tutorialResetMessage => 'The guides will be shown again in the relevant sections.';
+	/// en: 'Data storage'
+	String get groupDataStorage => 'Data storage';
 
-	/// en: 'Account and data management'
-	String get accountDataManagementTitle => 'Account and data management';
+	/// en: 'Delivery'
+	String get groupDelivery => 'Delivery';
 
-	/// en: 'Choose whether to delete the data while keeping the account active or to permanently delete the account.'
-	String get accountDataManagementContent => 'Choose whether to delete the data while keeping the account active or to permanently delete the account.';
+	/// en: 'Diagnostics'
+	String get groupDiagnostics => 'Diagnostics';
 
-	/// en: 'Reset data'
-	String get resetDataAction => 'Reset data';
+	/// en: 'Diagnostics & consent'
+	String get groupDiagnosticsConsent => 'Diagnostics & consent';
 
-	/// en: 'Delete account'
-	String get deleteAccountAction => 'Delete account';
+	/// en: 'Focus'
+	String get groupFocus => 'Focus';
 
-	/// en: 'Confirm data reset'
-	String get confirmResetDataTitle => 'Confirm data reset';
+	/// en: 'Getting started'
+	String get groupGettingStarted => 'Getting started';
 
-	/// en: 'Habits, goals and preferences will be deleted. The account will remain active. This action cannot be undone.'
-	String get confirmResetDataMessage => 'Habits, goals and preferences will be deleted. The account will remain active. This action cannot be undone.';
+	/// en: 'Language & formats'
+	String get groupLanguageFormats => 'Language & formats';
 
-	/// en: 'Confirm account deletion'
-	String get confirmDeleteAccountTitle => 'Confirm account deletion';
+	/// en: 'Legal'
+	String get groupLegal => 'Legal';
 
-	/// en: 'The account and all associated data will be permanently deleted. This action is irreversible.'
-	String get confirmDeleteAccountMessage => 'The account and all associated data will be permanently deleted. This action is irreversible.';
+	/// en: 'Sign-in'
+	String get groupSignIn => 'Sign-in';
 
-	/// en: 'Reset data'
-	String get resetDataTitle => 'Reset data';
+	/// en: 'Habit reminders'
+	String get habitReminders => 'Habit reminders';
 
-	/// en: 'Data deleted successfully.'
-	String get resetDataSuccess => 'Data deleted successfully.';
+	/// en: 'Sends the daily morning briefing.'
+	String get habitRemindersDetail => 'Sends the daily morning briefing.';
 
-	/// en: 'Operation failed.'
-	String get operationFailed => 'Operation failed.';
+	/// en: 'Haptic feedback'
+	String get hapticFeedback => 'Haptic feedback';
 
-	/// en: 'Could not save that setting. It has been restored to its previous value.'
-	String get settingSaveFailed => 'Could not save that setting. It has been restored to its previous value.';
-
-	/// en: 'Delete account'
-	String get deleteAccountGateTitle => 'Delete account';
-
-	/// en: 'Account deleted.'
-	String get accountDeleted => 'Account deleted.';
-
-	/// en: 'Import data'
-	String get importDataGateTitle => 'Import data';
-
-	/// en: 'The import feature is currently available only in Private Mode (Local).'
-	String get importPrivateOnly => 'The import feature is currently available only in Private Mode (Local).';
-
-	/// en: 'Import summary'
-	String get importSummaryTitle => 'Import summary';
-
-	/// en: '{count} Habits'
-	String importHabitsCount({required Object count}) => '${count} Habits';
-
-	/// en: '{count} Check-ins (Log)'
-	String importLogsCount({required Object count}) => '${count} Check-ins (Log)';
-
-	/// en: '{count} Macro Goals'
-	String importMacroGoalsCount({required Object count}) => '${count} Macro Goals';
+	/// en: 'The desktop keeps the preference but does not generate vibrations.'
+	String get hapticFeedbackDetail => 'The desktop keeps the preference but does not generate vibrations.';
 
 	/// en: '{count} Categories'
 	String importCategoriesCount({required Object count}) => '${count} Categories';
 
-	/// en: '{count} Mood Records'
-	String importMoodsCount({required Object count}) => '${count} Mood Records';
-
-	/// en: 'Replace current data'
-	String get importReplaceTitle => 'Replace current data';
-
-	/// en: 'Permanently deletes every existing record that isn't in this backup.'
-	String get importReplaceSubtitle => 'Permanently deletes every existing record that isn\'t in this backup.';
-
-	/// en: 'Merge with current data'
-	String get importMergeTitle => 'Merge with current data';
-
-	/// en: 'Combines with your data, keeping the newest version of each item.'
-	String get importMergeSubtitle => 'Combines with your data, keeping the newest version of each item.';
-
-	/// en: 'Replace all data?'
-	String get importReplaceConfirmTitle => 'Replace all data?';
-
-	/// en: 'This permanently deletes your current data (about {count} habit logs) and keeps only what's in this backup. This can't be undone.'
-	String importReplaceConfirmMessage({required Object count}) => 'This permanently deletes your current data (about ${count} habit logs) and keeps only what\'s in this backup. This can\'t be undone.';
-
-	/// en: 'Delete & Replace'
-	String get importReplaceConfirmButton => 'Delete & Replace';
+	/// en: 'Import Completed'
+	String get importCompletedTitle => 'Import Completed';
 
 	/// en: 'Confirm import'
 	String get importConfirmButton => 'Confirm import';
 
-	/// en: 'Import completed successfully!'
-	String get importSuccess => 'Import completed successfully!';
+	/// en: 'Import data'
+	String get importData => 'Import data';
 
-	/// en: 'Error during import: {error}'
-	String importError({required Object error}) => 'Error during import: ${error}';
+	/// en: 'Restores a backup (JSON or ZIP) from Evolve.'
+	String get importDataDetail => 'Restores a backup (JSON or ZIP) from Evolve.';
 
-	/// en: 'Reset locked private database?'
-	String get importLockedTitle => 'Reset locked private database?';
+	/// en: 'Import data'
+	String get importDataGateTitle => 'Import data';
 
-	/// en: 'This device can't unlock your local private database — its encryption key is missing (this happens after moving to a new Mac or a change to the app's signing). The existing local data can't be recovered, but you can reset it and import this backup onto a fresh, empty database. This can't be undone.'
-	String get importLockedMessage => 'This device can\'t unlock your local private database — its encryption key is missing (this happens after moving to a new Mac or a change to the app\'s signing). The existing local data can\'t be recovered, but you can reset it and import this backup onto a fresh, empty database. This can\'t be undone.';
-
-	/// en: 'Reset & import'
-	String get importLockedResetButton => 'Reset & import';
-
-	/// en: '⚠ {count} invalid record(s) will be skipped'
-	String importPreviewSkipped({required Object count}) => '⚠ ${count} invalid record(s) will be skipped';
-
-	/// en: 'Import Completed'
-	String get importCompletedTitle => 'Import Completed';
-
-	/// en: 'Your data was replaced with the backup. Summary:'
-	String get importSummaryReplaced => 'Your data was replaced with the backup. Summary:';
-
-	/// en: 'Your data was merged with the backup. Summary:'
-	String get importSummaryMerged => 'Your data was merged with the backup. Summary:';
-
-	/// en: 'Awesome!'
-	String get importSummaryDone => 'Awesome!';
+	/// en: 'Categories'
+	String get importEntityCategories => 'Categories';
 
 	/// en: 'Habits'
 	String get importEntityHabits => 'Habits';
@@ -2650,74 +2547,94 @@ class Translations$settingsPage$en {
 	/// en: 'Macro Goals'
 	String get importEntityMacroGoals => 'Macro Goals';
 
-	/// en: 'Categories'
-	String get importEntityCategories => 'Categories';
-
 	/// en: 'Mood Logs'
 	String get importEntityMoods => 'Mood Logs';
 
-	/// en: '{count} {label}'
-	String importRowReplace({required Object count, required Object label}) => '${count} ${label}';
+	/// en: 'Error during import: {error}'
+	String importError({required Object error}) => 'Error during import: ${error}';
+
+	/// en: '{count} Habits'
+	String importHabitsCount({required Object count}) => '${count} Habits';
+
+	/// en: 'Importing data...'
+	String get importInProgress => 'Importing data...';
+
+	/// en: 'This device can't unlock your local private database — its encryption key is missing (this happens after moving to a new Mac or a change to the app's signing). The existing local data can't be recovered, but you can reset it and import this backup onto a fresh, empty database. This can't be undone.'
+	String get importLockedMessage => 'This device can\'t unlock your local private database — its encryption key is missing (this happens after moving to a new Mac or a change to the app\'s signing). The existing local data can\'t be recovered, but you can reset it and import this backup onto a fresh, empty database. This can\'t be undone.';
+
+	/// en: 'Reset & import'
+	String get importLockedResetButton => 'Reset & import';
+
+	/// en: 'Reset locked private database?'
+	String get importLockedTitle => 'Reset locked private database?';
+
+	/// en: '{count} Check-ins (Log)'
+	String importLogsCount({required Object count}) => '${count} Check-ins (Log)';
+
+	/// en: '{count} Macro Goals'
+	String importMacroGoalsCount({required Object count}) => '${count} Macro Goals';
+
+	/// en: 'Combines with your data, keeping the newest version of each item.'
+	String get importMergeSubtitle => 'Combines with your data, keeping the newest version of each item.';
+
+	/// en: 'Merge with current data'
+	String get importMergeTitle => 'Merge with current data';
+
+	/// en: '{count} Mood Records'
+	String importMoodsCount({required Object count}) => '${count} Mood Records';
+
+	/// en: '⚠ {count} invalid record(s) will be skipped'
+	String importPreviewSkipped({required Object count}) => '⚠ ${count} invalid record(s) will be skipped';
+
+	/// en: 'The import feature is currently available only in Private Mode (Local).'
+	String get importPrivateOnly => 'The import feature is currently available only in Private Mode (Local).';
+
+	/// en: 'Delete & Replace'
+	String get importReplaceConfirmButton => 'Delete & Replace';
+
+	/// en: 'This permanently deletes your current data (about {count} habit logs) and keeps only what's in this backup. This can't be undone.'
+	String importReplaceConfirmMessage({required Object count}) => 'This permanently deletes your current data (about ${count} habit logs) and keeps only what\'s in this backup. This can\'t be undone.';
+
+	/// en: 'Replace all data?'
+	String get importReplaceConfirmTitle => 'Replace all data?';
+
+	/// en: 'Permanently deletes every existing record that isn't in this backup.'
+	String get importReplaceSubtitle => 'Permanently deletes every existing record that isn\'t in this backup.';
+
+	/// en: 'Replace current data'
+	String get importReplaceTitle => 'Replace current data';
 
 	/// en: '{label}: {added} added, {updated} updated, {unchanged} unchanged'
 	String importRowMerge({required Object label, required Object added, required Object updated, required Object unchanged}) => '${label}: ${added} added, ${updated} updated, ${unchanged} unchanged';
 
+	/// en: '{count} {label}'
+	String importRowReplace({required Object count, required Object label}) => '${count} ${label}';
+
 	/// en: ', {count} skipped'
 	String importRowSkipped({required Object count}) => ', ${count} skipped';
 
-	/// en: 'The JSON file was saved to the selected location.'
-	String get exportDoneSaved => 'The JSON file was saved to the selected location.';
+	/// en: 'Import completed successfully!'
+	String get importSuccess => 'Import completed successfully!';
 
-	/// en: 'Evolve Pro'
-	String get proTitle => 'Evolve Pro';
+	/// en: 'Awesome!'
+	String get importSummaryDone => 'Awesome!';
 
-	/// en: 'Plan, purchase restore and subscription management'
-	String get proSubtitle => 'Plan, purchase restore and subscription management';
+	/// en: 'Your data was merged with the backup. Summary:'
+	String get importSummaryMerged => 'Your data was merged with the backup. Summary:';
 
-	/// en: 'Billed through Apple'
-	String get billingAppleTitle => 'Billed through Apple';
+	/// en: 'Your data was replaced with the backup. Summary:'
+	String get importSummaryReplaced => 'Your data was replaced with the backup. Summary:';
 
-	/// en: 'Purchases unavailable'
-	String get commercialChannelRequired => 'Purchases unavailable';
+	/// en: 'Import summary'
+	String get importSummaryTitle => 'Import summary';
 
-	/// en: 'Your subscription is purchased and managed with your Apple account.'
-	String get billingAppleDetail => 'Your subscription is purchased and managed with your Apple account.';
+	/// en: 'Insights and reports'
+	String get insightsAndReports => 'Insights and reports';
 
-	/// en: 'Subscriptions are temporarily unavailable. Please try again later.'
-	String get billingUnavailableDetail => 'Subscriptions are temporarily unavailable. Please try again later.';
+	/// en: 'Language'
+	String get language => 'Language';
 
-	/// en: 'In-app purchases aren't available on this platform.'
-	String get billingPlatformUnsupported => 'In-app purchases aren\'t available on this platform.';
-
-	/// en: 'Best value'
-	String get bestValue => 'Best value';
-
-	/// en: 'Price unavailable'
-	String get priceUnavailable => 'Price unavailable';
-
-	/// en: 'The subscription renews automatically unless auto-renew is turned off in Apple account settings at least 24 hours before the end of the period.'
-	String get renewalDisclaimer => 'The subscription renews automatically unless auto-renew is turned off in Apple account settings at least 24 hours before the end of the period.';
-
-	/// en: 'Privacy Policy'
-	String get privacyPolicy => 'Privacy Policy';
-
-	/// en: 'Terms of Use (EULA)'
-	String get termsEula => 'Terms of Use (EULA)';
-
-	/// en: 'Plan management'
-	String get planManagement => 'Plan management';
-
-	/// en: 'Activate Evolve Pro'
-	String get activateEvolvePro => 'Activate Evolve Pro';
-
-	/// en: 'Evolve Pro entitlement active.'
-	String get activateEvolveProActive => 'Evolve Pro entitlement active.';
-
-	/// en: 'Subscribe with your Apple account.'
-	String get activateEvolveProStart => 'Subscribe with your Apple account.';
-
-	/// en: 'Restores a subscription you already bought.'
-	String get restorePurchasesDetail => 'Restores a subscription you already bought.';
+	late final Translations$settingsPage$languageOptions$en languageOptions = Translations$settingsPage$languageOptions$en.internal(_root);
 
 	/// en: 'Manage subscription'
 	String get manageSubscription => 'Manage subscription';
@@ -2725,110 +2642,65 @@ class Translations$settingsPage$en {
 	/// en: 'Opens the subscription management of the Apple account.'
 	String get manageSubscriptionDetail => 'Opens the subscription management of the Apple account.';
 
-	/// en: 'Not authenticated'
-	String get notAuthenticated => 'Not authenticated';
+	/// en: 'Milestones'
+	String get milestones => 'Milestones';
 
-	/// en: 'Verified'
-	String get verified => 'Verified';
+	/// en: 'Celebrations when you reach key milestones.'
+	String get milestonesDetail => 'Celebrations when you reach key milestones.';
 
-	/// en: 'Your data is protected and saved only on this device.'
-	String get privateModeDataProtected => 'Your data is protected and saved only on this device.';
+	/// en: 'Morning brief time'
+	String get morningBriefTime => 'Morning brief time';
 
-	/// en: 'Profile'
-	String get profileFallback => 'Profile';
-
-	/// en: 'Full name'
-	String get fullName => 'Full name';
-
-	/// en: 'Date of birth'
-	String get dateOfBirth => 'Date of birth';
-
-	/// en: 'YYYY-MM-DD'
-	String get dateOfBirthHint => 'YYYY-MM-DD';
-
-	/// en: 'Current password'
-	String get currentPassword => 'Current password';
+	/// en: 'Native delivery per operating system'
+	String get nativeDeliveryTitle => 'Native delivery per operating system';
 
 	/// en: 'New password'
 	String get newPassword => 'New password';
 
-	/// en: 'Confirm new password'
-	String get confirmNewPassword => 'Confirm new password';
-
-	/// en: 'Update password'
-	String get updatePassword => 'Update password';
-
-	/// en: 'Enter your current password.'
-	String get enterCurrentPassword => 'Enter your current password.';
-
 	/// en: 'The new password must be at least 8 characters long.'
 	String get newPasswordMinLength => 'The new password must be at least 8 characters long.';
-
-	/// en: 'Update failed. Check your current password.'
-	String get passwordUpdateFailed => 'Update failed. Check your current password.';
-
-	/// en: 'Application'
-	String get sectionApplication => 'Application';
-
-	/// en: 'Privacy'
-	String get sectionPrivacy => 'Privacy';
-
-	/// en: 'Custom color'
-	String get customColor => 'Custom color';
-
-	/// en: 'Apply'
-	String get applyAction => 'Apply';
-
-	/// en: 'Use accent {hex}'
-	String useAccent({required Object hex}) => 'Use accent ${hex}';
-
-	/// en: 'Upgrade to Evolve Pro'
-	String get proUpsellTitle => 'Upgrade to Evolve Pro';
-
-	/// en: 'Unlock all features and accelerate your growth.'
-	String get proUpsellSubtitle => 'Unlock all features and accelerate your growth.';
-
-	/// en: 'Welcome to Evolve Pro!'
-	String get proWelcomeTitle => 'Welcome to Evolve Pro!';
-
-	/// en: 'Your subscription is active. The AI Coach is included — no OpenRouter account or API key needed — along with advanced trend statistics and all Evolve's personal growth tools.'
-	String get proActiveMessage => 'Your subscription is active. The AI Coach is included — no OpenRouter account or API key needed — along with advanced trend statistics and all Evolve\'s personal growth tools.';
-
-	/// en: 'Start your Journey'
-	String get proStartJourney => 'Start your Journey';
-
-	/// en: 'System'
-	String get systemSection => 'System';
-
-	/// en: 'App Logs'
-	String get appLogsTitle => 'App Logs';
-
-	/// en: 'View diagnostic logs from this session'
-	String get appLogsDetail => 'View diagnostic logs from this session';
-
-	/// en: '{price} per month'
-	String perMonth({required Object price}) => '${price} per month';
-
-	/// en: '{price} per month · Save {percent}%'
-	String perMonthWithSavings({required Object price, required Object percent}) => '${price} per month · Save ${percent}%';
-
-	/// en: 'SUBSCRIPTION DETAILS'
-	String get detailsHeader => 'SUBSCRIPTION DETAILS';
-
-	/// en: 'Status'
-	String get statusLabel => 'Status';
-
-	/// en: 'Active'
-	String get statusActive => 'Active';
-
-	/// en: 'Plan'
-	String get planLabel => 'Plan';
 
 	/// en: 'Next Renewal'
 	String get nextRenewal => 'Next Renewal';
 
-	/// en: 'Expires On'
-	String get expiresOn => 'Expires On';
+	/// en: 'Not authenticated'
+	String get notAuthenticated => 'Not authenticated';
+
+	/// en: 'Permission not granted. You can change it from the system settings.'
+	String get notificationPermissionsDenied => 'Permission not granted. You can change it from the system settings.';
+
+	/// en: 'Permissions available for this system.'
+	String get notificationPermissionsGranted => 'Permissions available for this system.';
+
+	/// en: 'Notification permissions'
+	String get notificationPermissionsTitle => 'Notification permissions';
+
+	/// en: 'Notifications'
+	String get notifications => 'Notifications';
+
+	/// en: 'Everything that can interrupt you.'
+	String get notificationsPaneSubtitle => 'Everything that can interrupt you.';
+
+	/// en: 'Operational reminders from the desktop client'
+	String get notificationsSubtitle => 'Operational reminders from the desktop client';
+
+	/// en: 'Operation failed.'
+	String get operationFailed => 'Operation failed.';
+
+	/// en: 'Operational reminders'
+	String get operationalReminders => 'Operational reminders';
+
+	/// en: 'Manage your profile, desktop behavior, privacy and Evolve plan.'
+	String get pageSubtitle => 'Manage your profile, desktop behavior, privacy and Evolve plan.';
+
+	/// en: 'Settings'
+	String get pageTitle => 'Settings';
+
+	/// en: 'Update failed. Check your current password.'
+	String get passwordUpdateFailed => 'Update failed. Check your current password.';
+
+	/// en: 'Passwords do not match.'
+	String get passwordsDontMatch => 'Passwords do not match.';
 
 	/// en: 'Payment Method'
 	String get paymentMethod => 'Payment Method';
@@ -2836,14 +2708,281 @@ class Translations$settingsPage$en {
 	/// en: 'Apple Pay / App Store'
 	String get paymentMethodValue => 'Apple Pay / App Store';
 
+	/// en: 'Reminders for individual habits are set on each habit and aren't affected by these switches.'
+	String get perHabitRemindersNote => 'Reminders for individual habits are set on each habit and aren\'t affected by these switches.';
+
+	/// en: '{price} per month'
+	String perMonth({required Object price}) => '${price} per month';
+
+	/// en: '{price} per month · Save {percent}%'
+	String perMonthWithSavings({required Object price, required Object percent}) => '${price} per month · Save ${percent}%';
+
+	/// en: 'Personal information'
+	String get personalInfo => 'Personal information';
+
+	/// en: 'First name, last name, email and date of birth'
+	String get personalInfoDetail => 'First name, last name, email and date of birth';
+
+	/// en: 'Annual'
+	String get planAnnual => 'Annual';
+
+	/// en: 'Plan'
+	String get planLabel => 'Plan';
+
+	/// en: 'Plan management'
+	String get planManagement => 'Plan management';
+
+	/// en: 'Monthly'
+	String get planMonthly => 'Monthly';
+
+	/// en: 'Price unavailable'
+	String get priceUnavailable => 'Price unavailable';
+
+	/// en: 'What Evolve can see, and who else can open it.'
+	String get privacyPaneSubtitle => 'What Evolve can see, and who else can open it.';
+
+	/// en: 'Privacy Policy'
+	String get privacyPolicy => 'Privacy Policy';
+
+	/// en: 'Access protection, consents and data management'
+	String get privacySubtitle => 'Access protection, consents and data management';
+
+	/// en: 'Privacy and security'
+	String get privacyTitle => 'Privacy and security';
+
+	/// en: 'Private Mode'
+	String get privateMode => 'Private Mode';
+
+	/// en: 'Your data is protected and saved only on this device.'
+	String get privateModeDataProtected => 'Your data is protected and saved only on this device.';
+
+	/// en: 'Your subscription is active. The AI Coach is included — no OpenRouter account or API key needed — along with advanced trend statistics and all Evolve's personal growth tools.'
+	String get proActiveMessage => 'Your subscription is active. The AI Coach is included — no OpenRouter account or API key needed — along with advanced trend statistics and all Evolve\'s personal growth tools.';
+
 	/// en: 'Active Evolve Pro'
 	String get proActiveName => 'Active Evolve Pro';
 
-	/// en: 'You are a Pro user!'
-	String get youArePro => 'You are a Pro user!';
+	/// en: 'Evolve Pro'
+	String get proName => 'Evolve Pro';
+
+	/// en: 'Start your Journey'
+	String get proStartJourney => 'Start your Journey';
+
+	/// en: 'Plan, purchase restore and subscription management'
+	String get proSubtitle => 'Plan, purchase restore and subscription management';
 
 	/// en: 'Thank you for supporting Evolve's development.'
 	String get proThankYou => 'Thank you for supporting Evolve\'s development.';
+
+	/// en: 'Evolve Pro'
+	String get proTitle => 'Evolve Pro';
+
+	/// en: 'Unlock all features and accelerate your growth.'
+	String get proUpsellSubtitle => 'Unlock all features and accelerate your growth.';
+
+	/// en: 'Upgrade to Evolve Pro'
+	String get proUpsellTitle => 'Upgrade to Evolve Pro';
+
+	/// en: 'Welcome to Evolve Pro!'
+	String get proWelcomeTitle => 'Welcome to Evolve Pro!';
+
+	/// en: 'Profile'
+	String get profileFallback => 'Profile';
+
+	/// en: 'Profile'
+	String get profileLabel => 'Profile';
+
+	/// en: 'Personal information and sync status'
+	String get profileSubtitle => 'Personal information and sync status';
+
+	/// en: 'App'
+	String get railGroupApp => 'App';
+
+	/// en: 'Data'
+	String get railGroupData => 'Data';
+
+	/// en: 'You'
+	String get railGroupYou => 'You';
+
+	/// en: 'The subscription renews automatically unless auto-renew is turned off in Apple account settings at least 24 hours before the end of the period.'
+	String get renewalDisclaimer => 'The subscription renews automatically unless auto-renew is turned off in Apple account settings at least 24 hours before the end of the period.';
+
+	/// en: 'Request notification permissions'
+	String get requestNotificationPermissions => 'Request notification permissions';
+
+	/// en: 'Opens the native prompt on the supported target.'
+	String get requestNotificationPermissionsDetail => 'Opens the native prompt on the supported target.';
+
+	/// en: 'Reset data'
+	String get resetDataAction => 'Reset data';
+
+	/// en: 'Data deleted successfully.'
+	String get resetDataSuccess => 'Data deleted successfully.';
+
+	/// en: 'Reset data'
+	String get resetDataTitle => 'Reset data';
+
+	/// en: 'Reset tutorial'
+	String get resetTutorial => 'Reset tutorial';
+
+	/// en: 'Reopens the dashboard and goals walkthroughs.'
+	String get resetTutorialDetail => 'Reopens the dashboard and goals walkthroughs.';
+
+	/// en: 'Restore default settings…'
+	String get restoreDefaults => 'Restore default settings…';
+
+	/// en: 'Your habits, goals, account and app lock aren't touched.'
+	String get restoreDefaultsDetail => 'Your habits, goals, account and app lock aren\'t touched.';
+
+	/// en: 'Restore purchases'
+	String get restorePurchases => 'Restore purchases';
+
+	/// en: 'Restores a subscription you already bought.'
+	String get restorePurchasesDetail => 'Restores a subscription you already bought.';
+
+	/// en: 'Review initial consent'
+	String get reviewInitialConsent => 'Review initial consent';
+
+	/// en: 'Terms, privacy, notifications and crash reporting'
+	String get reviewInitialConsentDetail => 'Terms, privacy, notifications and crash reporting';
+
+	/// en: 'Save'
+	String get save => 'Save';
+
+	/// en: 'Clear search'
+	String get searchClear => 'Clear search';
+
+	/// en: 'No settings match'
+	String get searchNoResults => 'No settings match';
+
+	/// en: 'Search settings'
+	String get searchPlaceholder => 'Search settings';
+
+	/// en: 'Account'
+	String get sectionAccount => 'Account';
+
+	/// en: 'Advanced'
+	String get sectionAdvanced => 'Advanced';
+
+	/// en: 'Application'
+	String get sectionApplication => 'Application';
+
+	/// en: 'Data & Backup'
+	String get sectionDataBackup => 'Data & Backup';
+
+	/// en: 'General'
+	String get sectionGeneral => 'General';
+
+	/// en: 'Privacy'
+	String get sectionPrivacy => 'Privacy';
+
+	/// en: 'Privacy & Security'
+	String get sectionPrivacySecurity => 'Privacy & Security';
+
+	/// en: 'Send crash reports'
+	String get sendCrashReports => 'Send crash reports';
+
+	/// en: 'Separate consent for Sentry.'
+	String get sendCrashReportsDetail => 'Separate consent for Sentry.';
+
+	/// en: 'Session unavailable'
+	String get sessionUnavailable => 'Session unavailable';
+
+	/// en: 'Could not save that setting. It has been restored to its previous value.'
+	String get settingSaveFailed => 'Could not save that setting. It has been restored to its previous value.';
+
+	/// en: 'Sign out of your account'
+	String get signOut => 'Sign out of your account';
+
+	/// en: 'Close the session on this device'
+	String get signOutDetailActive => 'Close the session on this device';
+
+	/// en: 'Active'
+	String get statusActive => 'Active';
+
+	/// en: 'Status'
+	String get statusLabel => 'Status';
+
+	/// en: 'Subscribe — {plan} · {price}'
+	String subscribeCta({required Object plan, required Object price}) => 'Subscribe — ${plan} · ${price}';
+
+	/// en: 'Subscribe — {plan}'
+	String subscribeCtaNoPrice({required Object plan}) => 'Subscribe — ${plan}';
+
+	/// en: 'Subscription'
+	String get subscription => 'Subscription';
+
+	/// en: 'Supabase with encrypted cache'
+	String get supabaseWithEncryptedCache => 'Supabase with encrypted cache';
+
+	/// en: 'These settings also apply on your iPhone.'
+	String get syncsToIPhoneNote => 'These settings also apply on your iPhone.';
+
+	/// en: 'System permissions management'
+	String get systemPermissionsManagement => 'System permissions management';
+
+	/// en: 'Notifications, calendar and security.'
+	String get systemPermissionsManagementDetail => 'Notifications, calendar and security.';
+
+	/// en: 'Unable to open the settings.'
+	String get systemPermissionsOpenFailed => 'Unable to open the settings.';
+
+	/// en: 'System permissions'
+	String get systemPermissionsTitle => 'System permissions';
+
+	/// en: 'System'
+	String get systemSection => 'System';
+
+	/// en: 'Terms of Use (EULA)'
+	String get termsEula => 'Terms of Use (EULA)';
+
+	/// en: 'Dark'
+	String get themeDark => 'Dark';
+
+	/// en: 'Light'
+	String get themeLight => 'Light';
+
+	/// en: 'Theme'
+	String get themeMode => 'Theme';
+
+	/// en: 'Follow system'
+	String get themeSystem => 'Follow system';
+
+	/// en: '24h Format'
+	String get timeFormat24h => '24h Format';
+
+	/// en: 'Use times like 20:30 instead of 8:30 PM.'
+	String get timeFormat24hDetail => 'Use times like 20:30 instead of 8:30 PM.';
+
+	/// en: 'The guides will be shown again in the relevant sections.'
+	String get tutorialResetMessage => 'The guides will be shown again in the relevant sections.';
+
+	/// en: 'Tutorials reset'
+	String get tutorialResetTitle => 'Tutorials reset';
+
+	/// en: 'Update avatar'
+	String get updateAvatar => 'Update avatar';
+
+	/// en: 'Choose a local image for the desktop profile.'
+	String get updateAvatarDetail => 'Choose a local image for the desktop profile.';
+
+	/// en: 'Update password'
+	String get updatePassword => 'Update password';
+
+	/// en: 'Use accent {hex}'
+	String useAccent({required Object hex}) => 'Use accent ${hex}';
+
+	/// en: 'Verified'
+	String get verified => 'Verified';
+
+	/// en: 'Weekly Reports'
+	String get weeklyReports => 'Weekly Reports';
+
+	/// en: 'A weekly summary of your progress.'
+	String get weeklyReportsDetail => 'A weekly summary of your progress.';
+
+	/// en: 'You are a Pro user!'
+	String get youArePro => 'You are a Pro user!';
 }
 
 // Path: consent
@@ -3265,101 +3404,8 @@ class Translations$coachSettings$en {
 
 	// Translations
 
-	/// en: 'AI Coach engine'
-	String get title => 'AI Coach engine';
-
-	/// en: 'Choose where the coach runs. Local models keep every message on this device.'
-	String get subtitle => 'Choose where the coach runs. Local models keep every message on this device.';
-
-	/// en: 'Your OpenRouter'
-	String get backendCloud => 'Your OpenRouter';
-
-	/// en: 'Local · private'
-	String get backendLocal => 'Local · private';
-
-	/// en: 'Connect your own OpenRouter account and pay the provider directly. Free — no subscription needed. The context you share is sent to the provider.'
-	String get cloudDesc => 'Connect your own OpenRouter account and pay the provider directly. Free — no subscription needed. The context you share is sent to the provider.';
-
-	/// en: 'Your own model via Ollama, LM Studio or any OpenAI-compatible server. Nothing leaves this device.'
-	String get localDesc => 'Your own model via Ollama, LM Studio or any OpenAI-compatible server. Nothing leaves this device.';
-
-	/// en: 'Server'
-	String get presetLabel => 'Server';
-
-	/// en: 'Ollama'
-	String get presetOllama => 'Ollama';
-
-	/// en: 'LM Studio'
-	String get presetLmStudio => 'LM Studio';
-
-	/// en: 'Custom…'
-	String get presetCustom => 'Custom…';
-
-	/// en: 'Base URL'
-	String get baseUrlLabel => 'Base URL';
-
-	/// en: 'Model'
-	String get modelLabel => 'Model';
-
-	/// en: 'Refresh models'
-	String get refreshModels => 'Refresh models';
-
-	/// en: 'Looking for models…'
-	String get discovering => 'Looking for models…';
-
-	/// en: 'No models found — type a model id manually below.'
-	String get noModelsFound => 'No models found — type a model id manually below.';
-
-	/// en: 'Model id'
-	String get manualModelLabel => 'Model id';
-
-	/// en: 'Use this model'
-	String get manualModelAdd => 'Use this model';
-
-	/// en: 'Connected'
-	String get statusConnected => 'Connected';
-
-	/// en: 'Server offline'
-	String get statusOffline => 'Server offline';
-
-	/// en: 'Checking…'
-	String get statusChecking => 'Checking…';
-
-	/// en: 'Remote'
-	String get remoteBadge => 'Remote';
-
-	/// en: 'This endpoint isn't a local address — messages will leave this device.'
-	String get remoteWarning => 'This endpoint isn\'t a local address — messages will leave this device.';
-
-	/// en: 'Advanced'
-	String get advanced => 'Advanced';
-
-	/// en: 'System prompt'
-	String get systemPromptLabel => 'System prompt';
-
-	/// en: 'Override the coach persona (leave empty for the default)'
-	String get systemPromptHint => 'Override the coach persona (leave empty for the default)';
-
-	/// en: 'Reset'
-	String get systemPromptReset => 'Reset';
-
-	/// en: 'Temperature'
-	String get temperatureLabel => 'Temperature';
-
-	/// en: 'Done'
-	String get save => 'Done';
-
-	/// en: '{app} detected'
-	String detectedTitle({required Object app}) => '${app} detected';
-
-	/// en: '{app} is running on this Mac. Run the coach 100% privately?'
-	String detectedBody({required Object app}) => '${app} is running on this Mac. Run the coach 100% privately?';
-
-	/// en: 'Use local'
-	String get detectedAction => 'Use local';
-
-	/// en: 'Not now'
-	String get detectedDismiss => 'Not now';
+	/// en: 'Prefer your own OpenRouter key or a local model? Those are available in Private mode.'
+	String get accountModeNote => 'Prefer your own OpenRouter key or a local model? Those are available in Private mode.';
 
 	/// en: 'Cloud · {model}'
 	String activeCloud({required Object model}) => 'Cloud · ${model}';
@@ -3370,137 +3416,14 @@ class Translations$coachSettings$en {
 	/// en: 'Local · pick a model'
 	String get activeLocalNoModel => 'Local · pick a model';
 
-	/// en: 'Your OpenRouter'
-	String get cloudSection => 'Your OpenRouter';
-
-	/// en: 'Server settings…'
-	String get serverSettings => 'Server settings…';
-
-	/// en: 'AI Coach'
-	String get settingsSectionLabel => 'AI Coach';
-
-	/// en: 'AI Coach'
-	String get settingsTitle => 'AI Coach';
-
-	/// en: 'Pick the engine that powers your coach and point it at a local server for full privacy.'
-	String get settingsSubtitle => 'Pick the engine that powers your coach and point it at a local server for full privacy.';
-
-	/// en: 'Active engine'
-	String get settingsRowStatus => 'Active engine';
-
-	/// en: 'Engine & local server'
-	String get settingsRowConfigure => 'Engine & local server';
-
-	/// en: 'No key yet — this engine won't reply. Connect your OpenRouter account below, switch to Evolve AI, or use a local server.'
-	String get cloudKeyMissing => 'No key yet — this engine won\'t reply. Connect your OpenRouter account below, switch to Evolve AI, or use a local server.';
-
-	/// en: 'Lower temperature'
-	String get temperatureLower => 'Lower temperature';
-
-	/// en: 'Raise temperature'
-	String get temperatureRaise => 'Raise temperature';
-
-	/// en: 'Send'
-	String get sendMessage => 'Send';
-
-	/// en: 'Stop'
-	String get stopResponse => 'Stop';
-
-	/// en: 'Start {app}'
-	String startLocalServer({required Object app}) => 'Start ${app}';
-
-	/// en: 'Get {app}'
-	String getLocalServer({required Object app}) => 'Get ${app}';
-
-	/// en: 'Starting {app}…'
-	String startingLocalServer({required Object app}) => 'Starting ${app}…';
-
-	/// en: '{app} isn't running'
-	String localServerOfflineTitle({required Object app}) => '${app} isn\'t running';
-
-	/// en: 'Start your local server to chat privately — no terminal needed.'
-	String get localServerOfflineBody => 'Start your local server to chat privately — no terminal needed.';
-
-	/// en: '{app} isn't installed'
-	String localServerNotInstalledTitle({required Object app}) => '${app} isn\'t installed';
-
-	/// en: 'Install the free {app} app, then press Start.'
-	String localServerNotInstalledBody({required Object app}) => 'Install the free ${app} app, then press Start.';
-
-	/// en: 'This can take a few seconds…'
-	String get localServerStartingBody => 'This can take a few seconds…';
-
-	/// en: 'Couldn't start {app} — try opening it from your Applications folder.'
-	String localServerStartFailed({required Object app}) => 'Couldn\'t start ${app} — try opening it from your Applications folder.';
-
-	/// en: 'Couldn't open the browser — visit {url}'
-	String localServerDownloadFailed({required Object url}) => 'Couldn\'t open the browser — visit ${url}';
-
-	/// en: 'Taking longer than expected — check the Ollama icon in your menu bar (a first launch may need approval).'
-	String get ollamaStartTimeout => 'Taking longer than expected — check the Ollama icon in your menu bar (a first launch may need approval).';
-
-	/// en: 'Ollama is running but not serving'
-	String get ollamaServerOffTitle => 'Ollama is running but not serving';
-
-	/// en: 'Ollama is open but isn't answering on its port. Quit it from the menu bar, then press Start again.'
-	String get ollamaServerOffBody => 'Ollama is open but isn\'t answering on its port. Quit it from the menu bar, then press Start again.';
-
-	/// en: 'Taking longer than expected — open LM Studio and check it has finished starting.'
-	String get lmStudioStartTimeout => 'Taking longer than expected — open LM Studio and check it has finished starting.';
-
-	/// en: 'LM Studio's server isn't running'
-	String get lmStudioServerOffTitle => 'LM Studio\'s server isn\'t running';
-
-	/// en: 'LM Studio is open, but its local server is off. Turn it on with Developer → Start Server, or tick Settings → Run the LLM server on login.'
-	String get lmStudioServerOffBody => 'LM Studio is open, but its local server is off. Turn it on with Developer → Start Server, or tick Settings → Run the LLM server on login.';
-
-	/// en: 'LM Studio isn't listing any models. It only lists loaded models when Just-In-Time loading is off — load a model in LM Studio, or turn on Developer → Server Settings → Just In Time Model Loading.'
-	String get lmStudioNoModelsJit => 'LM Studio isn\'t listing any models. It only lists loaded models when Just-In-Time loading is off — load a model in LM Studio, or turn on Developer → Server Settings → Just In Time Model Loading.';
-
-	/// en: 'Evolve AI'
-	String get backendStandard => 'Evolve AI';
-
-	/// en: 'Included with Evolve Pro. We run a free Google model (Gemma) for you — no keys, no setup. Your messages go to Google's free tier, which may use them to improve their services.'
-	String get standardDesc => 'Included with Evolve Pro. We run a free Google model (Gemma) for you — no keys, no setup. Your messages go to Google\'s free tier, which may use them to improve their services.';
-
 	/// en: 'Evolve AI · {model}'
 	String activeStandard({required Object model}) => 'Evolve AI · ${model}';
 
 	/// en: 'Evolve AI'
-	String get standardSection => 'Evolve AI';
+	String get backendStandard => 'Evolve AI';
 
-	/// en: 'Included with Pro'
-	String get standardStatusReady => 'Included with Pro';
-
-	/// en: 'Requires Pro'
-	String get standardStatusNeedsPro => 'Requires Pro';
-
-	/// en: 'Sign in required'
-	String get standardStatusNeedsSignIn => 'Sign in required';
-
-	/// en: 'Unavailable'
-	String get standardStatusUnavailable => 'Unavailable';
-
-	/// en: 'Evolve AI is part of Evolve Pro. Subscribe to unlock it.'
-	String get standardNeedsProNote => 'Evolve AI is part of Evolve Pro. Subscribe to unlock it.';
-
-	/// en: 'Sign in to use Evolve AI. Your subscription unlocks it on every device.'
-	String get standardNeedsSignInNote => 'Sign in to use Evolve AI. Your subscription unlocks it on every device.';
-
-	/// en: 'Evolve AI isn't available in this build. Connect your own OpenRouter account, or run a local model.'
-	String get standardUnavailableNote => 'Evolve AI isn\'t available in this build. Connect your own OpenRouter account, or run a local model.';
-
-	/// en: 'Evolve AI needs an Evolve account, and Private mode doesn't keep one. Connect your own OpenRouter account, or run a local model — both keep working here.'
-	String get standardPrivateNote => 'Evolve AI needs an Evolve account, and Private mode doesn\'t keep one. Connect your own OpenRouter account, or run a local model — both keep working here.';
-
-	/// en: 'Prefer your own OpenRouter key or a local model? Those are available in Private mode.'
-	String get accountModeNote => 'Prefer your own OpenRouter key or a local model? Those are available in Private mode.';
-
-	/// en: 'Local — on this Mac'
-	String get localGroupLabel => 'Local — on this Mac';
-
-	/// en: 'Use a custom server…'
-	String get useCustomServer => 'Use a custom server…';
+	/// en: 'Base URL'
+	String get baseUrlLabel => 'Base URL';
 
 	/// en: 'Live'
 	String get cardLive => 'Live';
@@ -3508,11 +3431,194 @@ class Translations$coachSettings$en {
 	/// en: 'Off'
 	String get cardOff => 'Off';
 
+	/// en: 'No key yet — this engine won't reply. Connect your OpenRouter account below, switch to Evolve AI, or use a local server.'
+	String get cloudKeyMissing => 'No key yet — this engine won\'t reply. Connect your OpenRouter account below, switch to Evolve AI, or use a local server.';
+
+	/// en: 'Use local'
+	String get detectedAction => 'Use local';
+
+	/// en: '{app} is running on this Mac. Run the coach 100% privately?'
+	String detectedBody({required Object app}) => '${app} is running on this Mac. Run the coach 100% privately?';
+
+	/// en: 'Not now'
+	String get detectedDismiss => 'Not now';
+
+	/// en: '{app} detected'
+	String detectedTitle({required Object app}) => '${app} detected';
+
+	/// en: 'Looking for models…'
+	String get discovering => 'Looking for models…';
+
 	/// en: 'OpenRouter'
 	String get engineOpenRouter => 'OpenRouter';
 
 	/// en: 'Your own key · free'
 	String get engineOpenRouterHint => 'Your own key · free';
+
+	/// en: 'Get {app}'
+	String getLocalServer({required Object app}) => 'Get ${app}';
+
+	/// en: 'Engine'
+	String get groupEngine => 'Engine';
+
+	/// en: 'Privacy'
+	String get groupPrivacy => 'Privacy';
+
+	/// en: 'AI Coach tuning'
+	String get groupTuning => 'AI Coach tuning';
+
+	/// en: 'LM Studio isn't listing any models. It only lists loaded models when Just-In-Time loading is off — load a model in LM Studio, or turn on Developer → Server Settings → Just In Time Model Loading.'
+	String get lmStudioNoModelsJit => 'LM Studio isn\'t listing any models. It only lists loaded models when Just-In-Time loading is off — load a model in LM Studio, or turn on Developer → Server Settings → Just In Time Model Loading.';
+
+	/// en: 'LM Studio is open, but its local server is off. Turn it on with Developer → Start Server, or tick Settings → Run the LLM server on login.'
+	String get lmStudioServerOffBody => 'LM Studio is open, but its local server is off. Turn it on with Developer → Start Server, or tick Settings → Run the LLM server on login.';
+
+	/// en: 'LM Studio's server isn't running'
+	String get lmStudioServerOffTitle => 'LM Studio\'s server isn\'t running';
+
+	/// en: 'Taking longer than expected — open LM Studio and check it has finished starting.'
+	String get lmStudioStartTimeout => 'Taking longer than expected — open LM Studio and check it has finished starting.';
+
+	/// en: 'Local — on this Mac'
+	String get localGroupLabel => 'Local — on this Mac';
+
+	/// en: 'Couldn't open the browser — visit {url}'
+	String localServerDownloadFailed({required Object url}) => 'Couldn\'t open the browser — visit ${url}';
+
+	/// en: 'Install the free {app} app, then press Start.'
+	String localServerNotInstalledBody({required Object app}) => 'Install the free ${app} app, then press Start.';
+
+	/// en: '{app} isn't installed'
+	String localServerNotInstalledTitle({required Object app}) => '${app} isn\'t installed';
+
+	/// en: 'Start your local server to chat privately — no terminal needed.'
+	String get localServerOfflineBody => 'Start your local server to chat privately — no terminal needed.';
+
+	/// en: '{app} isn't running'
+	String localServerOfflineTitle({required Object app}) => '${app} isn\'t running';
+
+	/// en: 'Couldn't start {app} — try opening it from your Applications folder.'
+	String localServerStartFailed({required Object app}) => 'Couldn\'t start ${app} — try opening it from your Applications folder.';
+
+	/// en: 'This can take a few seconds…'
+	String get localServerStartingBody => 'This can take a few seconds…';
+
+	/// en: 'Use this model'
+	String get manualModelAdd => 'Use this model';
+
+	/// en: 'Model id'
+	String get manualModelLabel => 'Model id';
+
+	/// en: 'Model'
+	String get modelLabel => 'Model';
+
+	/// en: 'No models found — type a model id manually below.'
+	String get noModelsFound => 'No models found — type a model id manually below.';
+
+	/// en: 'Ollama is open but isn't answering on its port. Quit it from the menu bar, then press Start again.'
+	String get ollamaServerOffBody => 'Ollama is open but isn\'t answering on its port. Quit it from the menu bar, then press Start again.';
+
+	/// en: 'Ollama is running but not serving'
+	String get ollamaServerOffTitle => 'Ollama is running but not serving';
+
+	/// en: 'Taking longer than expected — check the Ollama icon in your menu bar (a first launch may need approval).'
+	String get ollamaStartTimeout => 'Taking longer than expected — check the Ollama icon in your menu bar (a first launch may need approval).';
+
+	/// en: 'LM Studio'
+	String get presetLmStudio => 'LM Studio';
+
+	/// en: 'Ollama'
+	String get presetOllama => 'Ollama';
+
+	/// en: 'Refresh models'
+	String get refreshModels => 'Refresh models';
+
+	/// en: 'Remote'
+	String get remoteBadge => 'Remote';
+
+	/// en: 'This endpoint isn't a local address — messages will leave this device.'
+	String get remoteWarning => 'This endpoint isn\'t a local address — messages will leave this device.';
+
+	/// en: 'Send'
+	String get sendMessage => 'Send';
+
+	/// en: 'Engine & local server'
+	String get settingsRowConfigure => 'Engine & local server';
+
+	/// en: 'Active engine'
+	String get settingsRowStatus => 'Active engine';
+
+	/// en: 'AI Coach'
+	String get settingsSectionLabel => 'AI Coach';
+
+	/// en: 'Pick the engine that powers your coach and point it at a local server for full privacy.'
+	String get settingsSubtitle => 'Pick the engine that powers your coach and point it at a local server for full privacy.';
+
+	/// en: 'Evolve AI is part of Evolve Pro. Subscribe to unlock it.'
+	String get standardNeedsProNote => 'Evolve AI is part of Evolve Pro. Subscribe to unlock it.';
+
+	/// en: 'Sign in to use Evolve AI. Your subscription unlocks it on every device.'
+	String get standardNeedsSignInNote => 'Sign in to use Evolve AI. Your subscription unlocks it on every device.';
+
+	/// en: 'Evolve AI needs an Evolve account, and Private mode doesn't keep one. Connect your own OpenRouter account, or run a local model — both keep working here.'
+	String get standardPrivateNote => 'Evolve AI needs an Evolve account, and Private mode doesn\'t keep one. Connect your own OpenRouter account, or run a local model — both keep working here.';
+
+	/// en: 'Requires Pro'
+	String get standardStatusNeedsPro => 'Requires Pro';
+
+	/// en: 'Sign in required'
+	String get standardStatusNeedsSignIn => 'Sign in required';
+
+	/// en: 'Included with Pro'
+	String get standardStatusReady => 'Included with Pro';
+
+	/// en: 'Unavailable'
+	String get standardStatusUnavailable => 'Unavailable';
+
+	/// en: 'Evolve AI isn't available in this build. Connect your own OpenRouter account, or run a local model.'
+	String get standardUnavailableNote => 'Evolve AI isn\'t available in this build. Connect your own OpenRouter account, or run a local model.';
+
+	/// en: 'Start {app}'
+	String startLocalServer({required Object app}) => 'Start ${app}';
+
+	/// en: 'Starting {app}…'
+	String startingLocalServer({required Object app}) => 'Starting ${app}…';
+
+	/// en: 'Checking…'
+	String get statusChecking => 'Checking…';
+
+	/// en: 'Connected'
+	String get statusConnected => 'Connected';
+
+	/// en: 'Server offline'
+	String get statusOffline => 'Server offline';
+
+	/// en: 'Stop'
+	String get stopResponse => 'Stop';
+
+	/// en: 'Override the coach persona (leave empty for the default)'
+	String get systemPromptHint => 'Override the coach persona (leave empty for the default)';
+
+	/// en: 'System prompt'
+	String get systemPromptLabel => 'System prompt';
+
+	/// en: 'Reset'
+	String get systemPromptReset => 'Reset';
+
+	/// en: 'Temperature'
+	String get temperatureLabel => 'Temperature';
+
+	/// en: 'Lower temperature'
+	String get temperatureLower => 'Lower temperature';
+
+	/// en: 'Raise temperature'
+	String get temperatureRaise => 'Raise temperature';
+
+	/// en: 'These apply to every engine, including Evolve AI.'
+	String get tuningFootnote => 'These apply to every engine, including Evolve AI.';
+
+	/// en: 'Use a custom server…'
+	String get useCustomServer => 'Use a custom server…';
 }
 
 // Path: tour
@@ -3697,8 +3803,8 @@ class Translations$palette$en {
 
 	// Translations
 
-	/// en: 'Search goals, habits, actions…'
-	String get searchHint => 'Search goals, habits, actions…';
+	/// en: 'Search goals, habits, settings, actions…'
+	String get searchHint => 'Search goals, habits, settings, actions…';
 
 	/// en: 'Suggested'
 	String get groupSuggested => 'Suggested';
@@ -3717,6 +3823,9 @@ class Translations$palette$en {
 
 	/// en: 'Go to'
 	String get groupSections => 'Go to';
+
+	/// en: 'Settings'
+	String get groupSettings => 'Settings';
 
 	/// en: 'Go to this week'
 	String get goToThisWeek => 'Go to this week';
@@ -4137,44 +4246,50 @@ class Translations$ai$consent$en {
 
 	// Translations
 
-	/// en: 'Send your messages to the AI?'
-	String get standardTitle => 'Send your messages to the AI?';
-
-	/// en: 'To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc., which routes it to Google LLC (Google AI Studio) to run the model. Because this uses Google's free tier, Google may keep the text for a limited period and use it to improve their services — it is not as private as a paid tier. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.'
-	String get standardBody => 'To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc., which routes it to Google LLC (Google AI Studio) to run the model. Because this uses Google\'s free tier, Google may keep the text for a limited period and use it to improve their services — it is not as private as a paid tier. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.';
-
-	/// en: 'Send your messages to OpenRouter?'
-	String get byokTitle => 'Send your messages to OpenRouter?';
+	/// en: 'Allow'
+	String get allow => 'Allow';
 
 	/// en: 'To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc. using your own OpenRouter account. OpenRouter routes it to a model provider according to your account settings. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.'
 	String get byokBody => 'To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc. using your own OpenRouter account. OpenRouter routes it to a model provider according to your account settings. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.';
 
-	/// en: 'Your private database stays on this device — only what you send in the chat leaves it.'
-	String get privateNote => 'Your private database stays on this device — only what you send in the chat leaves it.';
+	/// en: 'Send your messages to OpenRouter?'
+	String get byokTitle => 'Send your messages to OpenRouter?';
 
-	/// en: 'Allow'
-	String get allow => 'Allow';
+	/// en: 'Not allowed'
+	String get consentStatusRevoked => 'Not allowed';
+
+	/// en: 'Stop sharing…'
+	String get consentStopSharing => 'Stop sharing…';
 
 	/// en: 'Not now'
 	String get decline => 'Not now';
 
+	/// en: 'Your private database stays on this device — only what you send in the chat leaves it.'
+	String get privateNote => 'Your private database stays on this device — only what you send in the chat leaves it.';
+
+	/// en: 'Stop sharing'
+	String get revokeAction => 'Stop sharing';
+
+	/// en: 'The AI Coach will ask again before it sends anything. Nothing else changes.'
+	String get revokeBody => 'The AI Coach will ask again before it sends anything. Nothing else changes.';
+
+	/// en: 'Stop sharing with the AI?'
+	String get revokeTitle => 'Stop sharing with the AI?';
+
 	/// en: 'AI data sharing'
 	String get rowTitle => 'AI data sharing';
+
+	/// en: 'To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc., which routes it to Google LLC (Google AI Studio) to run the model. Because this uses Google's free tier, Google may keep the text for a limited period and use it to improve their services — it is not as private as a paid tier. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.'
+	String get standardBody => 'To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc., which routes it to Google LLC (Google AI Studio) to run the model. Because this uses Google\'s free tier, Google may keep the text for a limited period and use it to improve their services — it is not as private as a paid tier. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.';
+
+	/// en: 'Send your messages to the AI?'
+	String get standardTitle => 'Send your messages to the AI?';
 
 	/// en: 'Allowed'
 	String get statusGranted => 'Allowed';
 
 	/// en: 'Not allowed'
 	String get statusNone => 'Not allowed';
-
-	/// en: 'Stop sharing with the AI?'
-	String get revokeTitle => 'Stop sharing with the AI?';
-
-	/// en: 'The AI Coach will ask again before it sends anything. Nothing else changes.'
-	String get revokeBody => 'The AI Coach will ask again before it sends anything. Nothing else changes.';
-
-	/// en: 'Stop sharing'
-	String get revokeAction => 'Stop sharing';
 }
 
 // Path: settingsPage.calendarViewOptions
@@ -4530,40 +4645,42 @@ extension on Translations {
 			'privateData.exportDoneTitle' => 'Export complete',
 			'privateData.exportDoneClipboard' => 'The JSON is on the clipboard: Linux does not support file sharing.',
 			'privateData.exportDoneShare' => 'The JSON was sent to the share sheet.',
-			'icloudSync.title' => 'iCloud Sync',
-			'icloudSync.enableTitle' => 'Enable iCloud Sync',
-			'icloudSync.syncNow' => 'Sync now',
-			'icloudSync.disclosureTitle' => 'End-to-end encrypted',
-			'icloudSync.disclosureBody' => 'Your private data syncs only through your own iCloud account, end-to-end encrypted — never through our servers. The encryption key lives in your iCloud Keychain; if you turn iCloud Keychain off, synced data can\'t be recovered.',
-			'icloudSync.disclosureAccept' => 'Enable',
-			'icloudSync.statusIdle' => 'Up to date',
-			'icloudSync.statusNotSynced' => 'Not everything has synced',
-			'icloudSync.statusSyncing' => 'Syncing…',
-			'icloudSync.statusOff' => 'Sync is off',
-			'icloudSync.statusNoAccount' => 'Sign in to iCloud to sync',
-			'icloudSync.statusUnavailable' => 'iCloud is unavailable right now',
-			'icloudSync.statusWaitingKeychain' => 'Waiting for iCloud Keychain — make sure the app on your iPhone is up to date',
-			'icloudSync.lastSyncedNever' => 'Never synced',
-			'icloudSync.lastSyncedAt' => ({required Object time}) => 'Last synced ${time}',
-			'icloudSync.deleteSyncNote' => 'iCloud Sync is on: this also deletes the synced copy in your iCloud and turns sync off. Other devices keep their local copy — run this on each device to erase everywhere.',
-			'icloudSync.bannerText' => 'iCloud sync is off — your habits live only on this device and are lost if you reset or replace it.',
 			'icloudSync.bannerAction' => 'Turn on',
-			'icloudSync.detailsTitle' => 'Sync details',
+			'icloudSync.bannerText' => 'iCloud sync is off — your habits live only on this device and are lost if you reset or replace it.',
+			'icloudSync.deleteSyncNote' => 'iCloud Sync is on: this also deletes the synced copy in your iCloud and turns sync off. Other devices keep their local copy — run this on each device to erase everywhere.',
 			'icloudSync.detailsAllSynced' => 'Everything uploaded',
-			'icloudSync.detailsPending' => ({required Object count}) => '${count} items waiting to upload',
-			'icloudSync.detailsFailed' => ({required Object count}) => '${count} items failed to upload',
-			'icloudSync.detailsCopy' => 'Copy report',
 			'icloudSync.detailsCopied' => 'Report copied',
-			'icloudSync.keySplitTitle' => 'Some iCloud data can\'t be read',
-			'icloudSync.keySplitBody' => ({required Object count}) => '${count} records in iCloud were encrypted on another device with a different key, so this device can\'t read them. Reset sync from whichever device holds the data you want to keep.',
-			'icloudSync.resetFromDevice' => 'Reset sync from this device',
-			'icloudSync.resetFromDeviceDetail' => 'Replace everything in iCloud with this device\'s data',
-			'icloudSync.resetFromDeviceConfirm' => 'This erases everything currently stored in iCloud and uploads this device\'s data in its place. Your other devices will then download this copy. Only do this from the device that holds the data you want to keep. This cannot be undone.',
-			'icloudSync.resetFromDeviceDone' => 'Sync reset. This device\'s data is now the copy in iCloud.',
-			'icloudSync.statusWaitingKey' => 'Waiting for the encryption key from your other device',
-			'icloudSync.forceEnableTitle' => 'Start fresh from this device',
-			'icloudSync.forceEnableBody' => 'Another device\'s data is already in iCloud, but its encryption key hasn\'t reached this device yet. Waiting is usually enough — it can take a few minutes. Starting fresh erases what is in iCloud and replaces it with this device\'s data. This cannot be undone.',
+			'icloudSync.detailsCopy' => 'Copy report',
+			'icloudSync.detailsFailed' => ({required Object count}) => '${count} items failed to upload',
+			'icloudSync.detailsPending' => ({required Object count}) => '${count} items waiting to upload',
+			'icloudSync.detailsTitle' => 'Sync details',
+			'icloudSync.disclosureAccept' => 'Enable',
+			'icloudSync.disclosureBody' => 'Your private data syncs only through your own iCloud account, end-to-end encrypted — never through our servers. The encryption key lives in your iCloud Keychain; if you turn iCloud Keychain off, synced data can\'t be recovered.',
+			'icloudSync.disclosureTitle' => 'End-to-end encrypted',
+			'icloudSync.enableTitle' => 'Enable iCloud Sync',
 			'icloudSync.forceEnable' => 'Start fresh',
+			'icloudSync.forceEnableBody' => 'Another device\'s data is already in iCloud, but its encryption key hasn\'t reached this device yet. Waiting is usually enough — it can take a few minutes. Starting fresh erases what is in iCloud and replaces it with this device\'s data. This cannot be undone.',
+			'icloudSync.forceEnableTitle' => 'Start fresh from this device',
+			'icloudSync.keySplitBody' => ({required Object count}) => '${count} records in iCloud were encrypted on another device with a different key, so this device can\'t read them. Reset sync from whichever device holds the data you want to keep.',
+			'icloudSync.keySplitTitle' => 'Some iCloud data can\'t be read',
+			'icloudSync.lastSyncedAt' => ({required Object time}) => 'Last synced ${time}',
+			'icloudSync.lastSyncedNever' => 'Never synced',
+			'icloudSync.resetFromDevice' => 'Reset sync from this device',
+			'icloudSync.resetFromDeviceConfirm' => 'This erases everything currently stored in iCloud and uploads this device\'s data in its place. Your other devices will then download this copy. Only do this from the device that holds the data you want to keep. This cannot be undone.',
+			'icloudSync.resetFromDeviceDetail' => 'Replace everything in iCloud with this device\'s data',
+			'icloudSync.resetFromDeviceDone' => 'Sync reset. This device\'s data is now the copy in iCloud.',
+			'icloudSync.statusIdle' => 'Up to date',
+			'icloudSync.statusNoAccount' => 'Sign in to iCloud to sync',
+			'icloudSync.statusNotSynced' => 'Not everything has synced',
+			'icloudSync.statusOff' => 'Sync is off',
+			'icloudSync.statusSyncing' => 'Syncing…',
+			'icloudSync.statusUnavailable' => 'iCloud is unavailable right now',
+			'icloudSync.statusWaitingKey' => 'Waiting for the encryption key from your other device',
+			'icloudSync.statusWaitingKeychain' => 'Waiting for iCloud Keychain — make sure the app on your iPhone is up to date',
+			'icloudSync.syncNow' => 'Sync now',
+			'icloudSync.syncNowNeedsSync' => 'Turn on iCloud sync first.',
+			'icloudSync.title' => 'iCloud Sync',
+			'icloudSync.unavailablePlatform' => 'Not available on this device',
 			'privateRecovery.preparing' => 'Preparing your private space…',
 			'privateRecovery.restoredFromCloudToast' => 'Couldn\'t unlock the local database — restored your data from iCloud.',
 			'privateRecovery.waitingTitle' => 'Waiting for iCloud',
@@ -5005,10 +5122,10 @@ extension on Translations {
 			'stats.gapSubtitle' => 'Days between completions',
 			'stats.gapAvg' => 'Avg gap',
 			'stats.gapLongest' => 'Longest',
-			'stats.gapSince' => 'Since last',
-			'stats.habitBounceBackShort' => 'Bounce-back',
 			_ => null,
 		} ?? switch (path) {
+			'stats.gapSince' => 'Since last',
+			'stats.habitBounceBackShort' => 'Bounce-back',
 			'stats.habitConsistencyDetail' => 'Regularity score',
 			'stats.habitPercentile' => ({required Object pct}) => 'Ahead of ${pct}% of your habits',
 			'stats.monthVsTitle' => 'This month vs last',
@@ -5180,19 +5297,21 @@ extension on Translations {
 			'ai.standard.needsPro' => '⚠️ Evolve AI is part of Evolve Pro. Subscribe in Settings — or switch the engine to your own OpenRouter account, which is free.',
 			'ai.standard.rateLimited' => '⚠️ You\'ve reached the Evolve AI fair-use limit for now. Try again later, or switch the engine to your own OpenRouter account.',
 			'ai.standard.unavailable' => '❌ Evolve AI is unavailable right now. This one\'s on us — please try again in a moment.',
-			'ai.consent.standardTitle' => 'Send your messages to the AI?',
-			'ai.consent.standardBody' => 'To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc., which routes it to Google LLC (Google AI Studio) to run the model. Because this uses Google\'s free tier, Google may keep the text for a limited period and use it to improve their services — it is not as private as a paid tier. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.',
-			'ai.consent.byokTitle' => 'Send your messages to OpenRouter?',
-			'ai.consent.byokBody' => 'To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc. using your own OpenRouter account. OpenRouter routes it to a model provider according to your account settings. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.',
-			'ai.consent.privateNote' => 'Your private database stays on this device — only what you send in the chat leaves it.',
 			'ai.consent.allow' => 'Allow',
+			'ai.consent.byokBody' => 'To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc. using your own OpenRouter account. OpenRouter routes it to a model provider according to your account settings. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.',
+			'ai.consent.byokTitle' => 'Send your messages to OpenRouter?',
+			'ai.consent.consentStatusRevoked' => 'Not allowed',
+			'ai.consent.consentStopSharing' => 'Stop sharing…',
 			'ai.consent.decline' => 'Not now',
+			'ai.consent.privateNote' => 'Your private database stays on this device — only what you send in the chat leaves it.',
+			'ai.consent.revokeAction' => 'Stop sharing',
+			'ai.consent.revokeBody' => 'The AI Coach will ask again before it sends anything. Nothing else changes.',
+			'ai.consent.revokeTitle' => 'Stop sharing with the AI?',
 			'ai.consent.rowTitle' => 'AI data sharing',
+			'ai.consent.standardBody' => 'To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc., which routes it to Google LLC (Google AI Studio) to run the model. Because this uses Google\'s free tier, Google may keep the text for a limited period and use it to improve their services — it is not as private as a paid tier. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.',
+			'ai.consent.standardTitle' => 'Send your messages to the AI?',
 			'ai.consent.statusGranted' => 'Allowed',
 			'ai.consent.statusNone' => 'Not allowed',
-			'ai.consent.revokeTitle' => 'Stop sharing with the AI?',
-			'ai.consent.revokeBody' => 'The AI Coach will ask again before it sends anything. Nothing else changes.',
-			'ai.consent.revokeAction' => 'Stop sharing',
 			'aiCoach.greeting' => 'Hi! I\'m Evolve AI Coach. I\'m here to help you optimize your protocol and reach your goals. How can I help you today?',
 			'aiCoach.systemPersona' => 'You are Evolve AI Coach, a virtual assistant for personal discipline.',
 			'aiCoach.habitsHeader' => 'ACTIVE HABITS:',
@@ -5223,242 +5342,286 @@ extension on Translations {
 			'aiCoach.copyTooltip' => 'Copy',
 			'aiCoach.copiedToast' => 'Copied to clipboard',
 			'aiCoach.linkOpenFailed' => 'Couldn\'t open the link.',
-			'settingsPage.account' => 'Account',
-			'settingsPage.notifications' => 'Notifications',
-			'settingsPage.language' => 'Language',
-			'settingsPage.timeFormat24h' => '24h Format',
-			'settingsPage.subscription' => 'Subscription',
-			'settingsPage.proName' => 'Evolve Pro',
-			'settingsPage.planMonthly' => 'Monthly',
-			'settingsPage.planAnnual' => 'Annual',
-			'settingsPage.restorePurchases' => 'Restore purchases',
-			'settingsPage.deletePrivateData' => 'Delete private data',
-			'settingsPage.importInProgress' => 'Importing data...',
-			'settingsPage.passwordsDontMatch' => 'Passwords do not match.',
-			'settingsPage.email' => 'Email',
-			'settingsPage.cancel' => 'Cancel',
-			'settingsPage.confirm' => 'Confirm',
-			'settingsPage.save' => 'Save',
-			'settingsPage.pageTitle' => 'Settings',
-			'settingsPage.pageSubtitle' => 'Manage your profile, desktop behavior, privacy and Evolve plan.',
-			'settingsPage.profileLabel' => 'Profile',
-			'settingsPage.profileSubtitle' => 'Personal information and sync status',
-			'settingsPage.accountAndOnboarding' => 'Account and onboarding',
-			'settingsPage.privateMode' => 'Private Mode',
-			'settingsPage.sessionUnavailable' => 'Session unavailable',
-			'settingsPage.dataRepository' => 'Data repository',
-			'settingsPage.encryptedLocalDatabase' => 'Encrypted local database',
-			'settingsPage.supabaseWithEncryptedCache' => 'Supabase with encrypted cache',
-			'settingsPage.personalInfo' => 'Personal information',
-			'settingsPage.personalInfoDetail' => 'First name, last name, email and date of birth',
-			'settingsPage.updateAvatar' => 'Update avatar',
-			'settingsPage.updateAvatarDetail' => 'Choose a local image for the desktop profile.',
-			'settingsPage.reviewInitialConsent' => 'Review initial consent',
-			'settingsPage.reviewInitialConsentDetail' => 'Terms, privacy, notifications and crash reporting',
-			'settingsPage.signOut' => 'Sign out of your account',
-			'settingsPage.signOutDetailActive' => 'Close the session on this device',
-			'settingsPage.availableWithActiveSession' => 'Available with an active Supabase session',
-			'settingsPage.goToLogin' => 'Go to Login',
-			'settingsPage.goToLoginDetail' => 'Suspend private mode and sign in to Supabase.',
-			'settingsPage.appearanceTitle' => 'Appearance and application',
-			'settingsPage.appearanceSubtitle' => 'Local preferences adapted to desktop',
-			'settingsPage.appearanceAndVisual' => 'Appearance and visuals',
-			'settingsPage.themeMode' => 'Theme',
-			'settingsPage.themeLight' => 'Light',
-			'settingsPage.themeDark' => 'Dark',
-			'settingsPage.themeSystem' => 'Follow system',
-			'settingsPage.calendarExperienceLanguage' => 'Calendar, experience and language',
+			'settingsPage.aboutCopied' => 'Version details copied',
+			'settingsPage.aboutCopyTooltip' => 'Copy version details',
+			'settingsPage.aboutVersion' => ({required Object version, required Object build}) => 'Version ${version} (${build})',
 			'settingsPage.accentColor' => 'Accent color',
 			'settingsPage.accentColorDetail' => 'Extended palette reserved for Evolve Pro.',
-			'settingsPage.defaultCalendarView' => 'Default calendar view',
+			'settingsPage.accessProtection' => 'Access protection',
+			'settingsPage.account' => 'Account',
+			'settingsPage.accountAndOnboarding' => 'Account and onboarding',
+			'settingsPage.accountDataManagementContent' => 'Choose whether to delete the data while keeping the account active or to permanently delete the account.',
+			'settingsPage.accountDataManagementTitle' => 'Account and data management',
+			'settingsPage.accountDeleted' => 'Account deleted.',
+			'settingsPage.accountPaneSubtitle' => 'Who you\'re signed in as, and where your data lives.',
+			'settingsPage.accountSyncOn' => 'On — through your account',
+			'settingsPage.activateEvolveProStart' => 'Subscribe with your Apple account.',
+			'settingsPage.advancedPaneSubtitle' => 'Expert settings and diagnostics.',
+			'settingsPage.aiAndSystem' => 'AI & SYSTEM',
+			'settingsPage.aiInsights' => 'AI Insights',
+			'settingsPage.aiInsightsDetail' => 'Personalized analysis and advice from AI.',
+			'settingsPage.aiSuggestions' => 'AI Suggestions',
+			'settingsPage.aiSuggestionsDetail' => 'Intelligent habit analysis',
+			'settingsPage.appLogsDetail' => 'View diagnostic logs from this session',
+			'settingsPage.appLogsTitle' => 'App Logs',
+			'settingsPage.appearanceAndVisual' => 'Appearance and visuals',
+			'settingsPage.appearanceSubtitle' => 'Local preferences adapted to desktop',
+			'settingsPage.appearanceTitle' => 'Appearance and application',
+			'settingsPage.applyAction' => 'Apply',
+			'settingsPage.availableWithActiveSession' => 'Available with an active Supabase session',
+			'settingsPage.avatarGateTitle' => 'Avatar',
+			'settingsPage.avatarPickFailed' => 'Image selection failed.',
+			'settingsPage.bestValue' => 'Best value',
+			'settingsPage.billingAppleDetail' => 'Your subscription is purchased and managed with your Apple account.',
+			'settingsPage.billingAppleTitle' => 'Billed through Apple',
+			'settingsPage.billingPlatformUnsupported' => 'In-app purchases aren\'t available on this platform.',
+			'settingsPage.billingUnavailableDetail' => 'Subscriptions are temporarily unavailable. Please try again later.',
+			'settingsPage.biometricActivationCancelled' => 'Activation cancelled.',
+			'settingsPage.biometricLock' => 'Biometric lock',
+			'settingsPage.biometricLockDetail' => 'Available with the native adapter on macOS and Windows; not supported on Linux.',
+			'settingsPage.calendarExperienceLanguage' => 'Calendar, experience and language',
 			'settingsPage.calendarViewOptions.month' => 'Month',
 			'settingsPage.calendarViewOptions.week' => 'Week',
 			'settingsPage.calendarViewOptions.year' => 'Year',
 			'settingsPage.calendarViewOptions.life' => 'Life',
+			'settingsPage.cancel' => 'Cancel',
+			'settingsPage.changePassword' => 'Change password',
+			'settingsPage.changePasswordDetail' => 'Credential update via Supabase Auth.',
+			'settingsPage.commercialChannelRequired' => 'Purchases unavailable',
+			'settingsPage.confirm' => 'Confirm',
+			'settingsPage.confirmDeleteAccountMessage' => 'The account and all associated data will be permanently deleted. This action is irreversible.',
+			'settingsPage.confirmDeleteAccountTitle' => 'Confirm account deletion',
+			'settingsPage.confirmNewPassword' => 'Confirm new password',
+			'settingsPage.confirmResetDataMessage' => 'Habits, goals and preferences will be deleted. The account will remain active. This action cannot be undone.',
+			'settingsPage.confirmResetDataTitle' => 'Confirm data reset',
+			'settingsPage.confirmSignOutMessage' => 'Are you sure you want to sign out? You will need to re-enter your credentials to sign in again.',
+			'settingsPage.confirmSignOutTitle' => 'Confirm sign out',
+			'settingsPage.currentPassword' => 'Current password',
+			'settingsPage.customColor' => 'Custom color',
+			'settingsPage.dataAndConsents' => 'Data and consents',
+			'settingsPage.dataBackupPaneSubtitle' => 'Where your data is copied, how you get it in and out, and how you erase it.',
+			'settingsPage.dataRepository' => 'Data repository',
+			'settingsPage.dataStorage' => 'Data storage',
+			'settingsPage.dataStorageAccount' => 'Your Evolve account',
+			'settingsPage.dataStorageThisMac' => 'This Mac only, encrypted',
+			'settingsPage.dateOfBirth' => 'Date of birth',
+			'settingsPage.dateOfBirthHint' => 'YYYY-MM-DD',
+			'settingsPage.deepWorkInsights' => 'Deep Work Insights',
+			'settingsPage.deepWorkInsightsDetail' => 'Advanced analysis of your focus sessions.',
+			'settingsPage.defaultCalendarView' => 'Default calendar view',
+			'settingsPage.deleteAccountAction' => 'Delete account',
+			'settingsPage.deleteAccountAndData' => 'Delete account and data',
+			'settingsPage.deleteAccountAndDataDetail' => 'Irreversible operation protected by confirmation.',
+			'settingsPage.deleteAccountGateTitle' => 'Delete account',
+			'settingsPage.deletePrivateData' => 'Delete private data',
+			'settingsPage.deletePrivateDataDetail' => 'Permanently deletes the encrypted local database.',
+			'settingsPage.detailsHeader' => 'SUBSCRIPTION DETAILS',
+			'settingsPage.disabledTurnOnFirst' => 'Turn the reminder on to set a time.',
+			'settingsPage.email' => 'Email',
+			'settingsPage.encryptedLocalDatabase' => 'Encrypted local database',
+			'settingsPage.enterCurrentPassword' => 'Enter your current password.',
+			'settingsPage.eveningReview' => 'Evening review',
+			'settingsPage.eveningReviewDetail' => 'Reminds you to consolidate your day.',
+			'settingsPage.eveningReviewTime' => 'Evening review time',
+			'settingsPage.expiresOn' => 'Expires On',
+			'settingsPage.exportData' => 'Export data',
+			'settingsPage.exportDataDetail' => 'Shares a complete JSON export of the available data.',
+			'settingsPage.exportDoneClipboard' => 'The JSON is on the clipboard: Linux does not support file sharing.',
+			'settingsPage.exportDoneSaved' => 'The JSON file was saved to the selected location.',
+			'settingsPage.exportDoneShare' => 'The JSON was sent to the share selector.',
+			'settingsPage.exportDoneTitle' => 'Export complete',
+			'settingsPage.exportPrivateShareText' => 'My private data exported from Evolve',
+			'settingsPage.exportShareText' => 'My data exported from Evolve',
+			'settingsPage.focusMode' => 'Focus Mode',
+			'settingsPage.focusModeDetail' => 'Pauses all reminders and notifications.',
+			'settingsPage.focusModeOnBody' => 'These reminders are paused until you turn it off.',
+			'settingsPage.focusModeOnTitle' => 'Focus mode is on',
+			'settingsPage.fullName' => 'Full name',
+			'settingsPage.gateChangePassword' => 'Change password',
+			'settingsPage.gateLogout' => 'Logout',
+			'settingsPage.gateProfile' => 'Profile',
+			'settingsPage.gateRequiresActiveSession' => 'Requires an active Supabase session.',
+			'settingsPage.generalPaneSubtitle' => 'How Evolve looks and reads.',
+			'settingsPage.goToLogin' => 'Go to Login',
+			'settingsPage.goToLoginDetail' => 'Suspend private mode and sign in to Supabase.',
+			'settingsPage.groupAppLock' => 'App lock',
+			'settingsPage.groupAppearance' => 'Appearance',
+			'settingsPage.groupBackups' => 'Backups',
+			'settingsPage.groupDailyReminders' => 'Daily reminders',
+			'settingsPage.groupDataStorage' => 'Data storage',
+			'settingsPage.groupDelivery' => 'Delivery',
+			'settingsPage.groupDiagnostics' => 'Diagnostics',
+			'settingsPage.groupDiagnosticsConsent' => 'Diagnostics & consent',
+			'settingsPage.groupFocus' => 'Focus',
+			'settingsPage.groupGettingStarted' => 'Getting started',
+			'settingsPage.groupLanguageFormats' => 'Language & formats',
+			'settingsPage.groupLegal' => 'Legal',
+			'settingsPage.groupSignIn' => 'Sign-in',
+			'settingsPage.habitReminders' => 'Habit reminders',
+			'settingsPage.habitRemindersDetail' => 'Sends the daily morning briefing.',
+			'settingsPage.hapticFeedback' => 'Haptic feedback',
+			'settingsPage.hapticFeedbackDetail' => 'The desktop keeps the preference but does not generate vibrations.',
+			'settingsPage.importCategoriesCount' => ({required Object count}) => '${count} Categories',
+			'settingsPage.importCompletedTitle' => 'Import Completed',
+			'settingsPage.importConfirmButton' => 'Confirm import',
+			'settingsPage.importData' => 'Import data',
+			'settingsPage.importDataDetail' => 'Restores a backup (JSON or ZIP) from Evolve.',
+			'settingsPage.importDataGateTitle' => 'Import data',
+			'settingsPage.importEntityCategories' => 'Categories',
+			'settingsPage.importEntityHabits' => 'Habits',
+			'settingsPage.importEntityLogs' => 'Habit Logs',
+			'settingsPage.importEntityMacroGoals' => 'Macro Goals',
+			'settingsPage.importEntityMoods' => 'Mood Logs',
+			'settingsPage.importError' => ({required Object error}) => 'Error during import: ${error}',
+			'settingsPage.importHabitsCount' => ({required Object count}) => '${count} Habits',
+			'settingsPage.importInProgress' => 'Importing data...',
+			'settingsPage.importLockedMessage' => 'This device can\'t unlock your local private database — its encryption key is missing (this happens after moving to a new Mac or a change to the app\'s signing). The existing local data can\'t be recovered, but you can reset it and import this backup onto a fresh, empty database. This can\'t be undone.',
+			'settingsPage.importLockedResetButton' => 'Reset & import',
+			'settingsPage.importLockedTitle' => 'Reset locked private database?',
+			'settingsPage.importLogsCount' => ({required Object count}) => '${count} Check-ins (Log)',
+			'settingsPage.importMacroGoalsCount' => ({required Object count}) => '${count} Macro Goals',
+			'settingsPage.importMergeSubtitle' => 'Combines with your data, keeping the newest version of each item.',
+			'settingsPage.importMergeTitle' => 'Merge with current data',
+			'settingsPage.importMoodsCount' => ({required Object count}) => '${count} Mood Records',
+			'settingsPage.importPreviewSkipped' => ({required Object count}) => '⚠ ${count} invalid record(s) will be skipped',
+			'settingsPage.importPrivateOnly' => 'The import feature is currently available only in Private Mode (Local).',
+			'settingsPage.importReplaceConfirmButton' => 'Delete & Replace',
+			'settingsPage.importReplaceConfirmMessage' => ({required Object count}) => 'This permanently deletes your current data (about ${count} habit logs) and keeps only what\'s in this backup. This can\'t be undone.',
+			'settingsPage.importReplaceConfirmTitle' => 'Replace all data?',
+			'settingsPage.importReplaceSubtitle' => 'Permanently deletes every existing record that isn\'t in this backup.',
+			'settingsPage.importReplaceTitle' => 'Replace current data',
+			'settingsPage.importRowMerge' => ({required Object label, required Object added, required Object updated, required Object unchanged}) => '${label}: ${added} added, ${updated} updated, ${unchanged} unchanged',
+			'settingsPage.importRowReplace' => ({required Object count, required Object label}) => '${count} ${label}',
+			'settingsPage.importRowSkipped' => ({required Object count}) => ', ${count} skipped',
+			'settingsPage.importSuccess' => 'Import completed successfully!',
+			'settingsPage.importSummaryDone' => 'Awesome!',
+			'settingsPage.importSummaryMerged' => 'Your data was merged with the backup. Summary:',
+			'settingsPage.importSummaryReplaced' => 'Your data was replaced with the backup. Summary:',
+			'settingsPage.importSummaryTitle' => 'Import summary',
+			'settingsPage.insightsAndReports' => 'Insights and reports',
+			'settingsPage.language' => 'Language',
 			'settingsPage.languageOptions.system' => 'System',
 			'settingsPage.languageOptions.italian' => 'Italian',
 			'settingsPage.languageOptions.english' => 'English',
 			'settingsPage.languageOptions.spanish' => 'Spanish',
 			'settingsPage.languageOptions.german' => 'German',
 			'settingsPage.languageOptions.arabic' => 'Arabic',
-			'settingsPage.timeFormat24hDetail' => 'Use times like 20:30 instead of 8:30 PM.',
-			'settingsPage.hapticFeedback' => 'Haptic feedback',
-			'settingsPage.hapticFeedbackDetail' => 'The desktop keeps the preference but does not generate vibrations.',
-			'settingsPage.aiAndSystem' => 'AI & SYSTEM',
-			'settingsPage.aiSuggestions' => 'AI Suggestions',
-			'settingsPage.aiSuggestionsDetail' => 'Intelligent habit analysis',
-			'settingsPage.focusMode' => 'Focus Mode',
-			'settingsPage.focusModeDetail' => 'Pauses all reminders and notifications.',
-			'settingsPage.milestones' => 'Milestones',
-			'settingsPage.milestonesDetail' => 'Celebrations when you reach key milestones.',
-			'settingsPage.deepWorkInsights' => 'Deep Work Insights',
-			'settingsPage.deepWorkInsightsDetail' => 'Advanced analysis of your focus sessions.',
-			'settingsPage.resetTutorial' => 'Reset tutorial',
-			'settingsPage.resetTutorialDetail' => 'Reopens the dashboard and goals walkthroughs.',
-			'settingsPage.notificationsSubtitle' => 'Operational reminders from the desktop client',
-			'settingsPage.operationalReminders' => 'Operational reminders',
-			'settingsPage.habitReminders' => 'Habit reminders',
-			'settingsPage.habitRemindersDetail' => 'Sends the daily morning briefing.',
-			'settingsPage.morningBriefTime' => 'Morning brief time',
-			'settingsPage.eveningReview' => 'Evening review',
-			'settingsPage.eveningReviewDetail' => 'Reminds you to consolidate your day.',
-			'settingsPage.eveningReviewTime' => 'Evening review time',
-			'settingsPage.insightsAndReports' => 'Insights and reports',
-			'settingsPage.aiInsights' => 'AI Insights',
-			'settingsPage.aiInsightsDetail' => 'Personalized analysis and advice from AI.',
-			'settingsPage.weeklyReports' => 'Weekly Reports',
-			'settingsPage.weeklyReportsDetail' => 'A weekly summary of your progress.',
-			'settingsPage.requestNotificationPermissions' => 'Request notification permissions',
-			'settingsPage.requestNotificationPermissionsDetail' => 'Opens the native prompt on the supported target.',
-			'settingsPage.nativeDeliveryTitle' => 'Native delivery per operating system',
-			'settingsPage.privacyTitle' => 'Privacy and security',
-			'settingsPage.privacySubtitle' => 'Access protection, consents and data management',
-			'settingsPage.accessProtection' => 'Access protection',
-			'settingsPage.biometricLock' => 'Biometric lock',
-			'settingsPage.biometricLockDetail' => 'Available with the native adapter on macOS and Windows; not supported on Linux.',
-			'settingsPage.changePassword' => 'Change password',
-			'settingsPage.changePasswordDetail' => 'Credential update via Supabase Auth.',
-			'settingsPage.dataAndConsents' => 'Data and consents',
-			'settingsPage.sendCrashReports' => 'Send crash reports',
-			'settingsPage.sendCrashReportsDetail' => 'Separate consent for Sentry.',
-			'settingsPage.exportData' => 'Export data',
-			'settingsPage.exportDataDetail' => 'Shares a complete JSON export of the available data.',
-			'settingsPage.importData' => 'Import data',
-			'settingsPage.importDataDetail' => 'Restores a backup (JSON or ZIP) from Evolve.',
-			'settingsPage.systemPermissionsManagement' => 'System permissions management',
-			'settingsPage.systemPermissionsManagementDetail' => 'Notifications, calendar and security.',
-			'settingsPage.deletePrivateDataDetail' => 'Permanently deletes the encrypted local database.',
-			'settingsPage.deleteAccountAndData' => 'Delete account and data',
-			'settingsPage.deleteAccountAndDataDetail' => 'Irreversible operation protected by confirmation.',
-			'settingsPage.exportPrivateShareText' => 'My private data exported from Evolve',
-			'settingsPage.exportShareText' => 'My data exported from Evolve',
-			'settingsPage.exportDoneTitle' => 'Export complete',
-			'settingsPage.exportDoneClipboard' => 'The JSON is on the clipboard: Linux does not support file sharing.',
-			'settingsPage.exportDoneShare' => 'The JSON was sent to the share selector.',
-			'settingsPage.avatarGateTitle' => 'Avatar',
-			'settingsPage.avatarPickFailed' => 'Image selection failed.',
-			'settingsPage.confirmSignOutTitle' => 'Confirm sign out',
-			'settingsPage.confirmSignOutMessage' => 'Are you sure you want to sign out? You will need to re-enter your credentials to sign in again.',
-			'settingsPage.gateProfile' => 'Profile',
-			'settingsPage.gateLogout' => 'Logout',
-			'settingsPage.gateChangePassword' => 'Change password',
-			'settingsPage.gateRequiresActiveSession' => 'Requires an active Supabase session.',
-			'settingsPage.biometricActivationCancelled' => 'Activation cancelled.',
-			'settingsPage.notificationPermissionsTitle' => 'Notification permissions',
-			'settingsPage.notificationPermissionsGranted' => 'Permissions available for this system.',
-			'settingsPage.notificationPermissionsDenied' => 'Permission not granted. You can change it from the system settings.',
-			'settingsPage.systemPermissionsTitle' => 'System permissions',
-			'settingsPage.systemPermissionsOpenFailed' => 'Unable to open the settings.',
-			'settingsPage.tutorialResetTitle' => 'Tutorials reset',
-			'settingsPage.tutorialResetMessage' => 'The guides will be shown again in the relevant sections.',
-			'settingsPage.accountDataManagementTitle' => 'Account and data management',
-			'settingsPage.accountDataManagementContent' => 'Choose whether to delete the data while keeping the account active or to permanently delete the account.',
-			'settingsPage.resetDataAction' => 'Reset data',
-			'settingsPage.deleteAccountAction' => 'Delete account',
-			'settingsPage.confirmResetDataTitle' => 'Confirm data reset',
-			'settingsPage.confirmResetDataMessage' => 'Habits, goals and preferences will be deleted. The account will remain active. This action cannot be undone.',
-			'settingsPage.confirmDeleteAccountTitle' => 'Confirm account deletion',
-			'settingsPage.confirmDeleteAccountMessage' => 'The account and all associated data will be permanently deleted. This action is irreversible.',
-			'settingsPage.resetDataTitle' => 'Reset data',
-			'settingsPage.resetDataSuccess' => 'Data deleted successfully.',
-			'settingsPage.operationFailed' => 'Operation failed.',
-			'settingsPage.settingSaveFailed' => 'Could not save that setting. It has been restored to its previous value.',
-			'settingsPage.deleteAccountGateTitle' => 'Delete account',
-			'settingsPage.accountDeleted' => 'Account deleted.',
-			'settingsPage.importDataGateTitle' => 'Import data',
-			'settingsPage.importPrivateOnly' => 'The import feature is currently available only in Private Mode (Local).',
-			'settingsPage.importSummaryTitle' => 'Import summary',
-			'settingsPage.importHabitsCount' => ({required Object count}) => '${count} Habits',
-			'settingsPage.importLogsCount' => ({required Object count}) => '${count} Check-ins (Log)',
-			'settingsPage.importMacroGoalsCount' => ({required Object count}) => '${count} Macro Goals',
-			'settingsPage.importCategoriesCount' => ({required Object count}) => '${count} Categories',
-			'settingsPage.importMoodsCount' => ({required Object count}) => '${count} Mood Records',
-			'settingsPage.importReplaceTitle' => 'Replace current data',
-			'settingsPage.importReplaceSubtitle' => 'Permanently deletes every existing record that isn\'t in this backup.',
-			'settingsPage.importMergeTitle' => 'Merge with current data',
-			'settingsPage.importMergeSubtitle' => 'Combines with your data, keeping the newest version of each item.',
-			'settingsPage.importReplaceConfirmTitle' => 'Replace all data?',
-			'settingsPage.importReplaceConfirmMessage' => ({required Object count}) => 'This permanently deletes your current data (about ${count} habit logs) and keeps only what\'s in this backup. This can\'t be undone.',
-			'settingsPage.importReplaceConfirmButton' => 'Delete & Replace',
-			'settingsPage.importConfirmButton' => 'Confirm import',
-			'settingsPage.importSuccess' => 'Import completed successfully!',
-			'settingsPage.importError' => ({required Object error}) => 'Error during import: ${error}',
-			'settingsPage.importLockedTitle' => 'Reset locked private database?',
-			'settingsPage.importLockedMessage' => 'This device can\'t unlock your local private database — its encryption key is missing (this happens after moving to a new Mac or a change to the app\'s signing). The existing local data can\'t be recovered, but you can reset it and import this backup onto a fresh, empty database. This can\'t be undone.',
-			'settingsPage.importLockedResetButton' => 'Reset & import',
-			'settingsPage.importPreviewSkipped' => ({required Object count}) => '⚠ ${count} invalid record(s) will be skipped',
-			'settingsPage.importCompletedTitle' => 'Import Completed',
-			'settingsPage.importSummaryReplaced' => 'Your data was replaced with the backup. Summary:',
-			'settingsPage.importSummaryMerged' => 'Your data was merged with the backup. Summary:',
-			'settingsPage.importSummaryDone' => 'Awesome!',
-			'settingsPage.importEntityHabits' => 'Habits',
-			'settingsPage.importEntityLogs' => 'Habit Logs',
-			'settingsPage.importEntityMacroGoals' => 'Macro Goals',
-			'settingsPage.importEntityCategories' => 'Categories',
-			'settingsPage.importEntityMoods' => 'Mood Logs',
-			'settingsPage.importRowReplace' => ({required Object count, required Object label}) => '${count} ${label}',
-			'settingsPage.importRowMerge' => ({required Object label, required Object added, required Object updated, required Object unchanged}) => '${label}: ${added} added, ${updated} updated, ${unchanged} unchanged',
-			'settingsPage.importRowSkipped' => ({required Object count}) => ', ${count} skipped',
-			'settingsPage.exportDoneSaved' => 'The JSON file was saved to the selected location.',
-			'settingsPage.proTitle' => 'Evolve Pro',
-			'settingsPage.proSubtitle' => 'Plan, purchase restore and subscription management',
-			'settingsPage.billingAppleTitle' => 'Billed through Apple',
-			'settingsPage.commercialChannelRequired' => 'Purchases unavailable',
-			'settingsPage.billingAppleDetail' => 'Your subscription is purchased and managed with your Apple account.',
-			'settingsPage.billingUnavailableDetail' => 'Subscriptions are temporarily unavailable. Please try again later.',
-			'settingsPage.billingPlatformUnsupported' => 'In-app purchases aren\'t available on this platform.',
-			'settingsPage.bestValue' => 'Best value',
-			'settingsPage.priceUnavailable' => 'Price unavailable',
-			'settingsPage.renewalDisclaimer' => 'The subscription renews automatically unless auto-renew is turned off in Apple account settings at least 24 hours before the end of the period.',
-			'settingsPage.privacyPolicy' => 'Privacy Policy',
-			'settingsPage.termsEula' => 'Terms of Use (EULA)',
-			'settingsPage.planManagement' => 'Plan management',
-			'settingsPage.activateEvolvePro' => 'Activate Evolve Pro',
-			'settingsPage.activateEvolveProActive' => 'Evolve Pro entitlement active.',
-			'settingsPage.activateEvolveProStart' => 'Subscribe with your Apple account.',
-			'settingsPage.restorePurchasesDetail' => 'Restores a subscription you already bought.',
 			'settingsPage.manageSubscription' => 'Manage subscription',
 			'settingsPage.manageSubscriptionDetail' => 'Opens the subscription management of the Apple account.',
-			'settingsPage.notAuthenticated' => 'Not authenticated',
-			'settingsPage.verified' => 'Verified',
-			'settingsPage.privateModeDataProtected' => 'Your data is protected and saved only on this device.',
-			'settingsPage.profileFallback' => 'Profile',
-			'settingsPage.fullName' => 'Full name',
-			'settingsPage.dateOfBirth' => 'Date of birth',
-			'settingsPage.dateOfBirthHint' => 'YYYY-MM-DD',
-			'settingsPage.currentPassword' => 'Current password',
+			'settingsPage.milestones' => 'Milestones',
+			'settingsPage.milestonesDetail' => 'Celebrations when you reach key milestones.',
+			'settingsPage.morningBriefTime' => 'Morning brief time',
+			'settingsPage.nativeDeliveryTitle' => 'Native delivery per operating system',
 			'settingsPage.newPassword' => 'New password',
-			'settingsPage.confirmNewPassword' => 'Confirm new password',
-			'settingsPage.updatePassword' => 'Update password',
-			'settingsPage.enterCurrentPassword' => 'Enter your current password.',
 			'settingsPage.newPasswordMinLength' => 'The new password must be at least 8 characters long.',
-			'settingsPage.passwordUpdateFailed' => 'Update failed. Check your current password.',
-			'settingsPage.sectionApplication' => 'Application',
-			'settingsPage.sectionPrivacy' => 'Privacy',
-			'settingsPage.customColor' => 'Custom color',
-			'settingsPage.applyAction' => 'Apply',
-			'settingsPage.useAccent' => ({required Object hex}) => 'Use accent ${hex}',
-			'settingsPage.proUpsellTitle' => 'Upgrade to Evolve Pro',
-			'settingsPage.proUpsellSubtitle' => 'Unlock all features and accelerate your growth.',
-			'settingsPage.proWelcomeTitle' => 'Welcome to Evolve Pro!',
-			'settingsPage.proActiveMessage' => 'Your subscription is active. The AI Coach is included — no OpenRouter account or API key needed — along with advanced trend statistics and all Evolve\'s personal growth tools.',
-			'settingsPage.proStartJourney' => 'Start your Journey',
-			'settingsPage.systemSection' => 'System',
-			'settingsPage.appLogsTitle' => 'App Logs',
-			'settingsPage.appLogsDetail' => 'View diagnostic logs from this session',
-			'settingsPage.perMonth' => ({required Object price}) => '${price} per month',
-			'settingsPage.perMonthWithSavings' => ({required Object price, required Object percent}) => '${price} per month · Save ${percent}%',
-			'settingsPage.detailsHeader' => 'SUBSCRIPTION DETAILS',
-			'settingsPage.statusLabel' => 'Status',
-			'settingsPage.statusActive' => 'Active',
-			'settingsPage.planLabel' => 'Plan',
 			'settingsPage.nextRenewal' => 'Next Renewal',
-			'settingsPage.expiresOn' => 'Expires On',
+			'settingsPage.notAuthenticated' => 'Not authenticated',
+			'settingsPage.notificationPermissionsDenied' => 'Permission not granted. You can change it from the system settings.',
+			'settingsPage.notificationPermissionsGranted' => 'Permissions available for this system.',
+			'settingsPage.notificationPermissionsTitle' => 'Notification permissions',
+			'settingsPage.notifications' => 'Notifications',
+			'settingsPage.notificationsPaneSubtitle' => 'Everything that can interrupt you.',
+			'settingsPage.notificationsSubtitle' => 'Operational reminders from the desktop client',
+			'settingsPage.operationFailed' => 'Operation failed.',
+			'settingsPage.operationalReminders' => 'Operational reminders',
+			'settingsPage.pageSubtitle' => 'Manage your profile, desktop behavior, privacy and Evolve plan.',
+			'settingsPage.pageTitle' => 'Settings',
+			'settingsPage.passwordUpdateFailed' => 'Update failed. Check your current password.',
+			'settingsPage.passwordsDontMatch' => 'Passwords do not match.',
 			'settingsPage.paymentMethod' => 'Payment Method',
 			'settingsPage.paymentMethodValue' => 'Apple Pay / App Store',
+			'settingsPage.perHabitRemindersNote' => 'Reminders for individual habits are set on each habit and aren\'t affected by these switches.',
+			'settingsPage.perMonth' => ({required Object price}) => '${price} per month',
+			'settingsPage.perMonthWithSavings' => ({required Object price, required Object percent}) => '${price} per month · Save ${percent}%',
+			'settingsPage.personalInfo' => 'Personal information',
+			'settingsPage.personalInfoDetail' => 'First name, last name, email and date of birth',
+			'settingsPage.planAnnual' => 'Annual',
+			'settingsPage.planLabel' => 'Plan',
+			'settingsPage.planManagement' => 'Plan management',
+			'settingsPage.planMonthly' => 'Monthly',
+			'settingsPage.priceUnavailable' => 'Price unavailable',
+			'settingsPage.privacyPaneSubtitle' => 'What Evolve can see, and who else can open it.',
+			'settingsPage.privacyPolicy' => 'Privacy Policy',
+			'settingsPage.privacySubtitle' => 'Access protection, consents and data management',
+			'settingsPage.privacyTitle' => 'Privacy and security',
+			'settingsPage.privateMode' => 'Private Mode',
+			'settingsPage.privateModeDataProtected' => 'Your data is protected and saved only on this device.',
+			'settingsPage.proActiveMessage' => 'Your subscription is active. The AI Coach is included — no OpenRouter account or API key needed — along with advanced trend statistics and all Evolve\'s personal growth tools.',
 			'settingsPage.proActiveName' => 'Active Evolve Pro',
-			'settingsPage.youArePro' => 'You are a Pro user!',
+			'settingsPage.proName' => 'Evolve Pro',
+			'settingsPage.proStartJourney' => 'Start your Journey',
+			'settingsPage.proSubtitle' => 'Plan, purchase restore and subscription management',
 			'settingsPage.proThankYou' => 'Thank you for supporting Evolve\'s development.',
+			'settingsPage.proTitle' => 'Evolve Pro',
+			'settingsPage.proUpsellSubtitle' => 'Unlock all features and accelerate your growth.',
+			'settingsPage.proUpsellTitle' => 'Upgrade to Evolve Pro',
+			'settingsPage.proWelcomeTitle' => 'Welcome to Evolve Pro!',
+			'settingsPage.profileFallback' => 'Profile',
+			'settingsPage.profileLabel' => 'Profile',
+			'settingsPage.profileSubtitle' => 'Personal information and sync status',
+			'settingsPage.railGroupApp' => 'App',
+			'settingsPage.railGroupData' => 'Data',
+			'settingsPage.railGroupYou' => 'You',
+			'settingsPage.renewalDisclaimer' => 'The subscription renews automatically unless auto-renew is turned off in Apple account settings at least 24 hours before the end of the period.',
+			'settingsPage.requestNotificationPermissions' => 'Request notification permissions',
+			'settingsPage.requestNotificationPermissionsDetail' => 'Opens the native prompt on the supported target.',
+			'settingsPage.resetDataAction' => 'Reset data',
+			'settingsPage.resetDataSuccess' => 'Data deleted successfully.',
+			'settingsPage.resetDataTitle' => 'Reset data',
+			'settingsPage.resetTutorial' => 'Reset tutorial',
+			'settingsPage.resetTutorialDetail' => 'Reopens the dashboard and goals walkthroughs.',
+			'settingsPage.restoreDefaults' => 'Restore default settings…',
+			'settingsPage.restoreDefaultsDetail' => 'Your habits, goals, account and app lock aren\'t touched.',
+			'settingsPage.restorePurchases' => 'Restore purchases',
+			'settingsPage.restorePurchasesDetail' => 'Restores a subscription you already bought.',
+			'settingsPage.reviewInitialConsent' => 'Review initial consent',
+			'settingsPage.reviewInitialConsentDetail' => 'Terms, privacy, notifications and crash reporting',
+			'settingsPage.save' => 'Save',
+			'settingsPage.searchClear' => 'Clear search',
+			'settingsPage.searchNoResults' => 'No settings match',
+			'settingsPage.searchPlaceholder' => 'Search settings',
+			'settingsPage.sectionAccount' => 'Account',
+			'settingsPage.sectionAdvanced' => 'Advanced',
+			'settingsPage.sectionApplication' => 'Application',
+			'settingsPage.sectionDataBackup' => 'Data & Backup',
+			'settingsPage.sectionGeneral' => 'General',
+			'settingsPage.sectionPrivacy' => 'Privacy',
+			'settingsPage.sectionPrivacySecurity' => 'Privacy & Security',
+			'settingsPage.sendCrashReports' => 'Send crash reports',
+			'settingsPage.sendCrashReportsDetail' => 'Separate consent for Sentry.',
+			'settingsPage.sessionUnavailable' => 'Session unavailable',
+			'settingsPage.settingSaveFailed' => 'Could not save that setting. It has been restored to its previous value.',
+			'settingsPage.signOut' => 'Sign out of your account',
+			'settingsPage.signOutDetailActive' => 'Close the session on this device',
+			'settingsPage.statusActive' => 'Active',
+			'settingsPage.statusLabel' => 'Status',
+			'settingsPage.subscribeCta' => ({required Object plan, required Object price}) => 'Subscribe — ${plan} · ${price}',
+			'settingsPage.subscribeCtaNoPrice' => ({required Object plan}) => 'Subscribe — ${plan}',
+			'settingsPage.subscription' => 'Subscription',
+			'settingsPage.supabaseWithEncryptedCache' => 'Supabase with encrypted cache',
+			'settingsPage.syncsToIPhoneNote' => 'These settings also apply on your iPhone.',
+			'settingsPage.systemPermissionsManagement' => 'System permissions management',
+			'settingsPage.systemPermissionsManagementDetail' => 'Notifications, calendar and security.',
+			'settingsPage.systemPermissionsOpenFailed' => 'Unable to open the settings.',
+			'settingsPage.systemPermissionsTitle' => 'System permissions',
+			'settingsPage.systemSection' => 'System',
+			'settingsPage.termsEula' => 'Terms of Use (EULA)',
+			'settingsPage.themeDark' => 'Dark',
+			'settingsPage.themeLight' => 'Light',
+			'settingsPage.themeMode' => 'Theme',
+			'settingsPage.themeSystem' => 'Follow system',
+			'settingsPage.timeFormat24h' => '24h Format',
+			'settingsPage.timeFormat24hDetail' => 'Use times like 20:30 instead of 8:30 PM.',
+			'settingsPage.tutorialResetMessage' => 'The guides will be shown again in the relevant sections.',
+			'settingsPage.tutorialResetTitle' => 'Tutorials reset',
+			'settingsPage.updateAvatar' => 'Update avatar',
+			'settingsPage.updateAvatarDetail' => 'Choose a local image for the desktop profile.',
+			'settingsPage.updatePassword' => 'Update password',
+			'settingsPage.useAccent' => ({required Object hex}) => 'Use accent ${hex}',
+			'settingsPage.verified' => 'Verified',
+			'settingsPage.weeklyReports' => 'Weekly Reports',
+			'settingsPage.weeklyReportsDetail' => 'A weekly summary of your progress.',
+			'settingsPage.youArePro' => 'You are a Pro user!',
 			'consent.onboardingTitle' => 'Your Privacy Matters',
 			'consent.continueButton' => 'Continue',
 			'notifications.actionDone' => 'Done',
@@ -5473,6 +5636,8 @@ extension on Translations {
 			'consentPage.subtitle' => 'Before using Evolve Desktop, confirm the terms, privacy policy and the data processing required for syncing.',
 			'consentPage.acceptTerms' => 'I accept the terms and privacy policy',
 			'consentPage.termsSubtitle' => 'I confirm I have read the documents and I am at least 14 years old.',
+			_ => null,
+		} ?? switch (path) {
 			'consentPage.crashDiagnostics' => 'Crash diagnostics',
 			'consentPage.crashSubtitle' => 'Allow sending anonymized technical reports.',
 			'consentPage.openPrivacy' => 'Open the privacy policy',
@@ -5521,8 +5686,6 @@ extension on Translations {
 			'subscriptionCtrl.restoreInProgress' => 'A restore is already in progress. Wait a few seconds.',
 			'subscriptionCtrl.purchaseFailedMessage' => 'Could not complete the purchase. Try again shortly.',
 			'subscriptionCtrl.restoreFailedMessage' => 'Could not restore purchases. Try again shortly.',
-			_ => null,
-		} ?? switch (path) {
 			'subscriptionCtrl.purchaseRegisteredNotActive' => 'Purchase registered, but Pro subscription is not active yet. Wait a few seconds and use Restore Purchases.',
 			'subscriptionCtrl.noActiveSubscription' => 'No active Evolve Pro subscription found on this Apple ID. Make sure to use the same Apple ID as the purchase.',
 			'subscriptionCtrl.invalidConfig' => 'Purchases are temporarily misconfigured. Please try again later or contact support.',
@@ -5565,89 +5728,78 @@ extension on Translations {
 			'appLogs.detailStackTrace' => 'STACK TRACE',
 			'appLogs.shareLogs' => 'Share logs file',
 			'appLogs.exportDone' => 'Logs exported',
-			'coachSettings.title' => 'AI Coach engine',
-			'coachSettings.subtitle' => 'Choose where the coach runs. Local models keep every message on this device.',
-			'coachSettings.backendCloud' => 'Your OpenRouter',
-			'coachSettings.backendLocal' => 'Local · private',
-			'coachSettings.cloudDesc' => 'Connect your own OpenRouter account and pay the provider directly. Free — no subscription needed. The context you share is sent to the provider.',
-			'coachSettings.localDesc' => 'Your own model via Ollama, LM Studio or any OpenAI-compatible server. Nothing leaves this device.',
-			'coachSettings.presetLabel' => 'Server',
-			'coachSettings.presetOllama' => 'Ollama',
-			'coachSettings.presetLmStudio' => 'LM Studio',
-			'coachSettings.presetCustom' => 'Custom…',
-			'coachSettings.baseUrlLabel' => 'Base URL',
-			'coachSettings.modelLabel' => 'Model',
-			'coachSettings.refreshModels' => 'Refresh models',
-			'coachSettings.discovering' => 'Looking for models…',
-			'coachSettings.noModelsFound' => 'No models found — type a model id manually below.',
-			'coachSettings.manualModelLabel' => 'Model id',
-			'coachSettings.manualModelAdd' => 'Use this model',
-			'coachSettings.statusConnected' => 'Connected',
-			'coachSettings.statusOffline' => 'Server offline',
-			'coachSettings.statusChecking' => 'Checking…',
-			'coachSettings.remoteBadge' => 'Remote',
-			'coachSettings.remoteWarning' => 'This endpoint isn\'t a local address — messages will leave this device.',
-			'coachSettings.advanced' => 'Advanced',
-			'coachSettings.systemPromptLabel' => 'System prompt',
-			'coachSettings.systemPromptHint' => 'Override the coach persona (leave empty for the default)',
-			'coachSettings.systemPromptReset' => 'Reset',
-			'coachSettings.temperatureLabel' => 'Temperature',
-			'coachSettings.save' => 'Done',
-			'coachSettings.detectedTitle' => ({required Object app}) => '${app} detected',
-			'coachSettings.detectedBody' => ({required Object app}) => '${app} is running on this Mac. Run the coach 100% privately?',
-			'coachSettings.detectedAction' => 'Use local',
-			'coachSettings.detectedDismiss' => 'Not now',
+			'coachSettings.accountModeNote' => 'Prefer your own OpenRouter key or a local model? Those are available in Private mode.',
 			'coachSettings.activeCloud' => ({required Object model}) => 'Cloud · ${model}',
 			'coachSettings.activeLocal' => ({required Object model}) => 'Local · ${model}',
 			'coachSettings.activeLocalNoModel' => 'Local · pick a model',
-			'coachSettings.cloudSection' => 'Your OpenRouter',
-			'coachSettings.serverSettings' => 'Server settings…',
-			'coachSettings.settingsSectionLabel' => 'AI Coach',
-			'coachSettings.settingsTitle' => 'AI Coach',
-			'coachSettings.settingsSubtitle' => 'Pick the engine that powers your coach and point it at a local server for full privacy.',
-			'coachSettings.settingsRowStatus' => 'Active engine',
-			'coachSettings.settingsRowConfigure' => 'Engine & local server',
-			'coachSettings.cloudKeyMissing' => 'No key yet — this engine won\'t reply. Connect your OpenRouter account below, switch to Evolve AI, or use a local server.',
-			'coachSettings.temperatureLower' => 'Lower temperature',
-			'coachSettings.temperatureRaise' => 'Raise temperature',
-			'coachSettings.sendMessage' => 'Send',
-			'coachSettings.stopResponse' => 'Stop',
-			'coachSettings.startLocalServer' => ({required Object app}) => 'Start ${app}',
-			'coachSettings.getLocalServer' => ({required Object app}) => 'Get ${app}',
-			'coachSettings.startingLocalServer' => ({required Object app}) => 'Starting ${app}…',
-			'coachSettings.localServerOfflineTitle' => ({required Object app}) => '${app} isn\'t running',
-			'coachSettings.localServerOfflineBody' => 'Start your local server to chat privately — no terminal needed.',
-			'coachSettings.localServerNotInstalledTitle' => ({required Object app}) => '${app} isn\'t installed',
-			'coachSettings.localServerNotInstalledBody' => ({required Object app}) => 'Install the free ${app} app, then press Start.',
-			'coachSettings.localServerStartingBody' => 'This can take a few seconds…',
-			'coachSettings.localServerStartFailed' => ({required Object app}) => 'Couldn\'t start ${app} — try opening it from your Applications folder.',
-			'coachSettings.localServerDownloadFailed' => ({required Object url}) => 'Couldn\'t open the browser — visit ${url}',
-			'coachSettings.ollamaStartTimeout' => 'Taking longer than expected — check the Ollama icon in your menu bar (a first launch may need approval).',
-			'coachSettings.ollamaServerOffTitle' => 'Ollama is running but not serving',
-			'coachSettings.ollamaServerOffBody' => 'Ollama is open but isn\'t answering on its port. Quit it from the menu bar, then press Start again.',
-			'coachSettings.lmStudioStartTimeout' => 'Taking longer than expected — open LM Studio and check it has finished starting.',
-			'coachSettings.lmStudioServerOffTitle' => 'LM Studio\'s server isn\'t running',
-			'coachSettings.lmStudioServerOffBody' => 'LM Studio is open, but its local server is off. Turn it on with Developer → Start Server, or tick Settings → Run the LLM server on login.',
-			'coachSettings.lmStudioNoModelsJit' => 'LM Studio isn\'t listing any models. It only lists loaded models when Just-In-Time loading is off — load a model in LM Studio, or turn on Developer → Server Settings → Just In Time Model Loading.',
-			'coachSettings.backendStandard' => 'Evolve AI',
-			'coachSettings.standardDesc' => 'Included with Evolve Pro. We run a free Google model (Gemma) for you — no keys, no setup. Your messages go to Google\'s free tier, which may use them to improve their services.',
 			'coachSettings.activeStandard' => ({required Object model}) => 'Evolve AI · ${model}',
-			'coachSettings.standardSection' => 'Evolve AI',
-			'coachSettings.standardStatusReady' => 'Included with Pro',
-			'coachSettings.standardStatusNeedsPro' => 'Requires Pro',
-			'coachSettings.standardStatusNeedsSignIn' => 'Sign in required',
-			'coachSettings.standardStatusUnavailable' => 'Unavailable',
-			'coachSettings.standardNeedsProNote' => 'Evolve AI is part of Evolve Pro. Subscribe to unlock it.',
-			'coachSettings.standardNeedsSignInNote' => 'Sign in to use Evolve AI. Your subscription unlocks it on every device.',
-			'coachSettings.standardUnavailableNote' => 'Evolve AI isn\'t available in this build. Connect your own OpenRouter account, or run a local model.',
-			'coachSettings.standardPrivateNote' => 'Evolve AI needs an Evolve account, and Private mode doesn\'t keep one. Connect your own OpenRouter account, or run a local model — both keep working here.',
-			'coachSettings.accountModeNote' => 'Prefer your own OpenRouter key or a local model? Those are available in Private mode.',
-			'coachSettings.localGroupLabel' => 'Local — on this Mac',
-			'coachSettings.useCustomServer' => 'Use a custom server…',
+			'coachSettings.backendStandard' => 'Evolve AI',
+			'coachSettings.baseUrlLabel' => 'Base URL',
 			'coachSettings.cardLive' => 'Live',
 			'coachSettings.cardOff' => 'Off',
+			'coachSettings.cloudKeyMissing' => 'No key yet — this engine won\'t reply. Connect your OpenRouter account below, switch to Evolve AI, or use a local server.',
+			'coachSettings.detectedAction' => 'Use local',
+			'coachSettings.detectedBody' => ({required Object app}) => '${app} is running on this Mac. Run the coach 100% privately?',
+			'coachSettings.detectedDismiss' => 'Not now',
+			'coachSettings.detectedTitle' => ({required Object app}) => '${app} detected',
+			'coachSettings.discovering' => 'Looking for models…',
 			'coachSettings.engineOpenRouter' => 'OpenRouter',
 			'coachSettings.engineOpenRouterHint' => 'Your own key · free',
+			'coachSettings.getLocalServer' => ({required Object app}) => 'Get ${app}',
+			'coachSettings.groupEngine' => 'Engine',
+			'coachSettings.groupPrivacy' => 'Privacy',
+			'coachSettings.groupTuning' => 'AI Coach tuning',
+			'coachSettings.lmStudioNoModelsJit' => 'LM Studio isn\'t listing any models. It only lists loaded models when Just-In-Time loading is off — load a model in LM Studio, or turn on Developer → Server Settings → Just In Time Model Loading.',
+			'coachSettings.lmStudioServerOffBody' => 'LM Studio is open, but its local server is off. Turn it on with Developer → Start Server, or tick Settings → Run the LLM server on login.',
+			'coachSettings.lmStudioServerOffTitle' => 'LM Studio\'s server isn\'t running',
+			'coachSettings.lmStudioStartTimeout' => 'Taking longer than expected — open LM Studio and check it has finished starting.',
+			'coachSettings.localGroupLabel' => 'Local — on this Mac',
+			'coachSettings.localServerDownloadFailed' => ({required Object url}) => 'Couldn\'t open the browser — visit ${url}',
+			'coachSettings.localServerNotInstalledBody' => ({required Object app}) => 'Install the free ${app} app, then press Start.',
+			'coachSettings.localServerNotInstalledTitle' => ({required Object app}) => '${app} isn\'t installed',
+			'coachSettings.localServerOfflineBody' => 'Start your local server to chat privately — no terminal needed.',
+			'coachSettings.localServerOfflineTitle' => ({required Object app}) => '${app} isn\'t running',
+			'coachSettings.localServerStartFailed' => ({required Object app}) => 'Couldn\'t start ${app} — try opening it from your Applications folder.',
+			'coachSettings.localServerStartingBody' => 'This can take a few seconds…',
+			'coachSettings.manualModelAdd' => 'Use this model',
+			'coachSettings.manualModelLabel' => 'Model id',
+			'coachSettings.modelLabel' => 'Model',
+			'coachSettings.noModelsFound' => 'No models found — type a model id manually below.',
+			'coachSettings.ollamaServerOffBody' => 'Ollama is open but isn\'t answering on its port. Quit it from the menu bar, then press Start again.',
+			'coachSettings.ollamaServerOffTitle' => 'Ollama is running but not serving',
+			'coachSettings.ollamaStartTimeout' => 'Taking longer than expected — check the Ollama icon in your menu bar (a first launch may need approval).',
+			'coachSettings.presetLmStudio' => 'LM Studio',
+			'coachSettings.presetOllama' => 'Ollama',
+			'coachSettings.refreshModels' => 'Refresh models',
+			'coachSettings.remoteBadge' => 'Remote',
+			'coachSettings.remoteWarning' => 'This endpoint isn\'t a local address — messages will leave this device.',
+			'coachSettings.sendMessage' => 'Send',
+			'coachSettings.settingsRowConfigure' => 'Engine & local server',
+			'coachSettings.settingsRowStatus' => 'Active engine',
+			'coachSettings.settingsSectionLabel' => 'AI Coach',
+			'coachSettings.settingsSubtitle' => 'Pick the engine that powers your coach and point it at a local server for full privacy.',
+			'coachSettings.standardNeedsProNote' => 'Evolve AI is part of Evolve Pro. Subscribe to unlock it.',
+			'coachSettings.standardNeedsSignInNote' => 'Sign in to use Evolve AI. Your subscription unlocks it on every device.',
+			'coachSettings.standardPrivateNote' => 'Evolve AI needs an Evolve account, and Private mode doesn\'t keep one. Connect your own OpenRouter account, or run a local model — both keep working here.',
+			'coachSettings.standardStatusNeedsPro' => 'Requires Pro',
+			'coachSettings.standardStatusNeedsSignIn' => 'Sign in required',
+			'coachSettings.standardStatusReady' => 'Included with Pro',
+			'coachSettings.standardStatusUnavailable' => 'Unavailable',
+			'coachSettings.standardUnavailableNote' => 'Evolve AI isn\'t available in this build. Connect your own OpenRouter account, or run a local model.',
+			'coachSettings.startLocalServer' => ({required Object app}) => 'Start ${app}',
+			'coachSettings.startingLocalServer' => ({required Object app}) => 'Starting ${app}…',
+			'coachSettings.statusChecking' => 'Checking…',
+			'coachSettings.statusConnected' => 'Connected',
+			'coachSettings.statusOffline' => 'Server offline',
+			'coachSettings.stopResponse' => 'Stop',
+			'coachSettings.systemPromptHint' => 'Override the coach persona (leave empty for the default)',
+			'coachSettings.systemPromptLabel' => 'System prompt',
+			'coachSettings.systemPromptReset' => 'Reset',
+			'coachSettings.temperatureLabel' => 'Temperature',
+			'coachSettings.temperatureLower' => 'Lower temperature',
+			'coachSettings.temperatureRaise' => 'Raise temperature',
+			'coachSettings.tuningFootnote' => 'These apply to every engine, including Evolve AI.',
+			'coachSettings.useCustomServer' => 'Use a custom server…',
 			'tour.back' => 'Back',
 			'tour.next' => 'Next',
 			'tour.continueLabel' => 'Continue',
@@ -5703,13 +5855,14 @@ extension on Translations {
 			'tour.coachSuggestionsDesc' => 'Not sure where to begin? Tap one of these suggestions to get going.',
 			'tour.coachInputTitle' => 'Ask anything',
 			'tour.coachInputDesc' => 'Type your question here and press send. That\'s the end of the tour — enjoy Evolve!',
-			'palette.searchHint' => 'Search goals, habits, actions…',
+			'palette.searchHint' => 'Search goals, habits, settings, actions…',
 			'palette.groupSuggested' => 'Suggested',
 			'palette.groupThisWeek' => 'This week',
 			'palette.groupGoals' => 'Goals',
 			'palette.groupHabits' => 'Habits',
 			'palette.groupActions' => 'Actions',
 			'palette.groupSections' => 'Go to',
+			'palette.groupSettings' => 'Settings',
 			'palette.goToThisWeek' => 'Go to this week',
 			'palette.createGoalBlank' => 'Create goal',
 			'palette.createGoal' => ({required Object title}) => 'Create goal “${title}”',

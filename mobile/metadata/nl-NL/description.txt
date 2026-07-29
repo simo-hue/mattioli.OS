@@ -1,21 +1,41 @@
-Wealth Compass is een privé, lokaal-georiënteerd dashboard voor persoonlijke financiën dat je helpt je nettovermogen, cashflow, investeringen, crypto-activa en schulden op één plek te begrijpen.
+Evolve is een gewoonte- en doelentracker voor wie een routine wil bouwen die het echt volhoudt - en wil begrijpen waarom die het volhoudt. Eén app voor iPhone, iPad en Mac, zonder advertenties, zonder ruis, met een analyse-engine die je dagelijkse check-ins omzet in iets waar je wat mee kunt.
 
-Krijg een duidelijk overzicht van je financiën:
+VIER MANIEREN OM TIJD TE ZIEN
+Schakel het dashboard tussen Week, Maand, Jaar en Leven. De weergave Leven zet de weken die je al geleefd hebt en de weken die nog komen af tegen je geboortedatum: een rustige herinnering aan waar je tijd naartoe gaat.
 
-- Bekijk nettovermogen, contantsaldo, investeringen en crypto in één oogopslag
-- Volg inkomsten en uitgaven met categorieën en visuele trends
-- Plan terugkerende transacties en ontvang optionele lokale herinneringen
-- Houd aandelen, ETF's en cryptocurrency-bezittingen in de gaten
-- Bekijk kostprijs, winst en verlies, en portefeuille-allocatie
-- Volg schulden naast je activa
-- Bekijk je nettovermogensgeschiedenis met automatische lokale snapshots
-- Converteer waarden met opgeslagen ECB-referentiewisselkoersen
-- Verberg gevoelige bedragen direct met Privacy Mode
-- Beveilig de app met Face ID of Touch ID
-- Exporteer, importeer en verwijder je lokale gegevens wanneer je wilt
+GEWOONTEN DIE ZICHZELF BIJHOUDEN
+- Elke gewoonte krijgt een eigen weekfrequentie, kleur en herinneringstijd.
+- Vink een gewoonte af rechtstreeks vanuit de melding, zonder de app te openen.
+- Huidige, beste en slechtste reeksen worden onderweg berekend.
+- Automatische verificatie via Gezondheid: stappen, oefenminuten, actieve energie, stauren, afstand, mindful minuten, slaap en workouts.
+- Automatische verificatie via Schermtijd: totaal apparaatgebruik of tijd in de apps en categorieën die je kiest.
+- Combineer signalen met "een van deze" of "al deze" als één voorwaarde niet genoeg is.
 
-Je financiële gegevens blijven op je apparaat. Wealth Compass vereist geen account en slaat je portefeuille- of transactiegeschiedenis niet op op servers die door de ontwikkelaar worden beheerd.
+DOELEN OP ELKE HORIZON
+Doelen per week, maand, kwartaal, jaar en voor het leven, gegroepeerd in de levensgebieden die je zelf bepaalt. Voeg numerieke streefwaarden toe, koppel een doel aan de gewoonte die het voedt, en bekijk prestaties, seizoensinvloeden en voortgang per jaar.
 
-Optionele marktprijsupdates gebruiken API-referenties die je zelf verstrekt. Referenties worden veilig opgeslagen in de iOS Keychain.
+STATISTIEKEN DIE IETS ZEGGEN
+- Voltooiingstrends over 7, 14 en 30 dagen, plus een jaarkalender per gewoonte.
+- Correlatieanalyse: welke gewoonten de andere omhoog trekken en welke stilletjes om hetzelfde uur strijden.
+- Check-ins voor stemming en energie, gerelateerd aan wat je daadwerkelijk hebt afgerond.
+- Sleutelgewoonten, kritieke, veerkrachtige en stemmingsgevoelige gewoonten, automatisch herkend.
+- Analyse van de slechtste reeksen, zodat een slechte periode informatie wordt in plaats van schuldgevoel.
 
-Wealth Compass is een informatief trackingtool. Het maakt geen verbinding met financiële instellingen, voert geen transacties uit, geeft geen financieel advies en garandeert de nauwkeurigheid van gegevens van derden niet.
+AI COACH
+Een chat die je gewoonten, je doelen en het verloop van deze week al kent, met suggesties van één tik zoals "repareer mijn zwakste gewoonte" of "lig ik op schema?". Hij ziet alleen de context die je zelf deelt en vraagt het altijd eerst.
+
+TWEE MANIEREN OM JE GEGEVENS TE BEWAREN
+- Privémodus: helemaal geen account. Je gegevens staan in een versleutelde database op je toestel.
+- Accountmodus: log in met Apple of Google en synchroniseer tussen je apparaten.
+In beide gevallen werkt Evolve offline. iCloud-synchronisatie is optioneel, end-to-end versleuteld via je eigen iCloud-account, en geen betaalde functie. Exporteer, importeer of verwijder alles wanneer je wilt, en vergrendel de app met Face ID of Touch ID.
+
+GRATIS EN PRO
+Evolve is gratis te downloaden. Het gratis plan beperkt hoeveel gewoonten en doelen je tegelijk kunt bewaren. Evolve PRO haalt die limieten weg en voegt diepgaande grafieken, geavanceerde trend- en doelanalyse en de AI Coach zonder enige installatie toe.
+
+INFORMATIE OVER HET EVOLVE PRO-ABONNEMENT
+Evolve PRO is een automatisch verlengend abonnement: EUR 4,99 per maand of EUR 49,99 per jaar. De prijs in je eigen valuta wordt in de app getoond voordat je bevestigt. Het bedrag wordt bij aankoopbevestiging van je Apple-account afgeschreven. Het abonnement wordt automatisch verlengd tenzij automatische verlenging minstens 24 uur voor het einde van de lopende periode wordt uitgezet; de verlenging wordt binnen 24 uur voor het einde van de periode in rekening gebracht. Je beheert het abonnement en zet automatische verlenging uit in de instellingen van je Apple-account na aankoop.
+
+In de privémodus is er geen account, dus draait de AI Coach op je eigen OpenRouter-account: gratis, met een sleutel die jij aanlevert.
+
+Gebruiksvoorwaarden (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Privacybeleid: https://simo-hue.github.io/evolve/privacy.html

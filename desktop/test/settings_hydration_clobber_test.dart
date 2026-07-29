@@ -35,11 +35,13 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:evolve_desktop/features/settings/presentation/settings_section.dart';
+import 'support/settings_navigation.dart';
 
 Finder _switchIn(String rowLabel) => find.descendant(
-      of: find.widgetWithText(ListTile, rowLabel),
-      matching: find.byType(EvolveSwitch),
-    );
+  of: find.widgetWithText(ListTile, rowLabel),
+  matching: find.byType(EvolveSwitch),
+);
 
 bool _switchValue(WidgetTester tester, String rowLabel) =>
     tester.widget<EvolveSwitch>(_switchIn(rowLabel)).value;
@@ -84,8 +86,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text(t.settingsPage.sectionApplication).first);
-      await tester.pumpAndSettle();
+      await openSettingsSection(tester, SettingsSection.notifications);
 
       // The user turns Focus Mode ON while the read is still pending.
       expect(_switchValue(tester, t.settingsPage.focusMode), isFalse);
@@ -141,7 +142,7 @@ void main() {
           desktopSyncedSettingsProvider.overrideWith(
             (_) async => generation++ == 0
                 ? const {'pref_focus_mode': '0'}
-                : const {'pref_focus_mode': '0', 'pref_milestones': '0'},
+                : const {'pref_focus_mode': '0', 'pref_time_format_24h': '0'},
           ),
         ],
       );
@@ -164,14 +165,15 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text(t.settingsPage.sectionApplication).first);
-      await tester.pumpAndSettle();
+      await openSettingsSection(tester, SettingsSection.general);
 
-      // Hydration has landed. The user now turns Milestones OFF locally…
-      await tester.ensureVisible(_switchIn(t.settingsPage.milestones));
-      await tester.tap(_switchIn(t.settingsPage.milestones));
+      // Hydration has landed. The user now turns 24-hour time OFF locally…
+      // (this case used Milestones until that row was removed as a verified
+      // no-op; 24-hour time is the same shape — a synced boolean with a row.)
+      await tester.ensureVisible(_switchIn(t.settingsPage.timeFormat24h));
+      await tester.tap(_switchIn(t.settingsPage.timeFormat24h));
       await tester.pumpAndSettle();
-      expect(_switchValue(tester, t.settingsPage.milestones), isFalse);
+      expect(_switchValue(tester, t.settingsPage.timeFormat24h), isFalse);
 
       // …then turns it back ON on the iPhone, and a pull delivers that.
       container.invalidate(desktopSyncedSettingsProvider);
@@ -179,9 +181,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        _switchValue(tester, t.settingsPage.milestones),
+        _switchValue(tester, t.settingsPage.timeFormat24h),
         isFalse,
-        reason: 'the pull carried pref_milestones = 0 and it must be applied',
+        reason:
+            'the pull carried pref_time_format_24h = 0 and it must be applied',
       );
     },
   );
@@ -236,8 +239,11 @@ void main() {
       await tester.pumpAndSettle();
 
       final appearance = container.read(desktopAppearanceControllerProvider);
-      expect(appearance.accentColor, const Color(0xFFFF7A00),
-          reason: 'orange, as the iPhone renders it — not the local yellow');
+      expect(
+        appearance.accentColor,
+        const Color(0xFFFF7A00),
+        reason: 'orange, as the iPhone renders it — not the local yellow',
+      );
       expect(appearance.themeMode, ThemeMode.light);
       expect(
         container.read(desktopLocaleControllerProvider)?.languageCode,

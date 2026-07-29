@@ -1,21 +1,41 @@
-Wealth Compass to prywatny, lokalny panel finansów osobistych, który pomaga w jednym miejscu zrozumieć swoją wartość netto, przepływy pieniężne, inwestycje, aktywa kryptowalutowe i zobowiązania.
+Evolve to tracker nawyków i celów dla tych, którzy chcą zbudować rutynę, która naprawdę się utrzyma - i zrozumieć, dlaczego się utrzymuje. Jedna aplikacja na iPhone'a, iPada i Maca, bez reklam i szumu, z silnikiem analitycznym, który zamienia codzienne wpisy w coś, na czym da się działać.
 
-Zbuduj jasny obraz swoich finansów:
+CZTERY SPOSOBY NA WIDOK CZASU
+Przełączaj pulpit między Tygodniem, Miesiącem, Rokiem i Życiem. Widok Życie rysuje tygodnie już przeżyte i te, które są przed tobą, na podstawie daty urodzenia - spokojne przypomnienie, na co idzie twój czas.
 
-- Przeglądanie wartości netto, salda gotówkowego, inwestycji i kryptowalut na pierwszy rzut oka
-- Śledzenie przychodów i wydatków za pomocą kategorii i trendów wizualnych
-- Planowanie powtarzających się transakcji i otrzymywanie opcjonalnych lokalnych przypomnień
-- Monitorowanie akcji, ETF-ów i kryptowalut
-- Przegląd bazy kosztów, zysków i strat oraz alokacji portfela
-- Śledzenie zobowiązań obok aktywów
-- Podążaj za historią majątku netto z automatycznymi lokalnymi migawkami
-- Przeliczanie wartości za pomocą buforowanych referencyjnych kursów ECB
-- Natychmiastowe ukrycie wrażliwych kwot za pomocą Trybu Prywatności
-- Chroń aplikację za pomocą Face ID lub Touch ID
-- Eksportuj, importuj i usuwaj lokalne dane w dowolnym momencie
+NAWYKI, KTÓRE ZAPISUJĄ SIĘ SAME
+- Każdy nawyk ma własną częstotliwość tygodniową, kolor i godzinę przypomnienia.
+- Odhacz nawyk prosto z powiadomienia, bez otwierania aplikacji.
+- Bieżąca, najlepsza i najgorsza seria liczą się na bieżąco.
+- Automatyczna weryfikacja przez Zdrowie: kroki, minuty ćwiczeń, aktywna energia, godziny stania, dystans, minuty uważności, sen i treningi.
+- Automatyczna weryfikacja przez Czas przed ekranem: łączne użycie urządzenia albo czas w wybranych aplikacjach i kategoriach.
+- Łącz warunki opcją "którykolwiek z nich" lub "wszystkie", gdy jeden nie wystarcza.
 
-Twoje dane finansowe pozostają na urządzeniu. Wealth Compass nie wymaga konta i nie przechowuje Twojego portfela ani historii transakcji na serwerach prowadzonych przez deweloperów.
+CELE NA KAŻDYM HORYZONCIE
+Cele tygodniowe, miesięczne, kwartalne, roczne i życiowe, pogrupowane w obszary życia, które sam definiujesz. Dodawaj cele liczbowe, powiąż cel z nawykiem, który go napędza, i sprawdzaj wyniki, sezonowość oraz postęp rok do roku.
 
-Opcjonalne aktualizacje cen rynkowych wykorzystują dane uwierzytelniające API, które podajesz. Dane uwierzytelniające są bezpiecznie przechowywane w kluczy iOS.
+STATYSTYKI, KTÓRE COŚ MÓWIĄ
+- Trendy realizacji w 7, 14 i 30 dniach oraz kalendarz roczny dla każdego nawyku.
+- Analiza korelacji: które nawyki ciągną resztę w górę, a które po cichu walczą o tę samą godzinę.
+- Zapis nastroju i energii powiązany z tym, co faktycznie udało ci się zrobić.
+- Nawyki kluczowe, krytyczne, odporne i wrażliwe na nastrój rozpoznawane automatycznie.
+- Analiza najgorszych serii, żeby słaby okres stał się informacją, a nie poczuciem winy.
 
-Wealth Compass to narzędzie do śledzenia informacji. Nie łączy się z instytucjami finansowymi, nie realizuje transakcji, nie udziela porad finansowych ani nie gwarantuje dokładności danych rynkowych stron trzecich.
+TRENER AI
+Czat, który zna już twoje nawyki, cele i przebieg tego tygodnia, z podpowiedziami na jedno dotknięcie, jak "napraw mój najsłabszy nawyk" albo "czy jestem na dobrej drodze?". Widzi tylko kontekst, który sam udostępnisz, i zawsze pyta przed wysłaniem.
+
+DWA SPOSOBY PRZECHOWYWANIA DANYCH
+- Tryb prywatny: żadnego konta. Dane leżą w zaszyfrowanej bazie na twoim urządzeniu.
+- Tryb z kontem: zaloguj się przez Apple lub Google i synchronizuj między urządzeniami.
+W obu przypadkach Evolve działa offline. Synchronizacja z iCloud jest opcjonalna, szyfrowana end-to-end przez twoje własne konto iCloud i nie jest funkcją płatną. W każdej chwili wyeksportujesz, zaimportujesz lub usuniesz wszystko, a aplikację zablokujesz przez Face ID lub Touch ID.
+
+ZA DARMO I PRO
+Evolve pobierasz za darmo. Plan bezpłatny ogranicza liczbę nawyków i celów, które możesz prowadzić naraz. Evolve PRO znosi te limity i dodaje szczegółowe wykresy, zaawansowaną analizę trendów i celów oraz Trenera AI bez żadnej konfiguracji.
+
+INFORMACJE O SUBSKRYPCJI EVOLVE PRO
+Evolve PRO to subskrypcja odnawiana automatycznie: 4,99 EUR miesięcznie lub 49,99 EUR rocznie. Cena w twojej walucie jest pokazywana w aplikacji przed potwierdzeniem. Płatność zostanie pobrana z konta Apple przy potwierdzeniu zakupu. Subskrypcja odnawia się automatycznie, o ile automatyczne odnawianie nie zostanie wyłączone co najmniej 24 godziny przed końcem bieżącego okresu; opłata za odnowienie jest pobierana w ciągu 24 godzin przed końcem okresu. Subskrypcją zarządzasz i automatyczne odnawianie wyłączasz w ustawieniach konta Apple po zakupie.
+
+W trybie prywatnym nie ma konta, więc Trener AI działa na twoim własnym koncie OpenRouter - za darmo, z kluczem, który podajesz sam.
+
+Warunki użytkowania (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Polityka prywatności: https://simo-hue.github.io/evolve/privacy.html

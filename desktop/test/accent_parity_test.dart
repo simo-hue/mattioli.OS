@@ -26,6 +26,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:evolve_desktop/features/settings/presentation/settings_section.dart';
+import 'support/settings_navigation.dart';
 
 /// Mobile's accent parser, byte for byte.
 ///
@@ -86,106 +88,108 @@ void main() {
   setUp(() => LocaleSettings.setLocale(AppLocale.en));
 
   group('the same stored accent renders differently on the two apps', () {
+    test('a whitespace-padded accent paints invisible on the Mac and orange on '
+        'the iPhone', () async {
+      // `int.parse` TRIMS, so ' #FF9500' is 7 chars after stripping '#' —
+      // the `length == 6` guard declines to prepend the alpha, int.parse
+      // succeeds anyway, and the Mac gets alpha 0. No throw, no log, no
+      // fallback: a parse that reports success and returns garbage.
+      final container = await _container({});
+      addTearDown(container.dispose);
+      container
+          .read(desktopAppearanceControllerProvider.notifier)
+          .applyProfile(accentColor: ' #FF9500');
+
+      expect(
+        container.read(desktopAppearanceControllerProvider).accentColor,
+        mobileAccentFor(' #FF9500'),
+        reason: 'the Mac must paint the same pixels the iPhone paints',
+      );
+      expect(
+        container.read(desktopAppearanceControllerProvider).accentColor.a,
+        1.0,
+        reason: 'an accent with alpha 0 is an invisible primary button',
+      );
+    });
+
     test(
-      'a whitespace-padded accent paints invisible on the Mac and orange on '
-      'the iPhone',
+      'an ARGB accent keeps its alpha on the Mac and loses it on the iPhone',
       () async {
-        // `int.parse` TRIMS, so ' #FF9500' is 7 chars after stripping '#' —
-        // the `length == 6` guard declines to prepend the alpha, int.parse
-        // succeeds anyway, and the Mac gets alpha 0. No throw, no log, no
-        // fallback: a parse that reports success and returns garbage.
         final container = await _container({});
         addTearDown(container.dispose);
         container
             .read(desktopAppearanceControllerProvider.notifier)
-            .applyProfile(accentColor: ' #FF9500');
+            .applyProfile(accentColor: '#80FF9500');
 
         expect(
           container.read(desktopAppearanceControllerProvider).accentColor,
-          mobileAccentFor(' #FF9500'),
-          reason: 'the Mac must paint the same pixels the iPhone paints',
-        );
-        expect(
-          container
-              .read(desktopAppearanceControllerProvider)
-              .accentColor
-              .a,
-          1.0,
-          reason: 'an accent with alpha 0 is an invisible primary button',
+          mobileAccentFor('#80FF9500'),
         );
       },
     );
 
-    test('an ARGB accent keeps its alpha on the Mac and loses it on the iPhone',
-        () async {
-      final container = await _container({});
-      addTearDown(container.dispose);
-      container
-          .read(desktopAppearanceControllerProvider.notifier)
-          .applyProfile(accentColor: '#80FF9500');
+    test(
+      'an unparseable accent falls back on the iPhone but not on the Mac',
+      () async {
+        // '#FFF' is short hex. Mobile rejects it and keeps its default; desktop
+        // parses it as 0x00000FFF — alpha 0 again, and a colour nobody chose.
+        final container = await _container({});
+        addTearDown(container.dispose);
+        container
+            .read(desktopAppearanceControllerProvider.notifier)
+            .applyProfile(accentColor: '#FFF');
 
-      expect(
-        container.read(desktopAppearanceControllerProvider).accentColor,
-        mobileAccentFor('#80FF9500'),
-      );
-    });
+        expect(
+          container.read(desktopAppearanceControllerProvider).accentColor,
+          DesktopAppearanceController.defaultAccent,
+          reason: 'the live accent is kept when the store has nothing usable',
+        );
+      },
+    );
 
-    test('an unparseable accent falls back on the iPhone but not on the Mac',
-        () async {
-      // '#FFF' is short hex. Mobile rejects it and keeps its default; desktop
-      // parses it as 0x00000FFF — alpha 0 again, and a colour nobody chose.
-      final container = await _container({});
-      addTearDown(container.dispose);
-      container
-          .read(desktopAppearanceControllerProvider.notifier)
-          .applyProfile(accentColor: '#FFF');
+    test(
+      'a malformed stored accent crashes the next appearance persist',
+      () async {
+        // `_toHex` does `toRadixString(16).substring(2, 8)` with no padLeft, so
+        // any colour whose leading alpha nibble is zero produces a 6-char string
+        // and the substring runs off the end. Reached from setThemeMode /
+        // setAccentColor, i.e. an ordinary settings interaction.
+        final container = await _container({});
+        addTearDown(container.dispose);
+        final controller = container.read(
+          desktopAppearanceControllerProvider.notifier,
+        );
+        controller.applyProfile(accentColor: ' #FF9500');
 
-      expect(
-        container.read(desktopAppearanceControllerProvider).accentColor,
-        DesktopAppearanceController.defaultAccent,
-        reason: 'the live accent is kept when the store has nothing usable',
-      );
-    });
-
-    test('a malformed stored accent crashes the next appearance persist',
-        () async {
-      // `_toHex` does `toRadixString(16).substring(2, 8)` with no padLeft, so
-      // any colour whose leading alpha nibble is zero produces a 6-char string
-      // and the substring runs off the end. Reached from setThemeMode /
-      // setAccentColor, i.e. an ordinary settings interaction.
-      final container = await _container({});
-      addTearDown(container.dispose);
-      final controller = container.read(
-        desktopAppearanceControllerProvider.notifier,
-      );
-      controller.applyProfile(accentColor: ' #FF9500');
-
-      expect(() => controller.setThemeMode(ThemeMode.light), returnsNormally);
-      expect(
-        container.read(sharedPreferencesProvider)!.getString(
-          'pref_accent_color',
-        ),
-        '#FF9500',
-      );
-    });
+        expect(() => controller.setThemeMode(ThemeMode.light), returnsNormally);
+        expect(
+          container
+              .read(sharedPreferencesProvider)!
+              .getString('pref_accent_color'),
+          '#FF9500',
+        );
+      },
+    );
   });
 
   group('the Mac seeds a different default white than everything else', () {
-    test('the desktop accent seed IS SettingsCodec.defaultAccentColor',
-        () async {
-      // The DB DEFAULT, the Postgres DEFAULT, `seedProfile` and mobile all say
-      // #FFFFFF. Desktop said #FAFAFA, so an untouched profile hydrated to a
-      // different colour depending on which side supplied the value.
-      final container = await _container({});
-      addTearDown(container.dispose);
+    test(
+      'the desktop accent seed IS SettingsCodec.defaultAccentColor',
+      () async {
+        // The DB DEFAULT, the Postgres DEFAULT, `seedProfile` and mobile all say
+        // #FFFFFF. Desktop said #FAFAFA, so an untouched profile hydrated to a
+        // different colour depending on which side supplied the value.
+        final container = await _container({});
+        addTearDown(container.dispose);
 
-      expect(
-        dashboardColorToHex(
-          container.read(desktopAppearanceControllerProvider).accentColor,
-        ),
-        SettingsCodec.defaultAccentColor,
-      );
-    });
+        expect(
+          dashboardColorToHex(
+            container.read(desktopAppearanceControllerProvider).accentColor,
+          ),
+          SettingsCodec.defaultAccentColor,
+        );
+      },
+    );
 
     testWidgets(
       'the accent picker shows nothing selected for the canonical seed white',
@@ -198,8 +202,7 @@ void main() {
           tester,
           prefs: {'pref_accent_color': SettingsCodec.defaultAccentColor},
         );
-        await tester.tap(find.text(t.settingsPage.sectionApplication).first);
-        await tester.pumpAndSettle();
+        await openSettingsSection(tester, SettingsSection.general);
 
         final white = find.byTooltip(
           t.settingsPage.useAccent(hex: SettingsCodec.defaultAccentColor),
@@ -219,8 +222,9 @@ void main() {
       },
     );
 
-    testWidgets('picking the default accent in a light theme stores near-black',
-        (tester) async {
+    testWidgets('picking the default accent in a light theme stores near-black', (
+      tester,
+    ) async {
       // `_ColorRow` maps the whole palette through `_visibleAccent` BEFORE the
       // loop, so `onTap: () => onChanged(color)` hands over the MAPPED colour.
       // In a light theme the leftmost "white" swatch therefore pushes #09090B
@@ -231,8 +235,7 @@ void main() {
         prefs: {'pref_accent_color': SettingsCodec.defaultAccentColor},
         light: true,
       );
-      await tester.tap(find.text(t.settingsPage.sectionApplication).first);
-      await tester.pumpAndSettle();
+      await openSettingsSection(tester, SettingsSection.general);
 
       final white = find.byTooltip(
         t.settingsPage.useAccent(hex: SettingsCodec.defaultAccentColor),
@@ -241,8 +244,10 @@ void main() {
       await tester.tap(white);
       await tester.pumpAndSettle();
 
-      expect(prefs.getString('pref_accent_color'),
-          SettingsCodec.defaultAccentColor);
+      expect(
+        prefs.getString('pref_accent_color'),
+        SettingsCodec.defaultAccentColor,
+      );
     });
   });
 }

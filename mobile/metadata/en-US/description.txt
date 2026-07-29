@@ -1,21 +1,41 @@
-Wealth Compass is a private, local-first personal finance dashboard that helps you understand your net worth, cash flow, investments, crypto assets, and liabilities in one place.
+Evolve is a habit and goal tracker for people who want to build a routine that actually holds - and to understand why it holds. One app for iPhone, iPad and Mac, with no ads, no noise, and an analytics engine that turns your daily check-ins into something you can act on.
 
-Build a clear picture of your finances:
+FOUR WAYS TO SEE TIME
+Switch the dashboard between Week, Month, Year and Life. The Life view maps the weeks you have already lived and the ones still ahead against your date of birth - a quiet reminder of what you are spending your time on.
 
-- View net worth, cash balance, investments, and crypto at a glance
-- Track income and expenses with categories and visual trends
-- Schedule recurring transactions and receive optional local reminders
-- Monitor stock, ETF, and cryptocurrency holdings
-- Review cost basis, profit and loss, and portfolio allocation
-- Track liabilities alongside your assets
-- Follow net-worth history with automatic local snapshots
-- Convert values using cached ECB reference exchange rates
-- Hide sensitive amounts instantly with Privacy Mode
-- Protect the app with Face ID or Touch ID
-- Export, import, and delete your local data whenever you choose
+HABITS THAT TRACK THEMSELVES
+- Give every habit its own weekly frequency, color and reminder time.
+- Tick a habit off straight from the notification, without opening the app.
+- Current, best and worst streaks are calculated as you go.
+- Auto-verify with Apple Health: steps, exercise minutes, active energy, stand hours, distance, mindful minutes, sleep and workouts.
+- Auto-verify with Screen Time: total device usage, or time spent in the apps and categories you choose.
+- Combine signals with "any of these" or "all of these" when one condition is not enough.
 
-Your financial records stay on your device. Wealth Compass does not require an account and does not store your portfolio or transaction history on developer-operated servers.
+GOALS ON EVERY HORIZON
+Weekly, monthly, quarterly, annual and lifetime goals, grouped into the life areas you define. Add numeric targets, link a goal to the habit that feeds it, and review performance, seasonality and year-over-year progress.
 
-Optional market-price updates use API credentials that you provide. Credentials are stored securely in the iOS Keychain.
+STATISTICS THAT SAY SOMETHING
+- Completion trends over 7, 14 and 30 days, plus an annual calendar for each habit.
+- Correlation analysis: which habits pull the others up, and which quietly compete for the same hour.
+- Mood and energy check-ins, related to what you actually completed.
+- Key, critical, resilient and mood-sensitive habits, identified automatically.
+- Worst-streak analysis, so a bad run becomes information instead of guilt.
 
-Wealth Compass is an informational tracking tool. It does not connect to financial institutions, execute trades, provide financial advice, or guarantee the accuracy of third-party market data.
+AI COACH
+A chat that already knows your habits, your goals and how this week went, with one-tap prompts such as "fix my weakest habit" or "am I on track?". It only sees the context you choose to share, and it asks before sending anything.
+
+TWO WAYS TO KEEP YOUR DATA
+- Private mode: no account at all. Your data lives in an encrypted database on your device.
+- Account mode: sign in with Apple or Google and sync across your devices.
+Either way, Evolve works offline. iCloud sync is optional, end-to-end encrypted through your own iCloud account, and not a paid feature. Export, import or delete everything whenever you want, and lock the app behind Face ID or Touch ID.
+
+FREE AND PRO
+Evolve is free to download. The free plan limits how many habits and goals you can keep at once. Evolve Pro removes those limits and adds deep charts, advanced trend and goal analysis, and the AI Coach with no setup at all.
+
+EVOLVE PRO SUBSCRIPTION
+Evolve Pro is an auto-renewing subscription: EUR 4.99 per month or EUR 49.99 per year. The equivalent price in your local currency is shown in the app before you confirm. Payment is charged to your Apple Account at confirmation of purchase. The subscription renews automatically unless auto-renew is turned off at least 24 hours before the end of the current period, and your account is charged for renewal within 24 hours before the period ends. Manage the subscription and turn off auto-renewal in your Apple Account settings after purchase.
+
+In Private mode there is no account, so the AI Coach runs on your own OpenRouter account instead - free, with a key you provide.
+
+Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Privacy Policy: https://simo-hue.github.io/evolve/privacy.html

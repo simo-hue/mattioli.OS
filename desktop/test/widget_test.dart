@@ -7,7 +7,10 @@ import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:evolve_desktop/features/search/presentation/command_palette.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:evolve_desktop/features/settings/presentation/settings_section.dart';
+import 'support/settings_navigation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Some surfaces run endless animations by design — the overview check-in tile
@@ -158,7 +161,15 @@ void main() {
 
     // ⌘K → command palette opens; pick a section from it.
     await pressCmd(LogicalKeyboardKey.keyK);
-    expect(find.byType(TextField), findsOneWidget);
+    // Scoped to the palette: the Settings rail behind it now has a search
+    // field of its own, so a bare `find.byType(TextField)` matches two.
+    expect(
+      find.descendant(
+        of: find.byType(CommandPalette),
+        matching: find.byType(TextField),
+      ),
+      findsOneWidget,
+    );
     await tester.tap(find.text('Panoramica').last);
     await settleFrames();
     expect(find.text('PROTOCOLLO'), findsOneWidget);
@@ -236,8 +247,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: _DesktopTestApp()));
     await tester.tap(find.text('Impostazioni'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Applicazione'));
-    await tester.pumpAndSettle();
+    await openSettingsSection(tester, SettingsSection.general);
     await tester.tap(find.byTooltip('Usa accento #3B82F6'));
     await tester.pumpAndSettle();
 
@@ -257,12 +267,17 @@ void main() {
     await tester.tap(find.text('Impostazioni'));
     await tester.pumpAndSettle();
 
+    // ACCOUNT — identity, credentials and where the data lives, in one place.
     expect(find.text('Informazioni personali'), findsOneWidget);
-    expect(find.text('Aggiorna avatar'), findsOneWidget);
+    expect(find.text('Cambia password'), findsOneWidget);
+    expect(find.text('Archiviazione dei dati'), findsOneWidget);
+    // "Aggiorna avatar" is gone: in account mode — the only mode it rendered in
+    // — the picker set a widget-local File that was never uploaded and never
+    // restored, so the picture reverted on the next rebuild.
+    expect(find.text('Aggiorna avatar'), findsNothing);
     expect(find.text('Ripristina tutorial'), findsNothing);
 
-    await tester.tap(find.text('Applicazione'));
-    await tester.pumpAndSettle();
+    await openSettingsSection(tester, SettingsSection.general);
     // A three-option theme row, not the old "Modalita scura" switch: a binary
     // control could not express 'system', so one touch of it pinned the user
     // (and, through the synced store, their iPhone) to a concrete theme with no
@@ -277,35 +292,61 @@ void main() {
     expect(find.text('Lingua'), findsOneWidget);
     expect(find.text('Formato 24h'), findsOneWidget);
     expect(find.text('Ripristina tutorial'), findsOneWidget);
-    // AI & System experience toggles (mobile parity).
-    expect(find.text('Suggerimenti AI'), findsOneWidget);
-    expect(find.text('Modalità Focus'), findsOneWidget);
-    expect(find.text('Milestones'), findsOneWidget);
-    expect(find.text('Deep Work Insights'), findsOneWidget);
+    // The "AI & System" card is gone entirely — see settings_parity_test for
+    // why all four rows were dead. Focus mode survived, in Notifications.
+    expect(find.text('Suggerimenti AI'), findsNothing);
+    expect(find.text('Milestones'), findsNothing);
+    expect(find.text('Deep Work Insights'), findsNothing);
+    expect(find.text('Modalità Focus'), findsNothing);
+    // App Logs moved to Advanced; it is not an appearance setting.
+    expect(find.text("Log dell'app"), findsNothing);
 
-    await tester.tap(find.text('Notifiche'));
-    await tester.pumpAndSettle();
+    await openSettingsSection(tester, SettingsSection.notifications);
+    // Focus mode leads the pane it actually governs.
+    expect(find.text('Modalità Focus'), findsOneWidget);
     expect(find.text('Promemoria abitudini'), findsOneWidget);
     expect(find.text('Orario morning brief'), findsOneWidget);
     expect(find.text('Review serale'), findsOneWidget);
     expect(find.text('Orario review serale'), findsOneWidget);
-    // Insights & reports rows (mobile parity).
-    expect(find.text('Insight AI'), findsOneWidget);
-    expect(find.text('Resoconti Settimanali'), findsOneWidget);
+    // Nothing on either platform ever delivered these two.
+    expect(find.text('Insight AI'), findsNothing);
+    expect(find.text('Resoconti Settimanali'), findsNothing);
 
-    await tester.tap(find.text('Privacy'));
-    await tester.pumpAndSettle();
-    expect(find.text('Blocco biometrico'), findsOneWidget);
-    expect(find.text('Cambia password'), findsOneWidget);
+    await openSettingsSection(tester, SettingsSection.dataBackup);
     expect(find.text('Esporta dati'), findsOneWidget);
+    expect(find.text('Importa dati'), findsOneWidget);
     expect(find.text('Elimina account e dati'), findsOneWidget);
 
-    await tester.tap(find.text('Abbonamento'));
-    await tester.pumpAndSettle();
+    await openSettingsSection(tester, SettingsSection.privacy);
+    expect(find.text('Blocco biometrico'), findsOneWidget);
+    // The legal links used to exist ONLY inside the Pro purchase surface, which
+    // is filtered out of the rail entirely in Private mode.
+    expect(find.text('Privacy Policy'), findsOneWidget);
+    // Credential management moved to Account.
+    expect(find.text('Cambia password'), findsNothing);
+
+    await openSettingsSection(tester, SettingsSection.advanced);
+    expect(find.text("Log dell'app"), findsOneWidget);
+    expect(
+      find.text('Ripristina le impostazioni predefinite…'),
+      findsOneWidget,
+    );
+
+    await openSettingsSection(tester, SettingsSection.subscription);
     // A non-subscribed account sees the purchase actions. "Gestisci abbonamento"
     // (Manage subscription) now lives in the already-Pro view — there is nothing
     // to manage before subscribing (mobile parity).
-    expect(find.text('Attiva Evolve Pro'), findsOneWidget);
+    //
+    // The CTA used to be the generic row "Attiva Evolve Pro". It is now a
+    // full-width filled button that names the plan being bought (and its price
+    // once the store resolves one — no offering resolves under `flutter test`,
+    // so this is the no-price form). Asserting the button by its key rather
+    // than by that sentence keeps this from re-breaking on the next copy pass.
+    expect(
+      find.byKey(SettingsKeys.row('subscription.subscribe')),
+      findsOneWidget,
+    );
+    expect(find.text('Abbonati — Annuale'), findsOneWidget);
     expect(find.text('Ripristina acquisti'), findsOneWidget);
     expect(find.text('Gestisci abbonamento'), findsNothing);
     expect(tester.takeException(), isNull);
@@ -331,8 +372,7 @@ void main() {
     );
     await tester.tap(find.text('Impostazioni'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Applicazione'));
-    await tester.pumpAndSettle();
+    await openSettingsSection(tester, SettingsSection.general);
     await tester.tap(find.text('Ripristina tutorial'));
     // The reset navigates to Overview to restart the tour; don't pumpAndSettle
     // onto the freshly-mounted dashboard. A couple of fixed pumps let the async

@@ -1,7 +1,9 @@
+import 'package:evolve_desktop/features/ai_coach/application/coach_controllers.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:evolve_desktop/features/settings/presentation/settings_section.dart';
 
 enum DesktopSection {
   overview,
@@ -44,22 +46,45 @@ enum DesktopSection {
 /// swipe-back gesture on macOS).
 enum NavDirection { forward, back }
 
-/// One-shot request to open the Settings page directly on its Privacy
-/// (iCloud-sync) section. The data-loss `SyncOffBanner` calls [request] before
-/// navigating to Settings; `SettingsPage` reads the flag on mount, jumps to the
-/// Privacy section, then [consume]s it so a later manual visit still opens on
-/// Profile.
-class PrivacySettingsRequest extends Notifier<bool> {
-  @override
-  bool build() => false;
+/// One-shot request to open the Settings page directly on a given pane.
+///
+/// Replaces the two ad-hoc booleans this used to be — `PrivacySettingsRequest`
+/// and `SubscriptionSettingsRequest` — which were handled asymmetrically (one
+/// in `initState`, one via a build-time listener) and had drifted: the
+/// subscription flag had no producer left anywhere in `lib/` or `test/` after
+/// the paywall entries moved to `showPaywallDialog`.
+///
+/// The caller sets the target pane and navigates to Settings; `SettingsPage`
+/// reads it on mount, opens that pane, then [consume]s it so a later manual
+/// visit opens wherever the user last was instead.
+///
+/// [rowId] is optional and addresses an individual setting rather than a pane.
+/// The command palette needs it: without it a ⌘K hit on "Language" opened
+/// General at scroll-top and left the user to find the row themselves, while
+/// the sidebar's own search — the same index, the same query — scrolled to it
+/// and tinted it. Two search surfaces disagreeing about what "found it" means
+/// is worse than either behaviour on its own.
+class SettingsSectionTarget {
+  const SettingsSectionTarget(this.section, {this.rowId});
 
-  void request() => state = true;
-
-  void consume() => state = false;
+  final SettingsSection section;
+  final String? rowId;
 }
 
-final privacySettingsRequestProvider =
-    NotifierProvider<PrivacySettingsRequest, bool>(PrivacySettingsRequest.new);
+class SettingsSectionRequest extends Notifier<SettingsSectionTarget?> {
+  @override
+  SettingsSectionTarget? build() => null;
+
+  void request(SettingsSection section, {String? rowId}) =>
+      state = SettingsSectionTarget(section, rowId: rowId);
+
+  void consume() => state = null;
+}
+
+final settingsSectionRequestProvider =
+    NotifierProvider<SettingsSectionRequest, SettingsSectionTarget?>(
+      SettingsSectionRequest.new,
+    );
 
 final navigationControllerProvider =
     NotifierProvider<NavigationController, DesktopSection>(
@@ -100,19 +125,39 @@ class NavigationController extends Notifier<DesktopSection> {
   /// section, back = returned to a previously visited one).
   NavDirection get lastDirection => _lastDirection;
 
+  /// Whether [section] is somewhere the user can actually be sent right now:
+  /// not where they already are, and not gated behind Evolve Pro.
+  ///
+  /// Consulted by EVERY user navigation vector — [select], [back], [forward] —
+  /// so no path can land on a locked page, including the history stacks after a
+  /// mid-session data-mode or entitlement flip (Private mode opens the coach
+  /// freely, so a Coach entry can outlive the mode that allowed it). The UI
+  /// still owns *presenting* the paywall — see `openSection` in
+  /// `shell/presentation/section_navigation.dart`; this is the floor that makes
+  /// a forgotten call site a no-op rather than a leak.
+  ///
+  /// The cheap checks run FIRST so ordinary navigation never instantiates the
+  /// auth/RevenueCat provider graph behind [coachNeedsPaywallProvider].
+  bool _isReachable(DesktopSection section) =>
+      section != state &&
+      !(section == DesktopSection.coach && ref.read(coachNeedsPaywallProvider));
+
   /// Whether there is a previously visited section to return to. Drives whether
-  /// the two-finger swipe / ⌘[ back gesture does anything.
-  bool get canGoBack => _history.isNotEmpty;
+  /// the two-finger swipe / ⌘[ back gesture does anything. Unreachable entries
+  /// do not count — [back] skips them, so they are not somewhere to return to.
+  bool get canGoBack => _history.any(_isReachable);
 
   /// Whether there is a backed-out-of section to re-enter. Drives whether the
-  /// two-finger swipe-left / ⌘] forward gesture does anything.
-  bool get canGoForward => _forward.isNotEmpty;
+  /// two-finger swipe-left / ⌘] forward gesture does anything. Unreachable
+  /// entries do not count, for the same reason as [canGoBack].
+  bool get canGoForward => _forward.any(_isReachable);
 
   /// Navigate to [section], recording the current one so it can be returned to
-  /// with [back]. Selecting the already-current section is a no-op.
+  /// with [back]. Selecting the already-current section is a no-op, as is
+  /// selecting a Pro-gated one (see [_isReachable]).
   void select(DesktopSection section) {
     if (_locked) return;
-    if (section == state) return;
+    if (!_isReachable(section)) return;
     _history.add(state);
     if (_history.length > _maxHistory) {
       _history.removeAt(0);
@@ -126,6 +171,11 @@ class NavigationController extends Notifier<DesktopSection> {
   /// pages. Bypasses the lock and deliberately does NOT touch the back/forward
   /// history, so the tour's page hops don't pollute the user's navigation
   /// stack once the tour ends.
+  ///
+  /// Also bypasses [_isReachable] on purpose: the tour's final segment IS the
+  /// Coach page, and it runs for everyone — a free account is shown the feature
+  /// it would be buying. The shell's eviction guard exempts an active tour for
+  /// the same reason.
   void selectForTour(DesktopSection section) {
     if (section == state) return;
     _lastDirection = NavDirection.forward;
@@ -135,36 +185,40 @@ class NavigationController extends Notifier<DesktopSection> {
   /// Return to the most recently visited section, if any. Mirrors the mobile
   /// swipe-back gesture — bound on macOS to ⌘[ and the two-finger trackpad
   /// swipe. No-op at the root of the history.
+  ///
+  /// Entries that are no longer reachable are dropped as they are passed rather
+  /// than refused: keeping them would only make the gesture dead. Dropping them
+  /// is self-healing — it is also what makes the shell's eviction hop harmless,
+  /// which leaves the history holding both Coach (now gated) and the Overview
+  /// it just landed on.
   void back() {
     if (_locked) return;
-    if (_history.isEmpty) return;
-    _forward.add(state);
-    _lastDirection = NavDirection.back;
-    state = _history.removeLast();
+    while (_history.isNotEmpty) {
+      final candidate = _history.removeLast();
+      if (!_isReachable(candidate)) continue;
+      _forward.add(state);
+      _lastDirection = NavDirection.back;
+      state = candidate;
+      return;
+    }
   }
 
   /// Re-enter the section most recently left via [back], if any, pushing the
   /// current one back onto the history. Bound on macOS to ⌘] and the
   /// two-finger trackpad swipe-left. No-op when there is nothing ahead.
+  ///
+  /// Skips unreachable entries like [back] does. This is the vector that would
+  /// otherwise resurrect the Coach page: open it in Private mode, go back, then
+  /// switch to a free account — the forward-stack still holds it.
   void forward() {
     if (_locked) return;
-    if (_forward.isEmpty) return;
-    _history.add(state);
-    _lastDirection = NavDirection.forward;
-    state = _forward.removeLast();
+    while (_forward.isNotEmpty) {
+      final candidate = _forward.removeLast();
+      if (!_isReachable(candidate)) continue;
+      _history.add(state);
+      _lastDirection = NavDirection.forward;
+      state = candidate;
+      return;
+    }
   }
 }
-
-/// One-shot request to open the Settings page directly on its Subscription
-/// section. Handled similarly to PrivacySettingsRequest.
-class SubscriptionSettingsRequest extends Notifier<bool> {
-  @override
-  bool build() => false;
-
-  void request() => state = true;
-
-  void consume() => state = false;
-}
-
-final subscriptionSettingsRequestProvider =
-    NotifierProvider<SubscriptionSettingsRequest, bool>(SubscriptionSettingsRequest.new);

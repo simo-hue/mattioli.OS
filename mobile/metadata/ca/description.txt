@@ -1,21 +1,41 @@
-Wealth Compass és un tauler de finançament personal privat i local que us ajuda a entendre el vostre valor net, flux d'efectiu, inversions, actius criptogràfics i passius en un sol lloc.
+Evolve és un registrador d'hàbits i objectius per a qui vol construir una rutina que aguanti de debò, i entendre per què aguanta. Una sola app per a iPhone, iPad i Mac, sense anuncis, sense soroll, amb un motor d'anàlisi que converteix els teus registres diaris en alguna cosa accionable.
 
-Feu una imatge clara de les vostres finances:
+QUATRE MANERES DE VEURE EL TEMPS
+Canvia el tauler entre Setmana, Mes, Any i Vida. La vista Vida representa les setmanes que ja has viscut i les que et queden a partir de la teva data de naixement: un recordatori serè d'on va el teu temps.
 
-- Vegeu el valor net, el saldo d'efectiu, les inversions i la criptografia d'un cop d'ull
-- Feu un seguiment dels ingressos i les despeses amb categories i tendències visuals
-- Programeu transaccions recurrents i rebeu recordatoris locals opcionals
-- Superviseu les participacions d'accions, ETF i criptomonedes
-- Revisar la base de costos, pèrdues i guanys i l'assignació de la cartera
-- Feu un seguiment dels passius juntament amb els vostres actius
-- Seguiu l'historial del patrimoni net amb instantànies locals automàtiques
-- Converteix valors utilitzant els tipus de canvi de referència del BCE en memòria cau
-- Amaga quantitats sensibles a l'instant amb el mode de privadesa
-- Protegiu l'aplicació amb Face ID o Touch ID
-- Exporteu, importeu i suprimiu les vostres dades locals sempre que ho trieu
+HÀBITS QUE ES REGISTREN SOLS
+- Cada hàbit té la seva freqüència setmanal, el seu color i la seva hora de recordatori.
+- Marca un hàbit directament des de la notificació, sense obrir l'app.
+- La ratxa actual, la millor i la pitjor es calculen sobre la marxa.
+- Verificació automàtica amb Salut: passos, minuts d'exercici, energia activa, hores dret, distància, minuts de consciència plena, son i entrenaments.
+- Verificació automàtica amb Temps d'ús: ús total del dispositiu o temps a les apps i categories que triïs.
+- Combina senyals amb "qualsevol d'aquestes" o "totes aquestes" quan una sola condició no n'hi ha prou.
 
-Els vostres registres financers romanen al vostre dispositiu. Wealth Compass no requereix un compte i no emmagatzema la vostra cartera ni l'historial de transaccions en servidors operats per desenvolupadors.
+OBJECTIUS A TOTS ELS HORITZONS
+Objectius setmanals, mensuals, trimestrals, anuals i de tota la vida, agrupats en les àrees de vida que defineixes. Afegeix fites numèriques, vincula un objectiu a l'hàbit que l'alimenta i revisa rendiment, estacionalitat i progrés interanual.
 
-Les actualitzacions opcionals de preus de mercat utilitzen les credencials de l'API que proporcioneu. Les credencials s'emmagatzemen de manera segura al clauer d'iOS.
+ESTADÍSTIQUES QUE DIUEN ALGUNA COSA
+- Tendències de compliment a 7, 14 i 30 dies, més un calendari anual per hàbit.
+- Anàlisi de correlacions: quins hàbits estiren els altres cap amunt i quins competeixen en silenci per la mateixa hora.
+- Registre d'estat d'ànim i energia, relacionat amb el que realment has completat.
+- Hàbits clau, crítics, resilients i sensibles a l'ànim, identificats automàticament.
+- Anàlisi de les pitjors ratxes, perquè una mala època sigui informació i no culpa.
 
-Wealth Compass és una eina de seguiment informatiu. No es connecta a institucions financeres, no realitza transaccions, no ofereix assessorament financer ni garanteix l'exactitud de les dades del mercat de tercers.
+COACH AI
+Un xat que ja coneix els teus hàbits, els teus objectius i com ha anat la setmana, amb suggeriments d'un toc com ara "arregla el meu hàbit més feble" o "vaig per bon camí?". Només veu el context que decideixes compartir i demana permís abans d'enviar res.
+
+DUES MANERES DE GUARDAR LES TEVES DADES
+- Mode privat: sense cap compte. Les teves dades viuen en una base de dades xifrada al dispositiu.
+- Mode amb compte: inicia sessió amb Apple o Google i sincronitza entre els teus dispositius.
+En tots dos casos Evolve funciona sense connexió. La sincronització amb iCloud és opcional, xifrada d'extrem a extrem a través del teu propi compte d'iCloud, i no és una funció de pagament. Exporta, importa o esborra-ho tot quan vulguis, i bloqueja l'app amb Face ID o Touch ID.
+
+GRATIS I PRO
+Evolve es baixa de franc. El pla gratuït limita quants hàbits i objectius pots mantenir alhora. Evolve PRO elimina aquests límits i hi afegeix gràfics profunds, anàlisi avançada de tendències i objectius, i el Coach AI sense cap configuració.
+
+INFORMACIÓ SOBRE LA SUBSCRIPCIÓ EVOLVE PRO
+Evolve PRO és una subscripció de renovació automàtica: 4,99 EUR al mes o 49,99 EUR l'any. El preu equivalent en la teva moneda local es mostra a l'app abans de confirmar. El pagament es carrega al teu compte d'Apple en confirmar la compra. La subscripció es renova automàticament tret que desactivis la renovació almenys 24 hores abans del final del període en curs, i el càrrec es fa dins de les 24 hores prèvies al final del període. Pots gestionar la subscripció i desactivar la renovació automàtica als ajustos del teu compte d'Apple després de la compra.
+
+En mode privat no hi ha compte, així que el Coach AI funciona amb el teu propi compte d'OpenRouter: gratuït, amb una clau que hi poses tu.
+
+Condicions d'ús (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Política de privadesa: https://simo-hue.github.io/evolve/privacy.html

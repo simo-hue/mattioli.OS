@@ -1,21 +1,41 @@
-Wealth Compass este un tablou de bord privat, orientat local, pentru finanțe personale, care te ajută să înțelegi averea ta netă, fluxul de numerar, investițiile, activele cripto și pasivele într-un singur loc.
+Evolve este un tracker de obiceiuri și obiective pentru cei care vor să construiască o rutină care chiar rezistă - și să înțeleagă de ce rezistă. O singură aplicație pentru iPhone, iPad și Mac, fără reclame și fără zgomot, cu un motor de analiză care transformă înregistrările zilnice în ceva pe care poți acționa.
 
-Construiește o imagine clară a finanțelor tale:
+PATRU MODURI DE A VEDEA TIMPUL
+Comută panoul între Săptămână, Lună, An și Viață. Vizualizarea Viață desenează săptămânile deja trăite și cele care urmează, pornind de la data ta de naștere - o amintire liniștită despre pe ce îți consumi timpul.
 
-- Vizualizează valoarea netă, soldul de numerar, investițiile și criptomonedele dintr-o privire rapidă
-- Urmărirea veniturilor și cheltuielilor prin categorii și tendințe vizuale
-- Programarea tranzacțiilor recurente și primirea opțională a memento-urilor locale
-- Monitorizarea deținerilor de acțiuni, ETF-uri și criptomonede
-- Revizuirea costurilor, profitului și pierderii, și alocarea portofoliului
-- Urmăriți pasivele alături de activele dumneavoastră
-- Urmăriți istoricul averii nete cu instantanee locale automate
-- Convertește valorile folosind cursurile de schimb de referință ale BCE stocate în cache
-- Ascundeți instantaneu cantități sensibile cu modul Confidențialitate
-- Protejează aplicația cu Face ID sau Touch ID
-- Exportă, importă și șterge datele locale ori de câte ori dorești
+OBICEIURI CARE SE ÎNREGISTREAZĂ SINGURE
+- Fiecare obicei are propria frecvență săptămânală, culoare și oră de reamintire.
+- Bifează un obicei direct din notificare, fără să deschizi aplicația.
+- Seria curentă, cea mai bună și cea mai slabă se calculează din mers.
+- Verificare automată prin Sănătate: pași, minute de exercițiu, energie activă, ore în picioare, distanță, minute de mindfulness, somn și antrenamente.
+- Verificare automată prin Timp de utilizare: utilizarea totală a dispozitivului sau timpul petrecut în aplicațiile și categoriile alese de tine.
+- Combină semnalele cu "oricare dintre acestea" sau "toate acestea" când o singură condiție nu ajunge.
 
-Evidențele tale financiare rămân pe dispozitivul tău. Wealth Compass nu necesită un cont și nu stochează portofoliul sau istoricul tranzacțiilor pe servere operate de dezvoltatori.
+OBIECTIVE PE ORICE ORIZONT
+Obiective săptămânale, lunare, trimestriale, anuale și pe viață, grupate în ariile de viață pe care le definești tu. Adaugă ținte numerice, leagă un obiectiv de obiceiul care îl alimentează și urmărește performanța, sezonalitatea și progresul de la an la an.
 
-Actualizările opționale de preț de piață folosesc credențialele API pe care le furnizezi tu. Acreditările sunt stocate în siguranță în Keychain-ul iOS.
+STATISTICI CARE SPUN CEVA
+- Tendințe de îndeplinire pe 7, 14 și 30 de zile, plus un calendar anual pentru fiecare obicei.
+- Analiză de corelații: care obiceiuri le trag pe celelalte în sus și care se bat pe aceeași oră.
+- Înregistrarea stării de spirit și a energiei, raportată la ce ai realizat efectiv.
+- Obiceiurile cheie, critice, rezistente și sensibile la dispoziție sunt identificate automat.
+- Analiza celor mai slabe serii, ca o perioadă proastă să devină informație, nu vinovăție.
 
-Wealth Compass este un instrument informațional de urmărire. Nu se conectează la instituțiile financiare, nu execută tranzacții, nu oferă consultanță financiară și nu garantează acuratețea datelor de piață ale terților.
+ANTRENOR AI
+Un chat care îți știe deja obiceiurile, obiectivele și cum a mers săptămâna, cu sugestii la o singură atingere, precum "repară-mi cel mai slab obicei" sau "sunt pe drumul cel bun?". Vede doar contextul pe care alegi să îl împărtășești și întreabă înainte să trimită ceva.
+
+DOUĂ MODURI DE A-ȚI PĂSTRA DATELE
+- Mod privat: fără niciun cont. Datele stau într-o bază de date criptată pe dispozitivul tău.
+- Mod cu cont: autentifică-te cu Apple sau Google și sincronizează între dispozitive.
+În ambele cazuri Evolve funcționează offline. Sincronizarea iCloud este opțională, criptată cap la cap prin propriul tău cont iCloud, și nu este o funcție cu plată. Poți exporta, importa sau șterge totul oricând și poți bloca aplicația cu Face ID sau Touch ID.
+
+GRATUIT ȘI PRO
+Evolve se descarcă gratuit. Planul gratuit limitează câte obiceiuri și obiective poți păstra în același timp. Evolve PRO ridică aceste limite și adaugă grafice detaliate, analiză avansată de tendințe și obiective, plus Antrenorul AI fără nicio configurare.
+
+INFORMAȚII DESPRE ABONAMENTUL EVOLVE PRO
+Evolve PRO este un abonament cu reînnoire automată: 4,99 EUR pe lună sau 49,99 EUR pe an. Prețul în moneda ta locală este afișat în aplicație înainte de confirmare. Plata este debitată din contul Apple la confirmarea achiziției. Abonamentul se reînnoiește automat dacă reînnoirea automată nu este dezactivată cu cel puțin 24 de ore înainte de sfârșitul perioadei curente; reînnoirea se taxează în ultimele 24 de ore ale perioadei. Poți gestiona abonamentul și dezactiva reînnoirea automată din setările contului Apple după achiziție.
+
+În modul privat nu există cont, așa că Antrenorul AI rulează pe propriul tău cont OpenRouter - gratuit, cu o cheie pe care o furnizezi tu.
+
+Termeni de utilizare (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Politica de confidențialitate: https://simo-hue.github.io/evolve/privacy.html

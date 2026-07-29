@@ -1,4 +1,29 @@
 {
+  "verification": {
+    "autoVerified": "Automatisch geprüft",
+    "compound": {
+      "summaryAll": "Alle {count} Bedingungen",
+      "summaryAny": "Mind. 1 von {count} Bedingungen"
+    },
+    "templates": {
+      "steps": "Schritte",
+      "exerciseMinutes": "Trainingsminuten",
+      "activeEnergy": "Aktive Energie",
+      "standHours": "Stehstunden",
+      "distance": "Distanz",
+      "mindfulMinutes": "Achtsamkeitsminuten",
+      "sleepHours": "Schlafstunden",
+      "workout": "Training",
+      "screenTimeTotal": "Gesamte Gerätenutzung",
+      "screenTimeApps": "Zeit in ausgewählten Apps"
+    },
+    "units": {
+      "minutes": "Min.",
+      "hours": "Std.",
+      "kilocalories": "kcal",
+      "kilometers": "km"
+    }
+  },
   "macroTargets": {
     "sectionTitle": "Numerisches Ziel",
     "none": "Keins",

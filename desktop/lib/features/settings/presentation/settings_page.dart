@@ -360,6 +360,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         focusNode: _searchFocus,
         hintText: t.settingsPage.searchPlaceholder,
         clearTooltip: t.settingsPage.searchClear,
+        // The ⌘F binding below has always been invisible; the badge is the
+        // only thing that tells anyone it exists.
+        shortcutHint: '⌘ F',
         onChanged: (value) => setState(() => _searchQuery = value),
       ),
     );

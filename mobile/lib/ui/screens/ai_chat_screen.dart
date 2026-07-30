@@ -28,6 +28,7 @@ import '../kit/evolve_switch.dart';
 import '../../core/haptics.dart';
 import 'app_settings_screen.dart';
 import '../widgets/pro_features_modal.dart';
+import '../kit/evolve_route.dart';
 
 class AIChatScreen extends ConsumerStatefulWidget {
   const AIChatScreen({super.key});
@@ -44,9 +45,7 @@ class AIChatScreen extends ConsumerStatefulWidget {
   })
   streamFactory = OpenRouterService.generateStreamResponse;
 
-  static Route route() {
-    return MaterialPageRoute(builder: (context) => const AIChatScreen());
-  }
+  static Route route() => evolveRoute((context) => const AIChatScreen());
 
   @override
   ConsumerState<AIChatScreen> createState() => _AIChatScreenState();

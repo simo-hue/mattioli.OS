@@ -13,15 +13,12 @@ import '../../core/data_mode.dart';
 import '../../core/app_logger.dart';
 import '../../core/rtl.dart';
 import '../../i18n/translations.g.dart';
+import '../kit/evolve_route.dart';
 
 class PersonalInfoScreen extends ConsumerStatefulWidget {
   const PersonalInfoScreen({super.key});
 
-  static Route route() {
-    // MaterialPageRoute so iOS gets the native Cupertino slide + edge-swipe-back
-    // gesture for free (Android keeps its native Material transition).
-    return MaterialPageRoute(builder: (context) => const PersonalInfoScreen());
-  }
+  static Route route() => evolveRoute((context) => const PersonalInfoScreen());
 
   @override
   ConsumerState<PersonalInfoScreen> createState() => _PersonalInfoScreenState();

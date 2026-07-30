@@ -5,6 +5,7 @@
 library;
 
 export 'evolve_sheet.dart';
+export 'evolve_route.dart';
 export 'evolve_color_picker.dart';
 export 'evolve_dialog.dart';
 export 'evolve_button.dart';

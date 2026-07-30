@@ -1412,12 +1412,7 @@ class _AppBar extends ConsumerWidget {
                       GestureDetector(
                         onTap: () {
                           ref.hapticMedium();
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ProfileScreen(),
-                            ),
-                          );
+                          Navigator.push(context, ProfileScreen.route());
                         },
                         child: Container(
                           width: 38,

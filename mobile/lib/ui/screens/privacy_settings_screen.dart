@@ -42,27 +42,13 @@ import '../../providers/consent_provider.dart';
 import '../../core/haptics.dart';
 import '../../core/app_logger.dart';
 import '../../i18n/translations.g.dart';
+import '../kit/evolve_route.dart';
 
 class PrivacySettingsScreen extends ConsumerWidget {
   const PrivacySettingsScreen({super.key});
 
-  static Route route() {
-    return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) =>
-          const PrivacySettingsScreen(),
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        const begin = Offset(1.0, 0.0);
-        const end = Offset.zero;
-        const curve = Curves.easeOutCubic;
-        final tween = Tween(
-          begin: begin,
-          end: end,
-        ).chain(CurveTween(curve: curve));
-        return SlideTransition(position: animation.drive(tween), child: child);
-      },
-      transitionDuration: const Duration(milliseconds: 400),
-    );
-  }
+  static Route route() =>
+      evolveRoute((context) => const PrivacySettingsScreen());
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

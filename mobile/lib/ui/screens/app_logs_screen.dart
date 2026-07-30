@@ -12,17 +12,14 @@ import '../../i18n/translations.g.dart';
 import '../kit/evolve_dialog.dart';
 import '../kit/evolve_toast.dart';
 import '../kit/evolve_sheet.dart';
+import '../kit/evolve_route.dart';
 
 /// Full-screen log viewer showing all in-memory log entries.
 /// Designed for technical users — shows timestamps, levels, stack traces, etc.
 class AppLogsScreen extends StatefulWidget {
   const AppLogsScreen({super.key});
 
-  static Route route() {
-    // MaterialPageRoute so iOS gets the native Cupertino slide + edge-swipe-back
-    // gesture for free (Android keeps its native Material transition).
-    return MaterialPageRoute(builder: (context) => const AppLogsScreen());
-  }
+  static Route route() => evolveRoute((context) => const AppLogsScreen());
 
   @override
   State<AppLogsScreen> createState() => _AppLogsScreenState();

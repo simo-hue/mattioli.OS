@@ -15,6 +15,7 @@ import '../../core/rtl.dart';
 import '../../providers/user_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../kit/evolve_route.dart';
 import '../widgets/profile_avatar_image.dart';
 import '../widgets/profile_image_cropper.dart';
 import 'personal_info_screen.dart';
@@ -33,6 +34,8 @@ import '../kit/evolve_sheet.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
+
+  static Route route() => evolveRoute((context) => const ProfileScreen());
 
   @override
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();

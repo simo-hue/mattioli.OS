@@ -14,6 +14,7 @@ import '../../providers/sync_refresh.dart'; // refreshSyncEnabled
 import '../kit/evolve_dialog.dart';
 import '../kit/evolve_switch.dart';
 import '../kit/evolve_sheet.dart';
+import '../kit/evolve_route.dart';
 
 /// iCloud Sync settings for Private Mode (iOS-only). Surfaces the
 /// [PrivateSyncService] state and lets the user enable/disable end-to-end
@@ -21,13 +22,8 @@ import '../kit/evolve_sheet.dart';
 class IcloudSyncScreen extends ConsumerStatefulWidget {
   const IcloudSyncScreen({super.key});
 
-  static Route<void> route() {
-    // MaterialPageRoute so iOS gets the native Cupertino slide + edge-swipe-back
-    // gesture for free (Android keeps its native Material transition).
-    return MaterialPageRoute<void>(
-      builder: (context) => const IcloudSyncScreen(),
-    );
-  }
+  static Route<void> route() =>
+      evolveRoute<void>((context) => const IcloudSyncScreen());
 
   @override
   ConsumerState<IcloudSyncScreen> createState() => _IcloudSyncScreenState();

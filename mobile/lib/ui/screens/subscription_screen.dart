@@ -21,6 +21,7 @@ import '../../i18n/translations.g.dart';
 import '../kit/evolve_dialog.dart';
 import '../kit/evolve_spinner.dart';
 import '../kit/evolve_toast.dart';
+import '../kit/evolve_route.dart';
 
 const String _monthlyProductId = 'com.simo.evolve.pro.monthly';
 const String _yearlyProductId = 'com.simo.evolve.pro.yearly';
@@ -51,11 +52,7 @@ int? annualSavingPercent({
 class SubscriptionScreen extends ConsumerStatefulWidget {
   const SubscriptionScreen({super.key});
 
-  static Route route() {
-    // MaterialPageRoute so iOS gets the native Cupertino slide + edge-swipe-back
-    // gesture for free (Android keeps its native Material transition).
-    return MaterialPageRoute(builder: (context) => const SubscriptionScreen());
-  }
+  static Route route() => evolveRoute((context) => const SubscriptionScreen());
 
   @override
   ConsumerState<SubscriptionScreen> createState() => _SubscriptionScreenState();

@@ -14,17 +14,13 @@ import '../../i18n/translations.g.dart';
 import '../kit/evolve_switch.dart';
 import '../kit/evolve_section_header.dart';
 import '../kit/evolve_sheet.dart';
+import '../kit/evolve_route.dart';
 
 class NotificationSettingsScreen extends ConsumerWidget {
   const NotificationSettingsScreen({super.key});
 
-  static Route route() {
-    // MaterialPageRoute so iOS gets the native Cupertino slide + edge-swipe-back
-    // gesture for free (Android keeps its native Material transition).
-    return MaterialPageRoute(
-      builder: (context) => const NotificationSettingsScreen(),
-    );
-  }
+  static Route route() =>
+      evolveRoute((context) => const NotificationSettingsScreen());
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

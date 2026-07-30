@@ -112,32 +112,69 @@ iPhone can settle, ordered by how much they change:
 - **T7 — revoke and return.** Revoke Screen Time for Evolve in iOS Settings, reopen the app, and note where the FamilyControls toggle actually lives and what `authorizationStatus` reports. The in-app "Open Settings" button currently opens Settings › Evolve, not the Screen Time pane its own copy describes.
 - **T9 — power-off overnight replay.** Let the phone die before 23:59 (charge to ~5% in the evening) and boot it in the morning. Does DeviceActivity replay the missed `intervalDidEnd`? If it does, that delivery is hours late but is a *genuine* report of yesterday — and the extension currently DROPS anything more than four hours after midnight. A replayed row appearing in the buffer means `lateDeliveryWindowMinutes` is discarding real passes and must be widened.
 - **T10 — spring-forward.** Set the date to a spring-forward Sunday and let 23:59 pass. The App Group buffer must gain a `stayedUnder` row. This is the mirror of T4b: the day is 23 hours long, and any logic that measures the interval end in *elapsed* rather than *wall-clock* minutes silently drops every goal's pass that day.
-## macOS build: `objective_c1.framework` warning fix needs a `pod install` (2026-07-30)
+## macOS build: `objective_c1.framework` warning fix (2026-07-30)
 
 `desktop/pubspec.yaml` now pins `path_provider_foundation: 2.5.1` (same override mobile
-has carried since 2026-05-19). That swaps path_provider back from the FFI implementation
-to the normal Darwin **plugin**, so the macOS Pods project gains a pod it does not have
-yet. `flutter pub get` already regenerated
-`desktop/macos/Flutter/GeneratedPluginRegistrant.swift` with `import path_provider_foundation`,
-but `desktop/macos/Podfile.lock` could not be regenerated here (this Mac has no CocoaPods
-and no Xcode).
+has carried since 2026-05-19), which removes the `objective_c` native code asset that
+made every universal Release archive warn about `objective_c1.framework`.
 
-**On the mac mini, before the next Archive:**
+**Done on the mac mini already** — `flutter clean && flutter pub get && pod install` ran
+clean. `pod install` reporting *"3 dependencies from the Podfile and 5 total pods"* (i.e.
+unchanged, no `path_provider_foundation` pod) is CORRECT, not a failure: this project
+integrates plugins through **Swift Package Manager**, not CocoaPods. 14 of the 17 macOS
+plugins ship a `Package.swift` — `path_provider_foundation` 2.5.1 among them — and only
+`sign_in_with_apple` and `sqflite_sqlcipher` are CocoaPods-only. So `Podfile.lock` is
+correctly untouched and there is nothing to commit there. (An earlier version of this
+note wrongly said to expect a new pod; that was generalised from mobile's iOS setup,
+which really is CocoaPods.)
 
-- [ ] `git pull` first — the build log you sent is `1.1.6(24)` while the repo is at
-      `1.2.1+26`, so that checkout is behind and will not contain this fix.
-- [ ] Run, from `desktop/`:
-      `flutter clean && flutter pub get && (cd macos && pod install)`
-      (or just `flutter build macos --release …` once — that runs `pod install` itself).
-- [ ] **Skipping this is a hard build failure, not a silent one**: Xcode will fail to
-      compile `GeneratedPluginRegistrant.swift` with *no such module
-      'path_provider_foundation'*. If you see that, you skipped the `pod install`.
-- [ ] In Xcode: Product › Clean Build Folder, to drop the stale `objective_c.framework`
-      that previous archives copied into `Runner.app/Contents/Frameworks/`.
-- [ ] Commit the regenerated `desktop/macos/Podfile.lock` (it should gain a
-      `path_provider_foundation (0.0.1)` entry, mirroring `mobile/ios/Podfile.lock`).
-- [ ] Confirm on the archive log that the
-      *"different framework names for different architectures … objective_c1.framework"*
-      warning is gone, and smoke-test the app once: path_provider now goes through the
-      plugin channel, so a broken pod integration shows up as a failure to resolve the
-      Application Support directory (i.e. the private DB path) at first launch.
+Also ignore the three *"CocoaPods did not set the base configuration … your project
+already has a custom config set"* warnings. They are stock Flutter-macOS-template
+behaviour and pre-date this change: `Runner/Configs/Release.xcconfig` includes
+`Flutter/Flutter-Release.xcconfig`, whose **first line** is
+`#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"` — which
+is exactly the second remedy CocoaPods offers. CocoaPods just cannot see a *transitive*
+include, so it warns on every run. Nothing to fix.
+
+**Still to do:**
+
+- [ ] Archive and confirm the *"different framework names for different architectures …
+      objective_c1.framework"* warning is gone from the log.
+- [ ] If Xcode instead fails with *no such module 'path_provider_foundation'*, the SPM
+      package did not regenerate. Check with:
+      `cat desktop/macos/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift`
+      — it must list `path_provider_foundation`. If it does not, re-run `flutter pub get`
+      from `desktop/`, or `flutter build macos --release` once, before archiving.
+- [ ] Smoke-test the app once after installing: path_provider now goes through the
+      platform channel instead of FFI, so a broken integration would show up as a failure
+      to resolve the Application Support directory (the private DB path) at first launch.
+
+---
+
+## iOS edge-swipe-back on settings pages (2026-07-30)
+
+No code action needed — this is on-device QA only. There is no Xcode on this machine
+(`/Library/Developer/CommandLineTools` only), so the change was verified by analyzer +
+669 widget/unit tests and a mutation test, but never rendered on a device.
+
+The fix: *Profile → Privacy & Security* had no swipe-back because its route was a raw
+`PageRouteBuilder`. All nine settings routes now go through one `evolveRoute()` helper.
+
+- [ ] On a real iPhone, open **Profile → Privacy & Security** and swipe from the left
+      edge. It must now pop back to Profile. This is the reported bug.
+- [ ] From that page, tap into **iCloud Sync** and swipe back too — that screen was
+      always fine, but it is the flow you hit the bug in, so confirm the whole chain.
+- [ ] Sanity-check the other seven still work (Personal Info, Subscription, App
+      Settings, Notifications, App Logs, AI Chat, Profile itself from the dashboard
+      avatar). They were migrated to the shared helper, so a mistake there would show
+      up as a *lost* gesture on a page that used to have one.
+- [ ] **Look at the transition on Privacy & Security.** It changed: it used to be a
+      flat 400ms `easeOutCubic` slide with a static page behind it, and is now the
+      native iOS slide with parallax and an edge shadow — i.e. identical to its
+      siblings. That was the agreed intent, but it is a visible change and you should
+      confirm you like it.
+- [ ] **Arabic / RTL run.** The old hand-rolled transition always slid in from the
+      right, even in Arabic; the native one mirrors. Switch the app to Arabic and
+      confirm the page enters from the **left** and the swipe-back gesture lives on
+      the **right** edge. There is a test pinning this, but it has never been seen on
+      a device.

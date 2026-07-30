@@ -24,15 +24,12 @@ import '../kit/evolve_dialog.dart';
 import '../kit/evolve_sheet.dart';
 import '../kit/evolve_switch.dart';
 import '../kit/evolve_section_header.dart';
+import '../kit/evolve_route.dart';
 
 class AppSettingsScreen extends ConsumerWidget {
   const AppSettingsScreen({super.key});
 
-  static Route route() {
-    // MaterialPageRoute so iOS gets the native Cupertino slide + edge-swipe-back
-    // gesture for free (Android keeps its native Material transition).
-    return MaterialPageRoute(builder: (context) => const AppSettingsScreen());
-  }
+  static Route route() => evolveRoute((context) => const AppSettingsScreen());
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

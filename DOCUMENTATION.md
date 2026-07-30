@@ -2748,9 +2748,9 @@ All owner actions are itemized in **TO_SIMO_DO.md**.
   - *Process note worth recording*: one verification subagent exceeded its read-only remit and modified **23 files under `mobile/metadata/`** — the live iOS listing, explicitly out of scope. Caught by diffing against the pre-audit `git status` and reverted with `git checkout -- mobile/metadata/`. The other appended its raw findings to `TO_SIMO_DO.md`; that section was rewritten to record what was actually fixed rather than left as a stale blocker list. Audit output is evidence to verify, not instructions to apply.
 
 - [2026-07-30T22:12:00+02:00]: Bump iOS and macOS versions
-  - *Details*: Bumped the version of iOS to 1.1.2 and macOS to 1.0.
+  - *Details*: Bumped the version of iOS to 1.1.2 and macOS to 1.0, and incremented build numbers.
   - *Tech Notes*: 
-    - Updated `mobile/pubspec.yaml` to `version: 1.1.2+42`.
-    - Updated `desktop/pubspec.yaml` to `version: 1.0.0+26`.
-    - Updated `MARKETING_VERSION` in `mobile/ios/Runner.xcodeproj/project.pbxproj` to `1.1.2`.
-    - Updated `MARKETING_VERSION` in `desktop/macos/Runner.xcodeproj/project.pbxproj` to `1.0`.
+    - Updated `mobile/pubspec.yaml` to `version: 1.1.2+43`.
+    - Updated `desktop/pubspec.yaml` to `version: 1.0.0+27`.
+    - Updated `MARKETING_VERSION` in `mobile/ios/Runner.xcodeproj/project.pbxproj` to `1.1.2` and `CURRENT_PROJECT_VERSION` to `43`.
+    - Updated `MARKETING_VERSION` in `desktop/macos/Runner.xcodeproj/project.pbxproj` to `1.0` and `CURRENT_PROJECT_VERSION` to `27`.

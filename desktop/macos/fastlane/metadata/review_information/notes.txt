@@ -41,6 +41,15 @@ subscription section is intentionally hidden in that mode. The
 subscription is visible and purchasable only in Account mode, after
 signing in.
 
+On Guideline 5.1.1(v): registration is never required to use Evolve. All
+of the app's content and features - habits, goals, full statistics, mood
+check-in - are available in Private mode with no account, no personal
+information and no payment; the AI Coach works there too, using the
+user's own API key or a local model. An account is needed only for what
+is inherently account-specific: syncing across the user's devices, and
+running the AI Coach on our server-side key. Evolve Pro buys exactly
+those two things.
+
 3. GUIDELINE 3.1.2(c) - TERMS OF USE (EULA)
 
 We use the standard Apple Terms of Use (EULA). A functional link to
@@ -62,19 +71,17 @@ approved and live in the "Evolve Pro Group" subscription group:
 
 These are the same products the iOS app sells today. We believe the
 earlier report was caused by the review being unable to reach the
-purchase screen, for the reason in section 1. With the steps above, both
-products load and can be purchased on macOS.
+purchase screen (see section 1). With the steps above, both products load
+and can be purchased on macOS.
 
 5. com.apple.security.network.server ENTITLEMENT
 
 This app uses the OAuth 2.0 loopback redirect pattern (RFC 8252 section
-7.3) for Google sign-in. During sign-in the app binds a temporary HTTP
-server on 127.0.0.1:39876 (localhost only) to receive the OAuth callback
-from the system browser. It accepts a single request, extracts the
-authorization code, and shuts down immediately - it is not a persistent
-network service. Without this entitlement the App Sandbox blocks the
-loopback bind() call and OAuth sign-in fails. See
-lib/features/auth/application/auth_controller.dart, method
-_signInWithDesktopOAuth().
+7.3) for Google sign-in. The app binds a temporary HTTP server on
+127.0.0.1:39876 (localhost only) to receive the OAuth callback from the
+system browser; it accepts a single request, extracts the authorization
+code, and shuts down immediately. It is not a persistent network service.
+Without this entitlement the App Sandbox blocks the loopback bind() and
+Google sign-in fails. See auth_controller.dart, _signInWithDesktopOAuth().
 
 Thank you for your time and review.

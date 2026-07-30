@@ -121,121 +121,112 @@ yet. `flutter pub get` already regenerated
 `desktop/macos/Flutter/GeneratedPluginRegistrant.swift` with `import path_provider_foundation`,
 but `desktop/macos/Podfile.lock` could not be regenerated here (this Mac has no CocoaPods
 and no Xcode).
+## macOS App Store resubmission — blocking manual steps (2026-07-30)
 
----
+The repo side of the 3.1.2(c) / 2.1(b) remediation is done (39 locales carry the
+EULA link, macOS review notes exist, the Fastfile no longer targets the wrong
+platform). These remain, and all of them are App Store Connect actions only you
+can take. Order matters.
 
-I want you to help me find out if the current version of the codebase and of the Flutter mobile iOS implementation has already fixed this problem that in the past were notified from the apple review process.
-Consdider that now we have made a lot of changes since that version but I want you to deeply analyze and double check everything ( also searching online for the latest up to date information ) so we can submit for the apple review but with all the possible problems fixed.
-Here are the problems: Review Environment
+1. **VERIFY THE DEMO ACCOUNT FIRST — everything else is wasted if this fails.**
+   Launch Evolve on the Mac, sign in with `wowtesting@gmail.com` /
+   `TestForMePls1.` in **Account mode** (do NOT click "Continue privately on
+   this Mac"). macOS sign-in goes through **Supabase** email/password. If that
+   account is an Apple *StoreKit sandbox* tester rather than a real Supabase
+   user, it does not exist in the auth database, the reviewer cannot get in, and
+   the app gets rejected for the third time on the same root cause. If it fails,
+   create a real Supabase account and update
+   `desktop/macos/fastlane/metadata/review_information/demo_user.txt`,
+   `demo_password.txt` and `notes.txt`.
 
-Submission ID: 70f9af73-8af2-4680-af51-756a2937d273
-Review date: July 21, 2026
-Review Device: iPhone 17 Pro Max
-Version reviewed: 1.1.2 (23)
+2. **While signed in, confirm the paywall renders prices.** Settings (⌘,) →
+   Subscription. Both cards must show a real currency figure, NOT "Price
+   unavailable". Prices only resolve when signed in
+   (`desktop_subscription_controller.dart:514`), so this is also the screen your
+   3.1.2 screen recording has to show.
 
-Guideline 3.1.2(c) - Business - Payments - Subscriptions
+3. **Rename the macOS version in App Store Connect: 1.0.0 → 1.2.1.**
+   `desktop/pubspec.yaml` is `1.2.1+26` and a 1.2.1 build cannot be attached to a
+   1.0.0 version page. macOS 1.0.0 was never approved, so this is still the
+   platform's first release and the version string is freely editable while the
+   version sits in Rejected. Do NOT downgrade pubspec to 1.0.0+6 instead — that
+   would desync desktop from mobile (also 1.2.1) and throw away 21 builds.
 
-Issue Description
+4. **Push the metadata**, from `desktop/macos`:
+   `fastlane mac metadata`
+   This is the new metadata-only lane. Then check in App Store Connect that the
+   **Italian** description shows the EULA link — Italian is the locale ASC
+   actually serves for this app, and it is the one the reviewer read.
 
-The submission did not include all the required information for apps offering auto-renewable subscriptions.
+5. **Upload build 1.2.1 (26)** (`fastlane mac release`, or Transporter via
+   `fastlane mac build_for_transporter`).
 
-The following information needs to be included in the App Store metadata: a functional link to the Terms of Use (EULA) (if you are using the standard Apple Terms of Use (EULA), include a link in the App Description, and if you are using a custom EULA, add it in App Store Connect).
+6. **Set the App Review Information fields** if fastlane did not: tick
+   "Sign-in required" and confirm the username/password fields are populated.
+   The red badge on **App Review** in the sidebar must clear.
 
-Next Steps
+7. **Reply in the Resolution Center** with the screen recording Apple asked for
+   (3.1.2(c)): launch → Account mode sign-in → ⌘, → Subscription, showing plan
+   titles, 1 month / 1 year, live prices, and both legal links opening.
 
-Update the App Store metadata in ALL localizations to include the information specified above.
+8. **Do NOT add the subscriptions to the version page** — there is no "In-App
+   Purchases and Subscriptions" section on it, because both products are already
+   **Approved** and shared with the live iOS app through Universal Purchase
+   (`com.simo.evolve`). 2.1(b) fired because the reviewer could not reach the
+   purchase screen, not because anything is unsubmitted.
 
-Once the app and metadata includes all of the required information, or if they already do, reply to this message with a screen recording to confirm. Include this information in the Notes field of the App Review Information section in App Store Connect for future submissions.
+### Separately: a pre-existing iOS metadata bug found during this work
 
-Resources
+`mobile/ios/fastlane/metadata/{ca,el,fr-CA,fr-FR}/description.txt` are **over
+Apple's 4000-character limit** (4011 / 4092 / 4180 / 4180). Those four locales
+cannot upload as they stand — a `deliver` run for iOS will fail or truncate on
+them. The macOS copies are already trimmed; the iOS originals are untouched
+because that is a separate submission. Worth fixing before the next iOS push.
 
-Apps offering auto-renewable subscriptions must include all of the following required information in the app itself:
+## macOS description accuracy audit — FIXED 2026-07-30 (residuals below)
 
-- Title of auto-renewing subscription (this may be the same as the In-App Purchase product name)
-- Length of subscription
-- Price of subscription, and price per unit if appropriate
-- Functional links to the privacy policy and Terms of Use (EULA)
+An adversarial audit of every description claim against `desktop/lib` found two
+claims with **no implementing code on macOS at all**, both inherited from the
+iOS description. Both are now **removed from all 39 locales**:
 
-The app metadata must also include functional links to the privacy policy in the Privacy Policy field in App Store Connect and the Terms of Use (EULA) in the App Description or EULA field in App Store Connect.
+- *"Apple-Style Customization: Configure your milestones visually"* — milestones
+  are a hardcoded `const List<int> kStreakMilestones`
+  (`desktop/lib/features/statistics/data/analytics_extra.dart:816`); there is no
+  editor to open.
+- *"Sub-Goal Breakdown"* — zero occurrences of subGoal / subtask / parentGoal /
+  checkpoint anywhere in `desktop/lib`. No model, no field, no UI.
 
-Review Schedule 2 of the Apple Developer Program License Agreement to learn more.
-Guideline 5.1.1(v) - Legal - Data Collection and Storage
+Seven further overstatements were corrected in the **nine locales the desktop UI
+actually speaks** (it, en-US/GB/AU/CA, es-ES/MX, de-DE, ar-SA): Life View no
+longer asserts a unit (the grid is months — `habits_page.dart:1982` —
+while the copy said weeks); "in real time" is dropped from cloud sync (there is
+no Supabase Realtime; account mode is pull-on-build + push-on-write); the
+command palette no longer claims habit jumps (`command_palette.dart:514`
+discards the habit identity and navigates to the section); arrow-key paging is
+scoped to Habits and Goals; "settings window" became "settings organized in
+panes" (it is an in-shell page, not an NSWindow); the per-habit calendar claim
+is scoped to yearly; and the correlation example no longer implies Apple Health
+data the Mac cannot author.
 
+### Residual, accepted for this submission
 
-Issue Description
+The **30 locales the app's UI does not speak** keep the inherited iOS wording for
+those seven overstatements — they were not machine-edited in languages neither
+reviewer nor author can proofread, which is a worse risk than the overstatement.
+Note that "Life View ... weeks" actually matches what the app itself displays:
+the tab is labelled `lifeWeeks` = "Weeks of your journey"
+(`desktop/lib/i18n/en.i18n.json`) even though the grid is months. Fix the app
+string and the 30 locales together, after approval.
 
-We noticed that the app requires users to register with personal information to purchase In-App Purchase products that are not account based. 
+### Real in-app bugs found during the audit — worth fixing before review
 
-Apps cannot require user registration prior to allowing access to app content and features that are not associated specifically to the user. User registration that requires the sharing of personal information must be optional or tied to account-specific functionality.
-
-Next Steps
-
-To resolve this issue, please revise the app to not require users to register before purchasing In-App Purchase products that are not account based. You may explain to the user that registering will enable them to access the purchased content from any of their supported devices and provide them a way to register at any time, if they wish to later extend access to additional devices.
-
-Please note that although guideline 5.1.1 requires an app to make subscription content available to all the supported devices owned by a single user, it is not appropriate to force user registration to meet this requirement; such user registration must be optional.
-
-Resources 
-
-- Watch a video from App Review with tips for doing more for users with less data. 
-- See guideline 5.1.1 to learn more about our requirements for apps with account-based content and features.
-
-
-
----
-
-I want you to help me find out if the current version of the codebase and of the Flutter desktop macOS implementation has already fixed this problem that in the past were notified from the apple review process.
-Consdider that now we have made a lot of changes since that version but I want you to deeply analyze and double check everything ( also searching online for the latest up to date information ) so we can submit for the apple review but with all the possible problems fixed.
-Here are the problems: Review Environment
-
-Submission ID: 45b246ec-3001-488c-b434-3e5081bd777d
-Review date: July 22, 2026
-Review Device: MacBook Pro (14-inch, Nov 2024)
-Version reviewed: 1.0 (5)
-
-Guideline 3.1.2(c) - Business - Payments - Subscriptions
-
-Issue Description
-
-The submission did not include all the required information for apps offering auto-renewable subscriptions.
-
-The following information needs to be included in the App Store metadata: a functional link to the Terms of Use (EULA) (if you are using the standard Apple Terms of Use (EULA), include a link in the App Description, and if you are using a custom EULA, add it in App Store Connect).
-
-Next Steps
-
-Update the App Store metadata to include the information specified above.
-
-Once the app and metadata includes all of the required information, or if they already do, reply to this message with a screen recording to confirm. Include this information in the Notes field of the App Review Information section in App Store Connect for future submissions.
-
-Resources
-
-Apps offering auto-renewable subscriptions must include all of the following required information in the app itself:
-
-- Title of auto-renewing subscription (this may be the same as the In-App Purchase product name)
-- Length of subscription
-- Price of subscription, and price per unit if appropriate
-- Functional links to the privacy policy and Terms of Use (EULA)
-
-The app metadata must also include functional links to the privacy policy in the Privacy Policy field in App Store Connect and the Terms of Use (EULA) in the App Description or EULA field in App Store Connect.
-
-Review Schedule 2 of the Apple Developer Program License Agreement to learn more.
-Guideline 2.1(b) - Performance - App Completeness
-
-
-Issue Description
-
-We are unable to complete the review of the app because one or more of the In-App Purchase products have not been submitted for review.
-
-Specifically, the app includes references to subsriptions but the associated In-App Purchase products have not been submitted for review.
-
-Next Steps
-
-To resolve this issue, submit the In-App Purchase products and upload a new binary in App Store Connect so we can proceed with our review.
-
-Note you must provide an App Review screenshot in App Store Connect in order to submit In-App Purchases for review. Learn more about required In-App Purchase metadata.
-
-Resources
-
-- Learn more about how to offer In-App Purchases.
-- Learn more about submitting In-App Purchases and subscriptions to App Review.
-has carried since 2026-05-19), which removes the `objective_c` native code asset that
-made every universal Release archive warn about `objective_c1.framework`.
+1. **The Pro modal makes a false claim on the purchase surface.** `aiCoachDesc`
+   ends "Prefer your own OpenRouter account? That's free too." BYOK is
+   **Private-mode only** (`coach_config.dart:343-356`), and this string renders
+   on the paywall itself (`subscription_pane.dart:150-155`) — the exact screen
+   under appeal for Guideline 3.1.2. Highest priority of the three.
+2. **Life View shows a stranger's life by default.** `_LifeCalendar` falls back
+   to `DateTime(2003)` when no date of birth is set (`habits_page.dart:1980`), so
+   a reviewer who never opens Settings > Account sees a populated grid that is
+   not theirs. An empty state would be correct.
+3. **`lifeWeeks` label vs months grid** — see above; the app contradicts itself.

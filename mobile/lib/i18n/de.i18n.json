@@ -226,7 +226,7 @@
     "comingSoon": "DEMNÄCHST",
     "legal": {
       "privacyPolicy": "Datenschutzrichtlinie",
-      "termsOfService": "Nutzungsbedingungen des Dienstes",
+      "termsOfService": "Unsere Servicebedingungen",
       "termsOfUseEula": "Nutzungsbedingungen (EULA)",
       "manageSubscription": "Abonnement verwalten"
     }
@@ -392,10 +392,10 @@
     "continueWithoutAccount": "Ohne Konto fortfahren",
     "continueWithoutAccountSubtitle": "Alles bleibt auf diesem iPhone. Keine Registrierung, keine Grenzen.",
     "signInToSync": "Anmelden zum Synchronisieren",
-    "signInToSyncSubtitle": "Nutzen Sie Evolve auf allen Ihren Geräten und lassen Sie den KI-Coach von uns betreiben.",
-    "chooserTitle": "Wie möchten Sie Evolve nutzen?",
-    "chooserSubtitle": "Sie können das später in den Einstellungen ändern.",
-    "chooserFootnote": "Die Anmeldung ist freiwillig. Sie dient dazu, Ihr Abonnement auf allen Ihren Geräten zu nutzen."
+    "signInToSyncSubtitle": "Nutze Evolve auf allen deinen Geräten und lass den KI-Coach von uns betreiben.",
+    "chooserTitle": "Wie möchtest du Evolve nutzen?",
+    "chooserSubtitle": "Du kannst das später in den Einstellungen ändern.",
+    "chooserFootnote": "Die Anmeldung ist freiwillig. Sie ermöglicht dir, dein Abonnement auf allen deinen Geräten zu nutzen."
   },
   "profile": {
     "personalInfoTitle": "Persönliche Informationen",

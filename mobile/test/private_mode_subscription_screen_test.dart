@@ -23,6 +23,7 @@ import 'package:mattioli_os/core/data_mode.dart';
 import 'package:mattioli_os/core/theme.dart';
 import 'package:mattioli_os/i18n/translations.g.dart';
 import 'package:mattioli_os/providers/shared_prefs_provider.dart';
+import 'package:mattioli_os/ui/kit/evolve_spinner.dart';
 import 'package:mattioli_os/ui/screens/subscription_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -78,15 +79,47 @@ void main() {
     expect(find.text('Privacy Policy'), findsOneWidget);
   });
 
-  testWidgets('does not render without waiting on a store round-trip',
+  testWidgets('renders on the first frame, with no store round-trip',
       (tester) async {
     await tester.pumpWidget(_app(AppDataMode.private, prefs));
     await tester.pump();
 
-    // RevenueCat is never configured in Private mode, so if initState still
-    // called into it the screen would sit on its spinner forever.
-    expect(find.byType(CircularProgressIndicator), findsNothing);
+    // The screen's loading state is EvolveSpinner, not a Material
+    // CircularProgressIndicator — asserting the latter is absent would pass
+    // no matter what, which is exactly the kind of test that hides a bug.
+    expect(
+      find.byType(EvolveSpinner),
+      findsNothing,
+      reason: 'Private mode must not wait on RevenueCat, which is never '
+          'configured there',
+    );
     expect(find.text('Nothing to buy here'), findsOneWidget);
+  });
+
+  testWidgets('pull-to-refresh does not reach the store', (tester) async {
+    await tester.pumpWidget(_app(AppDataMode.private, prefs));
+    await tester.pump();
+
+    // The RefreshIndicator wraps BOTH mode branches and the scroll view uses
+    // AlwaysScrollableScrollPhysics, so the gesture fires even on the short
+    // private notice. Its callback used to call Purchases.getOfferings /
+    // getCustomerInfo unconditionally. Those trap inside purchases-ios when
+    // unconfigured — a native crash a Dart try/catch cannot catch — so this
+    // has to be a no-op rather than a swallowed failure.
+    await tester.fling(
+      find.byType(SingleChildScrollView),
+      const Offset(0, 400),
+      1000,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nothing to buy here'), findsOneWidget);
+    expect(
+      find.byType(EvolveSpinner),
+      findsNothing,
+      reason: 'a refresh that reached _loadOfferings would flip '
+          '_isFetchingProducts and replace the notice with the spinner',
+    );
   });
 
   testWidgets('offers no purchase or restore affordance', (tester) async {

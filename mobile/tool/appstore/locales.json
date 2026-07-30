@@ -4,53 +4,288 @@
     "",
     "'terms' and 'privacy' are the LABELS shown beside each URL. The URLs",
     "themselves are never translated and never pass through a translator -- see",
-    "build_descriptions.py for why that matters.",
+    "build_metadata.py for why that matters.",
     "",
     "'site' is the language directory on the marketing site. The site serves",
     "Italian from its root and en/es/de/ar from their own directories, so any",
     "locale we do not publish falls back to '' (the Italian root) rather than",
     "linking to a 404. Apple accepts a fallback language; it does not accept a",
-    "dead link. This mirrors LegalUrls in packages/evolve_legal."
+    "dead link. This mirrors LegalUrls in packages/evolve_legal.",
+    "'subtitle' (<=30 chars) and 'whatsNew' are emitted here too. They used to be English in all 39 locales and 'Security enhancements and bug fixes' respectively -- neither was covered by any build step, so nothing noticed."
   ],
   "locales": {
-    "ar-SA":   {"site": "ar", "terms": "شروط الاستخدام (EULA)",        "privacy": "سياسة الخصوصية"},
-    "ca":      {"site": "",   "terms": "Condicions d'ús (EULA)",       "privacy": "Política de privadesa"},
-    "cs":      {"site": "",   "terms": "Podmínky užívání (EULA)",      "privacy": "Zásady ochrany osobních údajů"},
-    "da":      {"site": "",   "terms": "Vilkår for brug (EULA)",       "privacy": "Privatlivspolitik"},
-    "de-DE":   {"site": "de", "terms": "Nutzungsbedingungen (EULA)",   "privacy": "Datenschutzrichtlinie"},
-    "el":      {"site": "",   "terms": "Όροι Χρήσης (EULA)",           "privacy": "Πολιτική Απορρήτου"},
-    "en-AU":   {"site": "en", "terms": "Terms of Use (EULA)",          "privacy": "Privacy Policy"},
-    "en-CA":   {"site": "en", "terms": "Terms of Use (EULA)",          "privacy": "Privacy Policy"},
-    "en-GB":   {"site": "en", "terms": "Terms of Use (EULA)",          "privacy": "Privacy Policy"},
-    "en-US":   {"site": "en", "terms": "Terms of Use (EULA)",          "privacy": "Privacy Policy"},
-    "es-ES":   {"site": "es", "terms": "Términos de uso (EULA)",       "privacy": "Política de privacidad"},
-    "es-MX":   {"site": "es", "terms": "Términos de uso (EULA)",       "privacy": "Política de privacidad"},
-    "fi":      {"site": "",   "terms": "Käyttöehdot (EULA)",           "privacy": "Tietosuojakäytäntö"},
-    "fr-CA":   {"site": "",   "terms": "Conditions d'utilisation (EULA)", "privacy": "Politique de confidentialité"},
-    "fr-FR":   {"site": "",   "terms": "Conditions d'utilisation (EULA)", "privacy": "Politique de confidentialité"},
-    "he":      {"site": "",   "terms": "תנאי שימוש (EULA)",            "privacy": "מדיניות פרטיות"},
-    "hi":      {"site": "",   "terms": "उपयोग की शर्तें (EULA)",          "privacy": "गोपनीयता नीति"},
-    "hr":      {"site": "",   "terms": "Uvjeti korištenja (EULA)",     "privacy": "Pravila o privatnosti"},
-    "hu":      {"site": "",   "terms": "Felhasználási feltételek (EULA)", "privacy": "Adatvédelmi irányelvek"},
-    "id":      {"site": "",   "terms": "Ketentuan Penggunaan (EULA)",  "privacy": "Kebijakan Privasi"},
-    "it":      {"site": "",   "terms": "Termini d'uso (EULA)",         "privacy": "Informativa sulla privacy"},
-    "ja":      {"site": "",   "terms": "利用規約 (EULA)",                "privacy": "プライバシーポリシー"},
-    "ko":      {"site": "",   "terms": "이용약관 (EULA)",                "privacy": "개인정보 처리방침"},
-    "ms":      {"site": "",   "terms": "Terma Penggunaan (EULA)",      "privacy": "Dasar Privasi"},
-    "nl-NL":   {"site": "",   "terms": "Gebruiksvoorwaarden (EULA)",   "privacy": "Privacybeleid"},
-    "no":      {"site": "",   "terms": "Bruksvilkår (EULA)",           "privacy": "Personvernerklæring"},
-    "pl":      {"site": "",   "terms": "Warunki użytkowania (EULA)",   "privacy": "Polityka prywatności"},
-    "pt-BR":   {"site": "",   "terms": "Termos de Uso (EULA)",         "privacy": "Política de Privacidade"},
-    "pt-PT":   {"site": "",   "terms": "Termos de Utilização (EULA)",  "privacy": "Política de Privacidade"},
-    "ro":      {"site": "",   "terms": "Termeni de utilizare (EULA)",  "privacy": "Politica de confidențialitate"},
-    "ru":      {"site": "",   "terms": "Условия использования (EULA)", "privacy": "Политика конфиденциальности"},
-    "sk":      {"site": "",   "terms": "Podmienky používania (EULA)",  "privacy": "Zásady ochrany osobných údajov"},
-    "sv":      {"site": "",   "terms": "Användarvillkor (EULA)",       "privacy": "Integritetspolicy"},
-    "th":      {"site": "",   "terms": "ข้อกำหนดการใช้งาน (EULA)",       "privacy": "นโยบายความเป็นส่วนตัว"},
-    "tr":      {"site": "",   "terms": "Kullanım Koşulları (EULA)",    "privacy": "Gizlilik Politikası"},
-    "uk":      {"site": "",   "terms": "Умови використання (EULA)",    "privacy": "Політика конфіденційності"},
-    "vi":      {"site": "",   "terms": "Điều khoản sử dụng (EULA)",    "privacy": "Chính sách quyền riêng tư"},
-    "zh-Hans": {"site": "",   "terms": "使用条款 (EULA)",                "privacy": "隐私政策"},
-    "zh-Hant": {"site": "",   "terms": "使用條款 (EULA)",                "privacy": "隱私權政策"}
+    "ar-SA": {
+      "site": "ar",
+      "terms": "شروط الاستخدام (EULA)",
+      "privacy": "سياسة الخصوصية",
+      "subtitle": "ابنِ عاداتك وتطوّر يوميًا",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "ca": {
+      "site": "",
+      "terms": "Condicions d'ús (EULA)",
+      "privacy": "Política de privadesa",
+      "subtitle": "Crea hàbits i creix cada dia",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "cs": {
+      "site": "",
+      "terms": "Podmínky užívání (EULA)",
+      "privacy": "Zásady ochrany osobních údajů",
+      "subtitle": "Budujte návyky každý den",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "da": {
+      "site": "",
+      "terms": "Vilkår for brug (EULA)",
+      "privacy": "Privatlivspolitik",
+      "subtitle": "Byg vaner, voks hver dag",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "de-DE": {
+      "site": "de",
+      "terms": "Nutzungsbedingungen (EULA)",
+      "privacy": "Datenschutzrichtlinie",
+      "subtitle": "Gewohnheiten täglich aufbauen",
+      "whatsNew": "Evolve startet jetzt mit einer klaren Wahl: ohne jedes Konto nutzen, oder anmelden und zwischen deinen Geräten synchronisieren. Ohne Konto bleibt alles auf diesem iPhone, ohne Grenzen und ohne etwas zu kaufen.\n\nDatenschutzrichtlinie und Nutzungsbedingungen sind jetzt jederzeit in den Einstellungen verfügbar."
+    },
+    "el": {
+      "site": "",
+      "terms": "Όροι Χρήσης (EULA)",
+      "privacy": "Πολιτική Απορρήτου",
+      "subtitle": "Χτίστε συνήθειες κάθε μέρα",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "en-AU": {
+      "site": "en",
+      "terms": "Terms of Use (EULA)",
+      "privacy": "Privacy Policy",
+      "subtitle": "Build Routines & Grow Daily",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "en-CA": {
+      "site": "en",
+      "terms": "Terms of Use (EULA)",
+      "privacy": "Privacy Policy",
+      "subtitle": "Build Routines & Grow Daily",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "en-GB": {
+      "site": "en",
+      "terms": "Terms of Use (EULA)",
+      "privacy": "Privacy Policy",
+      "subtitle": "Build Routines & Grow Daily",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "en-US": {
+      "site": "en",
+      "terms": "Terms of Use (EULA)",
+      "privacy": "Privacy Policy",
+      "subtitle": "Build Routines & Grow Daily",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "es-ES": {
+      "site": "es",
+      "terms": "Términos de uso (EULA)",
+      "privacy": "Política de privacidad",
+      "subtitle": "Crea hábitos y crece cada día",
+      "whatsNew": "Evolve ahora se abre con una elección clara: úsalo sin ninguna cuenta, o inicia sesión para sincronizar entre tus dispositivos. Sin cuenta todo se queda en este iPhone, sin límites y sin nada que comprar.\n\nLa política de privacidad y los términos de uso están ahora disponibles en cualquier momento desde Ajustes."
+    },
+    "es-MX": {
+      "site": "es",
+      "terms": "Términos de uso (EULA)",
+      "privacy": "Política de privacidad",
+      "subtitle": "Crea hábitos y crece cada día",
+      "whatsNew": "Evolve ahora se abre con una elección clara: úsalo sin ninguna cuenta, o inicia sesión para sincronizar entre tus dispositivos. Sin cuenta todo se queda en este iPhone, sin límites y sin nada que comprar.\n\nLa política de privacidad y los términos de uso están ahora disponibles en cualquier momento desde Ajustes."
+    },
+    "fi": {
+      "site": "",
+      "terms": "Käyttöehdot (EULA)",
+      "privacy": "Tietosuojakäytäntö",
+      "subtitle": "Rakenna tapoja joka päivä",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "fr-CA": {
+      "site": "",
+      "terms": "Conditions d'utilisation (EULA)",
+      "privacy": "Politique de confidentialité",
+      "subtitle": "Créez des habitudes solides",
+      "whatsNew": "Evolve s'ouvre désormais sur un choix clair : l'utiliser sans aucun compte, ou se connecter pour synchroniser entre vos appareils. Sans compte, tout reste sur cet iPhone, sans limite et sans rien à acheter.\n\nLa politique de confidentialité et les conditions d'utilisation sont maintenant accessibles à tout moment depuis les Réglages."
+    },
+    "fr-FR": {
+      "site": "",
+      "terms": "Conditions d'utilisation (EULA)",
+      "privacy": "Politique de confidentialité",
+      "subtitle": "Créez des habitudes solides",
+      "whatsNew": "Evolve s'ouvre désormais sur un choix clair : l'utiliser sans aucun compte, ou se connecter pour synchroniser entre vos appareils. Sans compte, tout reste sur cet iPhone, sans limite et sans rien à acheter.\n\nLa politique de confidentialité et les conditions d'utilisation sont maintenant accessibles à tout moment depuis les Réglages."
+    },
+    "he": {
+      "site": "",
+      "terms": "תנאי שימוש (EULA)",
+      "privacy": "מדיניות פרטיות",
+      "subtitle": "בנו הרגלים וצמחו כל יום",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "hi": {
+      "site": "",
+      "terms": "उपयोग की शर्तें (EULA)",
+      "privacy": "गोपनीयता नीति",
+      "subtitle": "आदतें बनाएँ, रोज़ बढ़ें",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "hr": {
+      "site": "",
+      "terms": "Uvjeti korištenja (EULA)",
+      "privacy": "Pravila o privatnosti",
+      "subtitle": "Gradite navike svaki dan",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "hu": {
+      "site": "",
+      "terms": "Felhasználási feltételek (EULA)",
+      "privacy": "Adatvédelmi irányelvek",
+      "subtitle": "Építs szokásokat naponta",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "id": {
+      "site": "",
+      "terms": "Ketentuan Penggunaan (EULA)",
+      "privacy": "Kebijakan Privasi",
+      "subtitle": "Bangun kebiasaan tiap hari",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "it": {
+      "site": "",
+      "terms": "Termini d'uso (EULA)",
+      "privacy": "Informativa sulla privacy",
+      "subtitle": "Costruisci abitudini solide",
+      "whatsNew": "Evolve ora si apre con una scelta chiara: usalo senza alcun account, oppure accedi per sincronizzare tra i tuoi dispositivi. Senza account tutto resta su questo iPhone, senza limiti e senza nulla da acquistare.\n\nL'informativa sulla privacy e i termini d'uso sono ora disponibili in qualsiasi momento dalle Impostazioni."
+    },
+    "ja": {
+      "site": "",
+      "terms": "利用規約 (EULA)",
+      "privacy": "プライバシーポリシー",
+      "subtitle": "習慣を育て、毎日成長する",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "ko": {
+      "site": "",
+      "terms": "이용약관 (EULA)",
+      "privacy": "개인정보 처리방침",
+      "subtitle": "습관을 만들고 매일 성장하기",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "ms": {
+      "site": "",
+      "terms": "Terma Penggunaan (EULA)",
+      "privacy": "Dasar Privasi",
+      "subtitle": "Bina tabiat setiap hari",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "nl-NL": {
+      "site": "",
+      "terms": "Gebruiksvoorwaarden (EULA)",
+      "privacy": "Privacybeleid",
+      "subtitle": "Bouw gewoontes op, groei",
+      "whatsNew": "Evolve opent nu met een duidelijke keuze: gebruiken zonder account, of inloggen om te synchroniseren tussen je apparaten. Zonder account blijft alles op deze iPhone, zonder limieten en zonder iets te kopen.\n\nHet privacybeleid en de gebruiksvoorwaarden zijn nu altijd beschikbaar via Instellingen."
+    },
+    "no": {
+      "site": "",
+      "terms": "Bruksvilkår (EULA)",
+      "privacy": "Personvernerklæring",
+      "subtitle": "Bygg vaner, voks hver dag",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "pl": {
+      "site": "",
+      "terms": "Warunki użytkowania (EULA)",
+      "privacy": "Polityka prywatności",
+      "subtitle": "Buduj nawyki każdego dnia",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "pt-BR": {
+      "site": "",
+      "terms": "Termos de Uso (EULA)",
+      "privacy": "Política de Privacidade",
+      "subtitle": "Crie hábitos e evolua",
+      "whatsNew": "O Evolve agora abre com uma escolha clara: usar sem conta nenhuma, ou entrar para sincronizar entre os seus dispositivos. Sem conta, tudo fica neste iPhone, sem limites e sem nada para comprar.\n\nA política de privacidade e os termos de uso estão agora disponíveis a qualquer momento nos Ajustes."
+    },
+    "pt-PT": {
+      "site": "",
+      "terms": "Termos de Utilização (EULA)",
+      "privacy": "Política de Privacidade",
+      "subtitle": "Crie hábitos e evolua",
+      "whatsNew": "O Evolve agora abre com uma escolha clara: usar sem conta nenhuma, ou entrar para sincronizar entre os seus dispositivos. Sem conta, tudo fica neste iPhone, sem limites e sem nada para comprar.\n\nA política de privacidade e os termos de uso estão agora disponíveis a qualquer momento nos Ajustes."
+    },
+    "ro": {
+      "site": "",
+      "terms": "Termeni de utilizare (EULA)",
+      "privacy": "Politica de confidențialitate",
+      "subtitle": "Creează obiceiuri zilnic",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "ru": {
+      "site": "",
+      "terms": "Условия использования (EULA)",
+      "privacy": "Политика конфиденциальности",
+      "subtitle": "Привычки и рост каждый день",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "sk": {
+      "site": "",
+      "terms": "Podmienky používania (EULA)",
+      "privacy": "Zásady ochrany osobných údajov",
+      "subtitle": "Budujte návyky každý deň",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "sv": {
+      "site": "",
+      "terms": "Användarvillkor (EULA)",
+      "privacy": "Integritetspolicy",
+      "subtitle": "Bygg vanor, väx varje dag",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "th": {
+      "site": "",
+      "terms": "ข้อกำหนดการใช้งาน (EULA)",
+      "privacy": "นโยบายความเป็นส่วนตัว",
+      "subtitle": "สร้างนิสัย เติบโตทุกวัน",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "tr": {
+      "site": "",
+      "terms": "Kullanım Koşulları (EULA)",
+      "privacy": "Gizlilik Politikası",
+      "subtitle": "Alışkanlık kur, her gün",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "uk": {
+      "site": "",
+      "terms": "Умови використання (EULA)",
+      "privacy": "Політика конфіденційності",
+      "subtitle": "Звички та зростання щодня",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "vi": {
+      "site": "",
+      "terms": "Điều khoản sử dụng (EULA)",
+      "privacy": "Chính sách quyền riêng tư",
+      "subtitle": "Xây thói quen, tiến bộ",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "zh-Hans": {
+      "site": "",
+      "terms": "使用条款 (EULA)",
+      "privacy": "隐私政策",
+      "subtitle": "养成习惯，每天成长",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    },
+    "zh-Hant": {
+      "site": "",
+      "terms": "使用條款 (EULA)",
+      "privacy": "隱私權政策",
+      "subtitle": "養成習慣，每天成長",
+      "whatsNew": "Evolve now opens with a clear choice: use it with no account at all, or sign in to sync across your devices. Without an account everything stays on this iPhone, with no limits and nothing to buy.\n\nThe Privacy Policy and Terms of Use are also available from Settings at any time."
+    }
   }
 }

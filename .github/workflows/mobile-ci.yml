@@ -92,8 +92,19 @@ jobs:
       - name: Build metadata from sources
         run: python3 tool/appstore/build_metadata.py
 
+      # --exit-code alone ignores UNTRACKED files, so a locale added to
+      # locales.json and metadata_src/ but never `git add`ed would be created
+      # here, pass the diff, pass validation, and still be missing from a fresh
+      # checkout. Check both.
       - name: Fail if the committed metadata is not what the build produces
-        run: git diff --exit-code -- metadata/
+        run: |
+          git diff --exit-code -- metadata/
+          untracked="$(git status --porcelain --untracked-files=all -- metadata/)"
+          if [ -n "$untracked" ]; then
+            echo "::error::metadata/ has files the build produced but git does not track:"
+            echo "$untracked"
+            exit 1
+          fi
 
       - name: Validate App Store metadata
         run: python3 tool/appstore/validate_metadata.py

@@ -588,12 +588,29 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
               : RefreshIndicator(
                   color: Colors.amber,
                   backgroundColor: context.appColors.card,
-                  onRefresh: () async {
-                    setState(() {
-                      _isFetchingProducts = true;
-                    });
-                    await Future.wait([_loadOfferings(), _loadCustomerInfo()]);
-                  },
+                  // Private mode has nothing to refresh, and reaching the store
+                  // from here is not merely pointless — it is unsafe. The
+                  // initState guard covers the first frame, but this callback
+                  // sits OUTSIDE the mode branch below and the scroll view
+                  // forces AlwaysScrollableScrollPhysics, so a pull on the
+                  // short private notice would still fire it. Both
+                  // `_loadOfferings` and `_loadCustomerInfo` call into
+                  // `Purchases.*`, which is unconfigured in Private mode; on
+                  // iOS that traps inside purchases-ios rather than throwing a
+                  // Dart error, so the surrounding try/catch cannot save it.
+                  // A crash here would land on the one screen the App Review
+                  // notes send the reviewer to.
+                  onRefresh: isPrivate
+                      ? () async {}
+                      : () async {
+                          setState(() {
+                            _isFetchingProducts = true;
+                          });
+                          await Future.wait([
+                            _loadOfferings(),
+                            _loadCustomerInfo(),
+                          ]);
+                        },
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(20),

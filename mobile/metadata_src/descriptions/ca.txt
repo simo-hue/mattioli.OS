@@ -1,4 +1,4 @@
-Evolve és un seguidor d'hàbits i objectius per a qui vol una rutina que aguanti de debò, i vol entendre per què aguanta. Una app per a iPhone, iPad i Mac, sense publicitat, amb un motor d'anàlisi que converteix els registres diaris en informació sobre la qual pots actuar.
+Evolve és un seguidor d'hàbits i objectius per a qui vol una rutina que aguanti de debò, i vol entendre per què aguanta. Una app per a iPhone i iPad, sense publicitat, amb un motor d'anàlisi que converteix els registres diaris en informació sobre la qual pots actuar.
 
 NO CAL CAP COMPTE
 Toca "Continua sense compte" al primer inici i Evolve no et preguntarà mai qui ets. Les teves dades viuen en una base de dades xifrada en aquest dispositiu: sense registre, sense correu i sense límits - hàbits il·limitats, objectius il·limitats i tot el motor d'estadístiques, gratis. Inicia la sessió més tard només si vols sincronitzar entre els teus dispositius.

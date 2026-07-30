@@ -99,77 +99,98 @@ class _DataModeChoiceScreenState extends ConsumerState<DataModeChoiceScreen> {
             ),
           ),
           SafeArea(
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: isCompact ? 12 : 24,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SizedBox(height: isCompact ? 16 : 48),
-                  Text(
-                    context.t.auth.chooserTitle,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
-                      color: colors.foreground,
-                      fontSize: isCompact ? 24 : 28,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
+            // Scrollable, like AuthScreen. A fixed Column with Spacers
+            // overflowed by 16px on a 375x667 iPhone SE at DEFAULT text size,
+            // and by ~170px at 1.3x Dynamic Type on a current iPhone — and the
+            // first thing clipped was the footnote, i.e. the one sentence
+            // stating that signing in is optional. Losing that sentence
+            // silently undoes the reason this screen exists.
+            child: LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: isCompact ? 12 : 24,
+                ),
+                child: ConstrainedBox(
+                  // Fill the viewport when there is room, so the Spacers still
+                  // centre the cards on a large screen; scroll when there is
+                  // not. minHeight subtracts the vertical padding this
+                  // ConstrainedBox sits inside.
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight - (isCompact ? 24 : 48),
+                  ),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SizedBox(height: isCompact ? 16 : 48),
+                        Text(
+                          context.t.auth.chooserTitle,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            color: colors.foreground,
+                            fontSize: isCompact ? 24 : 28,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          context.t.auth.chooserSubtitle,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            color: colors.mutedForeground,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const Spacer(),
+
+                        // Listed FIRST, and drawn as the primary card. The
+                        // ordering is the point of the screen — see class doc.
+                        _ModeCard(
+                          key: const Key('mode_choice_without_account'),
+                          icon: LucideIcons.smartphone,
+                          title: context.t.auth.continueWithoutAccount,
+                          subtitle:
+                              context.t.auth.continueWithoutAccountSubtitle,
+                          isPrimary: true,
+                          isBusy: _isStartingPrivateMode,
+                          onTap: _continueWithoutAccount,
+                        ),
+                        const SizedBox(height: 16),
+                        _ModeCard(
+                          key: const Key('mode_choice_sign_in'),
+                          icon: LucideIcons.refreshCw,
+                          title: context.t.auth.signInToSync,
+                          subtitle: context.t.auth.signInToSyncSubtitle,
+                          isPrimary: false,
+                          isBusy: false,
+                          onTap: _isStartingPrivateMode ? null : _signIn,
+                        ),
+
+                        const Spacer(),
+
+                        // Apple's own suggested wording for this guideline:
+                        // tell the user what registering buys them, rather
+                        // than requiring it.
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Text(
+                            context.t.auth.chooserFootnote,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(
+                              color: colors.mutedForeground,
+                              fontSize: 12,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: isCompact ? 8 : 16),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    context.t.auth.chooserSubtitle,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
-                      color: colors.mutedForeground,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const Spacer(),
-
-                  // Listed FIRST, and drawn as the primary card. The ordering is
-                  // the point of the screen — see the class doc.
-                  _ModeCard(
-                    key: const Key('mode_choice_without_account'),
-                    icon: LucideIcons.smartphone,
-                    title: context.t.auth.continueWithoutAccount,
-                    subtitle: context.t.auth.continueWithoutAccountSubtitle,
-                    isPrimary: true,
-                    isBusy: _isStartingPrivateMode,
-                    onTap: _continueWithoutAccount,
-                  ),
-                  const SizedBox(height: 16),
-                  _ModeCard(
-                    key: const Key('mode_choice_sign_in'),
-                    icon: LucideIcons.refreshCw,
-                    title: context.t.auth.signInToSync,
-                    subtitle: context.t.auth.signInToSyncSubtitle,
-                    isPrimary: false,
-                    isBusy: false,
-                    onTap: _isStartingPrivateMode ? null : _signIn,
-                  ),
-
-                  const Spacer(),
-
-                  // Apple's own suggested wording for this guideline: tell the
-                  // user what registering buys them, rather than requiring it.
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Text(
-                      context.t.auth.chooserFootnote,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                        color: colors.mutedForeground,
-                        fontSize: 12,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: isCompact ? 8 : 16),
-                ],
+                ),
               ),
             ),
           ),
@@ -212,6 +233,14 @@ class _ModeCard extends StatelessWidget {
       // subtitle is where the "no sign-up, no limits" promise lives.
       label: '$title. $subtitle',
       excludeSemantics: true,
+      // onTap is NOT redundant with the InkWell below. `excludeSemantics`
+      // drops the whole child subtree from the semantics tree, tap action
+      // included, so without this the node announces as a button that cannot
+      // be activated: on iOS, accessibilityActivate returns NO when the node
+      // carries no tap action and UIKit does not synthesise a touch. Since
+      // this is the first screen after consent and offers no other control,
+      // omitting it makes the app unenterable under VoiceOver.
+      onTap: isBusy ? null : onTap,
       child: Material(
         color: Colors.transparent,
         child: InkWell(

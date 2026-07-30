@@ -26,7 +26,12 @@ Why the subscription exists at all: everything that runs on the device is free b
 
 We use Apple's standard Terms of Use (EULA), linked in the App Description.
 
-You were right that this was missing. It was present in most localisations but not all: five (German, French, Canadian French, Greek and Mexican Spanish) had been truncated at the 4000-character description limit, and because the legal links sat at the end of the text, the truncation removed them. We have rebuilt how these descriptions are produced so the links are added after translation and can no longer be cut, and we now validate all 39 localisations before uploading. Every localisation of this build carries both links.
+You were right that this was missing, and reviewing our own listing we found the problem was worse than we first understood. Two separate faults:
+
+- English (U.S.) and Spanish (Spain) were showing the description of an entirely different product of ours. That is our error and we are sorry you were shown it; the correct Evolve description is in this submission for both.
+- German, French, Canadian French and Greek had been truncated at the 4000-character description limit, and because the legal links sat at the end of the text the truncation removed them. Mexican Spanish kept the Terms link but lost the end of the privacy URL.
+
+We have rebuilt how these descriptions are produced. The text is translated first and the legal links are composed afterwards from fixed URLs, so they never pass through translation and are budgeted to always fit — they can no longer be truncated. All 39 localisations are now validated automatically before upload. Every localisation in this submission carries both links.
 
 Inside the app, the subscription screen shows the plan name, the duration, the price and the price per month from StoreKit, the renewal terms, and functional links to both the Privacy Policy and Apple's standard Terms of Use (EULA).
 
@@ -40,7 +45,5 @@ An account is NOT needed to review the app. If you would like to check the accou
 - Password: testing@gmail.com
 
 Please note this account is intentionally not subscribed, so signing in with it shows the subscription screen with all the required information rather than the subscribed state.
-
-A screen recording covering both points has been provided in the Resolution Center.
 
 Thank you for your time and review.

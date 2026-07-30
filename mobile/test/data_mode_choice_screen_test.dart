@@ -90,4 +90,49 @@ void main() {
     // registering buys, rather than requiring it.
     expect(find.textContaining('optional'), findsOneWidget);
   });
+
+  // The default 800x600 test surface is wider than any iPhone, so the card
+  // subtitles fit on one line there and never wrap. At a real 375pt width they
+  // do, and the first version of this screen — a fixed Column with two Spacers
+  // and no scroll view — overflowed by 16px on an iPhone SE at DEFAULT text
+  // size, and by ~170px at 1.3x Dynamic Type on a current iPhone.
+  //
+  // What got clipped was the footnote: the one sentence saying sign-in is
+  // optional, which is the whole reason this screen exists. Pump the real
+  // sizes.
+  group('fits real devices', () {
+    const viewports = <String, Size>{
+      'iPhone SE (375x667)': Size(375, 667),
+      'iPhone 15 (393x852)': Size(393, 852),
+    };
+
+    for (final entry in viewports.entries) {
+      for (final scale in const [1.0, 1.3, 2.0]) {
+        testWidgets('${entry.key} at ${scale}x text', (tester) async {
+          tester.view.physicalSize = entry.value;
+          tester.view.devicePixelRatio = 1.0;
+          addTearDown(tester.view.reset);
+
+          await tester.pumpWidget(
+            MediaQuery(
+              data: MediaQueryData(textScaler: TextScaler.linear(scale)),
+              child: _app(),
+            ),
+          );
+          await tester.pump();
+
+          // pumpWidget rethrows layout overflow as a test failure, so simply
+          // getting here proves no overflow. Then confirm the footnote is
+          // actually reachable rather than merely un-clipped.
+          expect(tester.takeException(), isNull);
+          await tester.dragUntilVisible(
+            find.textContaining('optional'),
+            find.byType(SingleChildScrollView),
+            const Offset(0, -100),
+          );
+          expect(find.textContaining('optional'), findsOneWidget);
+        });
+      }
+    }
+  });
 }

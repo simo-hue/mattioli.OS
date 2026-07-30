@@ -1,1 +1,3 @@
-Melhorias de segurança e correção de bugs.
+O Evolve agora abre com uma escolha clara: usar sem conta nenhuma, ou entrar para sincronizar entre os seus dispositivos. Sem conta, tudo fica neste iPhone, sem limites e sem nada para comprar.
+
+A política de privacidade e os termos de uso estão agora disponíveis a qualquer momento nos Ajustes.

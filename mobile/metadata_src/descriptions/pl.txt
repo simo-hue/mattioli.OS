@@ -1,4 +1,4 @@
-Evolve to aplikacja do śledzenia nawyków i celów dla tych, którzy chcą rutyny, która naprawdę się utrzymuje - i chcą zrozumieć, dlaczego się utrzymuje. Jedna aplikacja na iPhone'a, iPada i Maca, bez reklam, z silnikiem analitycznym, który zamienia codzienne odhaczenia w coś, na czym można działać.
+Evolve to aplikacja do śledzenia nawyków i celów dla tych, którzy chcą rutyny, która naprawdę się utrzymuje - i chcą zrozumieć, dlaczego się utrzymuje. Jedna aplikacja na iPhone'a i iPada, bez reklam, z silnikiem analitycznym, który zamienia codzienne odhaczenia w coś, na czym można działać.
 
 KONTO NIE JEST POTRZEBNE
 Przy pierwszym uruchomieniu dotknij "Kontynuuj bez konta", a Evolve nigdy nie zapyta, kim jesteś. Twoje dane są w zaszyfrowanej bazie na tym urządzeniu: bez rejestracji, bez e-maila i bez limitów - nieograniczone nawyki, nieograniczone cele i pełny silnik statystyk, za darmo. Zaloguj się później tylko wtedy, gdy zechcesz synchronizować między swoimi urządzeniami.

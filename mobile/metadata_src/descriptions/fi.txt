@@ -1,4 +1,4 @@
-Evolve on tapa- ja tavoiteseuranta niille, jotka haluavat rutiinin joka oikeasti kestää - ja haluavat ymmärtää miksi se kestää. Yksi sovellus iPhonelle, iPadille ja Macille, ilman mainoksia, ja analytiikkamoottori joka muuttaa päivittäiset merkinnät joksikin mihin voi tarttua.
+Evolve on tapa- ja tavoiteseuranta niille, jotka haluavat rutiinin joka oikeasti kestää - ja haluavat ymmärtää miksi se kestää. Yksi sovellus iPhonelle ja iPadille, ilman mainoksia, ja analytiikkamoottori joka muuttaa päivittäiset merkinnät joksikin mihin voi tarttua.
 
 TILIÄ EI TARVITA
 Napauta "Jatka ilman tiliä" ensimmäisellä käynnistyksellä, eikä Evolve kysy koskaan kuka olet. Tietosi ovat salatussa tietokannassa tässä laitteessa: ei rekisteröitymistä, ei sähköpostia, ei rajoja - rajattomasti tapoja, rajattomasti tavoitteita ja koko tilastomoottori, ilmaiseksi. Kirjaudu sisään myöhemmin vain jos haluat synkronoida laitteidesi välillä.

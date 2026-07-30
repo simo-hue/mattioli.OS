@@ -164,7 +164,10 @@ class _PrivateModeGateState extends ConsumerState<PrivateModeGate> {
 
   void _backToSignIn() {
     // Leaving Private mode flips the persisted data mode; the router redirect
-    // sends the user to '/login' so they're never stranded.
+    // then sends a signed-out user to '/choose', which offers sign-in as one of
+    // its two options. (It used to land on '/login' directly — the chooser was
+    // introduced in front of it for Guideline 5.1.1(v).) Either way the user is
+    // never stranded, which is the property this call depends on.
     ref.read(authProvider.notifier).returnToLoginFromPrivateMode();
   }
 

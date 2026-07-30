@@ -47,8 +47,16 @@ REQUIRED = ("name.txt", "description.txt", "keywords.txt", "privacy_url.txt", "s
 # Guideline 3.1.2: an app offering auto-renewable subscriptions must carry
 # functional links to the privacy policy and the Terms of Use (EULA). These
 # substrings must survive into every shipped description.
+#
+# Both markers include the FULL path on purpose. An earlier version matched
+# only "simo-hue.github.io/evolve/", which a truncated URL still satisfies:
+# "https://simo-hue.github.io/evolve/priv" passed, and so did the bare
+# marketing homepage. es-MX shipped exactly that defect live
+# ("https://simo-hue.github....") and this validator would have waved it
+# through. Match the whole thing or nothing.
 EULA_MARKER = "apple.com/legal/internet-services/itunes/dev/stdeula/"
 PRIVACY_MARKER = "simo-hue.github.io/evolve/"
+PRIVACY_PAGE = "privacy.html"
 
 # Directories under metadata/ that are not localisations.
 NON_LOCALE_ENTRIES = {"review_information"}
@@ -69,6 +77,21 @@ def check_locale(locale: str, directory: str) -> list[str]:
         elif not read(path).strip():
             problems.append(f"{filename} is empty")
 
+    # URL fields were previously checked for non-emptiness only, so "not even a
+    # url" would have passed. Guideline 1.5 already fired once on the support
+    # URL; these two fields are worth asserting the shape of.
+    for filename, page in (("privacy_url.txt", "privacy.html"), ("support_url.txt", "support.html")):
+        path = os.path.join(directory, filename)
+        if not os.path.exists(path):
+            continue
+        url = read(path).strip()
+        if not url:
+            continue
+        if not url.startswith("https://"):
+            problems.append(f"{filename} is not an https URL: {url!r}")
+        elif not url.endswith(page):
+            problems.append(f"{filename} does not point at {page}: {url!r}")
+
     for filename, limit in LIMITS.items():
         path = os.path.join(directory, filename)
         if not os.path.exists(path):
@@ -84,8 +107,26 @@ def check_locale(locale: str, directory: str) -> list[str]:
 
         if EULA_MARKER not in description:
             problems.append("description is missing the Terms of Use (EULA) link — Guideline 3.1.2(c)")
-        if PRIVACY_MARKER not in description:
-            problems.append("description is missing the privacy policy link — Guideline 3.1.2")
+        if PRIVACY_MARKER + PRIVACY_PAGE not in description and not any(
+            f"{PRIVACY_MARKER}{lang}/{PRIVACY_PAGE}" in description
+            for lang in ("en", "es", "de", "ar")
+        ):
+            problems.append(
+                "description is missing a complete privacy policy link — "
+                "Guideline 3.1.2 (a truncated or homepage-only URL does not count)"
+            )
+
+        # The URL inside the description and the one in App Store Connect's
+        # Privacy Policy field must be the same page. They are emitted from one
+        # mapping in build_metadata.py, so a mismatch means someone hand-edited
+        # one of them.
+        privacy_field = os.path.join(directory, "privacy_url.txt")
+        if os.path.exists(privacy_field):
+            declared = read(privacy_field).strip()
+            if declared and declared not in description:
+                problems.append(
+                    f"privacy_url.txt ({declared}) does not match the link in the description"
+                )
 
         # The exact signature of the failure that shipped: a machine truncated
         # the text and left an ellipsis where the legal block used to be.

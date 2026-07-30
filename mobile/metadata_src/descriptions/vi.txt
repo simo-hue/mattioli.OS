@@ -1,4 +1,4 @@
-Evolve là ứng dụng theo dõi thói quen và mục tiêu dành cho những ai muốn một nếp sinh hoạt thực sự bền, và muốn hiểu vì sao nó bền. Một ứng dụng cho iPhone, iPad và Mac, không quảng cáo, với bộ máy phân tích biến những lần đánh dấu hằng ngày thành thông tin bạn có thể hành động.
+Evolve là ứng dụng theo dõi thói quen và mục tiêu dành cho những ai muốn một nếp sinh hoạt thực sự bền, và muốn hiểu vì sao nó bền. Một ứng dụng cho iPhone và iPad, không quảng cáo, với bộ máy phân tích biến những lần đánh dấu hằng ngày thành thông tin bạn có thể hành động.
 
 KHÔNG CẦN TÀI KHOẢN
 Chạm "Tiếp tục không cần tài khoản" ở lần mở đầu tiên, và Evolve sẽ không bao giờ hỏi bạn là ai. Dữ liệu của bạn nằm trong một cơ sở dữ liệu được mã hóa trên chính thiết bị này: không đăng ký, không email, không giới hạn - thói quen không giới hạn, mục tiêu không giới hạn và toàn bộ bộ máy thống kê, miễn phí. Chỉ đăng nhập sau này nếu bạn muốn đồng bộ giữa các thiết bị.

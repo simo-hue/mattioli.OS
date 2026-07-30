@@ -171,12 +171,20 @@ def main(argv: list[str]) -> int:
         # Emitted from the same `site` mapping as the description's legal
         # block, so App Store Connect's URL fields can never point at a
         # different language than the links inside the description itself.
-        for filename, url in (
+        #
+        # subtitle and release notes are generated here too. Left to hand
+        # maintenance they rotted: the subtitle was the same English string in
+        # all 39 localisations, sitting above a fully translated description,
+        # and the release notes said "Security enhancements and bug fixes" for
+        # a release whose headline change is a new onboarding screen.
+        for filename, value in (
             ("privacy_url.txt", privacy_url(cfg["site"])),
             ("support_url.txt", support_url(cfg["site"])),
+            ("subtitle.txt", cfg["subtitle"]),
+            ("release_notes.txt", cfg["whatsNew"]),
         ):
             with open(os.path.join(out_dir, filename), "w", encoding="utf-8") as handle:
-                handle.write(f"{url}\n")
+                handle.write(f"{value}\n")
 
         print(f"  ok    {locale:<9} {len(description):>4}/{ASC_DESCRIPTION_LIMIT} chars")
 

@@ -1,41 +1,37 @@
-Evolve on tapa- ja tavoiteseuranta niille, jotka haluavat rakentaa rutiinin joka oikeasti kestää - ja ymmärtää miksi se kestää. Yksi sovellus iPhonelle, iPadille ja Macille, ilman mainoksia ja hälyä, ja analytiikkamoottori joka muuttaa päivittäiset merkintäsi joksikin mihin voi tarttua.
+Evolve on tapa- ja tavoiteseuranta niille, jotka haluavat rutiinin joka oikeasti kestää - ja haluavat ymmärtää miksi se kestää. Yksi sovellus iPhonelle, iPadille ja Macille, ilman mainoksia, ja analytiikkamoottori joka muuttaa päivittäiset merkinnät joksikin mihin voi tarttua.
+
+TILIÄ EI TARVITA
+Napauta "Jatka ilman tiliä" ensimmäisellä käynnistyksellä, eikä Evolve kysy koskaan kuka olet. Tietosi ovat salatussa tietokannassa tässä laitteessa: ei rekisteröitymistä, ei sähköpostia, ei rajoja - rajattomasti tapoja, rajattomasti tavoitteita ja koko tilastomoottori, ilmaiseksi. Kirjaudu sisään myöhemmin vain jos haluat synkronoida laitteidesi välillä.
 
 NELJÄ TAPAA NÄHDÄ AIKA
-Vaihda koontinäyttö tilaan Viikko, Kuukausi, Vuosi tai Elämä. Elämä-näkymä piirtää jo eletyt viikot ja vielä edessä olevat syntymäaikasi perusteella: rauhallinen muistutus siitä, mihin aikasi kuluu.
+Vaihda näkymä Viikon, Kuukauden, Vuoden ja Elämän välillä. Elämä-näkymä esittää jo eletyt viikot ja vielä edessä olevat syntymäajastasi alkaen.
 
-TAVAT JOTKA KIRJAAVAT ITSENSÄ
-- Jokaisella tavalla on oma viikkotiheys, väri ja muistutusaika.
-- Merkitse tapa tehdyksi suoraan ilmoituksesta avaamatta sovellusta.
-- Nykyinen, paras ja huonoin putki lasketaan automaattisesti.
-- Automaattinen vahvistus Terveys-sovelluksesta: askeleet, liikuntaminuutit, aktiivinen energia, seisomatunnit, matka, tietoisuusminuutit, uni ja harjoitukset.
-- Automaattinen vahvistus Ruutuajasta: laitteen kokonaiskäyttö tai aika valitsemissasi sovelluksissa ja luokissa.
-- Yhdistä ehtoja vaihtoehdoilla "mikä tahansa näistä" tai "kaikki nämä", kun yksi ehto ei riitä.
+TAVAT JOTKA SEURAAVAT ITSEÄÄN
+- Jokaiselle tavalle oma viikkotiheys, väri ja muistutusaika.
+- Kuittaa tapa suoraan ilmoituksesta avaamatta sovellusta.
+- Nykyinen, paras ja huonoin putki lasketaan matkan varrella.
+- Automaattinen vahvistus Apple Healthilla: askeleet, liikuntaminuutit, aktiivinen energia, seisomatunnit, matka, tietoisuusminuutit, uni ja treenit.
+- Automaattinen vahvistus Ruutuajalla: laitteen kokonaiskäyttö tai aika valitsemissasi sovelluksissa ja luokissa.
+- Yhdistä signaaleja vaihtoehdoilla "mikä tahansa näistä" tai "kaikki nämä".
 
-TAVOITTEET KAIKILLA AIKAJÄNTEILLÄ
-Viikko-, kuukausi-, neljännesvuosi-, vuosi- ja elämäntavoitteet, ryhmiteltyinä itse määrittelemiisi elämänalueisiin. Lisää numeeriset tavoitearvot, kytke tavoite sitä ruokkivaan tapaan ja tarkastele suoritusta, kausivaihtelua ja vuosien välistä kehitystä.
+TAVOITTEITA JOKA AIKAJÄNTEELLE
+Viikko-, kuukausi-, neljännes-, vuosi- ja elämäntavoitteet ryhmiteltyinä itse määrittelemiisi elämänalueisiin. Lisää numeeriset tavoitearvot, kytke tavoite sitä ruokkivaan tapaan ja tarkastele suoritusta, kausivaihtelua ja kehitystä vuosi vuodelta.
 
-TILASTOT JOTKA KERTOVAT JOTAIN
+TILASTOJA JOTKA KERTOVAT JOTAIN
 - Suoritustrendit 7, 14 ja 30 päivän ajalta sekä vuosikalenteri jokaiselle tavalle.
-- Korrelaatioanalyysi: mitkä tavat nostavat muita ja mitkä kilpailevat hiljaa samasta tunnista.
-- Mielialan ja energian kirjaus suhteessa siihen, mitä oikeasti sait tehtyä.
+- Korrelaatioanalyysi: mitkä tavat vetävät muita ylöspäin ja mitkä kilpailevat samasta tunnista.
+- Mieliala- ja energiamerkinnät suhteessa siihen mitä oikeasti sait tehtyä.
 - Avaintavat, kriittiset, sitkeät ja mielialaherkät tavat tunnistetaan automaattisesti.
-- Huonoimpien putkien analyysi, jotta huono jakso muuttuu tiedoksi eikä syyllisyydeksi.
 
-AI-VALMENTAJA
-Keskustelu joka tuntee jo tapasi, tavoitteesi ja tämän viikon kulun, ja tarjoaa yhden napautuksen ehdotuksia kuten "korjaa heikoin tapani" tai "olenko aikataulussa?". Se näkee vain sen kontekstin jonka itse jaat, ja kysyy ennen kuin lähettää mitään.
+TEKOÄLYVALMENTAJA
+Keskustelu joka tuntee jo tapasi, tavoitteesi ja viikon kulun, ja tarjoaa ehdotuksia kuten "korjaa heikoin tapani". Se näkee vain sen kontekstin jonka valitset jakaa, ja kysyy ennen kuin lähettää mitään. Ilman tiliä se toimii ilmaiseksi omalla OpenRouter-avaimellasi.
 
-KAKSI TAPAA SÄILYTTÄÄ TIETOSI
-- Yksityinen tila: ei tiliä lainkaan. Tietosi ovat salatussa tietokannassa laitteellasi.
-- Tilitila: kirjaudu Applen tai Googlen tunnuksilla ja synkronoi laitteidesi välillä.
-Kummassakin tapauksessa Evolve toimii offline-tilassa. iCloud-synkronointi on valinnainen, päästä päähän salattu oman iCloud-tilisi kautta, eikä se ole maksullinen ominaisuus. Vie, tuo tai poista kaikki milloin haluat, ja lukitse sovellus Face ID:llä tai Touch ID:llä.
+EVOLVE PRO
+Kaikki mikä toimii laitteellasi on ilmaista, koska se ei maksa meille mitään. Evolve Pro kattaa sen minkä me ajamme puolestasi: synkronoinnin laitteidesi välillä ja tekoälyvalmentajan ilman asetuksia ja ilman omaa avainta. Tilin sisällä Pro poistaa myös ilmaisen tason rajat.
 
-ILMAINEN JA PRO
-Evolven lataaminen on ilmaista. Ilmainen taso rajoittaa sitä, kuinka monta tapaa ja tavoitetta voit pitää kerrallaan. Evolve PRO poistaa rajat ja lisää syvälliset kaaviot, edistyneen trendi- ja tavoiteanalyysin sekä AI-valmentajan ilman minkäänlaista käyttöönottoa.
+Evolve Pro on automaattisesti uusiutuva tilaus, saatavana kuukausittain tai vuosittain. Hinta omassa valuutassasi näytetään sovelluksessa ennen vahvistusta. Maksu veloitetaan Apple-tililtäsi oston vahvistuksen yhteydessä. Tilaus uusiutuu automaattisesti, ellei automaattista uusimista kytketä pois vähintään 24 tuntia ennen kuluvan jakson päättymistä; veloitus tapahtuu 24 tunnin sisällä ennen jakson päättymistä. Hallitse tilausta ja kytke automaattinen uusiminen pois Apple-tilisi asetuksista oston jälkeen.
 
-TIETOA EVOLVE PRO -TILAUKSESTA
-Evolve PRO on automaattisesti uusiutuva tilaus: 4,99 EUR kuukaudessa tai 49,99 EUR vuodessa. Vastaava hinta omassa valuutassasi näytetään sovelluksessa ennen vahvistusta. Maksu veloitetaan Apple-tililtäsi oston vahvistuksen yhteydessä. Tilaus uusiutuu automaattisesti, ellei automaattista uusimista kytketä pois vähintään 24 tuntia ennen kuluvan jakson päättymistä, ja uusiminen veloitetaan 24 tunnin sisällä ennen jakson loppua. Voit hallita tilausta ja poistaa automaattisen uusimisen käytöstä Apple-tilisi asetuksissa oston jälkeen.
-
-Yksityisessä tilassa ei ole tiliä, joten AI-valmentaja toimii omalla OpenRouter-tililläsi: ilmaiseksi, itse antamallasi avaimella.
+Evolve toimii offline-tilassa. iCloud-synkronointi on valinnainen, päästä päähän salattu oman iCloud-tilisi kautta, eikä koskaan maksullinen. Vie, tuo tai poista kaikki milloin haluat, ja lukitse sovellus Face ID:llä tai Touch ID:llä.
 
 Käyttöehdot (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 Tietosuojakäytäntö: https://simo-hue.github.io/evolve/privacy.html

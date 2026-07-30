@@ -61,3 +61,6 @@ lib/i18n/translations*.g.dart
 
 # iOS specific build folder
 ios/build/
+
+# Python bytecode from tool/ scripts
+__pycache__/

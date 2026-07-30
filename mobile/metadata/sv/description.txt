@@ -1,37 +1,37 @@
-Evolve är det ultimata verktyget för personlig tillväxt designat för dem som vill bygga fasta vanor, sätta tydliga mål och djupt förstå sina beteendemönster genom vetenskaplig, distraktionsfri dataanalys.
+Evolve är en vane- och målspårare för dig som vill ha en rutin som faktiskt håller - och vill förstå varför den håller. En app för iPhone, iPad och Mac, utan annonser, med en analysmotor som gör dina dagliga avprickningar till något du kan agera på.
 
-Till skillnad från traditionella produktivitetsappar, som ofta är kaotiska och överbelastade med aviseringar eller annonser, är Evolve baserad på ett minimalistiskt gränssnitt, en mycket kurerad design och en avancerad analysmotor. Appen hjälper dig att förstå inte bara om du slutför dina uppgifter, utan hur dina vanor påverkar varandra och hur du bäst balanserar ditt välbefinnande med din dagliga produktivitet.
+INGET KONTO BEHÖVS
+Tryck på "Fortsätt utan konto" vid första starten, så frågar Evolve aldrig vem du är. Dina data ligger i en krypterad databas på den här enheten: ingen registrering, ingen e-post och inga gränser - obegränsat med vanor, obegränsat med mål och hela statistikmotorn, gratis. Logga in senare bara om du vill synka mellan dina enheter.
 
-Evolves makrofunktionella områden:
+FYRA SÄTT ATT SE TIDEN
+Växla panelen mellan Vecka, Månad, År och Liv. Liv-vyn visar de veckor du redan levt och de som ligger framför, utifrån ditt födelsedatum.
 
-1. AVANCERAD VANESPÅRNING
-- Interaktiva och handlingsbara meddelanden: Spela in färdigställande av vana direkt från systemmeddelandet, utan att öppna appen.
-- Individuella och flexibla påminnelser: Ställ in oberoende aviseringstider för varje vana.
-- Anpassning i Apple-stil: Konfigurera dina milstolpar visuellt.
-- Dynamisk streckberäkning: Spåra din konsistens.
-- Historisk kalender: Se de månatliga och årliga framstegen för varje enskild vana för att exakt identifiera din konsistens över tiden.
+VANOR SOM SPÅRAR SIG SJÄLVA
+- Egen veckofrekvens, färg och påminnelsetid för varje vana.
+- Bocka av en vana direkt från notisen, utan att öppna appen.
+- Nuvarande, bästa och sämsta svit beräknas löpande.
+- Automatisk verifiering med Apple Hälsa: steg, träningsminuter, aktiv energi, ståtimmar, distans, mindful-minuter, sömn och träningspass.
+- Automatisk verifiering med Skärmtid: total enhetsanvändning, eller tid i de appar och kategorier du väljer.
+- Kombinera signaler med "någon av dessa" eller "alla dessa".
 
-2. MÅLSÄTTNING OCH UTVECKLING
-- Fördelning i delmål: Dela upp dina makromål i små, uppnåeliga steg.
-- Radardiagram för livsområden: Visualisera den övergripande balansen i din tillväxt genom diagram.
-- Säsongsanalys och historik: Observera hur din produktivitet varierar under olika månader på året och anpassa din takt därefter.
-- Årlig trend: Spåra långsiktiga framsteg för att behålla fokus på dina makromål.
+MÅL PÅ VARJE HORISONT
+Vecko-, månads-, kvartals-, års- och livsmål, grupperade i de livsområden du själv definierar. Lägg till numeriska mål, koppla ett mål till vanan som driver det, och följ upp resultat, säsongsmönster och utveckling år för år.
 
-3. STATISTISK ANALYS OCH Korrelationer
-Evolve förvandlar dina dagliga handlingar till användbar data för din medvetna tillväxt.
-- Wellness vs Output Index: En egenutvecklad algoritm relaterar ditt känslomässiga välbefinnande till din faktiska produktivitet, vilket hjälper dig att hitta den perfekta balansen för att förhindra utbrändhet.
-- Korrelationsanalys: Upptäck hur en vana påverkar en annan. Analysera till exempel hur sömnkvalitet eller fysisk aktivitet direkt påverkar ditt fokus på dagtid.
-- Identifiering av bästa och kritiska vanor: Appen känner automatiskt igen vilka beteenden som stöder din tillväxt och vilka som behöver omedelbart stöd.
+STATISTIK SOM SÄGER NÅGOT
+- Slutförandetrender över 7, 14 och 30 dagar, plus en årskalender per vana.
+- Korrelationsanalys: vilka vanor drar upp de andra och vilka konkurrerar om samma timme.
+- Humör- och energiavstämningar, kopplade till vad du faktiskt slutförde.
+- Nyckelvanor, kritiska, motståndskraftiga och humörkänsliga vanor identifieras automatiskt.
 
-4. MINDFULNESS
-Personlig tillväxt handlar inte bara om siffror, utan också mental medvetenhet.
-- Incheckning av humör: Registrera ditt känslomässiga tillstånd för att förstå de faktorer som påverkar din produktivitet.
-- Livsvy: En visuell widget baserad på ditt födelsedatum som representerar tidigare och framtida veckor i livet. Ett kraftfullt verktyg för att påminna dig om värdet av tid och driva dig att leva varje dag med avsikt.
-- Säker molnsynkronisering: All din data sparas säkert i realtid tack vare integration med Supabase och Apple Sign-In-autentisering.
-- Koherent Premium Design: Byt sömlöst från mörkt läge till ljust läge tack vare en design som studerats för maximal läsbarhet och visuell komfort i alla ljusförhållanden.
+AI-COACH
+En chatt som redan känner till dina vanor, dina mål och hur veckan gått, med förslag som "fixa min svagaste vana". Den ser bara den kontext du väljer att dela och frågar innan något skickas. Utan konto körs den gratis på din egen OpenRouter-nyckel.
 
-EVOLVE PRO-prenumerationsinformation:
-Prenumerationen förnyas automatiskt om inte automatisk förnyelse är avstängd i dina Apple/iTunes-kontoinställningar minst 24 timmar före slutet av den aktuella perioden. Ditt konto kommer att debiteras inom 24 timmar före slutet av den aktuella perioden. Du kan hantera din prenumeration och stänga av automatisk förnyelse genom att gå till dina Apple-kontoinställningar efter köpet.
+EVOLVE PRO
+Allt som körs på din enhet är gratis, eftersom det inte kostar oss något. Evolve Pro täcker det vi kör åt dig: synkronisering mellan dina enheter och AI-coachen utan installation och utan egen nyckel. Inne i ett konto tar Pro dessutom bort gränserna i gratisplanen.
 
-Standardvillkor för användning (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
-Sekretesspolicy: https://simo-hue.github.io/evolve/privacy.html
+Evolve Pro är en prenumeration med automatisk förnyelse, tillgänglig månadsvis eller årsvis. Priset i din lokala valuta visas i appen innan du bekräftar. Betalningen dras från ditt Apple-konto vid bekräftat köp. Prenumerationen förnyas automatiskt om inte automatisk förnyelse stängs av minst 24 timmar före den aktuella periodens slut; beloppet dras inom 24 timmar före periodens slut. Hantera prenumerationen och stäng av automatisk förnyelse i inställningarna för ditt Apple-konto efter köpet.
+
+Evolve fungerar offline. iCloud-synkronisering är valfri, totalsträckskrypterad via ditt eget iCloud-konto, och aldrig en betalfunktion. Exportera, importera eller radera allt när du vill, och lås appen bakom Face ID eller Touch ID.
+
+Användarvillkor (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Integritetspolicy: https://simo-hue.github.io/evolve/privacy.html

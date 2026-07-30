@@ -188,7 +188,8 @@
       "aiCoach": "مدرّب AI",
       "unitsLanguage": "الوحدات واللغة",
       "appleHealth": "صحتي",
-      "screenTime": "وقت الشاشة"
+      "screenTime": "وقت الشاشة",
+      "legal": "الشؤون القانونية"
     },
     "appearance": {
       "darkMode": "الوضع الداكن",
@@ -222,7 +223,13 @@
       "confirm": "نعم، أؤكّد",
       "goBack": "لا، العودة"
     },
-    "comingSoon": "قريباً"
+    "comingSoon": "قريباً",
+    "legal": {
+      "privacyPolicy": "سياسة الخصوصية",
+      "termsOfService": "شروط الخدمة",
+      "termsOfUseEula": "شروط الاستخدام (EULA)",
+      "manageSubscription": "إدارة الاشتراك"
+    }
   },
   "common": {
     "actions": {
@@ -381,7 +388,14 @@
     "resetPasswordPrompt": "أدخل بريدك الإلكتروني لإعادة تعيين كلمة المرور.",
     "noAccount": "ليس لديك حساب؟",
     "forgotPassword": "هل نسيت كلمة المرور؟",
-    "continuePrivately": "المتابعة بخصوصية على هذا الـ iPhone"
+    "continuePrivately": "المتابعة بخصوصية على هذا الـ iPhone",
+    "continueWithoutAccount": "المتابعة بدون حساب",
+    "continueWithoutAccountSubtitle": "يبقى كل شيء على هذا الـ iPhone. بلا تسجيل وبلا حدود.",
+    "signInToSync": "سجّل الدخول للمزامنة",
+    "signInToSyncSubtitle": "استخدم Evolve على جميع أجهزتك، ودعنا نشغّل مدرّب الذكاء الاصطناعي نيابةً عنك.",
+    "chooserTitle": "كيف تريد استخدام Evolve؟",
+    "chooserSubtitle": "يمكنك تغيير ذلك لاحقاً من الإعدادات.",
+    "chooserFootnote": "تسجيل الدخول اختياري. وهو يتيح لك استخدام اشتراكك على جميع أجهزتك."
   },
   "profile": {
     "personalInfoTitle": "المعلومات الشخصية",
@@ -713,7 +727,10 @@
     "getProAtPrice": "احصل على Pro مقابل {price} / شهرياً",
     "takeYourHabitSystemToThe": "ارتقِ بنظام عاداتك إلى المستوى التالي",
     "habitSpecificStatistics": "إحصاءات خاصة بكل عادة",
-    "viewDetailedChartsAndDeepPerformance": "اعرض رسوماً بيانية مفصّلة وإحصاءات أداء معمّقة لكل سنة."
+    "viewDetailedChartsAndDeepPerformance": "اعرض رسوماً بيانية مفصّلة وإحصاءات أداء معمّقة لكل سنة.",
+    "privateTitle": "لا يوجد ما تشتريه هنا",
+    "privateBody": "جميع ميزات Evolve Pro مضمّنة بالفعل ومجاناً، لأنك تستخدم Evolve بدون حساب وكل شيء يعمل على هذا الجهاز.",
+    "privateNote": "يغطي Evolve Pro ما نشغّله نحن لك: المزامنة بين أجهزتك، ومدرّب الذكاء الاصطناعي بلا إعداد وبلا مفتاح خاص بك. سجّل الدخول من الإعدادات إن أردت ذلك يوماً."
   },
   "ai": {
     "coach": "مدرّب AI",

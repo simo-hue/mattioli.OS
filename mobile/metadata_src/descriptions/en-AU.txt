@@ -1,0 +1,34 @@
+Evolve is a habit and goal tracker for people who want a routine that actually holds - and who want to understand why it holds. One app for iPhone, iPad and Mac, with no ads and an analytics engine that turns your daily check-ins into something you can act on.
+
+NO ACCOUNT NEEDED
+Tap "Continue without an account" on first launch and Evolve never asks who you are. Your data lives in an encrypted database on this device: no sign-up, no email, no limits - unlimited habits, unlimited goals and the full statistics engine, free. Sign in later only if you want to sync across your devices.
+
+FOUR WAYS TO SEE TIME
+Switch the dashboard between Week, Month, Year and Life. The Life view maps the weeks you have already lived, and the ones still ahead, against your date of birth.
+
+HABITS THAT TRACK THEMSELVES
+- Give every habit its own weekly frequency, colour and reminder time.
+- Tick a habit off straight from the notification, without opening the app.
+- Current, best and worst streaks are calculated as you go.
+- Auto-verify with Apple Health: steps, exercise minutes, active energy, stand hours, distance, mindful minutes, sleep and workouts.
+- Auto-verify with Screen Time: total device usage, or time in the apps and categories you choose.
+- Combine signals with "any of these" or "all of these".
+
+GOALS ON EVERY HORIZON
+Weekly, monthly, quarterly, annual and lifetime goals, grouped into the life areas you define. Add numeric targets, link a goal to the habit that feeds it, and review performance, seasonality and year-over-year progress.
+
+STATISTICS THAT SAY SOMETHING
+- Completion trends over 7, 14 and 30 days, plus an annual calendar per habit.
+- Correlation analysis: which habits pull the others up, and which compete for the same hour.
+- Mood and energy check-ins, related to what you actually completed.
+- Key, critical, resilient and mood-sensitive habits, identified automatically.
+
+AI COACH
+A chat that already knows your habits, your goals and how this week went, with one-tap prompts such as "fix my weakest habit". It only sees the context you choose to share, and it asks before sending anything. Without an account it runs on your own OpenRouter key, free.
+
+EVOLVE PRO
+Everything that runs on your device is free, because it costs us nothing to run. Evolve Pro covers what we run for you: sync across your devices, and the AI Coach with no setup and no key of your own. Inside an account it also lifts the free plan's caps on habits and goals.
+
+Evolve Pro is an auto-renewing subscription, available monthly or annually. The price in your local currency is shown in the app before you confirm. Payment is charged to your Apple Account at confirmation of purchase. The subscription renews automatically unless auto-renew is turned off at least 24 hours before the end of the current period, and your account is charged within 24 hours before the period ends. Manage the subscription and turn off auto-renewal in your Apple Account settings after purchase.
+
+Evolve works offline. iCloud sync is optional, end-to-end encrypted through your own iCloud account, and never a paid feature. Export, import or delete everything whenever you want, and lock the app behind Face ID or Touch ID.

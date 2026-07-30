@@ -1,41 +1,37 @@
-Evolve és un registrador d'hàbits i objectius per a qui vol construir una rutina que aguanti de debò, i entendre per què aguanta. Una sola app per a iPhone, iPad i Mac, sense anuncis, sense soroll, amb un motor d'anàlisi que converteix els teus registres diaris en alguna cosa accionable.
+Evolve és un seguidor d'hàbits i objectius per a qui vol una rutina que aguanti de debò, i vol entendre per què aguanta. Una app per a iPhone, iPad i Mac, sense publicitat, amb un motor d'anàlisi que converteix els registres diaris en informació sobre la qual pots actuar.
+
+NO CAL CAP COMPTE
+Toca "Continua sense compte" al primer inici i Evolve no et preguntarà mai qui ets. Les teves dades viuen en una base de dades xifrada en aquest dispositiu: sense registre, sense correu i sense límits - hàbits il·limitats, objectius il·limitats i tot el motor d'estadístiques, gratis. Inicia la sessió més tard només si vols sincronitzar entre els teus dispositius.
 
 QUATRE MANERES DE VEURE EL TEMPS
-Canvia el tauler entre Setmana, Mes, Any i Vida. La vista Vida representa les setmanes que ja has viscut i les que et queden a partir de la teva data de naixement: un recordatori serè d'on va el teu temps.
+Canvia el tauler entre Setmana, Mes, Any i Vida. La vista Vida representa les setmanes que ja has viscut i les que tens al davant, a partir de la teva data de naixement.
 
 HÀBITS QUE ES REGISTREN SOLS
-- Cada hàbit té la seva freqüència setmanal, el seu color i la seva hora de recordatori.
+- Freqüència setmanal, color i hora de recordatori propis per a cada hàbit.
 - Marca un hàbit directament des de la notificació, sense obrir l'app.
-- La ratxa actual, la millor i la pitjor es calculen sobre la marxa.
-- Verificació automàtica amb Salut: passos, minuts d'exercici, energia activa, hores dret, distància, minuts de consciència plena, son i entrenaments.
-- Verificació automàtica amb Temps d'ús: ús total del dispositiu o temps a les apps i categories que triïs.
-- Combina senyals amb "qualsevol d'aquestes" o "totes aquestes" quan una sola condició no n'hi ha prou.
+- Les ratxes actual, millor i pitjor es calculen sobre la marxa.
+- Verificació automàtica amb Apple Salut: passes, minuts d'exercici, energia activa, hores dret, distància, minuts de consciència plena, son i entrenaments.
+- Verificació automàtica amb Temps d'ús: ús total del dispositiu, o temps a les apps i categories que triïs.
+- Combina senyals amb "qualsevol d'aquests" o "tots aquests".
 
-OBJECTIUS A TOTS ELS HORITZONS
-Objectius setmanals, mensuals, trimestrals, anuals i de tota la vida, agrupats en les àrees de vida que defineixes. Afegeix fites numèriques, vincula un objectiu a l'hàbit que l'alimenta i revisa rendiment, estacionalitat i progrés interanual.
+OBJECTIUS EN TOTS ELS HORITZONS
+Objectius setmanals, mensuals, trimestrals, anuals i de vida, agrupats en les àrees que tu defineixes. Afegeix fites numèriques, vincula un objectiu a l'hàbit que l'alimenta i revisa rendiment, estacionalitat i progrés d'un any a l'altre.
 
 ESTADÍSTIQUES QUE DIUEN ALGUNA COSA
 - Tendències de compliment a 7, 14 i 30 dies, més un calendari anual per hàbit.
-- Anàlisi de correlacions: quins hàbits estiren els altres cap amunt i quins competeixen en silenci per la mateixa hora.
-- Registre d'estat d'ànim i energia, relacionat amb el que realment has completat.
+- Anàlisi de correlació: quins hàbits estiren els altres cap amunt i quins competeixen per la mateixa hora.
+- Registres d'ànim i energia, relacionats amb el que realment has completat.
 - Hàbits clau, crítics, resilients i sensibles a l'ànim, identificats automàticament.
-- Anàlisi de les pitjors ratxes, perquè una mala època sigui informació i no culpa.
 
-COACH AI
-Un xat que ja coneix els teus hàbits, els teus objectius i com ha anat la setmana, amb suggeriments d'un toc com ara "arregla el meu hàbit més feble" o "vaig per bon camí?". Només veu el context que decideixes compartir i demana permís abans d'enviar res.
+COACH D'IA
+Un xat que ja coneix els teus hàbits, els teus objectius i com ha anat la setmana, amb suggeriments d'un toc com ara "arregla el meu hàbit més feble". Només veu el context que decideixes compartir i pregunta abans d'enviar res. Sense compte funciona gratis amb la teva pròpia clau d'OpenRouter.
 
-DUES MANERES DE GUARDAR LES TEVES DADES
-- Mode privat: sense cap compte. Les teves dades viuen en una base de dades xifrada al dispositiu.
-- Mode amb compte: inicia sessió amb Apple o Google i sincronitza entre els teus dispositius.
-En tots dos casos Evolve funciona sense connexió. La sincronització amb iCloud és opcional, xifrada d'extrem a extrem a través del teu propi compte d'iCloud, i no és una funció de pagament. Exporta, importa o esborra-ho tot quan vulguis, i bloqueja l'app amb Face ID o Touch ID.
+EVOLVE PRO
+Tot allò que s'executa al teu dispositiu és gratis, perquè a nosaltres no ens costa res. Evolve Pro cobreix el que executem nosaltres: la sincronització entre els teus dispositius i el Coach d'IA sense configuració ni clau pròpia. Dins d'un compte, Pro també elimina els límits del pla gratuït.
 
-GRATIS I PRO
-Evolve es baixa de franc. El pla gratuït limita quants hàbits i objectius pots mantenir alhora. Evolve PRO elimina aquests límits i hi afegeix gràfics profunds, anàlisi avançada de tendències i objectius, i el Coach AI sense cap configuració.
+Evolve Pro és una subscripció de renovació automàtica, disponible mensualment o anualment. El preu en la teva moneda local es mostra a l'app abans de confirmar. El pagament es carrega al teu compte d'Apple en confirmar la compra. La subscripció es renova automàticament tret que la renovació es desactivi almenys 24 hores abans del final del període en curs; el càrrec es fa dins de les 24 hores prèvies al final del període. Gestiona la subscripció i desactiva la renovació automàtica als ajustos del teu compte d'Apple després de la compra.
 
-INFORMACIÓ SOBRE LA SUBSCRIPCIÓ EVOLVE PRO
-Evolve PRO és una subscripció de renovació automàtica: 4,99 EUR al mes o 49,99 EUR l'any. El preu equivalent en la teva moneda local es mostra a l'app abans de confirmar. El pagament es carrega al teu compte d'Apple en confirmar la compra. La subscripció es renova automàticament tret que desactivis la renovació almenys 24 hores abans del final del període en curs, i el càrrec es fa dins de les 24 hores prèvies al final del període. Pots gestionar la subscripció i desactivar la renovació automàtica als ajustos del teu compte d'Apple després de la compra.
-
-En mode privat no hi ha compte, així que el Coach AI funciona amb el teu propi compte d'OpenRouter: gratuït, amb una clau que hi poses tu.
+Evolve funciona sense connexió. La sincronització amb iCloud és opcional, xifrada d'extrem a extrem mitjançant el teu propi compte d'iCloud, i mai no és de pagament. Exporta, importa o esborra-ho tot quan vulguis, i bloqueja l'app amb Face ID o Touch ID.
 
 Condicions d'ús (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 Política de privadesa: https://simo-hue.github.io/evolve/privacy.html

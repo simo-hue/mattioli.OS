@@ -1,37 +1,37 @@
-Evolve je dokonalý nástroj osobného rastu určený pre tých, ktorí si chcú vybudovať pevné návyky, stanoviť si jasné ciele a do hĺbky porozumieť vzorcom svojho správania prostredníctvom vedeckej analýzy údajov bez rozptyľovania.
+Evolve je sledovanie návykov a cieľov pre tých, čo chcú rutinu, ktorá naozaj vydrží - a chcú pochopiť, prečo vydrží. Jedna aplikácia pre iPhone, iPad a Mac, bez reklám, s analytickým jadrom, ktoré z každodenného odškrtávania spraví niečo, s čím sa dá pracovať.
 
-Na rozdiel od tradičných aplikácií na zvýšenie produktivity, ktoré sú často chaotické a preplnené upozorneniami alebo reklamami, je Evolve založený na minimalistickom rozhraní, vysoko prepracovanom dizajne a pokročilom analytickom nástroji. Aplikácia vám pomôže pochopiť nielen to, či plníte svoje úlohy, ale aj to, ako sa vaše návyky navzájom ovplyvňujú a ako najlepšie vyvážiť svoju pohodu s každodennou produktivitou.
+ÚČET NIE JE POTREBNÝ
+Pri prvom spustení ťuknite na "Pokračovať bez účtu" a Evolve sa vás nikdy nespýta, kto ste. Vaše údaje zostávajú v šifrovanej databáze v tomto zariadení: žiadna registrácia, žiadny e-mail, žiadne limity - neobmedzené návyky, neobmedzené ciele a celé štatistické jadro, zadarmo. Prihláste sa neskôr len vtedy, ak budete chcieť synchronizovať medzi svojimi zariadeniami.
 
-Makrofunkčné oblasti Evolve:
+ŠTYRI POHĽADY NA ČAS
+Prepínajte prehľad medzi Týždňom, Mesiacom, Rokom a Životom. Pohľad Život zobrazuje týždne, ktoré ste už prežili, aj tie, čo máte pred sebou, podľa dátumu narodenia.
 
-1. POKROČILÉ SLEDOVANIE ZVYKOV
-- Interaktívne a akčné upozornenia: Zaznamenajte dokončenie návyku priamo zo systémového upozornenia bez otvárania aplikácie.
-- Individuálne a flexibilné pripomienky: Nastavte si nezávislé časy upozornení pre každý zvyk.
-- Prispôsobenie v štýle Apple: Vizuálne nakonfigurujte svoje míľniky.
-- Výpočet dynamického pruhu: Sledujte svoju konzistenciu.
-- Historický kalendár: Pozrite si mesačný a ročný pokrok každého jednotlivého zvyku, aby ste presne identifikovali svoju konzistentnosť v priebehu času.
+NÁVYKY, KTORÉ SA SLEDUJÚ SAMY
+- Vlastná týždenná frekvencia, farba a čas pripomienky pre každý návyk.
+- Odškrtnite návyk priamo z upozornenia, bez otvárania aplikácie.
+- Aktuálna, najlepšia a najhoršia séria sa počítajú priebežne.
+- Automatické overenie cez Apple Zdravie: kroky, minúty cvičenia, aktívna energia, hodiny v stoji, vzdialenosť, minúty všímavosti, spánok a tréningy.
+- Automatické overenie cez Čas pri obrazovke: celkové využitie zariadenia alebo čas vo vami zvolených aplikáciách a kategóriách.
+- Kombinujte signály pomocou "ktorýkoľvek z týchto" alebo "všetky tieto".
 
-2. STANOVENIE CIEĽOV A ROZVOJ
-- Rozdelenie na čiastkové ciele: Rozdeľte svoje makrociele na malé, dosiahnuteľné kroky.
-- Radarové grafy pre oblasti života: Vizualizujte si celkovú rovnováhu svojho rastu prostredníctvom grafov.
-- Analýza a história sezónnosti: Sledujte, ako sa vaša produktivita líši v rôznych mesiacoch v roku, a prispôsobte tomu svoje tempo.
-- Ročný trend: Sledujte dlhodobý pokrok, aby ste sa mohli sústrediť na svoje makro ciele.
+CIELE NA KAŽDOM HORIZONTE
+Týždenné, mesačné, štvrťročné, ročné a životné ciele, zoskupené do oblastí života, ktoré si sami určíte. Pridajte číselné hodnoty, prepojte cieľ s návykom, ktorý ho živí, a sledujte výkon, sezónnosť a medziročný pokrok.
 
-3. ŠTATISTICKÁ ANALÝZA A KORELÁCIE
-Evolve premieňa vaše každodenné činnosti na užitočné údaje pre váš vedomý rast.
-- Index wellness vs. výstup: Patentovaný algoritmus spája vašu emocionálnu pohodu s vašou skutočnou produktivitou, čo vám pomáha nájsť dokonalú rovnováhu, aby ste predišli vyhoreniu.
-- Korelačná analýza: Zistite, ako jeden zvyk ovplyvňuje druhý. Analyzujte napríklad, ako kvalita spánku alebo fyzická aktivita priamo ovplyvňuje vaše denné zameranie.
-- Identifikácia najlepších a kritických návykov: Aplikácia automaticky rozpozná, ktoré správanie podporuje váš rast a ktoré potrebuje okamžitú podporu.
+ŠTATISTIKY, KTORÉ NIEČO HOVORIA
+- Trendy plnenia za 7, 14 a 30 dní a ročný kalendár pre každý návyk.
+- Korelačná analýza: ktoré návyky ťahajú ostatné nahor a ktoré súperia o tú istú hodinu.
+- Záznamy nálady a energie vo vzťahu k tomu, čo ste naozaj dokončili.
+- Kľúčové, kritické, odolné a na náladu citlivé návyky sa rozpoznávajú automaticky.
 
-4. Všímavosť
-Osobný rast nie je len o číslach, ale aj o mentálnom uvedomení.
-- Kontrola nálady: Zaznamenajte si svoj emocionálny stav, aby ste pochopili faktory ovplyvňujúce vašu produktivitu.
-- Life View: Vizuálny widget založený na vašom dátume narodenia, ktorý predstavuje minulé a budúce týždne života. Výkonný nástroj, ktorý vám pripomenie hodnotu času a prinúti vás žiť každý deň so zámerom.
-- Secure Cloud Sync: Všetky vaše dáta sú bezpečne uložené v reálnom čase vďaka integrácii so Supabase a autentifikáciou Apple Sign-In.
-- Koherentný prémiový dizajn: Plynule prepínajte z tmavého režimu do svetlého režimu vďaka dizajnu navrhnutému pre maximálnu čitateľnosť a vizuálny komfort za akýchkoľvek svetelných podmienok.
+AI KOUČ
+Chat, ktorý už pozná vaše návyky, vaše ciele a priebeh tohto týždňa, s návrhmi na jedno ťuknutie ako "sprav môj najslabší návyk". Vidí len kontext, ktorý sa rozhodnete zdieľať, a pred odoslaním sa vždy spýta. Bez účtu beží zadarmo na vašom vlastnom kľúči OpenRouter.
 
-INFORMÁCIE O PREDPLATNÍ EVOLVE PRO:
-Predplatné sa automaticky obnoví, pokiaľ nie je automatické obnovenie vypnuté v nastaveniach vášho účtu Apple/iTunes aspoň 24 hodín pred koncom aktuálneho obdobia. Váš účet bude zúčtovaný do 24 hodín pred koncom aktuálneho obdobia. Predplatné a automatické obnovenie môžete spravovať tak, že po zakúpení prejdete do nastavení účtu Apple.
+EVOLVE PRO
+Všetko, čo beží vo vašom zariadení, je zadarmo, pretože nás to nič nestojí. Evolve Pro pokrýva to, čo prevádzkujeme my: synchronizáciu medzi vašimi zariadeniami a AI kouča bez nastavovania a bez vlastného kľúča. V rámci účtu Pro navyše ruší limity bezplatného plánu.
 
-Štandardné podmienky používania (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Evolve Pro je automaticky obnovované predplatné, dostupné mesačne alebo ročne. Cena v miestnej mene sa zobrazí v aplikácii pred potvrdením. Platba sa strhne z vášho účtu Apple pri potvrdení nákupu. Predplatné sa obnovuje automaticky, ak sa automatické obnovenie nevypne najmenej 24 hodín pred koncom aktuálneho obdobia; suma sa strhne do 24 hodín pred koncom obdobia. Predplatné spravujete a automatické obnovenie vypnete v nastaveniach účtu Apple po nákupe.
+
+Evolve funguje offline. Synchronizácia cez iCloud je voliteľná, koncovo šifrovaná cez váš vlastný účet iCloud, a nikdy nie je platená. Exportujte, importujte alebo vymažte všetko, kedykoľvek chcete, a zamknite aplikáciu pomocou Face ID alebo Touch ID.
+
+Podmienky používania (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 Zásady ochrany osobných údajov: https://simo-hue.github.io/evolve/privacy.html

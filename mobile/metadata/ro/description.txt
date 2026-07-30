@@ -1,41 +1,37 @@
-Evolve este un tracker de obiceiuri și obiective pentru cei care vor să construiască o rutină care chiar rezistă - și să înțeleagă de ce rezistă. O singură aplicație pentru iPhone, iPad și Mac, fără reclame și fără zgomot, cu un motor de analiză care transformă înregistrările zilnice în ceva pe care poți acționa.
+Evolve este un tracker de obiceiuri și obiective pentru cei care vor o rutină care chiar rezistă - și vor să înțeleagă de ce rezistă. O singură aplicație pentru iPhone, iPad și Mac, fără reclame, cu un motor de analiză care transformă bifările zilnice în ceva pe care poți acționa.
 
-PATRU MODURI DE A VEDEA TIMPUL
-Comută panoul între Săptămână, Lună, An și Viață. Vizualizarea Viață desenează săptămânile deja trăite și cele care urmează, pornind de la data ta de naștere - o amintire liniștită despre pe ce îți consumi timpul.
+NU E NEVOIE DE CONT
+Atinge "Continuă fără cont" la prima pornire, iar Evolve nu te va întreba niciodată cine ești. Datele tale rămân într-o bază de date criptată pe acest dispozitiv: fără înregistrare, fără e-mail și fără limite - obiceiuri nelimitate, obiective nelimitate și tot motorul de statistici, gratuit. Autentifică-te mai târziu doar dacă vrei sincronizare între dispozitivele tale.
 
-OBICEIURI CARE SE ÎNREGISTREAZĂ SINGURE
-- Fiecare obicei are propria frecvență săptămânală, culoare și oră de reamintire.
+PATRU FELURI DE A VEDEA TIMPUL
+Comută panoul între Săptămână, Lună, An și Viață. Vizualizarea Viață arată săptămânile pe care le-ai trăit deja și pe cele care urmează, pornind de la data nașterii.
+
+OBICEIURI CARE SE URMĂRESC SINGURE
+- Frecvență săptămânală, culoare și oră de reamintire proprii pentru fiecare obicei.
 - Bifează un obicei direct din notificare, fără să deschizi aplicația.
-- Seria curentă, cea mai bună și cea mai slabă se calculează din mers.
-- Verificare automată prin Sănătate: pași, minute de exercițiu, energie activă, ore în picioare, distanță, minute de mindfulness, somn și antrenamente.
-- Verificare automată prin Timp de utilizare: utilizarea totală a dispozitivului sau timpul petrecut în aplicațiile și categoriile alese de tine.
-- Combină semnalele cu "oricare dintre acestea" sau "toate acestea" când o singură condiție nu ajunge.
+- Seriile curentă, cea mai bună și cea mai slabă se calculează din mers.
+- Verificare automată cu Apple Sănătate: pași, minute de exercițiu, energie activă, ore în picioare, distanță, minute de atenție, somn și antrenamente.
+- Verificare automată cu Timp de utilizare: utilizarea totală a dispozitivului sau timpul în aplicațiile și categoriile alese de tine.
+- Combină semnalele cu "oricare dintre acestea" sau "toate acestea".
 
 OBIECTIVE PE ORICE ORIZONT
-Obiective săptămânale, lunare, trimestriale, anuale și pe viață, grupate în ariile de viață pe care le definești tu. Adaugă ținte numerice, leagă un obiectiv de obiceiul care îl alimentează și urmărește performanța, sezonalitatea și progresul de la an la an.
+Obiective săptămânale, lunare, trimestriale, anuale și de viață, grupate în domeniile pe care le definești tu. Adaugă ținte numerice, leagă un obiectiv de obiceiul care îl alimentează și analizează performanța, sezonalitatea și progresul de la an la an.
 
 STATISTICI CARE SPUN CEVA
 - Tendințe de îndeplinire pe 7, 14 și 30 de zile, plus un calendar anual pentru fiecare obicei.
-- Analiză de corelații: care obiceiuri le trag pe celelalte în sus și care se bat pe aceeași oră.
-- Înregistrarea stării de spirit și a energiei, raportată la ce ai realizat efectiv.
+- Analiză de corelație: ce obiceiuri le trag pe celelalte în sus și care se bat pe aceeași oră.
+- Însemnări de dispoziție și energie, puse în relație cu ce ai finalizat cu adevărat.
 - Obiceiurile cheie, critice, rezistente și sensibile la dispoziție sunt identificate automat.
-- Analiza celor mai slabe serii, ca o perioadă proastă să devină informație, nu vinovăție.
 
 ANTRENOR AI
-Un chat care îți știe deja obiceiurile, obiectivele și cum a mers săptămâna, cu sugestii la o singură atingere, precum "repară-mi cel mai slab obicei" sau "sunt pe drumul cel bun?". Vede doar contextul pe care alegi să îl împărtășești și întreabă înainte să trimită ceva.
+O conversație care îți cunoaște deja obiceiurile, obiectivele și cum a mers săptămâna, cu sugestii dintr-o atingere precum "repară-mi cel mai slab obicei". Vede doar contextul pe care alegi să îl împărtășești și întreabă înainte să trimită orice. Fără cont, rulează gratuit cu propria ta cheie OpenRouter.
 
-DOUĂ MODURI DE A-ȚI PĂSTRA DATELE
-- Mod privat: fără niciun cont. Datele stau într-o bază de date criptată pe dispozitivul tău.
-- Mod cu cont: autentifică-te cu Apple sau Google și sincronizează între dispozitive.
-În ambele cazuri Evolve funcționează offline. Sincronizarea iCloud este opțională, criptată cap la cap prin propriul tău cont iCloud, și nu este o funcție cu plată. Poți exporta, importa sau șterge totul oricând și poți bloca aplicația cu Face ID sau Touch ID.
+EVOLVE PRO
+Tot ce rulează pe dispozitivul tău este gratuit, pentru că pe noi nu ne costă nimic. Evolve Pro acoperă ce rulăm noi pentru tine: sincronizarea între dispozitivele tale și Antrenorul AI fără configurare și fără o cheie proprie. În interiorul unui cont, Pro ridică și plafoanele planului gratuit.
 
-GRATUIT ȘI PRO
-Evolve se descarcă gratuit. Planul gratuit limitează câte obiceiuri și obiective poți păstra în același timp. Evolve PRO ridică aceste limite și adaugă grafice detaliate, analiză avansată de tendințe și obiective, plus Antrenorul AI fără nicio configurare.
+Evolve Pro este un abonament cu reînnoire automată, disponibil lunar sau anual. Prețul în moneda ta locală este afișat în aplicație înainte de confirmare. Plata este debitată din contul tău Apple la confirmarea achiziției. Abonamentul se reînnoiește automat dacă reînnoirea automată nu este dezactivată cu cel puțin 24 de ore înainte de sfârșitul perioadei curente; debitarea are loc în ultimele 24 de ore ale perioadei. Gestionează abonamentul și dezactivează reînnoirea automată din setările contului Apple după achiziție.
 
-INFORMAȚII DESPRE ABONAMENTUL EVOLVE PRO
-Evolve PRO este un abonament cu reînnoire automată: 4,99 EUR pe lună sau 49,99 EUR pe an. Prețul în moneda ta locală este afișat în aplicație înainte de confirmare. Plata este debitată din contul Apple la confirmarea achiziției. Abonamentul se reînnoiește automat dacă reînnoirea automată nu este dezactivată cu cel puțin 24 de ore înainte de sfârșitul perioadei curente; reînnoirea se taxează în ultimele 24 de ore ale perioadei. Poți gestiona abonamentul și dezactiva reînnoirea automată din setările contului Apple după achiziție.
-
-În modul privat nu există cont, așa că Antrenorul AI rulează pe propriul tău cont OpenRouter - gratuit, cu o cheie pe care o furnizezi tu.
+Evolve funcționează offline. Sincronizarea iCloud este opțională, criptată cap la cap prin propriul tău cont iCloud, și niciodată contra cost. Exportă, importă sau șterge tot oricând vrei și blochează aplicația cu Face ID sau Touch ID.
 
 Termeni de utilizare (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 Politica de confidențialitate: https://simo-hue.github.io/evolve/privacy.html

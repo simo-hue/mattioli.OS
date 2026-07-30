@@ -1,0 +1,34 @@
+Evolve là ứng dụng theo dõi thói quen và mục tiêu dành cho những ai muốn một nếp sinh hoạt thực sự bền, và muốn hiểu vì sao nó bền. Một ứng dụng cho iPhone, iPad và Mac, không quảng cáo, với bộ máy phân tích biến những lần đánh dấu hằng ngày thành thông tin bạn có thể hành động.
+
+KHÔNG CẦN TÀI KHOẢN
+Chạm "Tiếp tục không cần tài khoản" ở lần mở đầu tiên, và Evolve sẽ không bao giờ hỏi bạn là ai. Dữ liệu của bạn nằm trong một cơ sở dữ liệu được mã hóa trên chính thiết bị này: không đăng ký, không email, không giới hạn - thói quen không giới hạn, mục tiêu không giới hạn và toàn bộ bộ máy thống kê, miễn phí. Chỉ đăng nhập sau này nếu bạn muốn đồng bộ giữa các thiết bị.
+
+BỐN CÁCH NHÌN THỜI GIAN
+Chuyển bảng điều khiển giữa Tuần, Tháng, Năm và Cuộc đời. Chế độ Cuộc đời thể hiện những tuần bạn đã sống và những tuần còn ở phía trước, tính từ ngày sinh của bạn.
+
+THÓI QUEN TỰ THEO DÕI CHÍNH MÌNH
+- Mỗi thói quen có tần suất tuần, màu sắc và giờ nhắc riêng.
+- Đánh dấu hoàn thành ngay từ thông báo, không cần mở ứng dụng.
+- Chuỗi hiện tại, tốt nhất và tệ nhất được tính liên tục.
+- Tự động xác minh bằng Apple Sức khỏe: số bước, phút tập luyện, năng lượng hoạt động, giờ đứng, quãng đường, phút chánh niệm, giấc ngủ và các buổi tập.
+- Tự động xác minh bằng Thời gian sử dụng: tổng thời gian dùng máy, hoặc thời gian trong các ứng dụng và danh mục bạn chọn.
+- Kết hợp tín hiệu với "bất kỳ điều nào" hoặc "tất cả những điều này".
+
+MỤC TIÊU Ở MỌI TẦM NHÌN
+Mục tiêu tuần, tháng, quý, năm và cả đời, được nhóm theo những lĩnh vực sống do bạn tự định nghĩa. Thêm chỉ tiêu bằng số, liên kết một mục tiêu với thói quen nuôi dưỡng nó, và xem hiệu suất, tính mùa vụ cùng tiến bộ qua từng năm.
+
+THỐNG KÊ NÓI LÊN ĐIỀU GÌ ĐÓ
+- Xu hướng hoàn thành trong 7, 14 và 30 ngày, kèm lịch năm cho từng thói quen.
+- Phân tích tương quan: thói quen nào kéo những thói quen khác đi lên, và thói quen nào giành cùng một khung giờ.
+- Ghi nhận tâm trạng và năng lượng, đặt cạnh những gì bạn thực sự hoàn thành.
+- Thói quen then chốt, thói quen dễ vỡ, thói quen bền bỉ và thói quen nhạy cảm với tâm trạng được nhận diện tự động.
+
+HUẤN LUYỆN VIÊN AI
+Một cuộc trò chuyện đã biết sẵn thói quen, mục tiêu và diễn biến tuần này của bạn, với gợi ý một chạm như "sửa giúp thói quen yếu nhất của tôi". Nó chỉ thấy phần bối cảnh bạn chọn chia sẻ, và luôn hỏi trước khi gửi bất cứ điều gì. Khi không có tài khoản, nó chạy miễn phí bằng khóa OpenRouter của chính bạn.
+
+EVOLVE PRO
+Mọi thứ chạy trên thiết bị của bạn đều miễn phí, vì chúng không tốn gì của chúng tôi. Evolve Pro bao gồm những gì chúng tôi vận hành cho bạn: đồng bộ giữa các thiết bị, và Huấn luyện viên AI không cần thiết lập, không cần khóa riêng. Bên trong một tài khoản, Pro còn gỡ bỏ các giới hạn của gói miễn phí.
+
+Evolve Pro là gói đăng ký tự động gia hạn, có theo tháng hoặc theo năm. Giá theo tiền tệ địa phương của bạn được hiển thị trong ứng dụng trước khi xác nhận. Khoản thanh toán được tính vào tài khoản Apple khi bạn xác nhận mua. Gói đăng ký tự động gia hạn trừ khi tắt tự động gia hạn ít nhất 24 giờ trước khi kỳ hiện tại kết thúc; khoản phí được thu trong vòng 24 giờ trước khi kỳ kết thúc. Quản lý gói đăng ký và tắt tự động gia hạn trong cài đặt tài khoản Apple sau khi mua.
+
+Evolve hoạt động ngoại tuyến. Đồng bộ iCloud là tùy chọn, được mã hóa đầu cuối qua tài khoản iCloud của chính bạn, và không bao giờ là tính năng trả phí. Xuất, nhập hoặc xóa mọi thứ bất cứ lúc nào, và khóa ứng dụng bằng Face ID hoặc Touch ID.

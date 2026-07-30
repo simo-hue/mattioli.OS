@@ -17,6 +17,7 @@ import 'providers/settings_provider.dart';
 import 'providers/auth_provider.dart';
 import 'ui/screens/dashboard_screen.dart';
 import 'ui/screens/auth_screen.dart';
+import 'ui/screens/data_mode_choice_screen.dart';
 import 'ui/screens/consent_screen.dart';
 import 'ui/widgets/private_mode_gate.dart';
 import 'ui/widgets/biometric_lock_gate.dart';
@@ -295,6 +296,13 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: '/', builder: (context, state) => const _PrivateAwareHome()),
       GoRoute(path: '/login', builder: (context, state) => const AuthScreen()),
+      // The signed-out landing screen. NOT '/login' — see
+      // DataModeChoiceScreen's class doc for why the login wall could not stay
+      // first (Guideline 5.1.1(v)).
+      GoRoute(
+        path: '/choose',
+        builder: (context, state) => const DataModeChoiceScreen(),
+      ),
       GoRoute(
         path: '/consent',
         builder: (context, state) => const ConsentScreen(),
@@ -304,6 +312,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final authState = ref.read(authProvider);
       final canAccessApp = authState.canAccessApp;
       final isLoggingIn = state.matchedLocation == '/login';
+      final isChoosingMode = state.matchedLocation == '/choose';
       final isConsentPage = state.matchedLocation == '/consent';
 
       // 1. Se non ha completato il consenso, deve andare a /consent
@@ -316,12 +325,17 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // 2. Se ha completato il consenso ed è su /consent, vai avanti
       if (isConsentPage) {
-        return canAccessApp ? '/' : '/login';
+        return canAccessApp ? '/' : '/choose';
       }
 
-      // 3. Logica normale di autenticazione
-      if (!canAccessApp && !isLoggingIn) return '/login';
-      if (canAccessApp && isLoggingIn) return '/';
+      // 3. Logica normale di autenticazione.
+      //
+      // A signed-out user lands on '/choose', never on '/login'. '/login' stays
+      // reachable — the chooser pushes it, and it is the target after a
+      // sign-out — so it must NOT be redirected away from here, or the sign-in
+      // path would be unreachable.
+      if (!canAccessApp && !isLoggingIn && !isChoosingMode) return '/choose';
+      if (canAccessApp && (isLoggingIn || isChoosingMode)) return '/';
       return null;
     },
   );

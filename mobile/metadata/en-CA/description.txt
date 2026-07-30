@@ -1,37 +1,37 @@
-Evolve is the ultimate personal growth tool designed for those who want to build solid habits, set clear goals, and deeply understand their behavior patterns through scientific, distraction-free data analysis.
+Evolve is a habit and goal tracker for people who want a routine that actually holds - and who want to understand why it holds. One app for iPhone, iPad and Mac, with no ads and an analytics engine that turns your daily check-ins into something you can act on.
 
-Unlike traditional productivity apps, which are often chaotic and overloaded with notifications or ads, Evolve is based on a minimalist interface, a highly curated design, and an advanced analytics engine. The app helps you understand not only if you are completing your tasks, but how your habits influence each other and how to best balance your well-being with your daily productivity.
+NO ACCOUNT NEEDED
+Tap "Continue without an account" on first launch and Evolve never asks who you are. Your data lives in an encrypted database on this device: no sign-up, no email, no limits - unlimited habits, unlimited goals and the full statistics engine, free. Sign in later only if you want to sync across your devices.
 
-Evolve's macro-functional areas:
+FOUR WAYS TO SEE TIME
+Switch the dashboard between Week, Month, Year and Life. The Life view maps the weeks you have already lived, and the ones still ahead, against your date of birth.
 
-1. ADVANCED HABIT TRACKING
-- Interactive and Actionable Notifications: Record habit completion directly from the system notification, without opening the app.
-- Individual and Flexible Reminders: Set independent notification times for each habit.
-- Apple-Style Customization: Visually configure your milestones.
-- Dynamic Streak Calculation: Track your consistency.
-- Historical Calendar: View the monthly and yearly progress of each individual habit to precisely identify your consistency over time.
+HABITS THAT TRACK THEMSELVES
+- Give every habit its own weekly frequency, colour and reminder time.
+- Tick a habit off straight from the notification, without opening the app.
+- Current, best and worst streaks are calculated as you go.
+- Auto-verify with Apple Health: steps, exercise minutes, active energy, stand hours, distance, mindful minutes, sleep and workouts.
+- Auto-verify with Screen Time: total device usage, or time in the apps and categories you choose.
+- Combine signals with "any of these" or "all of these".
 
-2. GOAL SETTING AND DEVELOPMENT
-- Breakdown into Sub-Goals: Divide your macro-goals into small, achievable steps.
-- Radar Charts for Life Areas: Visualize the overall balance of your growth through charts.
-- Seasonality Analysis and History: Observe how your productivity varies in different months of the year and adjust your pace accordingly.
-- Yearly Trend: Track long-term progress to stay focused on your macro-goals.
+GOALS ON EVERY HORIZON
+Weekly, monthly, quarterly, annual and lifetime goals, grouped into the life areas you define. Add numeric targets, link a goal to the habit that feeds it, and review performance, seasonality and year-over-year progress.
 
-3. STATISTICAL ANALYSIS AND CORRELATIONS
-Evolve transforms your daily actions into useful data for your mindful growth.
-- Wellness vs Output Index: A proprietary algorithm relates your emotional well-being to your actual productivity, helping you find the perfect balance to prevent burnout.
-- Correlation Analysis: Discover how one habit influences another. For example, analyze how sleep quality or physical activity directly affects your daytime focus.
-- Identification of Best and Critical Habits: The app automatically recognizes which behaviors are supporting your growth and which need immediate support.
+STATISTICS THAT SAY SOMETHING
+- Completion trends over 7, 14 and 30 days, plus an annual calendar per habit.
+- Correlation analysis: which habits pull the others up, and which compete for the same hour.
+- Mood and energy check-ins, related to what you actually completed.
+- Key, critical, resilient and mood-sensitive habits, identified automatically.
 
-4. MINDFULNESS
-Personal growth isn't just about numbers, but also mental awareness.
-- Mood Check-In: Record your emotional state to understand the factors influencing your productivity.
-- Life View: A visual widget based on your birth date that represents past and future weeks of life. A powerful tool to remind you of the value of time and push you to live every day with intention.
-- Secure Cloud Sync: All your data is saved in real-time securely thanks to integration with Supabase and Apple Sign-In authentication.
-- Coherent Premium Design: Seamlessly switch from Dark Mode to Light Mode thanks to a design studied for maximum readability and visual comfort in any lighting condition.
+AI COACH
+A chat that already knows your habits, your goals and how this week went, with one-tap prompts such as "fix my weakest habit". It only sees the context you choose to share, and it asks before sending anything. Without an account it runs on your own OpenRouter key, free.
 
-EVOLVE PRO SUBSCRIPTION INFORMATION:
-The subscription automatically renews unless auto-renew is turned off in your Apple/iTunes account settings at least 24 hours before the end of the current period. Your account will be charged within 24 hours prior to the end of the current period. You can manage your subscription and turn off auto-renewal by going to your Apple Account Settings after purchase.
+EVOLVE PRO
+Everything that runs on your device is free, because it costs us nothing to run. Evolve Pro covers what we run for you: sync across your devices, and the AI Coach with no setup and no key of your own. Inside an account it also lifts the free plan's caps on habits and goals.
 
-Standard Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
-Privacy Policy: https://simo-hue.github.io/evolve/privacy.html
+Evolve Pro is an auto-renewing subscription, available monthly or annually. The price in your local currency is shown in the app before you confirm. Payment is charged to your Apple Account at confirmation of purchase. The subscription renews automatically unless auto-renew is turned off at least 24 hours before the end of the current period, and your account is charged within 24 hours before the period ends. Manage the subscription and turn off auto-renewal in your Apple Account settings after purchase.
+
+Evolve works offline. iCloud sync is optional, end-to-end encrypted through your own iCloud account, and never a paid feature. Export, import or delete everything whenever you want, and lock the app behind Face ID or Touch ID.
+
+Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Privacy Policy: https://simo-hue.github.io/evolve/en/privacy.html

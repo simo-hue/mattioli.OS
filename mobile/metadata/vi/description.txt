@@ -1,37 +1,37 @@
-Evolve là công cụ phát triển cá nhân tối ưu được thiết kế dành cho những ai muốn xây dựng thói quen vững chắc, đặt mục tiêu rõ ràng và hiểu sâu sắc các kiểu hành vi của mình thông qua phân tích dữ liệu khoa học, không bị phân tâm.
+Evolve là ứng dụng theo dõi thói quen và mục tiêu dành cho những ai muốn một nếp sinh hoạt thực sự bền, và muốn hiểu vì sao nó bền. Một ứng dụng cho iPhone, iPad và Mac, không quảng cáo, với bộ máy phân tích biến những lần đánh dấu hằng ngày thành thông tin bạn có thể hành động.
 
-Không giống như các ứng dụng năng suất truyền thống thường hỗn loạn và chứa quá nhiều thông báo hoặc quảng cáo, Evolve dựa trên giao diện tối giản, thiết kế được quản lý chặt chẽ và công cụ phân tích nâng cao. Ứng dụng này giúp bạn hiểu không chỉ liệu bạn có hoàn thành nhiệm vụ hay không mà còn biết các thói quen của bạn ảnh hưởng lẫn nhau như thế nào và cách cân bằng tốt nhất giữa sức khỏe và năng suất hàng ngày của bạn.
+KHÔNG CẦN TÀI KHOẢN
+Chạm "Tiếp tục không cần tài khoản" ở lần mở đầu tiên, và Evolve sẽ không bao giờ hỏi bạn là ai. Dữ liệu của bạn nằm trong một cơ sở dữ liệu được mã hóa trên chính thiết bị này: không đăng ký, không email, không giới hạn - thói quen không giới hạn, mục tiêu không giới hạn và toàn bộ bộ máy thống kê, miễn phí. Chỉ đăng nhập sau này nếu bạn muốn đồng bộ giữa các thiết bị.
 
-Các lĩnh vực chức năng vĩ mô của Evolve:
+BỐN CÁCH NHÌN THỜI GIAN
+Chuyển bảng điều khiển giữa Tuần, Tháng, Năm và Cuộc đời. Chế độ Cuộc đời thể hiện những tuần bạn đã sống và những tuần còn ở phía trước, tính từ ngày sinh của bạn.
 
-1. THEO DÕI THÓI QUEN NÂNG CAO
-- Thông báo tương tác và hữu ích: Ghi lại quá trình hoàn thành thói quen trực tiếp từ thông báo hệ thống mà không cần mở ứng dụng.
-- Nhắc nhở cá nhân và linh hoạt: Đặt thời gian thông báo độc lập cho từng thói quen.
-- Tùy chỉnh theo phong cách Apple: Định cấu hình trực quan các cột mốc của bạn.
-- Tính toán chuỗi động: Theo dõi tính nhất quán của bạn.
-- Lịch sử: Xem tiến trình hàng tháng và hàng năm của từng thói quen cá nhân để xác định chính xác tính nhất quán của bạn theo thời gian.
+THÓI QUEN TỰ THEO DÕI CHÍNH MÌNH
+- Mỗi thói quen có tần suất tuần, màu sắc và giờ nhắc riêng.
+- Đánh dấu hoàn thành ngay từ thông báo, không cần mở ứng dụng.
+- Chuỗi hiện tại, tốt nhất và tệ nhất được tính liên tục.
+- Tự động xác minh bằng Apple Sức khỏe: số bước, phút tập luyện, năng lượng hoạt động, giờ đứng, quãng đường, phút chánh niệm, giấc ngủ và các buổi tập.
+- Tự động xác minh bằng Thời gian sử dụng: tổng thời gian dùng máy, hoặc thời gian trong các ứng dụng và danh mục bạn chọn.
+- Kết hợp tín hiệu với "bất kỳ điều nào" hoặc "tất cả những điều này".
 
-2. THIẾT LẬP VÀ PHÁT TRIỂN MỤC TIÊU
-- Chia nhỏ thành các mục tiêu phụ: Chia các mục tiêu vĩ mô của bạn thành các bước nhỏ, có thể đạt được.
-- Biểu đồ radar cho các lĩnh vực cuộc sống: Trực quan hóa sự cân bằng tổng thể trong quá trình phát triển của bạn thông qua các biểu đồ.
-- Phân tích và lịch sử thời vụ: Quan sát xem năng suất của bạn thay đổi như thế nào trong các tháng khác nhau trong năm và điều chỉnh tốc độ của bạn cho phù hợp.
-- Xu hướng hàng năm: Theo dõi tiến độ dài hạn để luôn tập trung vào các mục tiêu vĩ mô của bạn.
+MỤC TIÊU Ở MỌI TẦM NHÌN
+Mục tiêu tuần, tháng, quý, năm và cả đời, được nhóm theo những lĩnh vực sống do bạn tự định nghĩa. Thêm chỉ tiêu bằng số, liên kết một mục tiêu với thói quen nuôi dưỡng nó, và xem hiệu suất, tính mùa vụ cùng tiến bộ qua từng năm.
 
-3. PHÂN TÍCH THỐNG KÊ VÀ MỐI QUAN HỆ
-Evolve biến các hành động hàng ngày của bạn thành dữ liệu hữu ích cho sự phát triển chánh niệm của bạn.
-- Chỉ số Sức khỏe và Kết quả: Một thuật toán độc quyền liên hệ tình cảm hạnh phúc với năng suất thực tế của bạn, giúp bạn tìm ra sự cân bằng hoàn hảo để ngăn ngừa tình trạng kiệt sức.
-- Phân tích tương quan: Khám phá cách một thói quen ảnh hưởng đến thói quen khác. Ví dụ: phân tích chất lượng giấc ngủ hoặc hoạt động thể chất ảnh hưởng trực tiếp đến sự tập trung ban ngày của bạn như thế nào.
-- Xác định những thói quen tốt nhất và quan trọng: Ứng dụng tự động nhận dạng hành vi nào đang hỗ trợ sự phát triển của bạn và hành vi nào cần hỗ trợ ngay lập tức.
+THỐNG KÊ NÓI LÊN ĐIỀU GÌ ĐÓ
+- Xu hướng hoàn thành trong 7, 14 và 30 ngày, kèm lịch năm cho từng thói quen.
+- Phân tích tương quan: thói quen nào kéo những thói quen khác đi lên, và thói quen nào giành cùng một khung giờ.
+- Ghi nhận tâm trạng và năng lượng, đặt cạnh những gì bạn thực sự hoàn thành.
+- Thói quen then chốt, thói quen dễ vỡ, thói quen bền bỉ và thói quen nhạy cảm với tâm trạng được nhận diện tự động.
 
-4. TUYỆT VỜI
-Sự phát triển cá nhân không chỉ ở những con số mà còn ở nhận thức về tinh thần.
-- Kiểm tra tâm trạng: Ghi lại trạng thái cảm xúc của bạn để hiểu các yếu tố ảnh hưởng đến năng suất của bạn.
-- Chế độ xem cuộc sống: Một tiện ích trực quan dựa trên ngày sinh của bạn đại diện cho các tuần trong quá khứ và tương lai của cuộc sống. Một công cụ mạnh mẽ để nhắc nhở bạn về giá trị của thời gian và thúc đẩy bạn sống có chủ đích mỗi ngày.
-- Đồng bộ hóa đám mây an toàn: Tất cả dữ liệu của bạn được lưu trong thời gian thực một cách an toàn nhờ tích hợp với xác thực Đăng nhập Supabase và Apple.
-- Thiết kế cao cấp mạch lạc: Chuyển đổi liền mạch từ Chế độ tối sang Chế độ sáng nhờ thiết kế được nghiên cứu để mang lại khả năng đọc tối đa và sự thoải mái về mặt thị giác trong mọi điều kiện ánh sáng.
+HUẤN LUYỆN VIÊN AI
+Một cuộc trò chuyện đã biết sẵn thói quen, mục tiêu và diễn biến tuần này của bạn, với gợi ý một chạm như "sửa giúp thói quen yếu nhất của tôi". Nó chỉ thấy phần bối cảnh bạn chọn chia sẻ, và luôn hỏi trước khi gửi bất cứ điều gì. Khi không có tài khoản, nó chạy miễn phí bằng khóa OpenRouter của chính bạn.
 
-PHÁT TRIỂN THÔNG TIN ĐĂNG KÝ PRO:
-Đăng ký sẽ tự động gia hạn trừ khi tính năng tự động gia hạn bị tắt trong cài đặt tài khoản Apple/iTunes của bạn ít nhất 24 giờ trước khi kết thúc giai đoạn hiện tại. Tài khoản của bạn sẽ bị tính phí trong vòng 24 giờ trước khi kết thúc giai đoạn hiện tại. Bạn có thể quản lý đăng ký của mình và tắt tính năng tự động gia hạn bằng cách đi tới Cài đặt tài khoản Apple sau khi mua.
+EVOLVE PRO
+Mọi thứ chạy trên thiết bị của bạn đều miễn phí, vì chúng không tốn gì của chúng tôi. Evolve Pro bao gồm những gì chúng tôi vận hành cho bạn: đồng bộ giữa các thiết bị, và Huấn luyện viên AI không cần thiết lập, không cần khóa riêng. Bên trong một tài khoản, Pro còn gỡ bỏ các giới hạn của gói miễn phí.
 
-Điều khoản sử dụng tiêu chuẩn (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Evolve Pro là gói đăng ký tự động gia hạn, có theo tháng hoặc theo năm. Giá theo tiền tệ địa phương của bạn được hiển thị trong ứng dụng trước khi xác nhận. Khoản thanh toán được tính vào tài khoản Apple khi bạn xác nhận mua. Gói đăng ký tự động gia hạn trừ khi tắt tự động gia hạn ít nhất 24 giờ trước khi kỳ hiện tại kết thúc; khoản phí được thu trong vòng 24 giờ trước khi kỳ kết thúc. Quản lý gói đăng ký và tắt tự động gia hạn trong cài đặt tài khoản Apple sau khi mua.
+
+Evolve hoạt động ngoại tuyến. Đồng bộ iCloud là tùy chọn, được mã hóa đầu cuối qua tài khoản iCloud của chính bạn, và không bao giờ là tính năng trả phí. Xuất, nhập hoặc xóa mọi thứ bất cứ lúc nào, và khóa ứng dụng bằng Face ID hoặc Touch ID.
+
+Điều khoản sử dụng (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 Chính sách quyền riêng tư: https://simo-hue.github.io/evolve/privacy.html

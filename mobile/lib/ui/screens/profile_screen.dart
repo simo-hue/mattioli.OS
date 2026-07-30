@@ -359,18 +359,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     Navigator.push(context, PersonalInfoScreen.route());
                   },
                 ),
-                if (!isPrivateMode)
-                  _buildProfileOption(
-                    context: context,
-                    icon: LucideIcons.creditCard,
-                    title: context.t.common.subscription,
-                    subtitle: settings.isPro
-                        ? context.t.profile.manageProPlan
-                        : context.t.profile.upgradeToPro,
-                    onTap: () {
-                      Navigator.push(context, SubscriptionScreen.route());
-                    },
-                  ),
+                // Shown in EVERY mode. It used to be hidden in Private mode,
+                // which meant a Private-mode user had no route to the Terms of
+                // Use (EULA) or the privacy policy anywhere in the app after
+                // onboarding — the paywall was the only screen carrying them.
+                // In Private mode this now opens a screen saying there is
+                // nothing to buy, which is both true and the clearest possible
+                // answer to Guideline 5.1.1(v).
+                _buildProfileOption(
+                  context: context,
+                  icon: LucideIcons.creditCard,
+                  title: context.t.common.subscription,
+                  subtitle: isPrivateMode
+                      ? context.t.subscription.privateTitle
+                      : (settings.isPro
+                          ? context.t.profile.manageProPlan
+                          : context.t.profile.upgradeToPro),
+                  onTap: () {
+                    Navigator.push(context, SubscriptionScreen.route());
+                  },
+                ),
                 _buildProfileOption(
                   context: context,
                   icon: LucideIcons.settings,

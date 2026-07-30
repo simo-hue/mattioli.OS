@@ -1,12 +1,46 @@
 Hello Apple Review Team,
 
-To facilitate your review, I've created also a sandbox test account:
+Thank you for the feedback on submission 70f9af73-8af2-4680-af51-756a2937d273. Both issues are addressed in this build, and the two points below explain exactly where to look.
+
+
+1) GUIDELINE 5.1.1(v) - NO ACCOUNT IS REQUIRED
+
+Evolve does not require registration to reach any content or feature.
+
+The first screen after the consent step asks how you want to use Evolve and offers two equal choices. The first is "Continue without an account". Tapping it opens the app immediately, with no sign-up, no email address and no personal information of any kind.
+
+Used this way, every feature that runs on the device is unlocked and free:
+- unlimited habits and unlimited goals (no caps at all)
+- the full statistics engine, including deep charts and trend analysis
+- Apple Health and Screen Time habit verification
+- the AI Coach, using an OpenRouter key you provide yourself
+
+There is nothing to purchase on this path. To confirm that, open Profile > Subscription while using the app without an account: the screen states that every Evolve Pro feature is already included at no cost, and offers no purchase control.
+
+We apologise that our previous notes sent you straight to a test account and never mentioned this path. That was our mistake, and it is why the review reasonably concluded registration was required.
+
+Why the subscription exists at all: everything that runs on the device is free because it costs us nothing to operate. Evolve Pro covers only what we run on our own servers for the user - syncing across their devices, and a hosted AI Coach that needs no API key of their own. Both are account-based by nature, since there is no account to sync or to authenticate without one.
+
+
+2) GUIDELINE 3.1.2(c) - TERMS OF USE (EULA)
+
+We use Apple's standard Terms of Use (EULA), linked in the App Description.
+
+You were right that this was missing. It was present in most localisations but not all: five (German, French, Canadian French, Greek and Mexican Spanish) had been truncated at the 4000-character description limit, and because the legal links sat at the end of the text, the truncation removed them. We have rebuilt how these descriptions are produced so the links are added after translation and can no longer be cut, and we now validate all 39 localisations before uploading. Every localisation of this build carries both links.
+
+Inside the app, the subscription screen shows the plan name, the duration, the price and the price per month from StoreKit, the renewal terms, and functional links to both the Privacy Policy and Apple's standard Terms of Use (EULA).
+
+These links are also reachable at any time, in every mode and whether or not the user subscribes, from Settings > Legal.
+
+
+OPTIONAL TEST ACCOUNT
+
+An account is NOT needed to review the app. If you would like to check the account-based features specifically (device sync and the hosted AI Coach), you can sign in with:
 - Username: testing@gmail.com
 - Password: testing@gmail.com
 
-This account gives you full access to all habit tracking, goal setting, mood checking, and statistical analysis features of Evolve.
+Please note this account is intentionally not subscribed, so signing in with it shows the subscription screen with all the required information rather than the subscribed state.
 
-The app uses the standard Apple Terms of Use (EULA). The functional link to the standard Apple EULA (https://www.apple.com/legal/internet-services/itunes/dev/stdeula/) has been added to the App Description for all languages as requested. A screen recording confirming this has been provided in the App Store Connect resolution center.
+A screen recording covering both points has been provided in the Resolution Center.
 
-Thank you for your time and review!
-
+Thank you for your time and review.

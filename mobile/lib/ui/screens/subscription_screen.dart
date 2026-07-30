@@ -13,6 +13,7 @@ import '../../core/rtl.dart';
 import 'dart:ui';
 
 import '../../core/theme.dart';
+import '../../core/data_mode.dart';
 import '../../core/haptics.dart';
 import '../../core/subscription_service.dart';
 import '../../providers/settings_provider.dart';
@@ -141,6 +142,15 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
   @override
   void initState() {
     super.initState();
+    // RevenueCat is never configured in Private mode — SubscriptionService.init
+    // is only called with a Supabase user id, and Private mode has no account.
+    // Calling into the SDK there throws on every path and would leave the
+    // screen on its loading spinner, so skip the store round-trips entirely:
+    // the Private-mode branch renders no prices and offers no purchase.
+    if (ref.read(activeDataModeProvider).isPrivate) {
+      _isFetchingProducts = false;
+      return;
+    }
     _loadOfferings();
     _loadCustomerInfo();
   }
@@ -416,9 +426,135 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         details.contains('paid applications agreement');
   }
 
+  /// The legal links alone, without the plan-selection chrome around them.
+  ///
+  /// Split out of [_buildComplianceLinks] because that widget also renders
+  /// "Restore purchases" and the renewal disclaimer, neither of which belongs
+  /// on a screen where there is nothing to buy or restore.
+  Widget _buildLegalLinksRow(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        GestureDetector(
+          onTap: () => _openLegalUrl(LegalUrls.privacy(_lang)),
+          child: Text(
+            context.t.subscription.privacyPolicy,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              color: Colors.amber,
+              fontWeight: FontWeight.w600,
+              decoration: TextDecoration.underline,
+            ),
+          ),
+        ),
+        Text(
+          '  •  ',
+          style: TextStyle(color: context.appColors.mutedForeground),
+        ),
+        GestureDetector(
+          onTap: () => _openLegalUrl(LegalUrls.appleEula),
+          child: Text(
+            context.t.subscription.termsEula,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              color: Colors.amber,
+              fontWeight: FontWeight.w600,
+              decoration: TextDecoration.underline,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// What a Private-mode user sees where the paywall would otherwise be.
+  ///
+  /// Private mode force-injects `isPro: true`, so every on-device Pro feature
+  /// is already unlocked and there is genuinely nothing to sell here. Until now
+  /// the app expressed that as an *absence*: the Subscription row was hidden
+  /// outright, so the user had to infer "I don't need to pay" from the fact
+  /// that nothing was gated, and — because the paywall was also the app's only
+  /// EULA link — they could not reach the mandatory subscription disclosures at
+  /// all.
+  ///
+  /// Saying it outright is both the honest UI and the Guideline 5.1.1(v)
+  /// evidence: a screen, in the reviewer's own language, stating that no
+  /// registration and no purchase are required to have everything.
+  Widget _buildPrivateModeNotice(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: context.appColors.card,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: context.appColors.border),
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.green.withValues(alpha: 0.1),
+                  border: Border.all(
+                    color: Colors.green.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: const Icon(
+                  LucideIcons.shieldCheck,
+                  size: 32,
+                  color: Colors.green,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                context.t.subscription.privateTitle,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: context.appColors.foreground,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                context.t.subscription.privateBody,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  height: 1.5,
+                  color: context.appColors.mutedForeground,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          context.t.subscription.privateNote,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            height: 1.5,
+            color: context.appColors.mutedForeground,
+          ),
+        ),
+        const SizedBox(height: 24),
+        _buildLegalLinksRow(context),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
+    final isPrivate = ref.watch(activeDataModeProvider).isPrivate;
+    // `isPro` is force-injected true in Private mode, so it means nothing
+    // there. Read the mode FIRST — the same ordering rule coach_endpoint.dart
+    // documents for resolveCoachMode.
     final isPro = settings.isPro;
 
     return Stack(
@@ -464,7 +600,9 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (!isPro) ...[
+                        if (isPrivate) ...[
+                          _buildPrivateModeNotice(context),
+                        ] else if (!isPro) ...[
                           _buildUpsellHeader(context),
                           const SizedBox(height: 32),
                           _buildFeaturesList(context),
@@ -478,6 +616,12 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                           _buildSubscriptionDetails(context),
                           const SizedBox(height: 40),
                           _buildManageActions(context),
+                          // Subscribers used to lose every route to the terms
+                          // they had just agreed to: the links lived only in
+                          // the `!isPro` branch, so buying the subscription
+                          // removed the link to its own EULA.
+                          const SizedBox(height: 24),
+                          _buildLegalLinksRow(context),
                         ],
                       ],
                     ),
@@ -963,39 +1107,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            GestureDetector(
-              onTap: () => _openLegalUrl(LegalUrls.privacy(_lang)),
-              child: Text(
-                context.t.subscription.privacyPolicy,
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  color: Colors.amber,
-                  fontWeight: FontWeight.w600,
-                  decoration: TextDecoration.underline,
-                ),
-              ),
-            ),
-            Text(
-              '  •  ',
-              style: TextStyle(color: context.appColors.mutedForeground),
-            ),
-            GestureDetector(
-              onTap: () => _openLegalUrl(LegalUrls.appleEula),
-              child: Text(
-                context.t.subscription.termsEula,
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  color: Colors.amber,
-                  fontWeight: FontWeight.w600,
-                  decoration: TextDecoration.underline,
-                ),
-              ),
-            ),
-          ],
-        ),
+        _buildLegalLinksRow(context),
       ],
     );
   }

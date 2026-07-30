@@ -1,0 +1,34 @@
+Evolve je alat za praćenje navika i ciljeva za one koji žele rutinu koja stvarno izdrži - i žele razumjeti zašto izdrži. Jedna aplikacija za iPhone, iPad i Mac, bez oglasa, s analitičkim motorom koji svakodnevne unose pretvara u nešto na temelju čega možete djelovati.
+
+RAČUN NIJE POTREBAN
+Pri prvom pokretanju dodirnite "Nastavi bez računa" i Evolve vas nikada neće pitati tko ste. Vaši podaci ostaju u šifriranoj bazi na ovom uređaju: bez registracije, bez e-pošte i bez ograničenja - neograničeno navika, neograničeno ciljeva i cijeli statistički motor, besplatno. Prijavite se kasnije samo ako želite sinkronizaciju među svojim uređajima.
+
+ČETIRI NAČINA DA VIDITE VRIJEME
+Prebacujte nadzornu ploču između Tjedna, Mjeseca, Godine i Života. Prikaz Život predočava tjedne koje ste već proživjeli i one koji su pred vama, računajući od vašeg datuma rođenja.
+
+NAVIKE KOJE SE SAME BILJEŽE
+- Vlastita tjedna učestalost, boja i vrijeme podsjetnika za svaku naviku.
+- Označite naviku izravno iz obavijesti, bez otvaranja aplikacije.
+- Trenutačni, najbolji i najgori nizovi računaju se usput.
+- Automatska provjera putem Apple Zdravlja: koraci, minute vježbanja, aktivna energija, sati stajanja, udaljenost, minute svjesnosti, san i treninzi.
+- Automatska provjera putem Vremena pred zaslonom: ukupno korištenje uređaja ili vrijeme u aplikacijama i kategorijama koje odaberete.
+- Kombinirajte signale s "bilo koji od ovih" ili "svi ovi".
+
+CILJEVI NA SVAKOM HORIZONTU
+Tjedni, mjesečni, tromjesečni, godišnji i životni ciljevi, grupirani u područja života koja sami definirate. Dodajte brojčane ciljeve, povežite cilj s navikom koja ga hrani i pratite učinak, sezonalnost i napredak iz godine u godinu.
+
+STATISTIKA KOJA NEŠTO GOVORI
+- Trendovi ispunjenja kroz 7, 14 i 30 dana te godišnji kalendar za svaku naviku.
+- Analiza korelacije: koje navike povlače ostale prema gore, a koje se natječu za isti sat.
+- Bilješke o raspoloženju i energiji, povezane s onim što ste stvarno dovršili.
+- Ključne, kritične, otporne i na raspoloženje osjetljive navike prepoznaju se automatski.
+
+AI TRENER
+Razgovor koji već poznaje vaše navike, vaše ciljeve i kako je prošao ovaj tjedan, s prijedlozima na jedan dodir poput "popravi moju najslabiju naviku". Vidi samo kontekst koji odlučite podijeliti i pita prije nego što bilo što pošalje. Bez računa radi besplatno s vašim vlastitim OpenRouter ključem.
+
+EVOLVE PRO
+Sve što radi na vašem uređaju besplatno je, jer nas ništa ne košta. Evolve Pro pokriva ono što mi pokrećemo za vas: sinkronizaciju među vašim uređajima i AI trenera bez postavljanja i bez vlastitog ključa. Unutar računa Pro uklanja i ograničenja besplatnog plana.
+
+Evolve Pro je pretplata s automatskom obnovom, dostupna mjesečno ili godišnje. Cijena u vašoj lokalnoj valuti prikazuje se u aplikaciji prije potvrde. Naplata se vrši s vašeg Apple računa pri potvrdi kupnje. Pretplata se obnavlja automatski osim ako se automatska obnova isključi najmanje 24 sata prije kraja tekućeg razdoblja; naplata se provodi unutar 24 sata prije kraja razdoblja. Pretplatom upravljate i automatsku obnovu isključujete u postavkama Apple računa nakon kupnje.
+
+Evolve radi izvan mreže. Sinkronizacija s iCloudom nije obvezna, šifrirana je s kraja na kraj putem vašeg vlastitog iCloud računa i nikada se ne naplaćuje. Izvezite, uvezite ili obrišite sve kad god želite i zaključajte aplikaciju uz Face ID ili Touch ID.

@@ -1,41 +1,37 @@
-Evolve to tracker nawyków i celów dla tych, którzy chcą zbudować rutynę, która naprawdę się utrzyma - i zrozumieć, dlaczego się utrzymuje. Jedna aplikacja na iPhone'a, iPada i Maca, bez reklam i szumu, z silnikiem analitycznym, który zamienia codzienne wpisy w coś, na czym da się działać.
+Evolve to aplikacja do śledzenia nawyków i celów dla tych, którzy chcą rutyny, która naprawdę się utrzymuje - i chcą zrozumieć, dlaczego się utrzymuje. Jedna aplikacja na iPhone'a i iPada, bez reklam, z silnikiem analitycznym, który zamienia codzienne odhaczenia w coś, na czym można działać.
+
+KONTO NIE JEST POTRZEBNE
+Przy pierwszym uruchomieniu dotknij "Kontynuuj bez konta", a Evolve nigdy nie zapyta, kim jesteś. Twoje dane są w zaszyfrowanej bazie na tym urządzeniu: bez rejestracji, bez e-maila i bez limitów - nieograniczone nawyki, nieograniczone cele i pełny silnik statystyk, za darmo. Zaloguj się później tylko wtedy, gdy zechcesz synchronizować między swoimi urządzeniami.
 
 CZTERY SPOSOBY NA WIDOK CZASU
-Przełączaj pulpit między Tygodniem, Miesiącem, Rokiem i Życiem. Widok Życie rysuje tygodnie już przeżyte i te, które są przed tobą, na podstawie daty urodzenia - spokojne przypomnienie, na co idzie twój czas.
+Przełączaj panel między Tygodniem, Miesiącem, Rokiem i Życiem. Widok Życie pokazuje tygodnie już przeżyte i te jeszcze przed tobą, licząc od daty urodzenia.
 
-NAWYKI, KTÓRE ZAPISUJĄ SIĘ SAME
-- Każdy nawyk ma własną częstotliwość tygodniową, kolor i godzinę przypomnienia.
+NAWYKI, KTÓRE ŚLEDZĄ SIĘ SAME
+- Własna częstotliwość tygodniowa, kolor i godzina przypomnienia dla każdego nawyku.
 - Odhacz nawyk prosto z powiadomienia, bez otwierania aplikacji.
-- Bieżąca, najlepsza i najgorsza seria liczą się na bieżąco.
-- Automatyczna weryfikacja przez Zdrowie: kroki, minuty ćwiczeń, aktywna energia, godziny stania, dystans, minuty uważności, sen i treningi.
-- Automatyczna weryfikacja przez Czas przed ekranem: łączne użycie urządzenia albo czas w wybranych aplikacjach i kategoriach.
-- Łącz warunki opcją "którykolwiek z nich" lub "wszystkie", gdy jeden nie wystarcza.
+- Obecna, najlepsza i najgorsza seria liczone na bieżąco.
+- Automatyczna weryfikacja przez Apple Zdrowie: kroki, minuty ćwiczeń, aktywna energia, godziny stania, dystans, minuty uważności, sen i treningi.
+- Automatyczna weryfikacja przez Czas przed ekranem: całkowite użycie urządzenia lub czas w wybranych przez ciebie aplikacjach i kategoriach.
+- Łącz sygnały opcją "dowolny z tych" albo "wszystkie te".
 
 CELE NA KAŻDYM HORYZONCIE
-Cele tygodniowe, miesięczne, kwartalne, roczne i życiowe, pogrupowane w obszary życia, które sam definiujesz. Dodawaj cele liczbowe, powiąż cel z nawykiem, który go napędza, i sprawdzaj wyniki, sezonowość oraz postęp rok do roku.
+Cele tygodniowe, miesięczne, kwartalne, roczne i życiowe, pogrupowane w obszary życia, które sam definiujesz. Dodaj cele liczbowe, powiąż cel z nawykiem, który go zasila, i przeglądaj wyniki, sezonowość oraz postęp rok do roku.
 
 STATYSTYKI, KTÓRE COŚ MÓWIĄ
-- Trendy realizacji w 7, 14 i 30 dniach oraz kalendarz roczny dla każdego nawyku.
-- Analiza korelacji: które nawyki ciągną resztę w górę, a które po cichu walczą o tę samą godzinę.
-- Zapis nastroju i energii powiązany z tym, co faktycznie udało ci się zrobić.
+- Trendy ukończeń w 7, 14 i 30 dniach oraz kalendarz roczny dla każdego nawyku.
+- Analiza korelacji: które nawyki ciągną pozostałe w górę, a które rywalizują o tę samą godzinę.
+- Zapisy nastroju i energii powiązane z tym, co faktycznie ukończyłeś.
 - Nawyki kluczowe, krytyczne, odporne i wrażliwe na nastrój rozpoznawane automatycznie.
-- Analiza najgorszych serii, żeby słaby okres stał się informacją, a nie poczuciem winy.
 
-TRENER AI
-Czat, który zna już twoje nawyki, cele i przebieg tego tygodnia, z podpowiedziami na jedno dotknięcie, jak "napraw mój najsłabszy nawyk" albo "czy jestem na dobrej drodze?". Widzi tylko kontekst, który sam udostępnisz, i zawsze pyta przed wysłaniem.
+COACH AI
+Czat, który zna już twoje nawyki, twoje cele i przebieg tego tygodnia, z podpowiedziami jednym dotknięciem, jak "napraw mój najsłabszy nawyk". Widzi tylko kontekst, który zdecydujesz się udostępnić, i pyta przed wysłaniem czegokolwiek. Bez konta działa za darmo na twoim własnym kluczu OpenRouter.
 
-DWA SPOSOBY PRZECHOWYWANIA DANYCH
-- Tryb prywatny: żadnego konta. Dane leżą w zaszyfrowanej bazie na twoim urządzeniu.
-- Tryb z kontem: zaloguj się przez Apple lub Google i synchronizuj między urządzeniami.
-W obu przypadkach Evolve działa offline. Synchronizacja z iCloud jest opcjonalna, szyfrowana end-to-end przez twoje własne konto iCloud i nie jest funkcją płatną. W każdej chwili wyeksportujesz, zaimportujesz lub usuniesz wszystko, a aplikację zablokujesz przez Face ID lub Touch ID.
+EVOLVE PRO
+Wszystko, co działa na twoim urządzeniu, jest darmowe, bo nic nas nie kosztuje. Evolve Pro obejmuje to, co uruchamiamy dla ciebie: synchronizację między twoimi urządzeniami i Coacha AI bez konfiguracji i bez własnego klucza. W ramach konta Pro znosi też limity planu darmowego.
 
-ZA DARMO I PRO
-Evolve pobierasz za darmo. Plan bezpłatny ogranicza liczbę nawyków i celów, które możesz prowadzić naraz. Evolve PRO znosi te limity i dodaje szczegółowe wykresy, zaawansowaną analizę trendów i celów oraz Trenera AI bez żadnej konfiguracji.
+Evolve Pro to subskrypcja odnawiana automatycznie, dostępna miesięcznie lub rocznie. Cena w twojej lokalnej walucie jest pokazywana w aplikacji przed potwierdzeniem. Płatność jest pobierana z konta Apple przy potwierdzeniu zakupu. Subskrypcja odnawia się automatycznie, chyba że automatyczne odnawianie zostanie wyłączone co najmniej 24 godziny przed końcem bieżącego okresu; obciążenie następuje w ciągu 24 godzin przed końcem okresu. Subskrypcją zarządzasz i automatyczne odnawianie wyłączasz w ustawieniach konta Apple po zakupie.
 
-INFORMACJE O SUBSKRYPCJI EVOLVE PRO
-Evolve PRO to subskrypcja odnawiana automatycznie: 4,99 EUR miesięcznie lub 49,99 EUR rocznie. Cena w twojej walucie jest pokazywana w aplikacji przed potwierdzeniem. Płatność zostanie pobrana z konta Apple przy potwierdzeniu zakupu. Subskrypcja odnawia się automatycznie, o ile automatyczne odnawianie nie zostanie wyłączone co najmniej 24 godziny przed końcem bieżącego okresu; opłata za odnowienie jest pobierana w ciągu 24 godzin przed końcem okresu. Subskrypcją zarządzasz i automatyczne odnawianie wyłączasz w ustawieniach konta Apple po zakupie.
-
-W trybie prywatnym nie ma konta, więc Trener AI działa na twoim własnym koncie OpenRouter - za darmo, z kluczem, który podajesz sam.
+Evolve działa offline. Synchronizacja z iCloud jest opcjonalna, szyfrowana end-to-end przez twoje własne konto iCloud i nigdy nie jest płatna. Eksportuj, importuj lub usuwaj wszystko, kiedy chcesz, i zablokuj aplikację za pomocą Face ID lub Touch ID.
 
 Warunki użytkowania (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 Polityka prywatności: https://simo-hue.github.io/evolve/privacy.html

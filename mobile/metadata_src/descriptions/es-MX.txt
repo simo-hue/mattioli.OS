@@ -1,0 +1,34 @@
+Evolve es un gestor de hábitos y objetivos para quienes quieren una rutina que se sostenga de verdad, y entender por qué se sostiene. Una app para iPhone y iPad, sin anuncios, con un motor de análisis que convierte tus registros diarios en algo sobre lo que puedes actuar.
+
+NO HACE FALTA CUENTA
+Toca "Continuar sin cuenta" al abrir la app por primera vez y Evolve nunca te preguntará quién eres. Tus datos viven en una base cifrada en este dispositivo: sin registro, sin correo electrónico y sin límites - hábitos ilimitados, objetivos ilimitados y el motor de estadísticas completo, gratis. Inicia sesión más tarde solo si quieres sincronizar entre tus dispositivos.
+
+CUATRO FORMAS DE VER EL TIEMPO
+Cambia el panel entre Semana, Mes, Año y Vida. La vista Vida representa las semanas que ya has vivido y las que quedan por delante, a partir de tu fecha de nacimiento.
+
+HÁBITOS QUE SE REGISTRAN SOLOS
+- Frecuencia semanal, color y hora de recordatorio propios para cada hábito.
+- Marca un hábito desde la notificación, sin abrir la app.
+- Las rachas actual, mejor y peor se calculan sobre la marcha.
+- Verificación automática con Apple Salud: pasos, minutos de ejercicio, energía activa, horas de pie, distancia, minutos de respiración, sueño y entrenamientos.
+- Verificación automática con Tiempo de uso: uso total del dispositivo, o tiempo en las apps y categorías que elijas.
+- Combina señales con "cualquiera de estas" o "todas estas".
+
+OBJETIVOS EN TODOS LOS HORIZONTES
+Objetivos semanales, mensuales, trimestrales, anuales y de vida, agrupados en las áreas que tú defines. Añade metas numéricas, vincula un objetivo al hábito que lo alimenta y revisa rendimiento, estacionalidad y progreso interanual.
+
+ESTADÍSTICAS QUE DICEN ALGO
+- Tendencias de cumplimiento a 7, 14 y 30 días, más un calendario anual por hábito.
+- Análisis de correlación: qué hábitos empujan a los demás hacia arriba y cuáles compiten por la misma hora.
+- Registros de ánimo y energía, relacionados con lo que realmente completaste.
+- Hábitos clave, críticos, resilientes y sensibles al ánimo, identificados automáticamente.
+
+COACH DE IA
+Un chat que ya conoce tus hábitos, tus objetivos y cómo ha ido la semana, con sugerencias de un toque como "arregla mi hábito más débil". Solo ve el contexto que decides compartir y pregunta antes de enviar nada. Sin cuenta funciona gratis con tu propia clave de OpenRouter.
+
+EVOLVE PRO
+Todo lo que se ejecuta en tu dispositivo es gratis, porque a nosotros no nos cuesta nada. Evolve Pro cubre lo que ejecutamos nosotros: la sincronización entre tus dispositivos y el Coach de IA sin configuración ni clave propia. Dentro de una cuenta, Pro también elimina los límites del plan gratuito.
+
+Evolve Pro es una suscripción de renovación automática, disponible mensual o anualmente. El precio en tu moneda local se muestra en la app antes de confirmar. El pago se carga a tu cuenta de Apple al confirmar la compra. La suscripción se renueva automáticamente salvo que se desactive la renovación al menos 24 horas antes del final del periodo en curso; el cargo se realiza dentro de las 24 horas previas al final del periodo. Gestiona la suscripción y desactiva la renovación automática en los ajustes de tu cuenta de Apple después de la compra.
+
+Evolve funciona sin conexión. La sincronización con iCloud es opcional, cifrada de extremo a extremo mediante tu propia cuenta de iCloud, y nunca es de pago. Exporta, importa o borra todo cuando quieras, y bloquea la app con Face ID o Touch ID.

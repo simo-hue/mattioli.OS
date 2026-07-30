@@ -1,9 +1,12 @@
+import 'package:evolve_legal/evolve_legal.dart';
 import 'package:evolve_sync/evolve_sync.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../core/app_logger.dart';
 import '../../core/theme.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/coach_consent.dart';
@@ -25,6 +28,7 @@ import '../kit/evolve_sheet.dart';
 import '../kit/evolve_switch.dart';
 import '../kit/evolve_section_header.dart';
 import '../kit/evolve_route.dart';
+import '../kit/evolve_toast.dart';
 
 class AppSettingsScreen extends ConsumerWidget {
   const AppSettingsScreen({super.key});
@@ -408,11 +412,94 @@ class AppSettingsScreen extends ConsumerWidget {
                 },
               ),
             ]),
+            const SizedBox(height: 32),
+            _buildSectionHeader(context, context.t.settings.sections.legal),
+            _buildLegalCard(context, ref),
             const SizedBox(height: 40),
           ],
         ),
       ),
     );
+  }
+
+  /// Privacy Policy, Terms of Service, Apple's Terms of Use (EULA) and the
+  /// subscription management link — reachable in EVERY data mode.
+  ///
+  /// Before this existed, the only places in the app carrying legal links were
+  /// the consent screen (shown once, at first launch), the auth screen (only
+  /// while signed out) and the paywall, which is itself hidden both in Private
+  /// mode and once the user is Pro. The result was that a Private-mode user
+  /// could not reach ANY legal document after onboarding, and a subscriber
+  /// could not reach the terms they were subscribed under.
+  ///
+  /// That is a Guideline 3.1.2 gap on its own, and it becomes an active hazard
+  /// now that the app deliberately steers people into the no-account path: a
+  /// reviewer taking "Continue without an account" and then looking for the
+  /// mandatory subscription disclosures would have found nothing at all.
+  Widget _buildLegalCard(BuildContext context, WidgetRef ref) {
+    final lang = LocaleSettings.currentLocale.languageCode;
+
+    return _buildSettingsCard(context, [
+      _buildActionRow(
+        context: context,
+        icon: LucideIcons.shieldCheck,
+        title: context.t.settings.legal.privacyPolicy,
+        onTap: () => _openLegalUrl(context, ref, LegalUrls.privacy(lang)),
+      ),
+      _buildDivider(context),
+      _buildActionRow(
+        context: context,
+        icon: LucideIcons.fileText,
+        title: context.t.settings.legal.termsOfService,
+        onTap: () => _openLegalUrl(context, ref, LegalUrls.terms(lang)),
+      ),
+      _buildDivider(context),
+      _buildActionRow(
+        context: context,
+        icon: LucideIcons.scale,
+        // Apple's standard EULA, NOT our terms.html. Designating our own Terms
+        // of Service as the EULA would oblige it to carry Apple's minimum
+        // terms, including the third-party-beneficiary clause, and it carries
+        // none of them.
+        title: context.t.settings.legal.termsOfUseEula,
+        onTap: () => _openLegalUrl(context, ref, LegalUrls.appleEula),
+      ),
+      _buildDivider(context),
+      _buildActionRow(
+        context: context,
+        icon: LucideIcons.creditCard,
+        title: context.t.settings.legal.manageSubscription,
+        onTap: () =>
+            _openLegalUrl(context, ref, LegalUrls.manageSubscriptions),
+      ),
+    ]);
+  }
+
+  /// Opens a legal link, surfacing failure instead of swallowing it.
+  ///
+  /// Guideline 3.1.2 requires these links to be *functional*. A fire-and-forget
+  /// `launchUrl` whose Future is never awaited turns a broken link into a
+  /// button that silently does nothing, which is precisely the failure the
+  /// guideline describes — so await the result and tell the user when it fails.
+  Future<void> _openLegalUrl(
+    BuildContext context,
+    WidgetRef ref,
+    Uri url,
+  ) async {
+    ref.hapticLight();
+    bool ok = false;
+    try {
+      ok = await launchUrl(url, mode: LaunchMode.externalApplication);
+    } catch (e, stack) {
+      AppLogger.warning('[Settings] legal link failed: $url', e, stack);
+    }
+    if (!ok && context.mounted) {
+      showEvolveToast(
+        context,
+        message: context.t.common.unableToOpenTheLink,
+        kind: EvolveToastKind.error,
+      );
+    }
   }
 
   Widget _buildSectionHeader(BuildContext context, String title) {

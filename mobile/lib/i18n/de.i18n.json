@@ -188,7 +188,8 @@
       "aiCoach": "AI-COACH",
       "unitsLanguage": "EINHEITEN & SPRACHE",
       "appleHealth": "APPLE HEALTH",
-      "screenTime": "BILDSCHIRMZEIT"
+      "screenTime": "BILDSCHIRMZEIT",
+      "legal": "RECHTLICHES"
     },
     "appearance": {
       "darkMode": "Dunkler Modus",
@@ -222,7 +223,13 @@
       "confirm": "JA, BESTÄTIGEN",
       "goBack": "NEIN, ZURÜCK"
     },
-    "comingSoon": "DEMNÄCHST"
+    "comingSoon": "DEMNÄCHST",
+    "legal": {
+      "privacyPolicy": "Datenschutzrichtlinie",
+      "termsOfService": "Unsere Servicebedingungen",
+      "termsOfUseEula": "Nutzungsbedingungen (EULA)",
+      "manageSubscription": "Abonnement verwalten"
+    }
   },
   "common": {
     "actions": {
@@ -381,7 +388,14 @@
     "resetPasswordPrompt": "Gib deine E-Mail-Adresse ein, um das Passwort zurückzusetzen",
     "noAccount": "Du hast kein Konto?",
     "forgotPassword": "Passwort vergessen?",
-    "continuePrivately": "Privat auf diesem iPhone fortfahren"
+    "continuePrivately": "Privat auf diesem iPhone fortfahren",
+    "continueWithoutAccount": "Ohne Konto fortfahren",
+    "continueWithoutAccountSubtitle": "Alles bleibt auf diesem iPhone. Keine Registrierung, keine Grenzen.",
+    "signInToSync": "Anmelden zum Synchronisieren",
+    "signInToSyncSubtitle": "Nutze Evolve auf allen deinen Geräten und lass den KI-Coach von uns betreiben.",
+    "chooserTitle": "Wie möchtest du Evolve nutzen?",
+    "chooserSubtitle": "Du kannst das später in den Einstellungen ändern.",
+    "chooserFootnote": "Die Anmeldung ist freiwillig. Sie ermöglicht dir, dein Abonnement auf allen deinen Geräten zu nutzen."
   },
   "profile": {
     "personalInfoTitle": "Persönliche Informationen",
@@ -713,7 +727,10 @@
     "getProAtPrice": "Holen Sie sich Pro für {price} / Monat",
     "takeYourHabitSystemToThe": "Bringen Sie Ihr Gewohnheitssystem auf die nächste Stufe",
     "habitSpecificStatistics": "Gewohnheitsspezifische Statistiken",
-    "viewDetailedChartsAndDeepPerformance": "Sehen Sie sich detaillierte Diagramme und detaillierte Leistungsstatistiken für jedes Jahr an."
+    "viewDetailedChartsAndDeepPerformance": "Sehen Sie sich detaillierte Diagramme und detaillierte Leistungsstatistiken für jedes Jahr an.",
+    "privateTitle": "Hier gibt es nichts zu kaufen",
+    "privateBody": "Alle Evolve-Pro-Funktionen sind bereits kostenlos enthalten, weil Sie Evolve ohne Konto nutzen und alles auf diesem Gerät läuft.",
+    "privateNote": "Evolve Pro deckt ab, was wir für Sie betreiben: die Synchronisierung zwischen Ihren Geräten und den KI-Coach ohne Einrichtung und ohne eigenen Schlüssel. Melden Sie sich in den Einstellungen an, falls Sie das einmal möchten."
   },
   "ai": {
     "coach": "AI-Coach",

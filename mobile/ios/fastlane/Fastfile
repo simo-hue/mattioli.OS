@@ -2,7 +2,43 @@ require 'spaceship'
 
 default_platform(:ios)
 
+# The ONE metadata tree that ships. It lives at mobile/metadata, not under
+# fastlane/, because it carries the full field set (categories, copyright, URLs)
+# that a bare fastlane/metadata folder does not.
+#
+# There used to be a second tree at mobile/ios/fastlane/metadata holding a
+# different generation of the copy. The two drifted, text was moved between them
+# by hand, and the hand copying truncated five localisations at the 4000
+# character ceiling -- taking the Terms of Use (EULA) link with it, because the
+# legal block sat at the end of the file. That is what got iOS 1.1.2 rejected
+# under Guideline 3.1.2(c), twice. The second tree is deleted. Do not recreate
+# it, and do not run `deliver` without passing this path explicitly.
+METADATA_PATH = File.expand_path('../../metadata', __dir__)
+
 platform :ios do
+  desc 'Validate App Store metadata. Runs before any upload, and in CI.'
+  lane :validate_metadata do
+    sh("python3 #{File.expand_path('../../tool/appstore/validate_metadata.py', __dir__)}")
+  end
+
+  desc 'Upload App Store metadata (no binary). Validates first and aborts on failure.'
+  lane :upload_metadata do
+    # Gate first. A failed upload leaves some localisations updated and others
+    # stale, which is a worse state than not having run at all.
+    validate_metadata
+
+    deliver(
+      metadata_path: METADATA_PATH,
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      # Never auto-submit. Metadata goes up, then the submission is reviewed by
+      # a human against the App Review notes before it is sent to Apple.
+      submit_for_review: false,
+      force: true,
+      run_precheck_before_submit: false
+    )
+  end
+
   desc "Aggiorna 'What's New in This Version' per tutte le lingue"
   lane :update_notes do
     ENV['FASTLANE_ITC_TEAM_ID'] = "128920131"

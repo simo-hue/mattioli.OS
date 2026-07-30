@@ -1,0 +1,34 @@
+Evolve is een gewoonte- en doelentracker voor wie een routine wil die echt standhoudt, en wil begrijpen waaróm die standhoudt. Eén app voor iPhone en iPad, zonder advertenties, met een analyse-engine die je dagelijkse check-ins omzet in iets waar je op kunt handelen.
+
+GEEN ACCOUNT NODIG
+Tik bij de eerste start op "Doorgaan zonder account" en Evolve vraagt nooit wie je bent. Je gegevens staan in een versleutelde database op dit apparaat: geen registratie, geen e-mail, geen limieten - onbeperkt gewoontes, onbeperkt doelen en de volledige statistiek-engine, gratis. Log later pas in als je tussen je apparaten wilt synchroniseren.
+
+VIER MANIEREN OM TIJD TE ZIEN
+Wissel het dashboard tussen Week, Maand, Jaar en Leven. De Leven-weergave toont de weken die je al hebt geleefd en de weken die nog komen, vanaf je geboortedatum.
+
+GEWOONTES DIE ZICHZELF BIJHOUDEN
+- Eigen weekfrequentie, kleur en herinneringstijd per gewoonte.
+- Vink een gewoonte af vanuit de melding, zonder de app te openen.
+- Huidige, beste en slechtste reeksen worden gaandeweg berekend.
+- Automatische controle met Apple Gezondheid: stappen, oefenminuten, actieve energie, staruren, afstand, mindful minuten, slaap en workouts.
+- Automatische controle met Schermtijd: totaal apparaatgebruik, of tijd in de apps en categorieën die jij kiest.
+- Combineer signalen met "een van deze" of "al deze".
+
+DOELEN OP ELKE HORIZON
+Wekelijkse, maandelijkse, kwartaal-, jaarlijkse en levensdoelen, gegroepeerd in de levensgebieden die jij bepaalt. Voeg numerieke streefwaarden toe, koppel een doel aan de gewoonte die het voedt, en bekijk prestaties, seizoenspatronen en voortgang jaar op jaar.
+
+STATISTIEKEN DIE IETS ZEGGEN
+- Voltooiingstrends over 7, 14 en 30 dagen, plus een jaarkalender per gewoonte.
+- Correlatieanalyse: welke gewoontes de andere omhoogtrekken en welke om hetzelfde uur strijden.
+- Stemmings- en energie-check-ins, gekoppeld aan wat je werkelijk hebt afgerond.
+- Sleutel-, kritieke, veerkrachtige en stemmingsgevoelige gewoontes, automatisch herkend.
+
+AI-COACH
+Een chat die je gewoontes, je doelen en het verloop van deze week al kent, met suggesties als "repareer mijn zwakste gewoonte". Hij ziet alleen de context die jij deelt en vraagt voordat er iets wordt verzonden. Zonder account draait hij gratis op je eigen OpenRouter-sleutel.
+
+EVOLVE PRO
+Alles wat op je apparaat draait is gratis, omdat het ons niets kost. Evolve Pro dekt wat wij voor je draaien: synchronisatie tussen je apparaten en de AI-coach zonder installatie en zonder eigen sleutel. Binnen een account heft Pro ook de limieten van het gratis plan op.
+
+Evolve Pro is een automatisch verlengend abonnement, maandelijks of jaarlijks beschikbaar. De prijs in je eigen valuta wordt vóór bevestiging in de app getoond. De betaling wordt bij aankoopbevestiging van je Apple-account afgeschreven. Het abonnement verlengt automatisch, tenzij automatische verlenging minstens 24 uur voor het einde van de lopende periode wordt uitgezet; de afschrijving vindt plaats binnen 24 uur voor het einde van de periode. Beheer het abonnement en zet automatische verlenging uit in de instellingen van je Apple-account na aankoop.
+
+Evolve werkt offline. iCloud-synchronisatie is optioneel, end-to-end versleuteld via je eigen iCloud-account, en nooit betaald. Exporteer, importeer of verwijder alles wanneer je wilt, en vergrendel de app met Face ID of Touch ID.

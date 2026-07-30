@@ -467,8 +467,18 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                         ),
 
                         SizedBox(height: isCompact ? 6 : 10),
+                        // "Continue without an account", not the old "Continue
+                        // privately on this iPhone". The old label named the
+                        // privacy benefit but never the thing App Review looks
+                        // for, so a reviewer scanning this screen for a way in
+                        // without registering did not recognise it as one —
+                        // which is how Guideline 5.1.1(v) came to be cited.
+                        // The primary no-account path is now the chooser at
+                        // '/choose'; this stays as the escape hatch for anyone
+                        // who has already navigated into sign-in.
                         _buildSocialButton(
-                          label: context.t.auth.continuePrivately,
+                          key: const Key('auth_continue_without_account'),
+                          label: context.t.auth.continueWithoutAccount,
                           onPressed: _handlePrivateMode,
                         ),
 
@@ -682,6 +692,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   }
 
   Widget _buildSocialButton({
+    Key? key,
     required String label,
     IconData? icon,
     required VoidCallback onPressed,
@@ -690,6 +701,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     final isCompact = MediaQuery.sizeOf(context).height < 780;
 
     return InkWell(
+      key: key,
       onTap: onPressed,
       borderRadius: BorderRadius.circular(18),
       child: Container(

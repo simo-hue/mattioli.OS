@@ -62,6 +62,53 @@ jobs:
       - name: Test
         run: flutter test
 
+  # App Store metadata. This job exists because nothing caught the defect that
+  # got iOS 1.1.2 rejected TWICE under Guideline 3.1.2(c): five localisations
+  # were truncated at App Store Connect's 4000-character ceiling, and because
+  # the legal block sits at the end of the description, the truncation removed
+  # the mandatory Terms of Use (EULA) link. The live German and French listings
+  # shipped with no Terms link and no privacy link at all.
+  #
+  # Cheap to run, and it fails on exactly the shape of that bug: over-length
+  # descriptions, missing EULA/privacy URLs, and text ending in a truncation
+  # ellipsis. Run it before `fastlane deliver`, never after.
+  appstore-metadata:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Rebuilding first proves metadata/ is reproducible from the sources in
+      # metadata_src/ rather than hand-edited. The diff check below is what
+      # turns that into a gate.
+      - name: Build metadata from sources
+        run: python3 tool/appstore/build_metadata.py
+
+      # --exit-code alone ignores UNTRACKED files, so a locale added to
+      # locales.json and metadata_src/ but never `git add`ed would be created
+      # here, pass the diff, pass validation, and still be missing from a fresh
+      # checkout. Check both.
+      - name: Fail if the committed metadata is not what the build produces
+        run: |
+          git diff --exit-code -- metadata/
+          untracked="$(git status --porcelain --untracked-files=all -- metadata/)"
+          if [ -n "$untracked" ]; then
+            echo "::error::metadata/ has files the build produced but git does not track:"
+            echo "$untracked"
+            exit 1
+          fi
+
+      - name: Validate App Store metadata
+        run: python3 tool/appstore/validate_metadata.py
+
   # macOS client. MUST run on a macOS runner, not ubuntu.
   #
   # This is not a preference. `settings_page.dart` gates the whole iCloud Sync

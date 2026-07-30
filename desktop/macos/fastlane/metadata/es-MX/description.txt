@@ -1,1 +1,40 @@
-Evolve es tu aplicación definitiva de crecimiento personal. Haz un seguimiento de tus hábitos diarios y alcanza tus objetivos.
+Evolve es la herramienta definitiva de crecimiento personal para quienes quieren construir hábitos sólidos, fijar objetivos claros y comprender sus patrones de comportamiento con un análisis de datos científico y sin distracciones.
+
+Las macroáreas funcionales de Evolve:
+
+1. SEGUIMIENTO AVANZADO DE HÁBITOS
+- Notificaciones Interactivas y Accionables: Registra la finalización de un hábito directamente desde la notificación del sistema, sin abrir la app.
+- Recordatorios Individuales y Flexibles: Horarios de notificación independientes para cada hábito.
+- Cálculo Dinámico de Rachas: Controla tu constancia.
+- Calendario Histórico: Sigue la evolución anual de cada hábito, con vistas por mes y por año del conjunto.
+
+2. DEFINICIÓN Y DESARROLLO DE OBJETIVOS
+- Gráficos de Radar por Áreas de Vida: Visualiza el equilibrio general de tu crecimiento.
+- Análisis de Estacionalidad e Histórico: Observa cómo varía tu productividad en los meses del año y adapta tus ritmos.
+- Tendencia Anual: Sigue tu progreso a largo plazo hacia tus grandes metas.
+
+3. ANÁLISIS ESTADÍSTICO Y CORRELACIONES
+- Correlación entre Ánimo y Productividad: Observa cómo tu bienestar emocional se relaciona con tu productividad real y encuentra el equilibrio que previene el agotamiento.
+- Análisis de Correlaciones: Descubre cómo un hábito influye en otro, por ejemplo cómo una rutina nocturna afecta a tu concentración al día siguiente.
+- Hábitos Destacados y Críticos: Evolve reconoce qué comportamientos apoyan tu crecimiento y cuáles necesitan atención inmediata.
+
+4. ATENCIÓN PLENA
+- Registro de Estado de Ánimo: Anota tu estado emocional para comprender qué influye en tu productividad.
+- Life View: Una representación visual basada en tu fecha de nacimiento que muestra la vida ya vivida y la que tienes por delante.
+- Sincronización Segura en la Nube: Tus datos se guardan y se protegen, gracias a Supabase y a la autenticación con Apple Sign-In.
+- Diseño Premium Coherente: Cambia con fluidez entre el Modo Oscuro y el Modo Claro.
+
+5. PENSADO PARA EL MAC
+- Paleta de Comandos: Pulsa Comando-K para ir a cualquier objetivo o periodo y ejecutar acciones sin soltar el teclado.
+- Navegación Completa con Teclado: Recorre los periodos en Hábitos y Objetivos con las teclas de flecha y llega a cada sección con Comando-1 a Comando-5.
+- Ajustes Nativos: Ajustes organizados en paneles, con búsqueda (Comando-F).
+
+INFORMACIÓN SOBRE LA SUSCRIPCIÓN EVOLVE PRO:
+Evolve Pro es una suscripción de renovación automática disponible en dos opciones: Evolve Pro Mensual, con una duración de 1 mes, y Evolve Pro Anual, con una duración de 1 año. El precio de tu país siempre se muestra en la app, en Ajustes > Suscripción, antes de realizar cualquier compra.
+
+Evolve Pro incluye hábitos ilimitados, estadísticas específicas por hábito, métricas avanzadas de objetivos para cada año y el AI Coach sin configuración: lo ejecutamos nosotros con nuestra clave, así que no hay ninguna clave API que buscar ni una segunda cuenta.
+
+La suscripción se renueva automáticamente a menos que la renovación automática se desactive en los Ajustes de tu cuenta de Apple/iTunes al menos 24 horas antes del final del periodo en curso. El cargo se realizará dentro de las 24 horas previas al final del periodo en curso. Puedes gestionar tu suscripción y desactivar la renovación automática en los Ajustes de tu cuenta de Apple después de la compra.
+
+Términos de Uso Estándar (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Política de Privacidad: https://simo-hue.github.io/evolve/es/privacy.html

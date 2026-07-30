@@ -1,34 +1,37 @@
-Evolve ist das ultimative Tool zur persönlichen Weiterentwicklung für diejenigen, die solide Gewohnheiten aufbauen, klare Ziele setzen und ihre Verhaltensmuster durch wissenschaftliche, ablenkungsfreie Datenanalyse tiefgreifend verstehen möchten.
+Evolve ist ein Gewohnheits- und Ziel-Tracker für alle, die eine Routine wollen, die wirklich hält - und verstehen wollen, warum sie hält. Eine App für iPhone und iPad, ohne Werbung, mit einer Analyse-Engine, die aus täglichen Einträgen etwas macht, mit dem Sie arbeiten können.
 
-Im Gegensatz zu herkömmlichen Produktivitäts-Apps, die oft chaotisch und mit Benachrichtigungen oder Anzeigen überladen sind, basiert Evolve auf einer minimalistischen Benutzeroberfläche, einem sorgfältig kuratierten Design und einer fortschrittlichen Analyse-Engine. Die App hilft Ihnen nicht nur zu verstehen, ob Sie Ihre Aufgaben erledigen, sondern auch, wie sich Ihre Gewohnheiten gegenseitig beeinflussen und wie Sie Ihr Wohlbefinden am besten mit Ihrer täglichen Produktivität in Einklang bringen.
+KEIN KONTO NÖTIG
+Tippen Sie beim ersten Start auf "Ohne Konto fortfahren", und Evolve fragt nie, wer Sie sind. Ihre Daten liegen in einer verschlüsselten Datenbank auf diesem Gerät: keine Registrierung, keine E-Mail, keine Grenzen - unbegrenzte Gewohnheiten, unbegrenzte Ziele und die vollständige Statistik-Engine, kostenlos. Melden Sie sich später nur an, wenn Sie zwischen Ihren Geräten synchronisieren möchten.
 
-Die makrofunktionalen Bereiche von Evolve:
+VIER ANSICHTEN AUF DIE ZEIT
+Wechseln Sie das Dashboard zwischen Woche, Monat, Jahr und Leben. Die Lebensansicht zeigt die bereits gelebten Wochen und die noch kommenden, ausgehend von Ihrem Geburtsdatum.
 
-1. ERWEITERTE GEWOHNHEITENVERFOLGUNG
-- Interaktive und umsetzbare Benachrichtigungen: Zeichnen Sie den Abschluss einer Gewohnheit direkt in der Systembenachrichtigung auf, ohne die App öffnen zu müssen.
-- Individuelle und flexible Erinnerungen: Legen Sie für jede Gewohnheit unabhängige Benachrichtigungszeiten fest.
-- Anpassung im Apple-Stil: Konfigurieren Sie Ihre Meilensteine ​​visuell.
-- Dynamische Streak-Berechnung: Verfolgen Sie Ihre Konsistenz.
-- Historischer Kalender: Sehen Sie sich den monatlichen und jährlichen Fortschritt jeder einzelnen Gewohnheit an, um Ihre Konsistenz im Laufe der Zeit genau zu ermitteln.
+GEWOHNHEITEN, DIE SICH SELBST ERFASSEN
+- Eigene Wochenfrequenz, Farbe und Erinnerungszeit für jede Gewohnheit.
+- Direkt aus der Mitteilung abhaken, ohne die App zu öffnen.
+- Aktuelle, beste und schlechteste Serien werden laufend berechnet.
+- Automatische Prüfung mit Apple Health: Schritte, Trainingsminuten, Aktivkalorien, Stehstunden, Distanz, Achtsamkeitsminuten, Schlaf und Workouts.
+- Automatische Prüfung mit Bildschirmzeit: Gesamtnutzung oder Zeit in den Apps und Kategorien Ihrer Wahl.
+- Signale mit "eines davon" oder "alle davon" kombinieren.
 
-2. ZIELSETZUNG UND ENTWICKLUNG
-- Aufteilung in Teilziele: Teilen Sie Ihre Makroziele in kleine, erreichbare Schritte auf.
-- Radardiagramme für Lebensbereiche: Visualisieren Sie die Gesamtbilanz Ihres Wachstums durch Diagramme.
-- Saisonalitätsanalyse und Verlauf: Beobachten Sie, wie Ihre Produktivität in den verschiedenen Monaten des Jahres schwankt, und passen Sie Ihr Tempo entsprechend an.
-- Jährlicher Trend: Verfolgen Sie den langfristigen Fortschritt, um sich auf Ihre Makroziele zu konzentrieren.
+ZIELE FÜR JEDEN HORIZONT
+Wochen-, Monats-, Quartals-, Jahres- und Lebensziele, gruppiert nach den Lebensbereichen, die Sie festlegen. Numerische Zielwerte hinzufügen, ein Ziel mit der Gewohnheit verknüpfen, die es speist, und Leistung, Saisonalität und Jahresvergleich auswerten.
 
-3. STATISTISCHE ANALYSE UND KORRELATIONEN
-Evolve wandelt Ihre täglichen Handlungen in nützliche Daten für Ihr achtsames Wachstum um.
-- Wellness vs. Leistungsindex: Ein proprietärer Algorithmus setzt Ihr emotionales Wohlbefinden mit Ihrer tatsächlichen Produktivität in Beziehung und hilft Ihnen, die perfekte Balance zu finden, um Burnout vorzubeugen.
-- Korrelationsanalyse: Entdecken Sie, wie eine Gewohnheit eine andere beeinflusst. Analysieren Sie beispielsweise, wie sich Schlafqualität oder körperliche Aktivität direkt auf Ihre Konzentration am Tag auswirken.
-- Identifizierung der besten und wichtigsten Gewohnheiten: Die App erkennt automatisch, welche Verhaltensweisen Ihr Wachstum unterstützen und welche sofortige Unterstützung benötigen.
+STATISTIKEN MIT AUSSAGE
+- Abschlusstrends über 7, 14 und 30 Tage, plus Jahreskalender je Gewohnheit.
+- Korrelationsanalyse: welche Gewohnheiten andere nach oben ziehen und welche um dieselbe Stunde konkurrieren.
+- Stimmungs- und Energie-Check-ins, bezogen auf das, was Sie tatsächlich erledigt haben.
+- Schlüssel-, kritische, robuste und stimmungsabhängige Gewohnheiten werden automatisch erkannt.
 
-4. Achtsamkeit
-Bei persönlichem Wachstum geht es nicht nur um Zahlen, sondern auch um geistiges Bewusstsein.
-- Mood Check-In: Zeichnen Sie Ihren emotionalen Zustand auf, um die Faktoren zu verstehen, die Ihre Produktivität beeinflussen.
-- Lebensansicht: Ein visuelles Widget basierend auf Ihrem Geburtsdatum, das vergangene und zukünftige Lebenswochen darstellt. Ein leistungsstarkes Tool, das Sie an den Wert der Zeit erinnert und Sie dazu anspornt, jeden Tag mit Absicht zu leben.
-- Sichere Cloud-Synchronisierung: Alle Ihre Daten werden dank der Integration mit Supabase und der Apple Sign-In-Authentifizierung in Echtzeit sicher gespeichert.
-- Kohärentes Premium-Design: Wechseln Sie nahtlos vom Dunkelmodus in den Hellmodus dank eines Designs, das auf maximale Lesbarkeit und Sehkomfort bei allen Lichtverhältnissen ausgelegt ist.
+KI-COACH
+Ein Chat, der Ihre Gewohnheiten, Ihre Ziele und den Verlauf dieser Woche bereits kennt, mit Vorschlägen wie "Bring meine schwächste Gewohnheit in Ordnung". Er sieht nur den Kontext, den Sie freigeben, und fragt vor jedem Senden. Ohne Konto läuft er kostenlos über Ihren eigenen OpenRouter-Schlüssel.
 
-EVOLVE PRO-ABONNEMENTINFORMATIONEN:
-Das Abonnement verlängert sich automatisch, es sei denn, die automatische Verlängerung wird in den Einstellungen Ihres Apple-/iTunes-Kontos mindestens 24 Stunden vor Ablauf des aktuellen Zeitraums deaktiviert. Die Belastung Ihres Kontos erfolgt innerhalb von 24 Stunden vor Ablauf des aktuellen Zeitraums....
+EVOLVE PRO
+Alles, was auf Ihrem Gerät läuft, ist kostenlos, weil es uns nichts kostet. Evolve Pro deckt ab, was wir für Sie betreiben: Synchronisierung zwischen Ihren Geräten und den KI-Coach ohne Einrichtung und ohne eigenen Schlüssel. Innerhalb eines Kontos hebt Pro zudem die Obergrenzen des kostenlosen Plans auf.
+
+Evolve Pro ist ein automatisch verlängerbares Abonnement, monatlich oder jährlich erhältlich. Der Preis in Ihrer Landeswährung wird vor der Bestätigung in der App angezeigt. Die Zahlung wird bei Kaufbestätigung Ihrem Apple-Konto belastet. Das Abonnement verlängert sich automatisch, sofern die automatische Verlängerung nicht mindestens 24 Stunden vor Ende des laufenden Zeitraums deaktiviert wird; die Belastung erfolgt innerhalb von 24 Stunden vor Ende des Zeitraums. Verwalten Sie das Abonnement und deaktivieren Sie die automatische Verlängerung nach dem Kauf in den Einstellungen Ihres Apple-Kontos.
+
+Evolve funktioniert offline. Die iCloud-Synchronisierung ist optional, Ende-zu-Ende-verschlüsselt über Ihr eigenes iCloud-Konto und nie kostenpflichtig. Exportieren, importieren oder löschen Sie alles jederzeit, und sichern Sie die App mit Face ID oder Touch ID.
+
+Nutzungsbedingungen (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Datenschutzrichtlinie: https://simo-hue.github.io/evolve/de/privacy.html

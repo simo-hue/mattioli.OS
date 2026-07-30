@@ -1,41 +1,37 @@
-Evolve ialah penjejak tabiat dan matlamat untuk sesiapa yang mahu membina rutin yang benar-benar bertahan - dan memahami mengapa ia bertahan. Satu aplikasi untuk iPhone, iPad dan Mac, tanpa iklan, tanpa bising, dengan enjin analitik yang menukar catatan harian anda kepada sesuatu yang boleh ditindaki.
+Evolve ialah penjejak tabiat dan matlamat untuk mereka yang mahukan rutin yang benar-benar bertahan - dan mahu memahami mengapa ia bertahan. Satu apl untuk iPhone dan iPad, tanpa iklan, dengan enjin analitik yang menukar catatan harian anda kepada sesuatu yang boleh ditindaklanjuti.
+
+TIADA AKAUN DIPERLUKAN
+Ketik "Teruskan tanpa akaun" pada pelancaran pertama, dan Evolve tidak akan bertanya siapa anda. Data anda berada dalam pangkalan data tersulit pada peranti ini: tiada pendaftaran, tiada e-mel dan tiada had - tabiat tanpa had, matlamat tanpa had, dan keseluruhan enjin statistik, percuma. Log masuk kemudian hanya jika anda mahu menyegerak antara peranti anda.
 
 EMPAT CARA MELIHAT MASA
-Tukar papan pemuka antara Minggu, Bulan, Tahun dan Hidup. Paparan Hidup melakar minggu yang sudah anda lalui dan yang masih menanti, berdasarkan tarikh lahir anda: peringatan tenang tentang ke mana masa anda pergi.
+Tukar papan pemuka antara Minggu, Bulan, Tahun dan Hidup. Paparan Hidup memetakan minggu yang telah anda lalui dan yang masih di hadapan, berdasarkan tarikh lahir anda.
 
-TABIAT YANG MEREKOD DIRINYA SENDIRI
-- Setiap tabiat ada kekerapan mingguan, warna dan waktu peringatan tersendiri.
-- Tandakan tabiat terus dari pemberitahuan, tanpa membuka aplikasi.
-- Rentetan semasa, terbaik dan terburuk dikira secara automatik.
-- Pengesahan automatik melalui Kesihatan: langkah, minit senaman, tenaga aktif, jam berdiri, jarak, minit kesedaran, tidur dan latihan.
-- Pengesahan automatik melalui Masa Skrin: penggunaan peranti keseluruhan atau masa dalam aplikasi dan kategori pilihan anda.
-- Gabungkan syarat dengan "mana-mana daripada ini" atau "semua ini" apabila satu syarat tidak mencukupi.
+TABIAT YANG MENJEJAK DIRINYA SENDIRI
+- Kekerapan mingguan, warna dan waktu peringatan tersendiri bagi setiap tabiat.
+- Tandakan tabiat terus dari pemberitahuan, tanpa membuka apl.
+- Rentetan semasa, terbaik dan terburuk dikira sambil berjalan.
+- Pengesahan automatik dengan Apple Health: langkah, minit senaman, tenaga aktif, jam berdiri, jarak, minit kesedaran, tidur dan senaman.
+- Pengesahan automatik dengan Masa Skrin: jumlah penggunaan peranti, atau masa dalam apl dan kategori pilihan anda.
+- Gabungkan isyarat dengan "mana-mana daripada ini" atau "semua ini".
 
-MATLAMAT UNTUK SETIAP UFUK
-Matlamat mingguan, bulanan, suku tahunan, tahunan dan seumur hidup, dikumpulkan mengikut bidang kehidupan yang anda tentukan sendiri. Tambah sasaran berangka, hubungkan matlamat dengan tabiat yang menyokongnya, dan semak prestasi, kemusiman serta kemajuan tahun ke tahun.
+MATLAMAT PADA SETIAP UFUK
+Matlamat mingguan, bulanan, suku tahunan, tahunan dan seumur hidup, dikumpulkan mengikut bidang kehidupan yang anda tentukan sendiri. Tambah sasaran berangka, kaitkan matlamat dengan tabiat yang menyokongnya, dan semak prestasi, corak bermusim serta kemajuan tahun ke tahun.
 
 STATISTIK YANG BERMAKNA
-- Trend penyiapan bagi 7, 14 dan 30 hari, serta kalendar tahunan untuk setiap tabiat.
-- Analisis korelasi: tabiat mana yang menarik yang lain ke atas, dan mana yang senyap-senyap bersaing untuk jam yang sama.
+- Aliran penyiapan sepanjang 7, 14 dan 30 hari, serta kalendar tahunan bagi setiap tabiat.
+- Analisis korelasi: tabiat mana yang menarik yang lain naik, dan mana yang berebut jam yang sama.
 - Catatan mood dan tenaga, dikaitkan dengan apa yang benar-benar anda siapkan.
-- Tabiat utama, kritikal, berdaya tahan dan sensitif kepada mood dikenal pasti secara automatik.
-- Analisis rentetan terburuk, supaya tempoh yang lemah menjadi maklumat, bukan rasa bersalah.
+- Tabiat utama, kritikal, tahan lasak dan sensitif kepada mood dikenal pasti secara automatik.
 
-AI COACH
-Sembang yang sudah mengenali tabiat anda, matlamat anda dan perjalanan minggu ini, dengan cadangan satu ketikan seperti "baiki tabiat paling lemah saya" atau "adakah saya di landasan?". Ia hanya melihat konteks yang anda pilih untuk dikongsi, dan sentiasa bertanya sebelum menghantar apa-apa.
+JURULATIH AI
+Sembang yang sudah mengenali tabiat anda, matlamat anda dan bagaimana minggu ini berjalan, dengan cadangan satu ketikan seperti "baiki tabiat saya yang paling lemah". Ia hanya melihat konteks yang anda pilih untuk dikongsi, dan bertanya sebelum menghantar apa-apa. Tanpa akaun, ia berjalan percuma dengan kunci OpenRouter anda sendiri.
 
-DUA CARA MENYIMPAN DATA ANDA
-- Mod peribadi: tiada akaun langsung. Data anda tinggal dalam pangkalan data tersulit pada peranti anda.
-- Mod akaun: log masuk dengan Apple atau Google dan segerakkan antara peranti anda.
-Dalam kedua-dua keadaan Evolve berfungsi luar talian. Penyegerakan iCloud adalah pilihan, disulitkan hujung ke hujung melalui akaun iCloud anda sendiri, dan bukan ciri berbayar. Eksport, import atau padam semuanya bila-bila masa, dan kunci aplikasi dengan Face ID atau Touch ID.
+EVOLVE PRO
+Semua yang berjalan pada peranti anda adalah percuma, kerana ia tidak menelan kos kami. Evolve Pro merangkumi apa yang kami jalankan untuk anda: penyegerakan antara peranti anda, dan Jurulatih AI tanpa persediaan dan tanpa kunci anda sendiri. Di dalam akaun, Pro turut menanggalkan had pelan percuma.
 
-PERCUMA DAN PRO
-Evolve percuma untuk dimuat turun. Pelan percuma mengehadkan bilangan tabiat dan matlamat yang boleh anda simpan serentak. Evolve PRO membuang had itu dan menambah carta mendalam, analisis trend dan matlamat lanjutan, serta AI Coach tanpa sebarang persediaan.
+Evolve Pro ialah langganan yang diperbaharui secara automatik, tersedia bulanan atau tahunan. Harga dalam mata wang tempatan anda dipaparkan dalam apl sebelum anda mengesahkan. Bayaran dicaj ke Akaun Apple anda apabila pembelian disahkan. Langganan diperbaharui secara automatik melainkan pembaharuan automatik dimatikan sekurang-kurangnya 24 jam sebelum tempoh semasa berakhir; caj dikenakan dalam tempoh 24 jam sebelum tempoh berakhir. Urus langganan dan matikan pembaharuan automatik dalam tetapan Akaun Apple selepas pembelian.
 
-MAKLUMAT LANGGANAN EVOLVE PRO
-Evolve PRO ialah langganan yang diperbaharui secara automatik: 4.99 EUR sebulan atau 49.99 EUR setahun. Harga setara dalam mata wang tempatan anda dipaparkan dalam aplikasi sebelum pengesahan. Bayaran dikenakan pada Akaun Apple anda semasa pengesahan pembelian. Langganan diperbaharui secara automatik melainkan pembaharuan automatik dimatikan sekurang-kurangnya 24 jam sebelum tamat tempoh semasa, dan caj pembaharuan dikenakan dalam tempoh 24 jam sebelum tempoh berakhir. Anda boleh menguruskan langganan dan mematikan pembaharuan automatik dalam tetapan Akaun Apple selepas pembelian.
-
-Dalam mod peribadi tiada akaun, jadi AI Coach berjalan pada akaun OpenRouter anda sendiri - percuma, dengan kunci yang anda sediakan.
+Evolve berfungsi di luar talian. Penyegerakan iCloud adalah pilihan, disulitkan hujung ke hujung melalui akaun iCloud anda sendiri, dan tidak pernah menjadi ciri berbayar. Eksport, import atau padam semuanya bila-bila masa, dan kunci apl di sebalik Face ID atau Touch ID.
 
 Terma Penggunaan (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 Dasar Privasi: https://simo-hue.github.io/evolve/privacy.html

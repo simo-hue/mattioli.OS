@@ -1,1 +1,40 @@
-Evolve is your ultimate personal growth application. Track your daily habits and achieve your goals.
+Evolve is the ultimate personal growth tool for those who want to build solid habits, set clear goals, and understand their behavior patterns through scientific, distraction-free data analysis.
+
+Evolve's functional macro-areas:
+
+1. ADVANCED HABIT TRACKING
+- Interactive and Actionable Notifications: Log a habit's completion straight from the system notification, without opening the app.
+- Single and Flexible Reminders: Independent notification times for each habit.
+- Dynamic Streak Calculation: Monitor your consistency.
+- Historical Calendar: Follow the yearly progress of every single habit, plus month and year views across all of them.
+
+2. GOAL DEFINITION AND DEVELOPMENT
+- Radar Charts for Life Areas: Visualize the overall balance of your growth.
+- Seasonality and Historical Analysis: See how your productivity varies across the months of the year and adapt your rhythms accordingly.
+- Yearly Trend: Track long-term progress toward your macro-milestones.
+
+3. STATISTICAL ANALYSIS AND CORRELATIONS
+- Mood and Output Correlation: See how your emotional well-being relates to your actual productivity, and find the balance that prevents burnout.
+- Correlation Analysis: Discover how one habit influences another, such as how an evening routine affects your focus the next day.
+- Best and Critical Habits: Evolve recognizes which behaviors support your growth and which need immediate attention.
+
+4. MINDFULNESS
+- Mood Check-In: Log your emotional state to understand what drives your productivity.
+- Life View: A visual representation based on your birth date showing the life you have already lived and the life still ahead.
+- Secure Cloud Synchronization: Your data is saved and protected, thanks to Supabase and Apple Sign-In authentication.
+- Consistent Premium Design: Switch seamlessly between Dark Mode and Light Mode.
+
+5. BUILT FOR MAC
+- Command Palette: Press Command-K to jump to any goal or time period and run actions without leaving the keyboard.
+- Full Keyboard Navigation: Page through periods in Habits and Goals with the arrow keys, and reach every section with Command-1 to Command-5.
+- Native Settings: Settings organized in panes, with search (Command-F).
+
+EVOLVE PRO SUBSCRIPTION INFORMATION:
+Evolve Pro is an auto-renewable subscription offered in two options: Evolve Pro Monthly, with a length of 1 month, and Evolve Pro Annual, with a length of 1 year. The price for your country is always shown inside the app, in Settings > Subscription, before any purchase is made.
+
+Evolve Pro includes unlimited habits, habit-specific statistics, advanced goal metrics for each year, and the AI Coach with no setup: we run it on our key, so there is no API key to fetch and no second account.
+
+The subscription automatically renews unless auto-renew is turned off in your Apple/iTunes Account Settings at least 24 hours before the end of the current period. Your account will be charged within 24 hours prior to the end of the current period. You can manage your subscription and turn off auto-renewal in your Apple Account Settings after purchase.
+
+Standard Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Privacy Policy: https://simo-hue.github.io/evolve/en/privacy.html

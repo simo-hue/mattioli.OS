@@ -1,37 +1,37 @@
-Evolve adalah alat pertumbuhan pribadi terbaik yang dirancang bagi mereka yang ingin membangun kebiasaan yang kuat, menetapkan tujuan yang jelas, dan memahami secara mendalam pola perilaku mereka melalui analisis data ilmiah dan bebas gangguan.
+Evolve adalah pelacak kebiasaan dan tujuan untuk orang yang ingin rutinitas yang benar-benar bertahan - dan ingin memahami mengapa rutinitas itu bertahan. Satu aplikasi untuk iPhone dan iPad, tanpa iklan, dengan mesin analitik yang mengubah catatan harian Anda menjadi sesuatu yang bisa ditindaklanjuti.
 
-Tidak seperti aplikasi produktivitas tradisional, yang sering kali kacau dan dipenuhi notifikasi atau iklan, Evolve didasarkan pada antarmuka minimalis, desain yang sangat terkurasi, dan mesin analisis canggih. Aplikasi ini membantu Anda memahami tidak hanya apakah Anda sedang menyelesaikan tugas, namun juga bagaimana kebiasaan Anda memengaruhi satu sama lain dan cara terbaik untuk menyeimbangkan kesejahteraan dengan produktivitas harian Anda.
+TIDAK PERLU AKUN
+Ketuk "Lanjutkan tanpa akun" saat pertama kali membuka aplikasi, dan Evolve tidak akan pernah menanyakan siapa Anda. Data Anda tersimpan dalam basis data terenkripsi di perangkat ini: tanpa pendaftaran, tanpa email, dan tanpa batas - kebiasaan tak terbatas, tujuan tak terbatas, dan seluruh mesin statistik, gratis. Masuk nanti hanya jika Anda ingin menyinkronkan antar perangkat.
 
-Area makro-fungsional Evolve:
+EMPAT CARA MELIHAT WAKTU
+Alihkan dasbor antara Minggu, Bulan, Tahun, dan Hidup. Tampilan Hidup memetakan minggu-minggu yang sudah Anda jalani dan yang masih di depan, dihitung dari tanggal lahir Anda.
 
-1. PELACAKAN KEBIASAAN LANJUTAN
-- Notifikasi Interaktif dan Dapat Ditindaklanjuti: Rekam penyelesaian kebiasaan langsung dari notifikasi sistem, tanpa membuka aplikasi.
-- Pengingat Individu dan Fleksibel: Tetapkan waktu pemberitahuan independen untuk setiap kebiasaan.
-- Kustomisasi Gaya Apple: Konfigurasikan pencapaian Anda secara visual.
-- Perhitungan Garis Dinamis: Lacak konsistensi Anda.
-- Kalender Sejarah: Lihat kemajuan bulanan dan tahunan dari setiap kebiasaan untuk mengidentifikasi secara tepat konsistensi Anda dari waktu ke waktu.
+KEBIASAAN YANG MELACAK DIRINYA SENDIRI
+- Frekuensi mingguan, warna, dan waktu pengingat tersendiri untuk setiap kebiasaan.
+- Centang kebiasaan langsung dari notifikasi, tanpa membuka aplikasi.
+- Rentetan saat ini, terbaik, dan terburuk dihitung seiring jalan.
+- Verifikasi otomatis dengan Apple Health: langkah, menit olahraga, energi aktif, jam berdiri, jarak, menit mindful, tidur, dan latihan.
+- Verifikasi otomatis dengan Waktu Layar: total penggunaan perangkat, atau waktu di aplikasi dan kategori yang Anda pilih.
+- Gabungkan sinyal dengan "salah satu dari ini" atau "semua ini".
 
-2. PENETAPAN TUJUAN DAN PENGEMBANGAN
-- Perincian menjadi Sub-Tujuan: Bagilah tujuan makro Anda menjadi langkah-langkah kecil yang dapat dicapai.
-- Grafik Radar untuk Area Kehidupan: Visualisasikan keseluruhan keseimbangan pertumbuhan Anda melalui grafik.
-- Analisis dan Riwayat Musiman: Amati bagaimana produktivitas Anda bervariasi di bulan-bulan berbeda dalam setahun dan sesuaikan kecepatan Anda.
-- Tren Tahunan: Lacak kemajuan jangka panjang untuk tetap fokus pada tujuan makro Anda.
+TUJUAN DI SETIAP CAKRAWALA
+Tujuan mingguan, bulanan, kuartalan, tahunan, dan seumur hidup, dikelompokkan ke dalam area kehidupan yang Anda tentukan sendiri. Tambahkan target angka, hubungkan sebuah tujuan dengan kebiasaan yang menopangnya, dan tinjau performa, pola musiman, serta kemajuan dari tahun ke tahun.
 
-3. ANALISIS STATISTIK DAN KORELASI
-Evolve mengubah tindakan harian Anda menjadi data yang berguna untuk pertumbuhan sadar Anda.
-- Indeks Kesehatan vs Output: Algoritme eksklusif menghubungkan kesejahteraan emosional Anda dengan produktivitas aktual, membantu Anda menemukan keseimbangan sempurna untuk mencegah kelelahan.
-- Analisis Korelasi: Temukan bagaimana satu kebiasaan mempengaruhi kebiasaan lainnya. Misalnya, analisis bagaimana kualitas tidur atau aktivitas fisik memengaruhi fokus siang hari Anda secara langsung.
-- Identifikasi Kebiasaan Terbaik dan Penting: Aplikasi secara otomatis mengenali perilaku mana yang mendukung pertumbuhan Anda dan mana yang memerlukan dukungan segera.
+STATISTIK YANG BERBICARA
+- Tren penyelesaian selama 7, 14, dan 30 hari, plus kalender tahunan untuk setiap kebiasaan.
+- Analisis korelasi: kebiasaan mana yang menarik yang lain naik, dan mana yang memperebutkan jam yang sama.
+- Catatan suasana hati dan energi, dikaitkan dengan apa yang benar-benar Anda selesaikan.
+- Kebiasaan kunci, kritis, tangguh, dan sensitif terhadap suasana hati dikenali otomatis.
 
-4. KEHATI-HATIAN
-Pertumbuhan pribadi bukan hanya soal angka, tetapi juga kesadaran mental.
-- Mood Check-In: Catat keadaan emosi Anda untuk memahami faktor-faktor yang mempengaruhi produktivitas Anda.
-- Tampilan Kehidupan: Widget visual berdasarkan tanggal lahir Anda yang mewakili minggu-minggu kehidupan yang lalu dan yang akan datang. Alat yang ampuh untuk mengingatkan Anda akan nilai waktu dan mendorong Anda menjalani setiap hari dengan niat.
-- Sinkronisasi Cloud Aman: Semua data Anda disimpan secara real-time dengan aman berkat integrasi dengan Supabase dan otentikasi Masuk Apple.
-- Desain Premium yang Koheren: Beralih dengan mulus dari Mode Gelap ke Mode Terang berkat desain yang dipelajari untuk keterbacaan maksimum dan kenyamanan visual dalam kondisi pencahayaan apa pun.
+PELATIH AI
+Obrolan yang sudah mengenal kebiasaan Anda, tujuan Anda, dan bagaimana minggu ini berjalan, dengan saran sekali ketuk seperti "perbaiki kebiasaan saya yang paling lemah". Ia hanya melihat konteks yang Anda pilih untuk dibagikan, dan bertanya sebelum mengirim apa pun. Tanpa akun, ia berjalan gratis dengan kunci OpenRouter milik Anda sendiri.
 
-INFORMASI BERLANGGANAN EVOLVE PRO:
-Langganan diperpanjang secara otomatis kecuali perpanjangan otomatis dimatikan di pengaturan akun Apple/iTunes Anda setidaknya 24 jam sebelum akhir periode berjalan. Akun Anda akan ditagih dalam waktu 24 jam sebelum akhir periode berjalan. Anda dapat mengelola langganan Anda dan mematikan perpanjangan otomatis dengan membuka Pengaturan Akun Apple Anda setelah pembelian.
+EVOLVE PRO
+Semua yang berjalan di perangkat Anda gratis, karena tidak ada biaya bagi kami. Evolve Pro mencakup apa yang kami jalankan untuk Anda: sinkronisasi antar perangkat, dan Pelatih AI tanpa penyiapan dan tanpa kunci milik Anda sendiri. Di dalam akun, Pro juga menghapus batas paket gratis.
 
-Ketentuan Penggunaan Standar (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Evolve Pro adalah langganan dengan perpanjangan otomatis, tersedia bulanan atau tahunan. Harga dalam mata uang lokal Anda ditampilkan di aplikasi sebelum Anda mengonfirmasi. Pembayaran dibebankan ke Akun Apple Anda saat konfirmasi pembelian. Langganan diperpanjang otomatis kecuali perpanjangan otomatis dimatikan setidaknya 24 jam sebelum periode berjalan berakhir; penagihan dilakukan dalam 24 jam sebelum periode berakhir. Kelola langganan dan matikan perpanjangan otomatis di pengaturan Akun Apple setelah pembelian.
+
+Evolve berfungsi offline. Sinkronisasi iCloud bersifat opsional, terenkripsi ujung ke ujung melalui akun iCloud Anda sendiri, dan tidak pernah menjadi fitur berbayar. Ekspor, impor, atau hapus semuanya kapan pun Anda mau, dan kunci aplikasi di balik Face ID atau Touch ID.
+
+Ketentuan Penggunaan (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 Kebijakan Privasi: https://simo-hue.github.io/evolve/privacy.html

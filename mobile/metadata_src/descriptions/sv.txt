@@ -1,0 +1,34 @@
+Evolve är en vane- och målspårare för dig som vill ha en rutin som faktiskt håller - och vill förstå varför den håller. En app för iPhone och iPad, utan annonser, med en analysmotor som gör dina dagliga avprickningar till något du kan agera på.
+
+INGET KONTO BEHÖVS
+Tryck på "Fortsätt utan konto" vid första starten, så frågar Evolve aldrig vem du är. Dina data ligger i en krypterad databas på den här enheten: ingen registrering, ingen e-post och inga gränser - obegränsat med vanor, obegränsat med mål och hela statistikmotorn, gratis. Logga in senare bara om du vill synka mellan dina enheter.
+
+FYRA SÄTT ATT SE TIDEN
+Växla panelen mellan Vecka, Månad, År och Liv. Liv-vyn visar de veckor du redan levt och de som ligger framför, utifrån ditt födelsedatum.
+
+VANOR SOM SPÅRAR SIG SJÄLVA
+- Egen veckofrekvens, färg och påminnelsetid för varje vana.
+- Bocka av en vana direkt från notisen, utan att öppna appen.
+- Nuvarande, bästa och sämsta svit beräknas löpande.
+- Automatisk verifiering med Apple Hälsa: steg, träningsminuter, aktiv energi, ståtimmar, distans, mindful-minuter, sömn och träningspass.
+- Automatisk verifiering med Skärmtid: total enhetsanvändning, eller tid i de appar och kategorier du väljer.
+- Kombinera signaler med "någon av dessa" eller "alla dessa".
+
+MÅL PÅ VARJE HORISONT
+Vecko-, månads-, kvartals-, års- och livsmål, grupperade i de livsområden du själv definierar. Lägg till numeriska mål, koppla ett mål till vanan som driver det, och följ upp resultat, säsongsmönster och utveckling år för år.
+
+STATISTIK SOM SÄGER NÅGOT
+- Slutförandetrender över 7, 14 och 30 dagar, plus en årskalender per vana.
+- Korrelationsanalys: vilka vanor drar upp de andra och vilka konkurrerar om samma timme.
+- Humör- och energiavstämningar, kopplade till vad du faktiskt slutförde.
+- Nyckelvanor, kritiska, motståndskraftiga och humörkänsliga vanor identifieras automatiskt.
+
+AI-COACH
+En chatt som redan känner till dina vanor, dina mål och hur veckan gått, med förslag som "fixa min svagaste vana". Den ser bara den kontext du väljer att dela och frågar innan något skickas. Utan konto körs den gratis på din egen OpenRouter-nyckel.
+
+EVOLVE PRO
+Allt som körs på din enhet är gratis, eftersom det inte kostar oss något. Evolve Pro täcker det vi kör åt dig: synkronisering mellan dina enheter och AI-coachen utan installation och utan egen nyckel. Inne i ett konto tar Pro dessutom bort gränserna i gratisplanen.
+
+Evolve Pro är en prenumeration med automatisk förnyelse, tillgänglig månadsvis eller årsvis. Priset i din lokala valuta visas i appen innan du bekräftar. Betalningen dras från ditt Apple-konto vid bekräftat köp. Prenumerationen förnyas automatiskt om inte automatisk förnyelse stängs av minst 24 timmar före den aktuella periodens slut; beloppet dras inom 24 timmar före periodens slut. Hantera prenumerationen och stäng av automatisk förnyelse i inställningarna för ditt Apple-konto efter köpet.
+
+Evolve fungerar offline. iCloud-synkronisering är valfri, totalsträckskrypterad via ditt eget iCloud-konto, och aldrig en betalfunktion. Exportera, importera eller radera allt när du vill, och lås appen bakom Face ID eller Touch ID.

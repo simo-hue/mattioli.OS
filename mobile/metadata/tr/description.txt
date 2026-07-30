@@ -1,41 +1,37 @@
-Evolve, gerçekten ayakta kalan bir rutin kurmak ve bunun neden ayakta kaldığını anlamak isteyenler için bir alışkanlık ve hedef takipçisi. iPhone, iPad ve Mac için tek uygulama; reklamsız, gürültüsüz ve günlük kayıtlarını harekete geçebileceğin bir şeye dönüştüren bir analiz motoruyla.
+Evolve, gerçekten kalıcı olan bir rutin isteyenler ve bunun neden kalıcı olduğunu anlamak isteyenler için bir alışkanlık ve hedef takipçisidir. iPhone ve iPad için tek uygulama, reklamsız, günlük işaretlemelerinizi üzerinde işlem yapabileceğiniz bilgiye dönüştüren bir analiz motoruyla.
+
+HESAP GEREKMEZ
+İlk açılışta "Hesapsız devam et" seçeneğine dokunun; Evolve size kim olduğunuzu asla sormaz. Verileriniz bu cihazdaki şifreli bir veritabanında kalır: kayıt yok, e-posta yok, sınır yok - sınırsız alışkanlık, sınırsız hedef ve tüm istatistik motoru, ücretsiz. Cihazlarınız arasında eşitleme istiyorsanız daha sonra giriş yapın.
 
 ZAMANI GÖRMENİN DÖRT YOLU
-Panoyu Hafta, Ay, Yıl ve Yaşam arasında değiştir. Yaşam görünümü, doğum tarihine göre şimdiye kadar yaşadığın haftaları ve önünde duranları çizer: zamanını neye harcadığına dair sakin bir hatırlatma.
+Panoyu Hafta, Ay, Yıl ve Yaşam arasında değiştirin. Yaşam görünümü, doğum tarihinize göre şimdiye kadar yaşadığınız haftaları ve önünüzde duranları gösterir.
 
-KENDİNİ KAYDEDEN ALIŞKANLIKLAR
-- Her alışkanlığın kendi haftalık sıklığı, rengi ve hatırlatma saati vardır.
-- Uygulamayı açmadan, doğrudan bildirimden işaretle.
-- Güncel, en iyi ve en kötü seriler otomatik hesaplanır.
-- Sağlık ile otomatik doğrulama: adımlar, egzersiz dakikaları, aktif enerji, ayakta durma saatleri, mesafe, farkındalık dakikaları, uyku ve antrenmanlar.
-- Ekran Süresi ile otomatik doğrulama: toplam cihaz kullanımı ya da seçtiğin uygulama ve kategorilerde geçen süre.
-- Tek koşul yetmediğinde sinyalleri "bunlardan herhangi biri" veya "hepsi" ile birleştir.
+KENDİ KENDİNİ TAKİP EDEN ALIŞKANLIKLAR
+- Her alışkanlığa kendi haftalık sıklığı, rengi ve hatırlatma saati.
+- Uygulamayı açmadan, doğrudan bildirimden işaretleyin.
+- Güncel, en iyi ve en kötü seriler ilerledikçe hesaplanır.
+- Apple Sağlık ile otomatik doğrulama: adım, egzersiz dakikası, aktif enerji, ayakta durma saati, mesafe, farkındalık dakikası, uyku ve antrenmanlar.
+- Ekran Süresi ile otomatik doğrulama: toplam cihaz kullanımı veya seçtiğiniz uygulama ve kategorilerde geçen süre.
+- Sinyalleri "bunlardan herhangi biri" ya da "bunların tümü" ile birleştirin.
 
 HER UFUKTA HEDEFLER
-Haftalık, aylık, üç aylık, yıllık ve ömürlük hedefler, kendi belirlediğin yaşam alanlarına göre gruplanır. Sayısal hedefler ekle, bir hedefi onu besleyen alışkanlığa bağla; performansı, mevsimselliği ve yıldan yıla ilerlemeyi incele.
+Kendi tanımladığınız yaşam alanlarına göre gruplanmış haftalık, aylık, üç aylık, yıllık ve ömürlük hedefler. Sayısal hedefler ekleyin, bir hedefi onu besleyen alışkanlığa bağlayın ve performansı, mevsimselliği ve yıldan yıla ilerlemeyi inceleyin.
 
 BİR ŞEY SÖYLEYEN İSTATİSTİKLER
-- 7, 14 ve 30 günlük tamamlanma eğilimleri ve her alışkanlık için yıllık takvim.
-- Korelasyon analizi: hangi alışkanlıklar diğerlerini yukarı çekiyor, hangileri sessizce aynı saat için yarışıyor.
-- Ruh hali ve enerji kaydı, gerçekten tamamladıklarınla ilişkilendirilir.
+- 7, 14 ve 30 günlük tamamlama eğilimleri ve her alışkanlık için yıllık takvim.
+- Korelasyon analizi: hangi alışkanlıklar diğerlerini yukarı çekiyor, hangileri aynı saat için yarışıyor.
+- Gerçekte tamamladıklarınızla ilişkilendirilmiş ruh hali ve enerji kayıtları.
 - Anahtar, kritik, dayanıklı ve ruh haline duyarlı alışkanlıklar otomatik olarak belirlenir.
-- En kötü serilerin analizi, böylece kötü bir dönem suçluluk değil bilgi olur.
 
-AI KOÇ
-Alışkanlıklarını, hedeflerini ve bu haftanın nasıl geçtiğini zaten bilen bir sohbet; "en zayıf alışkanlığımı düzelt" ya da "yolunda mıyım?" gibi tek dokunuşluk önerilerle. Yalnızca paylaşmayı seçtiğin bağlamı görür ve bir şey göndermeden önce sorar.
+YAPAY ZEKÂ KOÇU
+Alışkanlıklarınızı, hedeflerinizi ve bu haftanın nasıl geçtiğini zaten bilen bir sohbet; "en zayıf alışkanlığımı düzelt" gibi tek dokunuşluk önerilerle. Yalnızca paylaşmayı seçtiğiniz bağlamı görür ve bir şey göndermeden önce sorar. Hesap olmadan kendi OpenRouter anahtarınızla ücretsiz çalışır.
 
-VERİLERİNİ SAKLAMANIN İKİ YOLU
-- Özel mod: hiç hesap yok. Verilerin cihazındaki şifreli bir veritabanında durur.
-- Hesap modu: Apple veya Google ile giriş yap ve cihazların arasında eşitle.
-Her iki durumda da Evolve çevrimdışı çalışır. iCloud eşitlemesi isteğe bağlıdır, kendi iCloud hesabın üzerinden uçtan uca şifrelenir ve ücretli bir özellik değildir. Her şeyi istediğin zaman dışa aktarabilir, içe aktarabilir veya silebilir, uygulamayı Face ID ya da Touch ID ile kilitleyebilirsin.
+EVOLVE PRO
+Cihazınızda çalışan her şey ücretsizdir, çünkü bize hiçbir maliyeti yoktur. Evolve Pro bizim sizin için çalıştırdıklarımızı kapsar: cihazlarınız arasında eşitleme ve kurulum gerektirmeyen, kendi anahtarınızı istemeyen yapay zekâ koçu. Bir hesap içinde Pro ayrıca ücretsiz planın sınırlarını kaldırır.
 
-ÜCRETSİZ VE PRO
-Evolve ücretsiz indirilir. Ücretsiz plan, aynı anda kaç alışkanlık ve hedef tutabileceğini sınırlar. Evolve PRO bu sınırları kaldırır; derinlemesine grafikler, gelişmiş eğilim ve hedef analizi ile hiçbir kurulum gerektirmeyen AI Koç ekler.
+Evolve Pro, aylık veya yıllık olarak sunulan, otomatik yenilenen bir aboneliktir. Yerel para biriminizdeki fiyat, onaylamadan önce uygulamada gösterilir. Ödeme, satın alma onayında Apple hesabınızdan tahsil edilir. Mevcut dönemin bitiminden en az 24 saat önce otomatik yenileme kapatılmadıkça abonelik otomatik olarak yenilenir; tahsilat dönem bitiminden önceki 24 saat içinde yapılır. Satın alma sonrasında aboneliği yönetin ve otomatik yenilemeyi Apple hesabı ayarlarınızdan kapatın.
 
-EVOLVE PRO ABONELİK BİLGİLERİ
-Evolve PRO otomatik yenilenen bir aboneliktir: ayda 4,99 EUR veya yılda 49,99 EUR. Yerel para birimindeki karşılığı, onaylamadan önce uygulamada gösterilir. Ücret, satın alma onayında Apple hesabından tahsil edilir. Mevcut dönemin bitiminden en az 24 saat önce otomatik yenileme kapatılmadıkça abonelik otomatik olarak yenilenir; yenileme ücreti dönem bitiminden önceki 24 saat içinde tahsil edilir. Aboneliği yönetebilir ve otomatik yenilemeyi satın alma sonrasında Apple hesabı ayarlarından kapatabilirsin.
-
-Özel modda hesap bulunmadığı için AI Koç kendi OpenRouter hesabın üzerinde çalışır: ücretsiz, senin sağladığın bir anahtarla.
+Evolve çevrimdışı çalışır. iCloud eşitlemesi isteğe bağlıdır, kendi iCloud hesabınız üzerinden uçtan uca şifrelenir ve hiçbir zaman ücretli değildir. İstediğiniz zaman her şeyi dışa aktarın, içe aktarın veya silin; uygulamayı Face ID ya da Touch ID ile kilitleyin.
 
 Kullanım Koşulları (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 Gizlilik Politikası: https://simo-hue.github.io/evolve/privacy.html

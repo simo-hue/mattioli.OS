@@ -71,8 +71,15 @@
 	<string>Questa app accede ai tuoi dati su salute e fitness per verificare automaticamente le abitudini, come i passi, l'attività e il sonno.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Questa app richiede il permesso per aggiornare i tuoi dati su salute e fitness, anche se attualmente solo in lettura per verificare le abitudini.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Questa app richiede l'accesso alla posizione per le integrazioni di terze parti, anche se non la traccia attivamente.</string>
+	<!-- NSLocationWhenInUseUsageDescription was removed deliberately. The app has
+	     no location dependency at all -- there is no geolocator, no CoreLocation
+	     use, nothing in pubspec.yaml -- so the key declared a permission the app
+	     never requests, and justified it as "third-party integrations, even
+	     though it does not actively track it". Guideline 5.1.1 requires a purpose
+	     string to clearly and completely describe the use; a vague string for an
+	     unused permission is a finding waiting to happen. If location is ever
+	     genuinely needed, add the key back WITH the concrete feature that needs
+	     it. Also removed from all five Runner/<lang>.lproj/InfoPlist.strings. -->
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

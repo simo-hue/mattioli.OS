@@ -188,7 +188,8 @@
       "aiCoach": "AI COACH",
       "unitsLanguage": "UNITS & LANGUAGE",
       "appleHealth": "APPLE HEALTH",
-      "screenTime": "SCREEN TIME"
+      "screenTime": "SCREEN TIME",
+      "legal": "LEGAL"
     },
     "appearance": {
       "darkMode": "Dark Mode",
@@ -222,7 +223,13 @@
       "confirm": "YES, CONFIRM",
       "goBack": "NO, GO BACK"
     },
-    "comingSoon": "COMING SOON"
+    "comingSoon": "COMING SOON",
+    "legal": {
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service",
+      "termsOfUseEula": "Terms of Use (EULA)",
+      "manageSubscription": "Manage subscription"
+    }
   },
   "common": {
     "actions": {
@@ -381,7 +388,14 @@
     "resetPasswordPrompt": "Enter your email to reset the password.",
     "noAccount": "Don't have an account?",
     "forgotPassword": "Forgot password?",
-    "continuePrivately": "Continue privately on this iPhone"
+    "continuePrivately": "Continue privately on this iPhone",
+    "continueWithoutAccount": "Continue without an account",
+    "continueWithoutAccountSubtitle": "Everything stays on this iPhone. No sign-up, no limits.",
+    "signInToSync": "Sign in to sync",
+    "signInToSyncSubtitle": "Use Evolve on all your devices, and let us run the AI Coach for you.",
+    "chooserTitle": "How do you want to use Evolve?",
+    "chooserSubtitle": "You can change this later in Settings.",
+    "chooserFootnote": "Signing in is optional. It lets you use your subscription on all your devices."
   },
   "profile": {
     "personalInfoTitle": "Personal Information",
@@ -713,7 +727,10 @@
     "getProAtPrice": "Get Pro at {price} / month",
     "takeYourHabitSystemToThe": "Take your habit system to the next level",
     "habitSpecificStatistics": "Habit-Specific Statistics",
-    "viewDetailedChartsAndDeepPerformance": "View detailed charts and deep performance stats for each year."
+    "viewDetailedChartsAndDeepPerformance": "View detailed charts and deep performance stats for each year.",
+    "privateTitle": "Nothing to buy here",
+    "privateBody": "Every Evolve Pro feature is already included, at no cost, because you are using Evolve without an account and everything runs on this device.",
+    "privateNote": "Evolve Pro exists for what we run for you: sync across your devices, and the AI Coach with no setup and no key of your own. Sign in from Settings if you ever want those."
   },
   "ai": {
     "coach": "AI Coach",

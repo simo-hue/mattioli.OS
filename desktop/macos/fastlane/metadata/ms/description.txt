@@ -1,1 +1,35 @@
-Evolve adalah aplikasi pertumbuhan peribadi muktamad anda. Jejaki tabiat harian anda dan capai matlamat anda.
+Evolve ialah alat pertumbuhan peribadi muktamad yang direka untuk mereka yang ingin membina tabiat yang kukuh, menetapkan matlamat yang jelas dan memahami secara mendalam corak tingkah laku mereka melalui analisis data saintifik dan bebas gangguan.
+
+Tidak seperti aplikasi produktiviti tradisional, yang sering huru-hara dan terlebih sarat dengan pemberitahuan atau iklan, Evolve adalah berdasarkan antara muka yang minimum, reka bentuk yang sangat halus dan enjin analitik termaju. Aplikasi ini membantu anda memahami bukan sahaja jika anda sedang menyelesaikan tugasan anda, tetapi bagaimana tabiat anda mempengaruhi satu sama lain dan cara terbaik untuk mengimbangi kesejahteraan anda dengan produktiviti harian anda.
+
+Kawasan makro berfungsi Evolve:
+
+1. PENGESAN TABIAT LANJUTAN
+- Pemberitahuan Interaktif dan Boleh Ditindaklanjuti: Log penyiapan tabiat terus daripada pemberitahuan sistem, tanpa perlu membuka apl.
+- Peringatan Tunggal dan Fleksibel: Tetapkan masa pemberitahuan bebas untuk setiap tabiat.
+- Pengiraan Garis Dinamik: Pantau konsistensi anda.
+- Kalendar Sejarah: Lihat kemajuan bulanan dan tahunan setiap tabiat untuk mengenal pasti konsistensi anda dengan tepat dari semasa ke semasa.
+
+2. DEFINISI MATLAMAT DAN PEMBANGUNAN
+- Carta Radar untuk Kawasan Kehidupan: Visualisasikan keseimbangan keseluruhan pertumbuhan anda melalui carta.
+- Analisis Bermusim dan Sejarah: Perhatikan bagaimana produktiviti anda berbeza-beza merentas bulan yang berbeza dalam setahun dan sesuaikan irama anda dengan sewajarnya.
+- Trend Tahunan: Jejaki kemajuan jangka panjang anda untuk memastikan tumpuan anda tinggi pada pencapaian makro anda.
+
+3. ANALISIS DAN KORELASI STATISTIK
+Evolve mengubah tindakan harian anda kepada data yang berguna untuk pertumbuhan anda yang penuh perhatian.
+- Indeks Kesejahteraan vs Output: Algoritma proprietari mengaitkan kesejahteraan emosi anda dengan produktiviti sebenar anda, membantu anda mencari keseimbangan sempurna untuk mengelakkan keletihan.
+- Analisis Korelasi: Temui bagaimana satu tabiat mempengaruhi tabiat lain. Sebagai contoh, analisis cara kualiti tidur atau aktiviti fizikal secara langsung mempengaruhi tumpuan siang hari anda.
+- Pengenalpastian Tabiat Terbaik dan Kritikal: Apl ini secara automatik mengenali tingkah laku yang menyokong pertumbuhan anda dan yang memerlukan sokongan segera.
+
+4. MINDA
+Pertumbuhan peribadi bukan sahaja dibuat daripada nombor, tetapi juga kesedaran mental.
+- Daftar Masuk Mood: Catatkan keadaan emosi anda untuk memahami faktor yang mempengaruhi produktiviti anda.
+- Pandangan Kehidupan: Widget visual berdasarkan tarikh lahir anda yang mewakili minggu-minggu kehidupan anda berlalu dan minggu-minggu yang akan datang. Alat yang berkuasa untuk mengingatkan anda tentang nilai masa dan mendorong anda untuk hidup setiap hari dengan niat.
+- Penyegerakan Awan Selamat: Semua data anda disimpan dalam masa nyata dengan selamat berkat penyepaduan Supabase dan pengesahan Log Masuk Apple.
+- Reka Bentuk Premium yang Konsisten: Beralih dengan lancar daripada Mod Gelap kepada Mod Cahaya dengan reka bentuk yang disesuaikan untuk kebolehbacaan maksimum dan keselesaan visual dalam sebarang keadaan pencahayaan.
+
+MAKLUMAT LANGGANAN EVOLVE PRO:
+Langganan diperbaharui secara automatik melainkan pembaharuan automatik dimatikan dalam Tetapan Akaun Apple/iTunes anda sekurang-kurangnya 24 jam sebelum tamat tempoh semasa. Akaun anda akan dicaj dalam masa 24 jam sebelum akhir tempoh semasa. Anda boleh mengurus langganan anda dan mematikan pembaharuan automatik dengan pergi ke Tetapan Akaun Apple anda selepas pembelian.
+
+Syarat Penggunaan Standard (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Dasar Privasi: https://simo-hue.github.io/evolve/privacy.html

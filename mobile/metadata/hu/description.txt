@@ -1,41 +1,37 @@
-Az Evolve szokás- és célkövető azoknak, akik olyan rutint akarnak felépíteni, ami tényleg kitart - és meg akarják érteni, miért tart ki. Egyetlen alkalmazás iPhone-ra, iPadre és Macre, reklámok és zaj nélkül, olyan elemzőmotorral, amely a napi bejegyzéseidből valami használhatót csinál.
+Az Evolve szokás- és célkövető azoknak, akik olyan rutint akarnak, ami tényleg kitart - és meg akarják érteni, miért tart ki. Egyetlen alkalmazás iPhone-ra és iPadre, hirdetések nélkül, olyan elemzőmotorral, amely a napi bejelöléseket használható információvá alakítja.
 
-NÉGYFÉLE IDŐNÉZET
-Váltsd az áttekintőt Hét, Hónap, Év és Élet között. Az Élet nézet a születési dátumod alapján rajzolja ki a már megélt és a még hátralévő heteket - csendes emlékeztető arra, mire megy el az időd.
+NINCS SZÜKSÉG FIÓKRA
+Az első indításkor koppintson a "Folytatás fiók nélkül" gombra, és az Evolve soha nem kérdezi meg, ki Ön. Az adatai titkosított adatbázisban maradnak ezen az eszközön: nincs regisztráció, nincs e-mail és nincsenek korlátok - korlátlan szokás, korlátlan cél és a teljes statisztikai motor, ingyen. Csak akkor jelentkezzen be később, ha szinkronizálni szeretne az eszközei között.
 
-SZOKÁSOK, AMELYEK MAGUKAT RÖGZÍTIK
-- Minden szokásnak saját heti gyakorisága, színe és emlékeztető időpontja van.
-- Pipáld ki a szokást közvetlenül az értesítésből, az app megnyitása nélkül.
-- A jelenlegi, a legjobb és a legrosszabb sorozat menet közben számolódik.
-- Automatikus ellenőrzés az Egészség appból: lépések, edzéspercek, aktív energia, állás órák, távolság, tudatos jelenlét percek, alvás és edzések.
-- Automatikus ellenőrzés a Képernyőidőből: teljes eszközhasználat vagy az általad kiválasztott appokban és kategóriákban töltött idő.
-- Kombináld a feltételeket a "bármelyik ezek közül" vagy "mindegyik" beállítással, ha egy feltétel nem elég.
+NÉGY MÓD AZ IDŐ LÁTÁSÁRA
+Váltson a nézetek között: Hét, Hónap, Év és Élet. Az Élet nézet a születési dátumból kiindulva mutatja a már megélt heteket és azokat, amelyek még hátravannak.
+
+SZOKÁSOK, AMELYEK MAGUKAT KÖVETIK
+- Minden szokásnak saját heti gyakorisága, színe és emlékeztetési ideje van.
+- Jelölje ki a szokást közvetlenül az értesítésből, az alkalmazás megnyitása nélkül.
+- A jelenlegi, a legjobb és a leggyengébb sorozat menet közben számolódik.
+- Automatikus ellenőrzés az Apple Health segítségével: lépések, edzéspercek, aktív energia, állásórák, távolság, tudatos jelenlét percei, alvás és edzések.
+- Automatikus ellenőrzés a Képernyőidővel: teljes eszközhasználat, vagy az Ön által választott appokban és kategóriákban töltött idő.
+- Kombinálja a jeleket a "bármelyik ezek közül" vagy "mindegyik" beállítással.
 
 CÉLOK MINDEN IDŐTÁVON
-Heti, havi, negyedéves, éves és életre szóló célok, az általad meghatározott életterületekbe rendezve. Adj hozzá számszerű célértéket, kösd a célt ahhoz a szokáshoz, amely táplálja, és nézd meg a teljesítményt, a szezonalitást és az évről évre mért fejlődést.
+Heti, havi, negyedéves, éves és élethosszig tartó célok, az Ön által meghatározott életterületekbe rendezve. Adjon hozzá számszerű célértékeket, kösse a célt ahhoz a szokáshoz, amely táplálja, és nézze át a teljesítményt, a szezonalitást és az évről évre mért haladást.
 
-STATISZTIKÁK, AMELYEK MONDANAK VALAMIT
+STATISZTIKA, AMI MOND VALAMIT
 - Teljesítési trendek 7, 14 és 30 napra, plusz éves naptár minden szokáshoz.
-- Korrelációelemzés: melyik szokás húzza fel a többit, és melyik verseng csendben ugyanazért az óráért.
-- Hangulat- és energiabejegyzés, összekötve azzal, amit valóban teljesítettél.
-- A kulcsfontosságú, kritikus, ellenálló és hangulatérzékeny szokásokat az app magától felismeri.
-- A legrosszabb sorozatok elemzése, hogy egy rossz időszak információ legyen, ne bűntudat.
+- Korrelációelemzés: mely szokások húzzák fel a többit, és melyek versenyeznek ugyanazért az óráért.
+- Hangulat- és energiabejegyzések, összevetve azzal, amit valóban elvégzett.
+- A kulcsfontosságú, kritikus, ellenálló és hangulatérzékeny szokások felismerése automatikus.
 
-AI COACH
-Egy csevegés, amely már ismeri a szokásaidat, a céljaidat és azt, hogyan alakult ez a hét, egyérintéses javaslatokkal, például "javítsd meg a leggyengébb szokásomat" vagy "jó úton járok?". Csak azt a kontextust látja, amit megosztasz vele, és mindig rákérdez, mielőtt bármit elküldene.
+MI-EDZŐ
+Egy csevegés, amely már ismeri a szokásait, a céljait és azt, hogyan telt ez a hét, egyérintéses javaslatokkal, például "javítsd meg a leggyengébb szokásomat". Csak azt a kontextust látja, amit megoszt vele, és bármit is küldene, előbb rákérdez. Fiók nélkül ingyenesen fut az Ön saját OpenRouter-kulcsával.
 
-KÉTFÉLEKÉPPEN TÁROLHATOD AZ ADATAIDAT
-- Privát mód: egyáltalán nincs fiók. Az adataid titkosított adatbázisban maradnak az eszközödön.
-- Fiókos mód: jelentkezz be Apple- vagy Google-fiókkal, és szinkronizálj az eszközeid között.
-Az Evolve mindkét esetben működik offline. Az iCloud-szinkronizálás opcionális, végponttól végpontig titkosított a saját iCloud-fiókodon keresztül, és nem fizetős funkció. Bármikor exportálhatsz, importálhatsz vagy törölhetsz mindent, és lezárhatod az appot Face ID-val vagy Touch ID-val.
+EVOLVE PRO
+Minden, ami az eszközén fut, ingyenes, mert nekünk semmibe sem kerül. Az Evolve Pro azt fedi le, amit mi üzemeltetünk Önnek: a szinkronizálást az eszközei között, és a MI-edzőt beállítás és saját kulcs nélkül. Fiókon belül a Pro az ingyenes csomag korlátait is feloldja.
 
-INGYENES ÉS PRO
-Az Evolve letöltése ingyenes. Az ingyenes csomag korlátozza, hány szokást és célt tarthatsz egyszerre. Az Evolve PRO feloldja ezeket a korlátokat, és részletes grafikonokat, haladó trend- és célelemzést, valamint beállítás nélküli AI Coachot ad hozzá.
+Az Evolve Pro automatikusan megújuló előfizetés, havi vagy éves formában. A helyi pénznemben számított ár a megerősítés előtt megjelenik az alkalmazásban. A díjat a vásárlás megerősítésekor terheljük az Apple-fiókjára. Az előfizetés automatikusan megújul, hacsak az automatikus megújítást nem kapcsolja ki legalább 24 órával az aktuális időszak vége előtt; a terhelés az időszak vége előtti 24 órában történik. Az előfizetést a vásárlás után az Apple-fiók beállításaiban kezelheti, és ott kapcsolhatja ki az automatikus megújítást.
 
-AZ EVOLVE PRO ELŐFIZETÉS RÉSZLETEI
-Az Evolve PRO automatikusan megújuló előfizetés: 4,99 EUR havonta vagy 49,99 EUR évente. A helyi pénznemben számított ár megerősítés előtt megjelenik az appban. A díjat a vásárlás megerősítésekor terheljük az Apple-fiókodra. Az előfizetés automatikusan megújul, hacsak az automatikus megújítást ki nem kapcsolod legalább 24 órával az aktuális időszak vége előtt; a megújítás díja az időszak vége előtti 24 órán belül kerül terhelésre. Az előfizetést az Apple-fiókod beállításaiban kezelheted, és ott kapcsolhatod ki az automatikus megújítást.
-
-Privát módban nincs fiók, így az AI Coach a saját OpenRouter-fiókodon fut - ingyenesen, az általad megadott kulccsal.
+Az Evolve offline is működik. Az iCloud-szinkronizálás opcionális, végponttól végpontig titkosított az Ön saját iCloud-fiókján keresztül, és soha nem fizetős funkció. Exportáljon, importáljon vagy töröljön mindent, amikor csak akar, és zárolja az alkalmazást Face ID vagy Touch ID mögé.
 
 Felhasználási feltételek (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
-Adatvédelmi szabályzat: https://simo-hue.github.io/evolve/privacy.html
+Adatvédelmi irányelvek: https://simo-hue.github.io/evolve/privacy.html

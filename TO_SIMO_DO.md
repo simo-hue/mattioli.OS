@@ -122,22 +122,118 @@ yet. `flutter pub get` already regenerated
 but `desktop/macos/Podfile.lock` could not be regenerated here (this Mac has no CocoaPods
 and no Xcode).
 
-**On the mac mini, before the next Archive:**
+---
 
-- [ ] `git pull` first — the build log you sent is `1.1.6(24)` while the repo is at
-      `1.2.1+26`, so that checkout is behind and will not contain this fix.
-- [ ] Run, from `desktop/`:
-      `flutter clean && flutter pub get && (cd macos && pod install)`
-      (or just `flutter build macos --release …` once — that runs `pod install` itself).
-- [ ] **Skipping this is a hard build failure, not a silent one**: Xcode will fail to
-      compile `GeneratedPluginRegistrant.swift` with *no such module
-      'path_provider_foundation'*. If you see that, you skipped the `pod install`.
-- [ ] In Xcode: Product › Clean Build Folder, to drop the stale `objective_c.framework`
-      that previous archives copied into `Runner.app/Contents/Frameworks/`.
-- [ ] Commit the regenerated `desktop/macos/Podfile.lock` (it should gain a
-      `path_provider_foundation (0.0.1)` entry, mirroring `mobile/ios/Podfile.lock`).
-- [ ] Confirm on the archive log that the
-      *"different framework names for different architectures … objective_c1.framework"*
-      warning is gone, and smoke-test the app once: path_provider now goes through the
-      plugin channel, so a broken pod integration shows up as a failure to resolve the
-      Application Support directory (i.e. the private DB path) at first launch.
+I want you to help me find out if the current version of the codebase and of the Flutter mobile iOS implementation has already fixed this problem that in the past were notified from the apple review process.
+Consdider that now we have made a lot of changes since that version but I want you to deeply analyze and double check everything ( also searching online for the latest up to date information ) so we can submit for the apple review but with all the possible problems fixed.
+Here are the problems: Review Environment
+
+Submission ID: 70f9af73-8af2-4680-af51-756a2937d273
+Review date: July 21, 2026
+Review Device: iPhone 17 Pro Max
+Version reviewed: 1.1.2 (23)
+
+Guideline 3.1.2(c) - Business - Payments - Subscriptions
+
+Issue Description
+
+The submission did not include all the required information for apps offering auto-renewable subscriptions.
+
+The following information needs to be included in the App Store metadata: a functional link to the Terms of Use (EULA) (if you are using the standard Apple Terms of Use (EULA), include a link in the App Description, and if you are using a custom EULA, add it in App Store Connect).
+
+Next Steps
+
+Update the App Store metadata in ALL localizations to include the information specified above.
+
+Once the app and metadata includes all of the required information, or if they already do, reply to this message with a screen recording to confirm. Include this information in the Notes field of the App Review Information section in App Store Connect for future submissions.
+
+Resources
+
+Apps offering auto-renewable subscriptions must include all of the following required information in the app itself:
+
+- Title of auto-renewing subscription (this may be the same as the In-App Purchase product name)
+- Length of subscription
+- Price of subscription, and price per unit if appropriate
+- Functional links to the privacy policy and Terms of Use (EULA)
+
+The app metadata must also include functional links to the privacy policy in the Privacy Policy field in App Store Connect and the Terms of Use (EULA) in the App Description or EULA field in App Store Connect.
+
+Review Schedule 2 of the Apple Developer Program License Agreement to learn more.
+Guideline 5.1.1(v) - Legal - Data Collection and Storage
+
+
+Issue Description
+
+We noticed that the app requires users to register with personal information to purchase In-App Purchase products that are not account based. 
+
+Apps cannot require user registration prior to allowing access to app content and features that are not associated specifically to the user. User registration that requires the sharing of personal information must be optional or tied to account-specific functionality.
+
+Next Steps
+
+To resolve this issue, please revise the app to not require users to register before purchasing In-App Purchase products that are not account based. You may explain to the user that registering will enable them to access the purchased content from any of their supported devices and provide them a way to register at any time, if they wish to later extend access to additional devices.
+
+Please note that although guideline 5.1.1 requires an app to make subscription content available to all the supported devices owned by a single user, it is not appropriate to force user registration to meet this requirement; such user registration must be optional.
+
+Resources 
+
+- Watch a video from App Review with tips for doing more for users with less data. 
+- See guideline 5.1.1 to learn more about our requirements for apps with account-based content and features.
+
+
+
+---
+
+I want you to help me find out if the current version of the codebase and of the Flutter desktop macOS implementation has already fixed this problem that in the past were notified from the apple review process.
+Consdider that now we have made a lot of changes since that version but I want you to deeply analyze and double check everything ( also searching online for the latest up to date information ) so we can submit for the apple review but with all the possible problems fixed.
+Here are the problems: Review Environment
+
+Submission ID: 45b246ec-3001-488c-b434-3e5081bd777d
+Review date: July 22, 2026
+Review Device: MacBook Pro (14-inch, Nov 2024)
+Version reviewed: 1.0 (5)
+
+Guideline 3.1.2(c) - Business - Payments - Subscriptions
+
+Issue Description
+
+The submission did not include all the required information for apps offering auto-renewable subscriptions.
+
+The following information needs to be included in the App Store metadata: a functional link to the Terms of Use (EULA) (if you are using the standard Apple Terms of Use (EULA), include a link in the App Description, and if you are using a custom EULA, add it in App Store Connect).
+
+Next Steps
+
+Update the App Store metadata to include the information specified above.
+
+Once the app and metadata includes all of the required information, or if they already do, reply to this message with a screen recording to confirm. Include this information in the Notes field of the App Review Information section in App Store Connect for future submissions.
+
+Resources
+
+Apps offering auto-renewable subscriptions must include all of the following required information in the app itself:
+
+- Title of auto-renewing subscription (this may be the same as the In-App Purchase product name)
+- Length of subscription
+- Price of subscription, and price per unit if appropriate
+- Functional links to the privacy policy and Terms of Use (EULA)
+
+The app metadata must also include functional links to the privacy policy in the Privacy Policy field in App Store Connect and the Terms of Use (EULA) in the App Description or EULA field in App Store Connect.
+
+Review Schedule 2 of the Apple Developer Program License Agreement to learn more.
+Guideline 2.1(b) - Performance - App Completeness
+
+
+Issue Description
+
+We are unable to complete the review of the app because one or more of the In-App Purchase products have not been submitted for review.
+
+Specifically, the app includes references to subsriptions but the associated In-App Purchase products have not been submitted for review.
+
+Next Steps
+
+To resolve this issue, submit the In-App Purchase products and upload a new binary in App Store Connect so we can proceed with our review.
+
+Note you must provide an App Review screenshot in App Store Connect in order to submit In-App Purchases for review. Learn more about required In-App Purchase metadata.
+
+Resources
+
+- Learn more about how to offer In-App Purchases.
+- Learn more about submitting In-App Purchases and subscriptions to App Review.

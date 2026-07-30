@@ -18,7 +18,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # of the product and file versions while build-number is used as the build suffix.
 # CFBundleShortVersionString uses $(FLUTTER_BUILD_NAME) and CFBundleVersion uses
 # $(FLUTTER_BUILD_NUMBER) from pubspec.yaml.
-version: 1.2.0+25
+version: 1.2.1+26
 
 environment:
   sdk: ^3.11.5

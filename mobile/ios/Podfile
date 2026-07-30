@@ -29,6 +29,21 @@ flutter_ios_podfile_setup
 
 target 'Runner' do
   use_frameworks!
+  # Silence warnings from third-party pods — none of this source is ours to fix.
+  # It lives in ~/.pub-cache and the CocoaPods trunk repo, so a local edit is undone
+  # by the next `pub get`/`pod install`, and both offenders are unfixable upstream too:
+  #   - SQLCipher/FMDB: ~250 warnings from the sqlite3.c amalgamation (i64->int
+  #     narrowing, ambiguous MIN/MAX, a #warning that gethostuuid() is unavailable
+  #     on iOS). Generated code; sqflite_sqlcipher pins SQLCipher to 4.10.0 exactly.
+  #   - permission_handler_apple: PhonePermissionStrategy.m reads CTCarrier /
+  #     serviceSubscriberCellularProviders / mobileNetworkCode, all deprecated in
+  #     iOS 16 with no replacement. Still present unguarded on upstream main
+  #     (checked 2026-07-30, latest 9.4.10), and there is no PERMISSION_PHONE macro
+  #     to compile the file out — so it warns even though this app only ever asks
+  #     for Permission.notification. Upgrading does not help.
+  # Runner and DeviceActivityMonitorExtension keep their warnings; only Pods go quiet.
+  # Matches desktop/macos/Podfile, where this same line silenced the same SQLCipher noise.
+  inhibit_all_warnings!
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
   target 'RunnerTests' do
@@ -43,4 +58,6 @@ post_install do |installer|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
     end
   end
+  # Suppress "Update to recommended settings" on the generated Pods project.
+  installer.pods_project.root_object.attributes['LastUpgradeCheck'] = '2660'
 end

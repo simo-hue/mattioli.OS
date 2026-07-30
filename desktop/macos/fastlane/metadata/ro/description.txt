@@ -1,1 +1,35 @@
-Evolve este aplicația ta supremă de creștere personală. Urmărește-ți obiceiurile zilnice și atinge-ți obiectivele.
+Evolve este instrumentul suprem de creștere personală conceput pentru cei care doresc să-și construiască obiceiuri solide, să stabilească obiective clare și să-și înțeleagă în profunzime modelele de comportament prin analize științifice și fără distragere a datelor.
+
+Spre deosebire de aplicațiile tradiționale de productivitate, care sunt adesea haotice și supraîncărcate cu notificări sau reclame, Evolve se bazează pe o interfață minimă, un design extrem de rafinat și un motor de analiză avansat. Aplicația te ajută să înțelegi nu numai dacă îți îndeplinești sarcinile, ci și cum obiceiurile tale se influențează reciproc și cum să-ți echilibrezi cel mai bine bunăstarea cu productivitatea zilnică.
+
+Macro-zonele funcționale ale lui Evolve:
+
+1. URMĂRIREA OBIECTULUI AVANSATĂ
+- Notificări interactive și acționabile: Înregistrați finalizarea unui obicei direct din notificarea sistemului, fără a fi nevoie să deschideți aplicația.
+- Mementouri unice și flexibile: setați ore independente de notificare pentru fiecare obicei.
+- Calcul dinamic al liniilor: monitorizează-ți consistența.
+- Calendar istoric: vizualizați progresul lunar și anual al fiecărui obicei pentru a vă identifica cu exactitate consistența în timp.
+
+2. DEFINIREA ȘI DEZVOLTAREA OBIECTIVELOR
+- Diagrame radar pentru zonele de viață: vizualizați echilibrul general al creșterii dvs. prin diagrame.
+- Sezonalitate și analiză istorică: observați cum variază productivitatea dvs. în diferite luni ale anului și adaptați-vă ritmurile în consecință.
+- Tendință anuală: Urmăriți-vă progresul pe termen lung pentru a vă menține concentrarea ridicată asupra etapelor de referință macro.
+
+3. ANALIZA ŞI CORELATII STATISTICE
+Evolve transformă acțiunile tale zilnice în date utile pentru creșterea ta conștientă.
+- Wellness vs Output Index: Un algoritm proprietar corelează bunăstarea dumneavoastră emoțională cu productivitatea reală, ajutându-vă să găsiți echilibrul perfect pentru a preveni epuizarea.
+- Analiza corelației: Descoperiți cum un obicei îl influențează pe altul. De exemplu, analizați modul în care calitatea somnului sau activitatea fizică vă afectează în mod direct concentrarea în timpul zilei.
+- Identificarea obiceiurilor cele mai bune și critice: aplicația recunoaște automat ce comportamente vă susțin creșterea și care necesită sprijin imediat.
+
+4. MINDFULNESS
+Creșterea personală nu este făcută doar din numere, ci și din conștientizare mentală.
+- Mood Check-In: Înregistrați-vă starea emoțională pentru a înțelege factorii care vă influențează productivitatea.
+- Vizualizarea vieții: un widget vizual bazat pe data nașterii, reprezentând săptămânile din viața voastră trecute și cele viitoare. Un instrument puternic pentru a vă aminti de valoarea timpului și pentru a vă împinge să trăiți fiecare zi cu intenție.
+- Sincronizare securizată în cloud: Toate datele dumneavoastră sunt salvate în timp real în siguranță, datorită integrării Supabase și autentificării Apple Sign-In.
+- Design premium consistent: comutați fără probleme de la modul întunecat la modul luminos, cu un design adaptat pentru lizibilitate maximă și confort vizual în orice condiții de iluminare.
+
+INFORMAȚII DE ABORARE LA EVOLVE PRO:
+Abonamentul se reînnoiește automat, cu excepția cazului în care reînnoirea automată este dezactivată în Setările contului tău Apple/iTunes cu cel puțin 24 de ore înainte de sfârșitul perioadei curente. Contul dvs. va fi taxat cu 24 de ore înainte de sfârșitul perioadei curente. Puteți să vă gestionați abonamentul și să dezactivați reînnoirea automată accesând Setările contului Apple după cumpărare.
+
+Condiții standard de utilizare (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Politica de confidențialitate: https://simo-hue.github.io/evolve/privacy.html

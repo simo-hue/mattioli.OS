@@ -1,1 +1,35 @@
-Evolve is uw ultieme app voor persoonlijke groei. Houd uw dagelijkse gewoonten bij en bereik uw doelen.
+Evolve is het ultieme hulpmiddel voor persoonlijke groei, ontworpen voor diegenen die solide gewoonten willen opbouwen, duidelijke doelen willen stellen en hun gedragspatronen diepgaand willen begrijpen door middel van wetenschappelijke en afleidingsvrije data-analyse.
+
+In tegenstelling tot traditionele productiviteitstoepassingen, die vaak chaotisch zijn en overladen met meldingen of advertenties, is Evolve gebaseerd op een minimale interface, een uiterst verfijnd ontwerp en een geavanceerde analyse-engine. De applicatie helpt u niet alleen te begrijpen of u uw taken voltooit, maar ook hoe uw gewoonten elkaar beïnvloeden en hoe u uw welzijn het beste kunt balanceren met uw dagelijkse productiviteit.
+
+Evolve's functionele macrogebieden:
+
+1. GEAVANCEERDE GEWOONTETRACERING
+- Interactieve en bruikbare meldingen: registreer de voltooiing van een gewoonte rechtstreeks vanuit de systeemmelding, zonder dat u de app hoeft te openen.
+- Enkele en flexibele herinneringen: stel onafhankelijke meldingstijden in voor elke gewoonte.
+- Dynamische streakberekening: controleer uw consistentie.
+- Historische kalender: bekijk de maandelijkse en jaarlijkse voortgang van elke gewoonte om uw consistentie in de loop van de tijd nauwkeurig te identificeren.
+
+2. DOELDEFINITIE EN ONTWIKKELING
+- Radargrafieken voor levensgebieden: visualiseer het algehele evenwicht van uw groei via grafieken.
+- Seizoensgebonden en historische analyse: observeer hoe uw productiviteit varieert in de verschillende maanden van het jaar en pas uw ritmes dienovereenkomstig aan.
+- Jaarlijkse trend: volg uw voortgang op de lange termijn om uw focus hoog te houden op uw macromijlpalen.
+
+3. STATISTISCHE ANALYSE EN CORRELATIES
+Evolve transformeert uw dagelijkse handelingen in bruikbare gegevens voor uw bewuste groei.
+- Wellness versus outputindex: een eigen algoritme relateert uw emotionele welzijn aan uw werkelijke productiviteit, waardoor u de perfecte balans kunt vinden om burn-out te voorkomen.
+- Correlatieanalyse: ontdek hoe de ene gewoonte de andere beïnvloedt. Analyseer bijvoorbeeld hoe de slaapkwaliteit of fysieke activiteit rechtstreeks van invloed is op uw focus overdag.
+- Identificatie van de beste en kritische gewoonten: de app herkent automatisch welk gedrag uw groei ondersteunt en welk gedrag onmiddellijke ondersteuning vereist.
+
+4. MINDFULNESS
+Persoonlijke groei draait niet alleen om cijfers, maar ook om mentaal bewustzijn.
+- Stemmingscheck: registreer uw emotionele toestand om inzicht te krijgen in de factoren die uw productiviteit beïnvloeden.
+- Levensweergave: een visuele widget gebaseerd op uw geboortedatum die de weken van uw voorbije leven en de komende weken weergeeft. Een krachtig hulpmiddel om u te herinneren aan de waarde van tijd en u ertoe aan te zetten elke dag met een intentie te leven.
+- Veilige cloudsynchronisatie: al uw gegevens worden in realtime veilig opgeslagen dankzij Supabase-integratie en Apple Sign-In-authenticatie.
+- Consistent premium ontwerp: schakel naadloos over van de donkere modus naar de lichte modus met een ontwerp dat is afgestemd op maximale leesbaarheid en visueel comfort onder alle lichtomstandigheden.
+
+EVOLVE PRO-ABONNEMENTSINFORMATIE:
+Het abonnement wordt automatisch verlengd, tenzij automatische verlenging ten minste 24 uur vóór het einde van de huidige periode is uitgeschakeld in uw Apple/iTunes-accountinstellingen. Het bedrag wordt binnen 24 uur vóór het einde van de lopende periode van uw rekening afgeschreven. U kunt uw abonnement beheren en automatische verlenging uitschakelen door na aankoop naar uw Apple-accountinstellingen te gaan.
+
+Standaardgebruiksvoorwaarden (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Privacybeleid: https://simo-hue.github.io/evolve/privacy.html

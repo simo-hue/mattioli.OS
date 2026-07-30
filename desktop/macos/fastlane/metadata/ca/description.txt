@@ -1,1 +1,33 @@
-Evolve és la teva aplicació definitiva de creixement personal. Fes un seguiment dels teus hàbits diaris i assoleix els teus objectius.
+Evolve és l'eina de creixement personal definitiva dissenyada per a aquells que volen construir hàbits sòlids, establir objectius clars i entendre profundament els seus patrons de comportament mitjançant l'anàlisi de dades científiques i sense distraccions.
+
+Macroàrees funcionals d'Evolve:
+
+1. SEGUIMENT AVANÇAT D'HÀBITS
+- Notificacions interactives i accionables: registre la finalització d'un hàbit directament des de la notificació del sistema, sense haver d'obrir l'aplicació.
+- Recordatoris únics i flexibles: establiu horaris de notificació independents per a cada hàbit.
+- Càlcul de ratxa dinàmica: supervisa la teva consistència.
+- Calendari històric: visualitzeu el progrés mensual i anual de cada hàbit per identificar amb precisió la vostra consistència al llarg del temps.
+
+2. DEFINICIÓ I DESENVOLUPAMENT DE L'OBJECTIU
+- Gràfics de radar per a àrees de vida: visualitzeu l'equilibri general del vostre creixement mitjançant gràfics.
+- Estacionalitat i anàlisi històrica: observeu com varia la vostra productivitat entre els diferents mesos de l'any i adapteu els vostres ritmes en conseqüència.
+- Tendència anual: feu un seguiment del vostre progrés a llarg termini per centrar-vos en les vostres macro fites.
+
+3. ANÀLISI ESTADÍSTICA I CORRELACIONS
+Evolve transforma les teves accions diàries en dades útils per al teu creixement conscient.
+- Wellness vs Output Index: un algorisme propietari relaciona el vostre benestar emocional amb la vostra productivitat real, ajudant-vos a trobar l'equilibri perfecte per evitar l'esgotament.
+- Anàlisi de correlacions: descobrir com un hàbit influeix en un altre. Per exemple, analitzeu com la qualitat del son o l'activitat física afecta directament la vostra concentració diürna.
+- Identificació dels hàbits millors i crítics: l'aplicació reconeix automàticament quins comportaments estan donant suport al vostre creixement i quins requereixen suport immediat.
+
+4. MINDFULNESS
+El creixement personal no només està fet de números, sinó també de consciència mental.
+- Mood Check-In: registre el vostre estat emocional per entendre els factors que influeixen en la vostra productivitat.
+- Visió de la vida: un giny visual basat en la vostra data de naixement que representa les setmanes de la vostra vida transcorregudes i les properes. Una eina poderosa per recordar-te el valor del temps i empènyer-te a viure cada dia amb intenció.
+- Sincronització segura al núvol: totes les vostres dades es guarden en temps real de manera segura gràcies a la integració de Supabase i l'autenticació d'inici de sessió d'Apple.
+- Disseny Premium consistent: canvieu perfectament del mode fosc al mode clar amb un disseny adaptat per a la màxima llegibilitat i comoditat visual en qualsevol condició d'il·luminació.
+
+INFORMACIÓ DE SUBSCRIPCIÓ A EVOLVE PRO:
+La subscripció es renova automàticament tret que la renovació automàtica estigui desactivada a la configuració del vostre compte d'Apple/iTunes almenys 24 hores abans del final del període actual. El vostre compte es carregarà dins de les 24 hores anteriors al final del període actual. Podeu gestionar la vostra subscripció i desactivar la renovació automàtica si aneu a la configuració del vostre compte d'Apple després de la compra.
+
+Condicions d'ús estàndard (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Política de privadesa: https://simo-hue.github.io/evolve/privacy.html

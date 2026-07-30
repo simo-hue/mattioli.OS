@@ -13,6 +13,29 @@ platform :mac do
     
     upload_to_app_store(
       app_identifier: "com.simo.evolve",
+      # MANDATORY. `deliver` defaults platform to "ios", and com.simo.evolve is
+      # one Universal Purchase record holding BOTH platforms -- so omitting this
+      # pushes the macOS metadata onto the LIVE iOS listing.
+      platform: "osx",
+      # Screenshots are managed by hand in App Store Connect; there is no
+      # fastlane/screenshots directory here. Without this, deliver can clear the
+      # Mac screenshots already uploaded to the version.
+      skip_screenshots: true,
+      submit_for_review: false,
+      force: true
+    )
+  end
+
+  desc "Push macOS App Store metadata only (no build): descriptions + review notes"
+  lane :metadata do
+    # Used to fix Guideline 3.1.2(c): the Terms of Use (EULA) link lives in the
+    # App Description, which means the description of EVERY localisation has to
+    # carry it. Run this, then verify in App Store Connect before submitting.
+    upload_to_app_store(
+      app_identifier: "com.simo.evolve",
+      platform: "osx",
+      skip_binary_upload: true,
+      skip_screenshots: true,
       submit_for_review: false,
       force: true
     )

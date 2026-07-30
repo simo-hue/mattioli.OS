@@ -119,6 +119,18 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
 
+dependency_overrides:
+  # 2.6.0 replaces the Darwin plugin with direct FFI into Foundation, which
+  # drags in `objective_c` as a native code asset. That asset broke the iOS
+  # simulator outright (`DOBJ_initializeApi` unresolved, fixed on mobile the
+  # same way on 2026-05-19) and on macOS it makes every universal Release
+  # archive emit a bogus "different framework names for different
+  # architectures / objective_c1.framework" warning — the flutter tool takes a
+  # fresh de-duplicated framework name per architecture slice of the same
+  # asset. 2.5.1 is the plugin-based implementation and needs no code assets.
+  # Keep this in lockstep with mobile/pubspec.yaml.
+  path_provider_foundation: 2.5.1
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 

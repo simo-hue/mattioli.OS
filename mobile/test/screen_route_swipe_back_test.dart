@@ -21,7 +21,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'package:mattioli_os/core/theme.dart';
 import 'package:mattioli_os/ui/kit/evolve_route.dart';
@@ -75,12 +74,6 @@ Widget _harness({
 }
 
 void main() {
-  setUpAll(() {
-    // AppTheme builds its text theme from GoogleFonts, which would otherwise
-    // try to fetch over the network. Same shim the other screen tests use.
-    GoogleFonts.config.allowRuntimeFetching = false;
-  });
-
   group('evolveRoute is swipe-back capable', () {
     testWidgets('LTR: dragging from the left edge pops the route', (
       tester,

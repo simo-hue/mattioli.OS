@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:evolve_targets/evolve_targets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/macro_targets_config.dart';
@@ -203,7 +202,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
                 child: TextField(
                   controller: ctrl,
                   autofocus: true,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: 15,
                     color: context.appColors.foreground,
                   ),
@@ -214,7 +213,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
                     ),
                     border: InputBorder.none,
                     hintText: context.t.macroGoals.goalTitle,
-                    hintStyle: GoogleFonts.inter(
+                    hintStyle: TextStyle(fontFamily: 'Inter', 
                       fontSize: 15,
                       color: context.appColors.mutedForeground,
                     ),
@@ -327,7 +326,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
             children: [
               Text(
                 label,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: colors.mutedForeground,
@@ -336,10 +335,10 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
               if (progress.isComplete)
                 Text(
                   t.macroTargets.reached,
-                  style: GoogleFonts.inter(
+                  style: const TextStyle(fontFamily: 'Inter', 
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF10B981),
+                    color: Color(0xFF10B981),
                   ),
                 ),
             ],
@@ -481,7 +480,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
                   Expanded(
                     child: Text(
                       goal.title,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         color: isCompleted

@@ -3,7 +3,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -701,7 +700,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
             children: [
               Text(
                 context.t.common.goals,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
                   color: context.appColors.foreground,
@@ -746,7 +745,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
             const SizedBox(width: 6),
             Text(
               typeLabel,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: context.appColors.foreground,
@@ -823,7 +822,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
         child: Text(
           context.t.macroGoals.lifetimeGoalsDescription,
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: 14,
             color: context.appColors.mutedForeground,
           ),
@@ -896,7 +895,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: highlightColor,
@@ -1087,7 +1086,7 @@ class _GoalsList extends ConsumerWidget {
                 Text(
                   context.t.macroGoals.emptyGoalsTitle,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                     color: context.appColors.foreground,
@@ -1097,7 +1096,7 @@ class _GoalsList extends ConsumerWidget {
                 Text(
                   context.t.macroGoals.emptyGoalsSubtitle,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: 13,
                     color: context.appColors.mutedForeground,
                     height: 1.4,
@@ -1166,7 +1165,7 @@ class _GoalsList extends ConsumerWidget {
           const SizedBox(width: 12),
           Text(
             label,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: 10,
               fontWeight: FontWeight.w700,
               color: color,

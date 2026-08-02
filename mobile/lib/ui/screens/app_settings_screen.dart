@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/app_logger.dart';
 import '../../core/theme.dart';
@@ -318,7 +317,7 @@ class AppSettingsScreen extends ConsumerWidget {
                       Expanded(
                         child: Text(
                           context.t.ai.apiKey.accountModeNote,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             color: colors.mutedForeground,
                             fontSize: 13,
                             height: 1.4,
@@ -559,7 +558,7 @@ class AppSettingsScreen extends ConsumerWidget {
                   children: [
                     Text(
                       title,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         color: isDisabled
                             ? context.appColors.mutedForeground
                             : context.appColors.foreground,
@@ -581,9 +580,9 @@ class AppSettingsScreen extends ConsumerWidget {
                             color: Colors.amber.withValues(alpha: 0.4),
                           ),
                         ),
-                        child: Text(
+                        child: const Text(
                           'PRO',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             color: Colors.amber,
                             fontSize: 9,
                             fontWeight: FontWeight.w900,
@@ -607,7 +606,7 @@ class AppSettingsScreen extends ConsumerWidget {
                         ),
                         child: Text(
                           context.t.settings.comingSoon,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             color: primaryColor,
                             fontSize: 9,
                             fontWeight: FontWeight.w900,
@@ -620,7 +619,7 @@ class AppSettingsScreen extends ConsumerWidget {
                 if (subtitle != null)
                   Text(
                     subtitle,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       color: context.appColors.mutedForeground.withValues(
                         alpha: 0.7,
                       ),
@@ -666,7 +665,7 @@ class AppSettingsScreen extends ConsumerWidget {
             Expanded(
               child: Text(
                 title,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   color: context.appColors.foreground,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -676,7 +675,7 @@ class AppSettingsScreen extends ConsumerWidget {
             if (trailingText != null)
               Text(
                 trailingText,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   color: context.appColors.mutedForeground,
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
@@ -1185,7 +1184,7 @@ class _CoachConsentRow extends ConsumerWidget {
             Expanded(
               child: Text(
                 context.t.ai.consent.rowTitle,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   color: colors.foreground,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -1194,7 +1193,7 @@ class _CoachConsentRow extends ConsumerWidget {
             ),
             Text(
               context.t.ai.consent.statusGranted,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 color: colors.mutedForeground,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
@@ -1262,7 +1261,7 @@ class _CoachEngineRow extends ConsumerWidget {
           Expanded(
             child: Text(
               context.t.ai.coachModes.activeRowTitle,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 color: colors.foreground,
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -1271,7 +1270,7 @@ class _CoachEngineRow extends ConsumerWidget {
           ),
           Text(
             value,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               color: colors.mutedForeground,
               fontSize: 13,
               fontWeight: FontWeight.w500,
@@ -1359,7 +1358,7 @@ class _ApiKeyFormState extends ConsumerState<_ApiKeyForm> {
                     CoachMode.standard
                 ? context.t.ai.apiKey.descriptionProActive
                 : context.t.ai.apiKey.description,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: 13,
               height: 1.45,
               color: colors.mutedForeground,
@@ -1371,7 +1370,7 @@ class _ApiKeyFormState extends ConsumerState<_ApiKeyForm> {
             obscureText: true,
             autocorrect: false,
             enableSuggestions: false,
-            style: GoogleFonts.inter(fontSize: 15, color: colors.foreground),
+            style: TextStyle(fontFamily: 'Inter', fontSize: 15, color: colors.foreground),
             decoration: InputDecoration(
               labelText: context.t.ai.apiKey.fieldLabel,
               hintText: context.t.ai.apiKey.hint,
@@ -1382,7 +1381,7 @@ class _ApiKeyFormState extends ConsumerState<_ApiKeyForm> {
             const SizedBox(height: 10),
             Text(
               context.t.ai.apiKey.saveFailed,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: 12.5,
                 color: Theme.of(context).colorScheme.error,
                 fontWeight: FontWeight.w600,
@@ -1404,7 +1403,7 @@ class _ApiKeyFormState extends ConsumerState<_ApiKeyForm> {
                 onPressed: _remove,
                 child: Text(
                   context.t.ai.apiKey.remove,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: 13,
                     color: Theme.of(context).colorScheme.error,
                   ),

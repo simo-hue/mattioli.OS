@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/haptics.dart';
 import '../../core/theme.dart';
@@ -64,7 +63,7 @@ class EvolveSwitchRow extends ConsumerWidget {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: 17,
                     fontWeight: FontWeight.w400,
                     color: colors.foreground,
@@ -74,7 +73,7 @@ class EvolveSwitchRow extends ConsumerWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle!,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: 13,
                       color: colors.mutedForeground,
                     ),

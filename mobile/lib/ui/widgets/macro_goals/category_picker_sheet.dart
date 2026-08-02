@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme.dart';
@@ -226,7 +225,7 @@ Future<String?> _showCategoryEditor({
                   child: TextField(
                     controller: nameController,
                     autofocus: true,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: 15,
                       color: context.appColors.foreground,
                     ),
@@ -237,7 +236,7 @@ Future<String?> _showCategoryEditor({
                       ),
                       border: InputBorder.none,
                       hintText: context.t.macroGoals.categoryName,
-                      hintStyle: GoogleFonts.inter(
+                      hintStyle: TextStyle(fontFamily: 'Inter', 
                         fontSize: 15,
                         color: context.appColors.mutedForeground,
                       ),
@@ -247,7 +246,7 @@ Future<String?> _showCategoryEditor({
                 const SizedBox(height: 20),
                 Text(
                   context.t.macroGoals.chooseColor,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                     color: context.appColors.mutedForeground,

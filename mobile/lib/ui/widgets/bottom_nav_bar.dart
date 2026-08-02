@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../core/haptics.dart';
@@ -206,7 +205,7 @@ class _NavBarItem extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 label,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: 10,
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
                   color: isActive

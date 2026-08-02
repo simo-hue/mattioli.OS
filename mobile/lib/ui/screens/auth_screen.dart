@@ -5,7 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:evolve_legal/evolve_legal.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/fonts.dart';
 import '../../core/theme.dart';
 import '../kit/evolve_toast.dart';
 import '../../providers/auth_provider.dart';
@@ -239,7 +239,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                             SizedBox(height: isCompact ? 6 : 16),
                             Text(
                               'EVOLVE',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 color: context.appColors.foreground,
                                 fontSize: titleSize,
                                 fontWeight: FontWeight.w900,
@@ -251,7 +251,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                               Text(
                                 context.t.auth.loginMotto,
                                 textAlign: TextAlign.center,
-                                style: GoogleFonts.playfairDisplay(
+                                style: TextStyle(fontFamily: kSerifFontFamily, fontFamilyFallback: kSerifFontFallback, 
                                   color: context.appColors.mutedForeground
                                       .withValues(alpha: 0.9),
                                   fontSize: isCompact ? 15 : 17,
@@ -264,7 +264,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                               Text(
                                 context.t.auth.tagline,
                                 textAlign: TextAlign.center,
-                                style: GoogleFonts.inter(
+                                style: TextStyle(fontFamily: 'Inter', 
                                   color: context.appColors.mutedForeground,
                                   fontSize: mottoSize,
                                   fontWeight: FontWeight.w500,
@@ -398,7 +398,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                               ),
                               child: Text(
                                 context.t.auth.or,
-                                style: GoogleFonts.inter(
+                                style: TextStyle(fontFamily: 'Inter', 
                                   color: context.appColors.mutedForeground
                                       .withValues(alpha: 0.5),
                                   fontSize: 10,
@@ -724,7 +724,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
             ],
             Text(
               label,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 color: context.appColors.foreground,
                 fontSize: 15,
                 fontWeight: FontWeight.w600,

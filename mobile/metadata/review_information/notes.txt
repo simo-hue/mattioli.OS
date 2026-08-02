@@ -44,6 +44,8 @@ THE THREE OTHER TRANSMISSIONS
 - AI Coach. Sending a conversation requires its own separate consent dialog naming who receives it, shown before the first message; dismissing it counts as refusal. If the user runs a local or own-key model, nothing leaves the device and no consent is asked, because no transmission occurs.
 - Subscription management (RevenueCat). In Account mode only, and only once the subscription screen is opened or a purchase restored, our payments provider receives the account's user id and the App Store purchase state. No habit, goal, mood, health or profile data is sent.
 
+There is no fourth. This build removes the one exception we found ourselves: the app previously drew its typography through a package that downloads typefaces from fonts.gstatic.com on first use, so the privacy gate opened a connection to Google while displaying the sentence promising it did not. Every typeface is now bundled inside the app. The dependency was removed rather than switched off, and an automated test fails our build if it is ever reintroduced.
+
 
 2) GUIDELINE 5.1.1(v) - NO ACCOUNT IS REQUIRED
 

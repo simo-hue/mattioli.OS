@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:evolve_legal/evolve_legal.dart';
@@ -439,7 +438,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           onTap: () => _openLegalUrl(LegalUrls.privacy(_lang)),
           child: Text(
             context.t.subscription.privacyPolicy,
-            style: GoogleFonts.inter(
+            style: const TextStyle(fontFamily: 'Inter', 
               fontSize: 12,
               color: Colors.amber,
               fontWeight: FontWeight.w600,
@@ -455,7 +454,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           onTap: () => _openLegalUrl(LegalUrls.appleEula),
           child: Text(
             context.t.subscription.termsEula,
-            style: GoogleFonts.inter(
+            style: const TextStyle(fontFamily: 'Inter', 
               fontSize: 12,
               color: Colors.amber,
               fontWeight: FontWeight.w600,
@@ -513,7 +512,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
               Text(
                 context.t.subscription.privateTitle,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
                   color: context.appColors.foreground,
@@ -523,7 +522,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
               Text(
                 context.t.subscription.privateBody,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: 14,
                   height: 1.5,
                   color: context.appColors.mutedForeground,
@@ -536,7 +535,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         Text(
           context.t.subscription.privateNote,
           textAlign: TextAlign.center,
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: 12,
             height: 1.5,
             color: context.appColors.mutedForeground,
@@ -681,7 +680,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           const SizedBox(height: 16),
           Text(
             context.t.subscription.upgradeTitle,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: 22,
               fontWeight: FontWeight.w800,
               color: context.appColors.foreground,
@@ -691,7 +690,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           Text(
             context.t.subscription.upgradeSubtitle,
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: 14,
               color: context.appColors.mutedForeground,
             ),
@@ -707,7 +706,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
       children: [
         Text(
           context.t.subscription.featuresHeader,
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: 12,
             fontWeight: FontWeight.w700,
             color: context.appColors.mutedForeground,
@@ -775,7 +774,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             children: [
               Text(
                 title,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: context.appColors.foreground,
@@ -784,7 +783,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
               const SizedBox(height: 2),
               Text(
                 description,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: 12,
                   color: context.appColors.mutedForeground,
                 ),
@@ -803,7 +802,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         children: [
           Text(
             context.t.subscription.choosePlanHeader,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: 12,
               fontWeight: FontWeight.w700,
               color: context.appColors.mutedForeground,
@@ -840,7 +839,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             const SizedBox(height: 12),
             Text(
               context.t.subscription.errors.pricesUnavailable,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: 11,
                 color: context.appColors.mutedForeground,
                 height: 1.4,
@@ -928,7 +927,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
       children: [
         Text(
           context.t.subscription.choosePlanHeader,
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: 12,
             fontWeight: FontWeight.w700,
             color: context.appColors.mutedForeground,
@@ -1062,7 +1061,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                         child: Text(
                           '${context.t.subscription.proName} $title',
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: context.appColors.foreground,
@@ -1074,7 +1073,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: 12,
                       color: context.appColors.mutedForeground,
                     ),
@@ -1084,7 +1083,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             ),
             Text(
               priceStr,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
                 color: context.appColors.foreground,
@@ -1107,7 +1106,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           label: Text(context.t.subscription.actions.restore),
           style: TextButton.styleFrom(
             foregroundColor: Colors.amber,
-            textStyle: GoogleFonts.inter(
+            textStyle: const TextStyle(fontFamily: 'Inter', 
               fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
@@ -1117,7 +1116,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         Text(
           context.t.subscription.renewalDisclaimer,
           textAlign: TextAlign.center,
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: 11,
             color: context.appColors.mutedForeground,
             height: 1.4,
@@ -1156,7 +1155,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           const SizedBox(height: 16),
           Text(
             context.t.subscription.youArePro,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: 22,
               fontWeight: FontWeight.w800,
               color: context.appColors.foreground,
@@ -1166,7 +1165,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           Text(
             context.t.subscription.thankYou,
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: 14,
               color: context.appColors.mutedForeground,
             ),
@@ -1220,7 +1219,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
       children: [
         Text(
           context.t.subscription.detailsHeader,
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: 12,
             fontWeight: FontWeight.w700,
             color: context.appColors.mutedForeground,
@@ -1414,7 +1413,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                 Text(
                   context.t.subscription.welcomeTitle,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: 22,
                     fontWeight: FontWeight.w900,
                     color: context.appColors.foreground,
@@ -1425,7 +1424,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                 Text(
                   context.t.subscription.activeFullMessage,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: 14,
                     color: context.appColors.mutedForeground,
                     height: 1.5,
@@ -1564,7 +1563,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                         child: Text(
                           '${context.t.subscription.proName} $title',
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: context.appColors.foreground,
@@ -1576,7 +1575,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: 12,
                       color: context.appColors.mutedForeground,
                     ),
@@ -1591,7 +1590,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             // test/paywall_plan_card_layout_test.dart.
             Text(
               priceStr ?? context.t.subscription.plans.priceUnavailable,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: priceStr == null ? 13 : 16,
                 fontWeight: priceStr == null
                     ? FontWeight.w600

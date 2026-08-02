@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -270,7 +270,7 @@ class _AppLogsScreenState extends State<AppLogsScreen> {
                 ),
                 child: TextField(
                   controller: _searchController,
-                  style: GoogleFonts.jetBrainsMono(
+                  style: TextStyle(fontFamily: kMonospaceFontFamily, fontFamilyFallback: kMonospaceFontFallback, 
                     color: colors.foreground,
                     fontSize: 13,
                   ),
@@ -544,7 +544,7 @@ class _AppLogsScreenState extends State<AppLogsScreen> {
                           const SizedBox(width: 4),
                           Text(
                             entry.levelLabel,
-                            style: GoogleFonts.jetBrainsMono(
+                            style: TextStyle(fontFamily: kMonospaceFontFamily, fontFamilyFallback: kMonospaceFontFallback, 
                               color: levelColor,
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
@@ -556,7 +556,7 @@ class _AppLogsScreenState extends State<AppLogsScreen> {
                     const Spacer(),
                     Text(
                       entry.formattedTimestamp,
-                      style: GoogleFonts.jetBrainsMono(
+                      style: TextStyle(fontFamily: kMonospaceFontFamily, fontFamilyFallback: kMonospaceFontFallback, 
                         color: colors.mutedForeground.withValues(alpha: 0.6),
                         fontSize: 10,
                       ),
@@ -567,7 +567,7 @@ class _AppLogsScreenState extends State<AppLogsScreen> {
                 // Message
                 Text(
                   entry.message,
-                  style: GoogleFonts.jetBrainsMono(
+                  style: TextStyle(fontFamily: kMonospaceFontFamily, fontFamilyFallback: kMonospaceFontFallback, 
                     color: colors.foreground,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -591,7 +591,7 @@ class _AppLogsScreenState extends State<AppLogsScreen> {
                     ),
                     child: Text(
                       entry.error!,
-                      style: GoogleFonts.jetBrainsMono(
+                      style: TextStyle(fontFamily: kMonospaceFontFamily, fontFamilyFallback: kMonospaceFontFallback, 
                         color: colors.mutedForeground,
                         fontSize: 11,
                         height: 1.4,
@@ -656,7 +656,7 @@ class _AppLogsScreenState extends State<AppLogsScreen> {
             Expanded(
               child: Text(
                 entry.formattedTimestamp,
-                style: GoogleFonts.jetBrainsMono(
+                style: TextStyle(fontFamily: kMonospaceFontFamily, fontFamilyFallback: kMonospaceFontFallback, 
                   color: colors.mutedForeground,
                   fontSize: 12,
                 ),
@@ -764,7 +764,7 @@ class _AppLogsScreenState extends State<AppLogsScreen> {
           ),
           child: SelectableText(
             content,
-            style: GoogleFonts.jetBrainsMono(
+            style: TextStyle(fontFamily: kMonospaceFontFamily, fontFamilyFallback: kMonospaceFontFallback, 
               color: isStackTrace
                   ? colors.mutedForeground.withValues(alpha: 0.8)
                   : colors.foreground,

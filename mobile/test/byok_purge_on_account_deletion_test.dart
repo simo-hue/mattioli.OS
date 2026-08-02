@@ -24,7 +24,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mattioli_os/core/data_mode.dart';
@@ -128,7 +127,6 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() async {
-    GoogleFonts.config.allowRuntimeFetching = false;
     // Supabase.initialize builds a SharedPreferences-backed gotrue store, so the
     // prefs mock must exist before it runs.
     SharedPreferences.setMockInitialValues(<String, Object>{});

@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/haptics.dart';
 import '../../core/theme.dart';
@@ -43,7 +42,7 @@ class EvolveSegmentedControl<T extends Object> extends ConsumerWidget {
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: 13,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
               color: selected ? colors.foreground : colors.mutedForeground,

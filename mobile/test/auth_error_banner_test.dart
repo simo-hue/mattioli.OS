@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mattioli_os/core/theme.dart';
 import 'package:mattioli_os/i18n/translations.g.dart';
@@ -91,7 +90,6 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
-    GoogleFonts.config.allowRuntimeFetching = false;
     LocaleSettings.setLocaleSync(AppLocale.en);
   });
 

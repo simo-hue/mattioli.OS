@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/theme.dart';
 
@@ -25,7 +24,7 @@ class EvolveSectionHeader extends StatelessWidget {
     final colors = context.appColors;
     final text = Text(
       title,
-      style: GoogleFonts.inter(
+      style: TextStyle(fontFamily: 'Inter', 
         fontSize: 13,
         fontWeight: FontWeight.w500,
         color: colors.mutedForeground,

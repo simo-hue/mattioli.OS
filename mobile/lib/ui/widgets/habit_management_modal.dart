@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:evolve_targets/evolve_targets.dart';
 import 'package:evolve_verification/evolve_verification.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../core/theme.dart';
@@ -1549,7 +1548,7 @@ class _ScreenTimeAuthBadge extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: 12.5,
                     fontWeight: FontWeight.w500,
                     height: 1.3,
@@ -1572,7 +1571,7 @@ class _ScreenTimeAuthBadge extends StatelessWidget {
                     ),
                     child: Text(
                       tr.openSettings,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: 11.5,
                         fontWeight: FontWeight.w600,
                         color: colors.foreground,

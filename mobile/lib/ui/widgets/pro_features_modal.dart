@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import '../../core/theme.dart';
 import '../../core/haptics.dart';
@@ -110,7 +109,7 @@ class _ProFeaturesModalState extends ConsumerState<ProFeaturesModal> {
           
           Text(
             context.t.common.unlockEvolvePro,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               color: context.appColors.foreground,
               fontSize: 24,
               fontWeight: FontWeight.w800,
@@ -121,7 +120,7 @@ class _ProFeaturesModalState extends ConsumerState<ProFeaturesModal> {
           Text(
             context.t.subscription.takeYourHabitSystemToThe,
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               color: context.appColors.mutedForeground,
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -218,7 +217,7 @@ class _ProFeaturesModalState extends ConsumerState<ProFeaturesModal> {
             onPressed: () => Navigator.pop(context),
             child: Text(
               context.t.subscription.maybeLater,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 color: context.appColors.mutedForeground,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -256,7 +255,7 @@ class _ProFeaturesModalState extends ConsumerState<ProFeaturesModal> {
             children: [
               Text(
                 title,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   color: context.appColors.foreground,
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
@@ -265,7 +264,7 @@ class _ProFeaturesModalState extends ConsumerState<ProFeaturesModal> {
               const SizedBox(height: 2),
               Text(
                 description,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   color: context.appColors.mutedForeground,
                   fontSize: 12,
                   height: 1.4,

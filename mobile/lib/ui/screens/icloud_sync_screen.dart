@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/app_logger.dart';
@@ -15,6 +14,7 @@ import '../kit/evolve_dialog.dart';
 import '../kit/evolve_switch.dart';
 import '../kit/evolve_sheet.dart';
 import '../kit/evolve_route.dart';
+import '../../core/fonts.dart';
 
 /// iCloud Sync settings for Private Mode (iOS-only). Surfaces the
 /// [PrivateSyncService] state and lets the user enable/disable end-to-end
@@ -225,7 +225,7 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
               Expanded(
                 child: Text(
                   context.t.icloudSync.keySplitTitle,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     color: context.appColors.foreground,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -237,7 +237,7 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
           const SizedBox(height: 8),
           Text(
             context.t.icloudSync.keySplitBody(count: count),
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               color: context.appColors.mutedForeground,
               fontSize: 13,
               height: 1.4,
@@ -310,12 +310,13 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
               scrollDirection: Axis.horizontal,
               child: SelectableText(
                 report,
-                // Platform monospace rather than a google_fonts family: the
-                // report's column alignment needs fixed width, and this screen
-                // must render offline (GoogleFonts fetches at runtime).
+                // The report's column alignment needs fixed width. This screen
+                // reached for the device monospace directly, before the app
+                // stopped fetching fonts at all; it now shares the one stack in
+                // core/fonts.dart.
                 style: TextStyle(
-                  fontFamily: 'Menlo',
-                  fontFamilyFallback: const ['Courier New', 'monospace'],
+                  fontFamily: kMonospaceFontFamily,
+                  fontFamilyFallback: kMonospaceFontFallback,
                   color: context.appColors.foreground,
                   fontSize: 11,
                   height: 1.5,
@@ -470,7 +471,7 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     color: isDisabled
                         ? context.appColors.mutedForeground
                         : context.appColors.foreground,
@@ -482,7 +483,7 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       color: context.appColors.mutedForeground.withValues(
                         alpha: 0.6,
                       ),
@@ -533,7 +534,7 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       color: enabled
                           ? context.appColors.foreground
                           : context.appColors.mutedForeground,
@@ -545,7 +546,7 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         color: context.appColors.mutedForeground.withValues(
                           alpha: 0.6,
                         ),
@@ -591,7 +592,7 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
               children: [
                 Text(
                   context.t.icloudSync.disclosureTitle,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     color: context.appColors.foreground,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -600,7 +601,7 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
                 const SizedBox(height: 4),
                 Text(
                   context.t.icloudSync.disclosureBody,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     color: context.appColors.mutedForeground.withValues(
                       alpha: 0.8,
                     ),

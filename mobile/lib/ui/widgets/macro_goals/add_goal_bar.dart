@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme.dart';
@@ -163,7 +162,7 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
               ),
               child: TextField(
                 controller: _controller,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: 13,
                   color: context.appColors.foreground,
                 ),
@@ -176,7 +175,7 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
                   hintText: isLimitReached
                       ? context.t.macroGoals.limitOf100GoalsReached
                       : _placeholder,
-                  hintStyle: GoogleFonts.inter(
+                  hintStyle: TextStyle(fontFamily: 'Inter', 
                     fontSize: 13,
                     color: isLimitReached
                         ? const Color(0xFFEAB308)

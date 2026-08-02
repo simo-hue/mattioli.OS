@@ -1,6 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -144,7 +144,7 @@ class SubscriptionAlertModal extends ConsumerWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: 20,
               fontWeight: FontWeight.w900,
               color: colors.foreground,
@@ -157,7 +157,7 @@ class SubscriptionAlertModal extends ConsumerWidget {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: 14,
               color: colors.mutedForeground,
               height: 1.5,
@@ -181,7 +181,7 @@ class SubscriptionAlertModal extends ConsumerWidget {
                 child: SingleChildScrollView(
                   child: Text(
                     details!,
-                    style: GoogleFonts.firaCode(
+                    style: TextStyle(fontFamily: kMonospaceFontFamily, fontFamilyFallback: kMonospaceFontFallback, 
                       color: colors.foreground.withValues(alpha: 0.8),
                       fontSize: 11,
                       height: 1.4,

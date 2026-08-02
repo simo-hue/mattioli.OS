@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/theme.dart';
 
@@ -163,7 +162,7 @@ class _EvolveToastState extends State<_EvolveToast>
                     Flexible(
                       child: Text(
                         widget.message,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                           color: colors.foreground,

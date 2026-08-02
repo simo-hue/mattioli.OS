@@ -1,6 +1,5 @@
 import 'package:evolve_targets/evolve_targets.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme.dart';
 import '../../../i18n/translations.g.dart';
@@ -123,7 +122,7 @@ class _MacroTargetFieldState extends State<MacroTargetField> {
       children: [
         Text(
           t.macroTargets.sectionTitle,
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: 13,
             fontWeight: FontWeight.w600,
             color: colors.mutedForeground,
@@ -153,7 +152,7 @@ class _MacroTargetFieldState extends State<MacroTargetField> {
             children: [
               Text(
                 t.macroTargets.amountLabel,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: 14,
                   color: colors.mutedForeground,
                 ),
@@ -168,7 +167,7 @@ class _MacroTargetFieldState extends State<MacroTargetField> {
                   ),
                   textAlign: TextAlign.right,
                   onChanged: _onAmountChanged,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: colors.foreground,
@@ -194,7 +193,7 @@ class _MacroTargetFieldState extends State<MacroTargetField> {
                 const SizedBox(width: 8),
                 Text(
                   unitShort,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: colors.foreground,
@@ -206,7 +205,7 @@ class _MacroTargetFieldState extends State<MacroTargetField> {
           const SizedBox(height: 16),
           Text(
             t.macroTargets.linkLabel,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: colors.mutedForeground,
@@ -271,7 +270,7 @@ class _Chip extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: selected ? colors.background : colors.foreground,

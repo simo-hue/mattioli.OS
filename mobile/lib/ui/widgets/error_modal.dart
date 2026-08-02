@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/fonts.dart';
 import '../../core/theme.dart';
 import '../../core/haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -112,7 +112,7 @@ class ErrorModal extends ConsumerWidget {
                     Text(
                       title,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         color: colors.foreground,
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
@@ -123,7 +123,7 @@ class ErrorModal extends ConsumerWidget {
                     Text(
                       message,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         color: colors.mutedForeground,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -151,7 +151,7 @@ class ErrorModal extends ConsumerWidget {
                           children: [
                             Text(
                               context.t.common.technicalDetails,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 color: colors.mutedForeground,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -160,7 +160,7 @@ class ErrorModal extends ConsumerWidget {
                             const SizedBox(height: 8),
                             SelectableText(
                               details!,
-                              style: GoogleFonts.firaCode(
+                              style: TextStyle(fontFamily: kMonospaceFontFamily, fontFamilyFallback: kMonospaceFontFallback, 
                                 color: colors.foreground.withValues(alpha: 0.8),
                                 fontSize: 11,
                                 height: 1.4,

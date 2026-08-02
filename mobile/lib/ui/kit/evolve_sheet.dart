@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/haptics.dart';
 import '../../core/theme.dart';
@@ -50,7 +49,7 @@ class EvolveSheetTitle extends StatelessWidget {
       child: Text(
         title,
         textAlign: TextAlign.center,
-        style: GoogleFonts.inter(
+        style: TextStyle(fontFamily: 'Inter', 
           fontSize: 17,
           fontWeight: FontWeight.w600,
           color: context.appColors.foreground,
@@ -87,7 +86,7 @@ class EvolveSheetNavHeader extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
                 color: context.appColors.foreground,
@@ -125,7 +124,7 @@ class EvolveTextAction extends StatelessWidget {
       onPressed: onPressed,
       child: Text(
         label,
-        style: GoogleFonts.inter(
+        style: TextStyle(fontFamily: 'Inter', 
           fontSize: 16,
           fontWeight: emphasized ? FontWeight.w600 : FontWeight.w400,
           color: emphasized
@@ -380,7 +379,7 @@ class EvolveListRow extends ConsumerWidget {
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: 17,
                         fontWeight:
                             selected ? FontWeight.w600 : FontWeight.w400,
@@ -393,7 +392,7 @@ class EvolveListRow extends ConsumerWidget {
                         subtitle!,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: 13,
                           color: colors.mutedForeground,
                         ),

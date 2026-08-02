@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
@@ -287,7 +286,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
           Expanded(
             child: Text(
               title,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 color: context.appColors.mutedForeground,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
@@ -306,7 +305,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
               ),
               child: Text(
                 time,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   color: Theme.of(context).colorScheme.primary,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -362,7 +361,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                     Flexible(
                       child: Text(
                         title,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           color: isDisabled
                               ? context.appColors.mutedForeground
                               : context.appColors.foreground,
@@ -386,9 +385,9 @@ class NotificationSettingsScreen extends ConsumerWidget {
                             color: Colors.amber.withValues(alpha: 0.4),
                           ),
                         ),
-                        child: Text(
+                        child: const Text(
                           'PRO',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             color: Colors.amber,
                             fontSize: 9,
                             fontWeight: FontWeight.w900,
@@ -402,7 +401,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       color: AppColors.mutedForeground.withValues(alpha: 0.6),
                       fontSize: 12,
                     ),
@@ -448,7 +447,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
           data: CupertinoThemeData(
             brightness: Theme.of(context).brightness,
             textTheme: CupertinoTextThemeData(
-              dateTimePickerTextStyle: GoogleFonts.inter(
+              dateTimePickerTextStyle: TextStyle(fontFamily: 'Inter', 
                 color: context.appColors.foreground,
                 fontSize: 20,
               ),

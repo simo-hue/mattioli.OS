@@ -2,7 +2,6 @@ import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -69,7 +68,7 @@ class ScreenTimeForm extends ConsumerWidget {
         children: [
           Text(
             t.worksWith,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: 13,
               height: 1.45,
               color: colors.mutedForeground,
@@ -101,7 +100,7 @@ class ScreenTimeForm extends ConsumerWidget {
                   children: [
                     Text(
                       t.permissionNote,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: 12.5,
                         height: 1.45,
                         color: colors.mutedForeground,
@@ -116,7 +115,7 @@ class ScreenTimeForm extends ConsumerWidget {
           const SizedBox(height: 12),
           Text(
             t.manageHint,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: 12,
               height: 1.45,
               color: colors.mutedForeground,
@@ -170,7 +169,7 @@ class _Notice extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: 12.5,
                 height: 1.4,
                 color: colors.mutedForeground,

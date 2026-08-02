@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/haptics.dart';
@@ -127,7 +126,7 @@ class _DataModeChoiceScreenState extends ConsumerState<DataModeChoiceScreen> {
                         Text(
                           context.t.auth.chooserTitle,
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             color: colors.foreground,
                             fontSize: isCompact ? 24 : 28,
                             fontWeight: FontWeight.w800,
@@ -138,7 +137,7 @@ class _DataModeChoiceScreenState extends ConsumerState<DataModeChoiceScreen> {
                         Text(
                           context.t.auth.chooserSubtitle,
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             color: colors.mutedForeground,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -179,7 +178,7 @@ class _DataModeChoiceScreenState extends ConsumerState<DataModeChoiceScreen> {
                           child: Text(
                             context.t.auth.chooserFootnote,
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               color: colors.mutedForeground,
                               fontSize: 12,
                               height: 1.4,
@@ -274,7 +273,7 @@ class _ModeCard extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           color: colors.foreground,
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -283,7 +282,7 @@ class _ModeCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         subtitle,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           color: colors.mutedForeground,
                           fontSize: 13,
                           height: 1.3,

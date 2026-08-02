@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:evolve_legal/evolve_legal.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../core/app_logger.dart';
@@ -205,7 +204,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                             Text(
                               context.t.consent.onboardingTitle,
                               textAlign: TextAlign.center,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 color: context.appColors.foreground,
                                 fontSize: 24,
                                 fontWeight: FontWeight.w800,
@@ -216,7 +215,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                             Text(
                               context.t.consent.onboardingSubtitle,
                               textAlign: TextAlign.center,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 color: context.appColors.mutedForeground,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
@@ -463,7 +462,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
         children: [
           Text(
             context.t.consent.uploadTitle,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               color: context.appColors.mutedForeground,
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -533,7 +532,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                   TextSpan(text: body),
                 ],
               ),
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 color: context.appColors.mutedForeground,
                 fontSize: 12.5,
                 fontWeight: FontWeight.w500,
@@ -596,7 +595,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                     children: [
                       Text(
                         title,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           color: context.appColors.foreground,
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -605,7 +604,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                       const SizedBox(height: 4),
                       Text(
                         description,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           color: context.appColors.mutedForeground,
                           fontSize: 12,
                           fontWeight: FontWeight.w500,

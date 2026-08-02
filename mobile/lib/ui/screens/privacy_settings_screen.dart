@@ -22,7 +22,6 @@ import '../../providers/macro_goals_stats_provider.dart';
 import '../../providers/mood_provider.dart';
 import '../../providers/user_provider.dart';
 import '../../providers/sync_refresh.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:local_auth/local_auth.dart';
@@ -306,7 +305,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       color: titleColor ?? context.appColors.foreground,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -316,7 +315,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         color: context.appColors.mutedForeground.withValues(
                           alpha: 0.6,
                         ),
@@ -382,7 +381,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                     Flexible(
                       child: Text(
                         title,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           color: isDisabled
                               ? context.appColors.mutedForeground
                               : context.appColors.foreground,
@@ -406,9 +405,9 @@ class PrivacySettingsScreen extends ConsumerWidget {
                             color: Colors.amber.withValues(alpha: 0.4),
                           ),
                         ),
-                        child: Text(
+                        child: const Text(
                           'PRO',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             color: Colors.amber,
                             fontSize: 9,
                             fontWeight: FontWeight.w900,
@@ -422,7 +421,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       color: AppColors.mutedForeground.withValues(alpha: 0.6),
                       fontSize: 12,
                     ),
@@ -552,7 +551,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                     isVerified
                         ? context.t.privacy.enterNewPassword
                         : context.t.privacy.enterCurrentPassword,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: 13,
                       color: context.appColors.mutedForeground,
                     ),
@@ -581,7 +580,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                     const SizedBox(height: 12),
                     Text(
                       errorMessage!,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: 12,
                         color: context.appColors.destructive,
                         fontWeight: FontWeight.w500,
@@ -912,7 +911,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 backgroundColor: context.appColors.background,
                 title: Text(
                   context.t.privacy.importPreviewTitle,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     color: context.appColors.foreground,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1106,7 +1105,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 importResult.replaced
                     ? context.t.privacy.importSummaryReplaced
                     : context.t.privacy.importSummaryMerged,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: 13,
                   color: context.appColors.mutedForeground,
                 ),

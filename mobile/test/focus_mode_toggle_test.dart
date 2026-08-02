@@ -21,7 +21,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:mattioli_os/core/private_local_database.dart';
 import 'package:mattioli_os/core/theme.dart';
 import 'package:mattioli_os/i18n/translations.g.dart';
@@ -160,7 +159,6 @@ void main() {
   late _RecordingNotificationsPlatform notifications;
 
   setUp(() {
-    GoogleFonts.config.allowRuntimeFetching = false;
     LocaleSettings.setLocaleSync(AppLocale.en);
     // Turning Focus Mode OFF re-schedules the briefs, and `_nextInstanceOfTime`
     // reads `tz.local` — unset, it throws and the failure path logs, which in a

@@ -1,7 +1,6 @@
 import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/haptics.dart';
@@ -80,7 +79,7 @@ class AppleHealthForm extends ConsumerWidget {
         children: [
           Text(
             t.worksWith(app: app),
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: 13,
               height: 1.45,
               color: colors.mutedForeground,
@@ -110,7 +109,7 @@ class AppleHealthForm extends ConsumerWidget {
           const SizedBox(height: 20),
           Text(
             t.readsTitle,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: 13,
               fontWeight: FontWeight.w700,
               color: colors.foreground,
@@ -119,7 +118,7 @@ class AppleHealthForm extends ConsumerWidget {
           const SizedBox(height: 6),
           Text(
             t.readsBody,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: 13,
               height: 1.45,
               color: colors.mutedForeground,
@@ -136,7 +135,7 @@ class AppleHealthForm extends ConsumerWidget {
                   Expanded(
                     child: Text(
                       _templateLabel(context, template),
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: 13,
                         color: colors.foreground,
                       ),
@@ -164,7 +163,7 @@ class AppleHealthForm extends ConsumerWidget {
             const SizedBox(height: 12),
             Text(
               t.grantNote(app: app),
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: 12,
                 height: 1.45,
                 color: colors.mutedForeground,
@@ -174,7 +173,7 @@ class AppleHealthForm extends ConsumerWidget {
           const SizedBox(height: 12),
           Text(
             t.manageHint(app: app),
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: 12,
               height: 1.45,
               color: colors.mutedForeground,
@@ -226,7 +225,7 @@ class _Notice extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: 12.5,
                 height: 1.4,
                 color: colors.mutedForeground,

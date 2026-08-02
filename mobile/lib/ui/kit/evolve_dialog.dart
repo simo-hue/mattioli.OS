@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/haptics.dart';
 import '../../i18n/translations.g.dart';
@@ -37,13 +36,13 @@ Future<bool> showEvolveConfirm({
       child: CupertinoAlertDialog(
         title: Text(
           title,
-          style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w600),
+          style: const TextStyle(fontFamily: 'Inter', fontSize: 17, fontWeight: FontWeight.w600),
         ),
         content: message == null
             ? null
             : Padding(
                 padding: const EdgeInsets.only(top: 6),
-                child: Text(message, style: GoogleFonts.inter(fontSize: 13)),
+                child: Text(message, style: const TextStyle(fontFamily: 'Inter', fontSize: 13)),
               ),
         actions: [
           CupertinoDialogAction(
@@ -86,14 +85,14 @@ Future<void> showEvolveAlert({
       child: CupertinoAlertDialog(
         title: Text(
           title,
-          style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w600),
+          style: const TextStyle(fontFamily: 'Inter', fontSize: 17, fontWeight: FontWeight.w600),
         ),
         content: content ??
             (message == null
                 ? null
                 : Padding(
                     padding: const EdgeInsets.only(top: 6),
-                    child: Text(message, style: GoogleFonts.inter(fontSize: 13)),
+                    child: Text(message, style: const TextStyle(fontFamily: 'Inter', fontSize: 13)),
                   )),
         actions: [
           CupertinoDialogAction(

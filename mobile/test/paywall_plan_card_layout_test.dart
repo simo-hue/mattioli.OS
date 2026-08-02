@@ -17,7 +17,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:mattioli_os/core/data_mode.dart';
 import 'package:mattioli_os/core/theme.dart';
 import 'package:mattioli_os/i18n/translations.g.dart';
@@ -93,7 +92,7 @@ Future<void> _pumpPaywall(WidgetTester tester) async {
   await tester.pump();
 
   // Everything on this page renders in flutter_test's fallback font, which is
-  // far wider than the Inter that google_fonts cannot fetch under test. That
+  // far wider than Inter — widget tests do not load the bundled faces. That
   // overflows unrelated rows further down the page (the compliance links).
   // Draining is safe for what is under test here: a price that overflowed its
   // own row would push its right edge past the row's, which is asserted below.
@@ -108,7 +107,6 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
-    GoogleFonts.config.allowRuntimeFetching = false;
     LocaleSettings.setLocaleSync(AppLocale.en);
     FlutterLocalNotificationsPlatform.instance = _NoopNotificationsPlatform();
     // RevenueCat has no platform implementation under flutter_test, and its

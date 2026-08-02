@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
   // --- DARK MODE (Original) ---
@@ -165,7 +164,10 @@ class AppTheme {
 
   static ThemeData lightTheme(Color? accentColor) {
     final Color primaryColor = accentColor ?? AppColors.lightPrimary;
-    final baseTextTheme = GoogleFonts.interTextTheme(ThemeData.light().textTheme);
+    // Inter is bundled (see pubspec `fonts:`), so this is a plain family
+    // application — no package, no download. See core/fonts.dart.
+    final baseTextTheme =
+        ThemeData.light().textTheme.apply(fontFamily: 'Inter');
 
     return ThemeData(
       brightness: Brightness.light,
@@ -213,22 +215,25 @@ class AppTheme {
       ),
       dividerColor: AppColors.lightBorder,
       textTheme: baseTextTheme.copyWith(
-        displayLarge: GoogleFonts.inter(color: AppColors.lightForeground, fontWeight: FontWeight.w700, letterSpacing: -1.0),
-        headlineLarge: GoogleFonts.inter(color: AppColors.lightForeground, fontWeight: FontWeight.w700, fontSize: 28, letterSpacing: -0.5),
-        headlineMedium: GoogleFonts.inter(color: AppColors.lightForeground, fontWeight: FontWeight.w600, fontSize: 22, letterSpacing: -0.3),
-        titleLarge: GoogleFonts.inter(color: AppColors.lightForeground, fontWeight: FontWeight.w600, fontSize: 18, letterSpacing: -0.2),
-        titleMedium: GoogleFonts.inter(color: AppColors.lightForeground, fontWeight: FontWeight.w500, fontSize: 14),
-        bodyLarge: GoogleFonts.inter(color: AppColors.lightForeground, fontSize: 15),
-        bodyMedium: GoogleFonts.inter(color: AppColors.lightMutedForeground, fontSize: 13),
-        bodySmall: GoogleFonts.inter(color: AppColors.lightMutedForeground, fontSize: 11),
-        labelSmall: GoogleFonts.inter(color: AppColors.lightMutedForeground, fontSize: 10, letterSpacing: 0.5, fontWeight: FontWeight.w500),
+        displayLarge: const TextStyle(fontFamily: 'Inter', color: AppColors.lightForeground, fontWeight: FontWeight.w700, letterSpacing: -1.0),
+        headlineLarge: const TextStyle(fontFamily: 'Inter', color: AppColors.lightForeground, fontWeight: FontWeight.w700, fontSize: 28, letterSpacing: -0.5),
+        headlineMedium: const TextStyle(fontFamily: 'Inter', color: AppColors.lightForeground, fontWeight: FontWeight.w600, fontSize: 22, letterSpacing: -0.3),
+        titleLarge: const TextStyle(fontFamily: 'Inter', color: AppColors.lightForeground, fontWeight: FontWeight.w600, fontSize: 18, letterSpacing: -0.2),
+        titleMedium: const TextStyle(fontFamily: 'Inter', color: AppColors.lightForeground, fontWeight: FontWeight.w500, fontSize: 14),
+        bodyLarge: const TextStyle(fontFamily: 'Inter', color: AppColors.lightForeground, fontSize: 15),
+        bodyMedium: const TextStyle(fontFamily: 'Inter', color: AppColors.lightMutedForeground, fontSize: 13),
+        bodySmall: const TextStyle(fontFamily: 'Inter', color: AppColors.lightMutedForeground, fontSize: 11),
+        labelSmall: const TextStyle(fontFamily: 'Inter', color: AppColors.lightMutedForeground, fontSize: 10, letterSpacing: 0.5, fontWeight: FontWeight.w500),
       ),
     );
   }
 
   static ThemeData darkTheme(Color? accentColor) {
     final Color primaryColor = accentColor ?? AppColors.primary;
-    final baseTextTheme = GoogleFonts.interTextTheme(ThemeData.dark().textTheme);
+    // Inter is bundled (see pubspec `fonts:`), so this is a plain family
+    // application — no package, no download. See core/fonts.dart.
+    final baseTextTheme =
+        ThemeData.dark().textTheme.apply(fontFamily: 'Inter');
 
     return ThemeData(
       brightness: Brightness.dark,
@@ -276,15 +281,15 @@ class AppTheme {
       ),
       dividerColor: AppColors.border,
       textTheme: baseTextTheme.copyWith(
-        displayLarge: GoogleFonts.inter(color: AppColors.foreground, fontWeight: FontWeight.w700, letterSpacing: -1.0),
-        headlineLarge: GoogleFonts.inter(color: AppColors.foreground, fontWeight: FontWeight.w700, fontSize: 28, letterSpacing: -0.5),
-        headlineMedium: GoogleFonts.inter(color: AppColors.foreground, fontWeight: FontWeight.w600, fontSize: 22, letterSpacing: -0.3),
-        titleLarge: GoogleFonts.inter(color: AppColors.foreground, fontWeight: FontWeight.w600, fontSize: 18, letterSpacing: -0.2),
-        titleMedium: GoogleFonts.inter(color: AppColors.foreground, fontWeight: FontWeight.w500, fontSize: 14),
-        bodyLarge: GoogleFonts.inter(color: AppColors.foreground, fontSize: 15),
-        bodyMedium: GoogleFonts.inter(color: AppColors.mutedForeground, fontSize: 13),
-        bodySmall: GoogleFonts.inter(color: AppColors.mutedForeground, fontSize: 11),
-        labelSmall: GoogleFonts.inter(color: AppColors.mutedForeground, fontSize: 10, letterSpacing: 0.5, fontWeight: FontWeight.w500),
+        displayLarge: const TextStyle(fontFamily: 'Inter', color: AppColors.foreground, fontWeight: FontWeight.w700, letterSpacing: -1.0),
+        headlineLarge: const TextStyle(fontFamily: 'Inter', color: AppColors.foreground, fontWeight: FontWeight.w700, fontSize: 28, letterSpacing: -0.5),
+        headlineMedium: const TextStyle(fontFamily: 'Inter', color: AppColors.foreground, fontWeight: FontWeight.w600, fontSize: 22, letterSpacing: -0.3),
+        titleLarge: const TextStyle(fontFamily: 'Inter', color: AppColors.foreground, fontWeight: FontWeight.w600, fontSize: 18, letterSpacing: -0.2),
+        titleMedium: const TextStyle(fontFamily: 'Inter', color: AppColors.foreground, fontWeight: FontWeight.w500, fontSize: 14),
+        bodyLarge: const TextStyle(fontFamily: 'Inter', color: AppColors.foreground, fontSize: 15),
+        bodyMedium: const TextStyle(fontFamily: 'Inter', color: AppColors.mutedForeground, fontSize: 13),
+        bodySmall: const TextStyle(fontFamily: 'Inter', color: AppColors.mutedForeground, fontSize: 11),
+        labelSmall: const TextStyle(fontFamily: 'Inter', color: AppColors.mutedForeground, fontSize: 10, letterSpacing: 0.5, fontWeight: FontWeight.w500),
       ),
     );
   }

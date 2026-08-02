@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../../core/calendar_days.dart';
 import '../../core/theme.dart';
 import '../../providers/goal_provider.dart';
 import '../../models/goal.dart';
@@ -27,14 +28,17 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
     _currentWeekStart = _getStartOfWeek(DateTime.now());
   }
 
-  DateTime _getStartOfWeek(DateTime date) {
-    return date.subtract(Duration(days: date.weekday - 1));
-  }
+  DateTime _getStartOfWeek(DateTime date) => startOfWeek(date);
 
+  // Calendar weeks, not 168-hour blocks. These steps ACCUMULATE across every
+  // press, so a `Duration` here drifts an hour at each DST crossing and stays
+  // drifted — see [shiftDays]. Normalising to midnight also fixes the
+  // `isAfter(DateTime.now())` future-day check below, which used to compare
+  // against the wall-clock time this state was first built at.
   void _goToPrev() {
     setState(() {
       _slideDirection = -1;
-      _currentWeekStart = _currentWeekStart.subtract(const Duration(days: 7));
+      _currentWeekStart = shiftDays(_currentWeekStart, -7);
     });
     ref.hapticAction();
   }
@@ -42,13 +46,13 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
   void _goToNext() {
     setState(() {
       _slideDirection = 1;
-      _currentWeekStart = _currentWeekStart.add(const Duration(days: 7));
+      _currentWeekStart = shiftDays(_currentWeekStart, 7);
     });
     ref.hapticAction();
   }
 
   String _formatDateRange(BuildContext context) {
-    final end = _currentWeekStart.add(const Duration(days: 6));
+    final end = shiftDays(_currentWeekStart, 6);
     final fullMonthFormatter = DateFormat.MMMM(LocaleSettings.currentLocale.languageCode);
     final shortMonthFormatter = DateFormat.MMM(LocaleSettings.currentLocale.languageCode);
     if (_currentWeekStart.month == end.month) {
@@ -64,7 +68,7 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
     final List<double> completion = List.filled(7, 0.0);
     
     for (int i = 0; i < 7; i++) {
-      final dayDate = _currentWeekStart.add(Duration(days: i));
+      final dayDate = shiftDays(_currentWeekStart, i);
       if (dayDate.isAfter(DateTime.now())) {
         completion[i] = -1.0; 
         continue;
@@ -137,10 +141,10 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
       );
     } else if (pastDaysCount > 0) {
       final bestDayName = DateFormat.E(LocaleSettings.currentLocale.languageCode)
-          .format(_currentWeekStart.add(Duration(days: bestIndex)))
+          .format(shiftDays(_currentWeekStart, bestIndex))
           .toLowerCase();
       final worstDayName = DateFormat.E(LocaleSettings.currentLocale.languageCode)
-          .format(_currentWeekStart.add(Duration(days: worstIndex)))
+          .format(shiftDays(_currentWeekStart, worstIndex))
           .toLowerCase();
       final avgPercent = (totalPercent / pastDaysCount).round();
       
@@ -273,7 +277,7 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
                       titlePositionPercentageOffset: 0.15,
                       titleTextStyle: TextStyle(color: context.appColors.mutedForeground, fontSize: 12),
                       getTitle: (index, angle) {
-                        final dayDate = _currentWeekStart.add(Duration(days: index));
+                        final dayDate = shiftDays(_currentWeekStart, index);
                         return RadarChartTitle(
                           text: DateFormat.E(LocaleSettings.currentLocale.languageCode).format(dayDate).toUpperCase(),
                           angle: 0,
@@ -291,7 +295,7 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
                           }
                           if (event is FlTapUpEvent) {
                             final index = response.touchedSpot!.touchedRadarEntryIndex;
-                            final dayDate = _currentWeekStart.add(Duration(days: index));
+                            final dayDate = shiftDays(_currentWeekStart, index);
                             if (!dayDate.isAfter(DateTime.now())) {
                               showModalBottomSheet(
                                 context: context,

@@ -11,6 +11,7 @@ import '../../core/haptics.dart';
 import '../../core/l10n_dynamic.dart';
 import '../../core/rtl.dart';
 import '../../i18n/translations.g.dart';
+import '../../core/calendar_days.dart';
 
 // Keys for localization
 const _kDayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -61,7 +62,7 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
     final date = DateTime(year, month, day);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
+    final yesterday = shiftDays(today, -1);
     return date == today || date == yesterday;
   }
 

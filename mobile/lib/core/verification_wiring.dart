@@ -10,6 +10,7 @@ import 'app_logger.dart';
 import 'notifications.dart';
 import 'verification_config.dart';
 import 'verification_providers.dart';
+import 'calendar_days.dart';
 
 /// Application glue for auto-verified habits: the pure input builders, the
 /// `VerificationLogWriter` adapter over the habit-log store, and the
@@ -151,7 +152,7 @@ final couldNotVerifyDaysProvider =
   if (goals.isEmpty) return const {};
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
-  final yesterday = today.subtract(const Duration(days: 1));
+  final yesterday = shiftDays(today, -1);
   try {
     final store = await ref.watch(verificationStateStoreProvider.future);
     final out = <String, Set<DateTime>>{};

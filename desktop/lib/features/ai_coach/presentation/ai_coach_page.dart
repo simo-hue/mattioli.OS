@@ -40,6 +40,7 @@ import '../domain/local_server_target.dart';
 import 'coach_model_chip.dart';
 import 'coach_settings_panels.dart';
 import 'start_local_server_button.dart';
+import 'package:evolve_desktop/core/calendar_days.dart';
 
 class AiCoachPage extends ConsumerStatefulWidget {
   const AiCoachPage({super.key});
@@ -456,11 +457,11 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
         .where((g) => g.state == GoalState.active)
         .toList();
     final habits = snapshot.habits;
-    final monday = DateTime(
+    final monday = shiftDays(DateTime(
       now.year,
       now.month,
       now.day,
-    ).subtract(Duration(days: now.weekday - 1));
+    ), -(now.weekday - 1));
 
     // Single pass: the weakest scheduled habit (lowest completion so far this
     // week, with at least one miss) and the longest current streak.
@@ -472,7 +473,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
       var done = 0;
       var scheduled = 0;
       for (var i = 0; i < now.weekday; i++) {
-        final day = monday.add(Duration(days: i));
+        final day = shiftDays(monday, i);
         if (!h.isScheduledOn(day)) continue;
         scheduled++;
         if (snapshot.habitStatusFor(h.id, day) == 'done') done++;

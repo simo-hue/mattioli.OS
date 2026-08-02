@@ -29,6 +29,7 @@ import '../../core/haptics.dart';
 import 'app_settings_screen.dart';
 import '../widgets/pro_features_modal.dart';
 import '../kit/evolve_route.dart';
+import '../../core/calendar_days.dart';
 
 class AIChatScreen extends ConsumerStatefulWidget {
   const AIChatScreen({super.key});
@@ -419,11 +420,11 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
     String key(DateTime d) =>
         '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-    final monday = DateTime(
+    final monday = shiftDays(DateTime(
       now.year,
       now.month,
       now.day,
-    ).subtract(Duration(days: now.weekday - 1));
+    ), -(now.weekday - 1));
 
     // Single pass: the weakest scheduled habit (lowest completion so far this
     // week, with at least one miss) and the longest current streak.
@@ -435,7 +436,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
       var done = 0;
       var scheduled = 0;
       for (var i = 0; i < now.weekday; i++) {
-        final day = monday.add(Duration(days: i));
+        final day = shiftDays(monday, i);
         if (!h.isScheduledOn(day)) continue;
         scheduled++;
         if (logs[key(day)]?[h.id] == 'done') done++;
@@ -460,15 +461,15 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     // Full-week completion rate over all 7 days (mirrors the desktop snapshot
     // getter) so this-vs-last-week momentum is measured identically.
     double weekRate(DateTime anchor) {
-      final mon = DateTime(
+      final mon = shiftDays(DateTime(
         anchor.year,
         anchor.month,
         anchor.day,
-      ).subtract(Duration(days: anchor.weekday - 1));
+      ), -(anchor.weekday - 1));
       var d = 0;
       var tot = 0;
       for (var i = 0; i < 7; i++) {
-        final date = mon.add(Duration(days: i));
+        final date = shiftDays(mon, i);
         for (final h in habits) {
           if (!h.isScheduledOn(date)) continue;
           tot++;
@@ -480,7 +481,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
     final thisRate = weekRate(now);
     final thisPct = (thisRate * 100).round();
-    final lastPct = (weekRate(now.subtract(const Duration(days: 7))) * 100)
+    final lastPct = (weekRate(shiftDays(now, -7)) * 100)
         .round();
     final hasHistory = habits.isNotEmpty && (thisPct > 0 || lastPct > 0);
     final allGreen = habits.isNotEmpty && thisRate >= 0.999;

@@ -1906,7 +1906,7 @@ class _MoodEnergyLineChart extends StatelessWidget {
     final moodSpots = <FlSpot>[];
     final energySpots = <FlSpot>[];
     for (var i = 0; i < days; i++) {
-      final date = today.subtract(Duration(days: days - 1 - i));
+      final date = shiftDays(today, -(days - 1 - i));
       final checkIn = snapshot.moods[dashboardDateKey(date)];
       if (checkIn == null) continue;
       if (checkIn.mood != null) {
@@ -2509,7 +2509,7 @@ class _HabitMonthComparePanel extends StatelessWidget {
     final now = DateTime.now();
     final thisMonthStart = DateTime(now.year, now.month, 1);
     final lastMonthStart = DateTime(now.year, now.month - 1, 1);
-    final lastMonthEnd = thisMonthStart.subtract(const Duration(days: 1));
+    final lastMonthEnd = shiftDays(thisMonthStart, -1);
     final thisRate = _habitRangeRate(snapshot, habit, thisMonthStart, now);
     final lastRate = _habitRangeRate(
       snapshot,

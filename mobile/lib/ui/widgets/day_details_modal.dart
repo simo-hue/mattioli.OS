@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../core/calendar_days.dart';
 import '../../core/theme.dart';
 import '../../core/targets_config.dart';
 import '../../models/goal.dart';
@@ -199,9 +200,12 @@ class DayDetailsModal extends ConsumerWidget {
                             DateTime.now().month,
                             DateTime.now().day,
                           );
-                          final yesterday = today.subtract(
-                            const Duration(days: 1),
-                          );
+                          // [shiftDays], not a fixed 24h step: off a 25-hour
+                          // fall-back day `subtract` lands at 01:00 of
+                          // yesterday, and yesterday's own midnight is `isBefore`
+                          // that — so the day after the autumn transition,
+                          // yesterday silently became uneditable.
+                          final yesterday = shiftDays(today, -1);
                           final dateMidnight = DateTime(
                             date.year,
                             date.month,

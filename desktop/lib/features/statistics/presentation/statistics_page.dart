@@ -22,6 +22,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:evolve_desktop/core/calendar_days.dart';
 
 part 'statistics_extras.dart';
 
@@ -3417,7 +3418,7 @@ Iterable<DateTime> _lastDays(int count) sync* {
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
   for (var offset = count - 1; offset >= 0; offset--) {
-    yield today.subtract(Duration(days: offset));
+    yield shiftDays(today, -offset);
   }
 }
 

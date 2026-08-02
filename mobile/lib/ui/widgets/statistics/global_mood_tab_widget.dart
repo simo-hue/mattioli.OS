@@ -9,6 +9,7 @@ import '../../../models/goal.dart';
 import '../../../i18n/translations.g.dart';
 import '../../../core/rtl.dart';
 import '../../kit/evolve_segmented_control.dart';
+import '../../../core/calendar_days.dart';
 
 class MoodChartWindow {
   final DateTime startDate;
@@ -26,7 +27,7 @@ class MoodChartWindow {
   double get maxX => (dayCount - 1).toDouble();
 
   DateTime dateAt(double x) {
-    return startDate.add(Duration(days: x.toInt()));
+    return shiftDays(startDate, x.toInt());
   }
 
   static MoodChartWindow resolve({
@@ -35,7 +36,7 @@ class MoodChartWindow {
     required Iterable<String> moodDateKeys,
   }) {
     final today = DateTime(now.year, now.month, now.day);
-    final defaultStartDate = today.subtract(Duration(days: selectedDays - 1));
+    final defaultStartDate = shiftDays(today, -(selectedDays - 1));
     final moodDatesInRange =
         moodDateKeys
             .map(DateTime.tryParse)
@@ -157,7 +158,7 @@ class _GlobalMoodTabWidgetState extends ConsumerState<GlobalMoodTabWidget> {
     );
 
     for (int i = 0; i < chartWindow.dayCount; i++) {
-      final date = chartWindow.startDate.add(Duration(days: i));
+      final date = shiftDays(chartWindow.startDate, i);
       final dateKey =
           '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 

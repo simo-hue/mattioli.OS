@@ -1,4 +1,5 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
+import 'package:evolve_desktop/core/calendar_days.dart';
 import 'package:evolve_desktop/core/calendar_view_preference.dart';
 import 'package:evolve_desktop/core/clock.dart';
 import 'package:evolve_desktop/core/macro_goal_calendar.dart';
@@ -355,7 +356,12 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
       _anchor.month + direction,
       1,
     ),
-    CalendarViewMode.week => _anchor.add(Duration(days: direction * 7)),
+    // Calendar weeks, not 168-hour blocks: accumulating `Duration` steps drifts
+    // an hour at each DST crossing and the drift is PERMANENT — once a step lands
+    // past midnight, every later week is one day off, so the grid keeps showing
+    // Mon–Sun labels over Tue–Mon dates. Measured: from a 23:30 anchor, week 11
+    // of 2026 lands on 03-31 instead of 03-30 and never recovers.
+    CalendarViewMode.week => shiftDays(_anchor, direction * 7),
     CalendarViewMode.year => DateTime(_anchor.year + direction, 1, 1),
     CalendarViewMode.life => _anchor,
   };
@@ -1550,7 +1556,9 @@ class _WeekCalendar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final monday = anchor.subtract(Duration(days: anchor.weekday - 1));
+    // One computation of the week's dates, shared by every cell — see
+    // [weekDaysFor] for why this is not `monday.add(Duration(days: index))`.
+    final days = weekDaysFor(anchor);
     // Seven flexible day columns that fill the available height.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1577,18 +1585,12 @@ class _WeekCalendar extends StatelessWidget {
                 Expanded(
                   child: _DayCell(
                     snapshot: snapshot,
-                    date: monday.add(Duration(days: index)),
-                    completion: _completionFor(
-                      snapshot,
-                      monday.add(Duration(days: index)),
-                    ),
+                    date: days[index],
+                    completion: _completionFor(snapshot, days[index]),
                     expanded: true,
-                    onTap:
-                        monday
-                            .add(Duration(days: index))
-                            .isAfter(DateTime.now())
+                    onTap: days[index].isAfter(DateTime.now())
                         ? null
-                        : () => onSelectDay(monday.add(Duration(days: index))),
+                        : () => onSelectDay(days[index]),
                   ),
                 ),
               ],
@@ -1935,7 +1937,7 @@ class _YearCalendar extends StatelessWidget {
   double _weekCompletion(int month, int week) {
     final first = DateTime(anchor.year, month, 1 + week * 7);
     final days = [
-      for (var day = 0; day < 7; day++) first.add(Duration(days: day)),
+      for (var day = 0; day < 7; day++) shiftDays(first, day),
     ].where((date) => date.month == month).toList();
     if (days.isEmpty) return 0;
     return days
@@ -2713,8 +2715,12 @@ bool _canEditDate(DateTime date) {
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
   final normalized = DateTime(date.year, date.month, date.day);
-  return normalized == today ||
-      normalized == today.subtract(const Duration(days: 1));
+  // [shiftDays], never `subtract(Duration(days: 1))`: a fixed 24h step off a 23-
+  // or 25-hour DST day lands at 01:00 or 23:00, which is equal to no
+  // midnight-normalised date at all — so on the day after either transition
+  // yesterday silently became uneditable, and the user's only way to correct a
+  // day was gone precisely when a mis-scored day is most likely.
+  return normalized == today || normalized == shiftDays(today, -1);
 }
 
 String _periodLabel(DateTime anchor, CalendarViewMode view) => switch (view) {

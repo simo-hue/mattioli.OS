@@ -474,7 +474,7 @@ List<Map<String, dynamic>> computeGlobalTrend({
   List<Map<String, dynamic>> daily(int n) => [
     for (var i = 0; i < n; i++)
       () {
-        final date = t.subtract(Duration(days: n - 1 - i));
+        final date = _shiftDays(t, -(n - 1 - i));
         return {
           'point_index': i,
           'date': dateKey(date),
@@ -502,11 +502,11 @@ List<Map<String, dynamic>> computeGlobalTrend({
       final out = <Map<String, dynamic>>[];
       for (var i = 0; i < 24; i++) {
         final ms = _addMonths(monthStart0, -(23 - i));
-        final monthEnd = _addMonths(ms, 1).subtract(const Duration(days: 1));
+        final monthEnd = _shiftDays(_addMonths(ms, 1), -1);
         final last = monthEnd.isAfter(t) ? t : monthEnd;
         if (ms.isAfter(last)) continue;
         final rates = <double>[];
-        for (var d = ms; !d.isAfter(last); d = d.add(const Duration(days: 1))) {
+        for (var d = ms; !d.isAfter(last); d = _shiftDays(d, 1)) {
           rates.add(rateForDay(d));
         }
         out.add({'point_index': i, 'date': dateKey(ms), 'rate': avg(rates)});
@@ -515,26 +515,26 @@ List<Map<String, dynamic>> computeGlobalTrend({
     default: // 'timeframe_all' and any unrecognised token
       DateTime earliest;
       if (goals.isEmpty) {
-        earliest = t.subtract(const Duration(days: 30));
+        earliest = _shiftDays(t, -30);
       } else {
         earliest = goals
             .map((g) => _dateOnly(g.startDate))
             .reduce((a, b) => a.isBefore(b) ? a : b);
       }
-      final days = t.difference(earliest).inDays;
+      final days = _daysBetween(earliest, t);
       final interval = days > 10 ? (days / 10).ceil() : 1;
       final pointsCount = days > 10 ? 10 : days + 1;
       final out = <Map<String, dynamic>>[];
       for (var i = 0; i < pointsCount; i++) {
-        final startI = earliest.add(Duration(days: i * interval));
-        final endI = earliest.add(Duration(days: (i + 1) * interval - 1));
+        final startI = _shiftDays(earliest, i * interval);
+        final endI = _shiftDays(earliest, (i + 1) * interval - 1);
         final last = endI.isAfter(t) ? t : endI;
         if (startI.isAfter(last)) continue;
         final rates = <double>[];
         for (
           var d = startI;
           !d.isAfter(last);
-          d = d.add(const Duration(days: 1))
+          d = _shiftDays(d, 1)
         ) {
           rates.add(rateForDay(d));
         }

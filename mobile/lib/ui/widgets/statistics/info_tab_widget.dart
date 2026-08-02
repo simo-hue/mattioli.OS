@@ -7,6 +7,7 @@ import '../../../models/goal.dart';
 import '../../../i18n/translations.g.dart';
 import '../../../core/l10n_dynamic.dart';
 import '../../../core/rtl.dart';
+import '../../../core/calendar_days.dart';
 
 class InfoTabWidget extends ConsumerWidget {
   const InfoTabWidget({super.key});
@@ -1309,14 +1310,12 @@ class _AttivitaRecenteSection extends ConsumerWidget {
 
     final today = DateTime.now();
     final currentDayOfWeek = today.weekday; // 1 = Mon, 7 = Sun
-    final currentMonday = today.subtract(Duration(days: currentDayOfWeek - 1));
+    final currentMonday = shiftDays(today, -(currentDayOfWeek - 1));
 
     for (int col = 0; col < numCols; col++) {
       for (int row = 0; row < numRows; row++) {
         final weeksBack = numCols - 1 - col;
-        final date = currentMonday
-            .subtract(Duration(days: weeksBack * 7))
-            .add(Duration(days: row));
+        final date = shiftDays(currentMonday, -(weeksBack * 7) + row);
 
         if (date.isAfter(today)) {
           pattern[row][col] = -1;

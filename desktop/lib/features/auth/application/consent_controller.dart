@@ -1,5 +1,6 @@
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
+import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/core/desktop_sentry_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -43,7 +44,10 @@ class DesktopConsentController extends Notifier<DesktopConsentState> {
     final preferences = ref.watch(sharedPreferencesProvider);
     return DesktopConsentState(
       hasCompletedOnboarding: preferences?.getBool(_keyCompleted) ?? false,
-      hasSentryConsent: preferences?.getBool(_keySentry) ?? true,
+      // Absent means UNANSWERED, which is not consent (Guideline 5.1.2).
+      // Defaulting this to `true` is what let diagnostics start before the
+      // consent screen had been shown.
+      hasSentryConsent: preferences?.getBool(_keySentry) ?? false,
       hasAcceptedTerms: preferences?.getBool(_keyTerms) ?? false,
     );
   }
@@ -65,7 +69,16 @@ class DesktopConsentController extends Notifier<DesktopConsentState> {
       hasSentryConsent: sentryConsent,
       hasCompletedOnboarding: completed,
     );
-    await DesktopSentryService.setEnabled(sentryConsent);
+    // Same predicate as cold start, so the answer given here and the answer
+    // read back on the next launch can never disagree — and so Private mode
+    // still wins over a stale `true` (mobile parity).
+    await DesktopSentryService.setEnabled(
+      DesktopSentryService.shouldRun(
+        hasCompletedConsent: completed,
+        hasSentryConsent: sentryConsent,
+        isPrivateMode: ref.read(activeDesktopDataModeProvider).isPrivate,
+      ),
+    );
     await syncToProfile();
   }
 

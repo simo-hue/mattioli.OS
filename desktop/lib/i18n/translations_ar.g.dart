@@ -1285,11 +1285,18 @@ class _Translations$consentPage$ar extends Translations$consentPage$en {
 	final TranslationsAr _root; // ignore: unused_field
 
 	// Translations
-	@override String get subtitle => 'قبل استخدام Evolve Desktop، أكّد الشروط وسياسة الخصوصية ومعالجة البيانات اللازمة للمزامنة.';
+	@override String get subtitle => 'لا يرفع Evolve بياناتك الشخصية إلى أي خادم إلا بعد موافقتك هنا.';
+	@override String get uploadTitle => 'ما الذي يغادر هذا الـ Mac';
+	@override String get uploadAccountTitle => 'مع حساب Evolve';
+	@override String get uploadAccountBody => 'تُرفع أهدافك وعاداتك وتسجيلات مزاجك وملفك الشخصي (الاسم والبريد الإلكتروني والصورة) إلى خوادم Evolve لمزامنة أجهزتك.';
+	@override String get uploadPrivateTitle => 'بشكل خاص على هذا الـ Mac';
+	@override String get uploadPrivateBody => 'لا يُرفع إلينا أي شيء؛ ومزامنة iCloud الاختيارية مشفّرة من طرف إلى طرف ولا تصل إلا إلى حساب iCloud الخاص بك.';
+	@override String get uploadNeverTitle => 'لا يُطّلع عليها أبدًا';
+	@override String get uploadNeverBody => 'جهات الاتصال، التقويم، الصور، الكاميرا، الميكروفون، الموقع.';
 	@override String get acceptTerms => 'أوافق على الشروط وسياسة الخصوصية';
-	@override String get termsSubtitle => 'أؤكّد أنني قرأت المستندات وأن عمري 14 عامًا على الأقل.';
+	@override String get termsSubtitle => 'قرأت المستندات، وعمري 14 عامًا على الأقل، وأوافق على الرفع الموضّح أعلاه.';
 	@override String get crashDiagnostics => 'تشخيص الأعطال';
-	@override String get crashSubtitle => 'اسمح بإرسال تقارير تقنية مجهّلة الهوية.';
+	@override String get crashSubtitle => 'مُعطّل افتراضيًا. عند تفعيله، تُرسَل تقارير أعطال مجهّلة الهوية إلى مزوّد التشخيص لدينا، Sentry.';
 	@override String get openPrivacy => 'افتح سياسة الخصوصية';
 	@override String get openTerms => 'شروط الخدمة';
 	@override String get notificationsTitle => 'تفعيل الإشعارات';
@@ -3153,11 +3160,18 @@ extension on TranslationsAr {
 			'notifications.eveningReviewBody' => 'كيف كان يومك؟ تتبّع تقدّمك وحدّث سجلّك.',
 			'privacy.biometricAuthReason' => 'تحقّق من هويتك لتفعيل حماية التطبيق.',
 			'privacy.biometricUnlockReason' => 'افتح قفل التطبيق للمتابعة.',
-			'consentPage.subtitle' => 'قبل استخدام Evolve Desktop، أكّد الشروط وسياسة الخصوصية ومعالجة البيانات اللازمة للمزامنة.',
+			'consentPage.subtitle' => 'لا يرفع Evolve بياناتك الشخصية إلى أي خادم إلا بعد موافقتك هنا.',
+			'consentPage.uploadTitle' => 'ما الذي يغادر هذا الـ Mac',
+			'consentPage.uploadAccountTitle' => 'مع حساب Evolve',
+			'consentPage.uploadAccountBody' => 'تُرفع أهدافك وعاداتك وتسجيلات مزاجك وملفك الشخصي (الاسم والبريد الإلكتروني والصورة) إلى خوادم Evolve لمزامنة أجهزتك.',
+			'consentPage.uploadPrivateTitle' => 'بشكل خاص على هذا الـ Mac',
+			'consentPage.uploadPrivateBody' => 'لا يُرفع إلينا أي شيء؛ ومزامنة iCloud الاختيارية مشفّرة من طرف إلى طرف ولا تصل إلا إلى حساب iCloud الخاص بك.',
+			'consentPage.uploadNeverTitle' => 'لا يُطّلع عليها أبدًا',
+			'consentPage.uploadNeverBody' => 'جهات الاتصال، التقويم، الصور، الكاميرا، الميكروفون، الموقع.',
 			'consentPage.acceptTerms' => 'أوافق على الشروط وسياسة الخصوصية',
-			'consentPage.termsSubtitle' => 'أؤكّد أنني قرأت المستندات وأن عمري 14 عامًا على الأقل.',
+			'consentPage.termsSubtitle' => 'قرأت المستندات، وعمري 14 عامًا على الأقل، وأوافق على الرفع الموضّح أعلاه.',
 			'consentPage.crashDiagnostics' => 'تشخيص الأعطال',
-			'consentPage.crashSubtitle' => 'اسمح بإرسال تقارير تقنية مجهّلة الهوية.',
+			'consentPage.crashSubtitle' => 'مُعطّل افتراضيًا. عند تفعيله، تُرسَل تقارير أعطال مجهّلة الهوية إلى مزوّد التشخيص لدينا، Sentry.',
 			'consentPage.openPrivacy' => 'افتح سياسة الخصوصية',
 			'consentPage.openTerms' => 'شروط الخدمة',
 			'consentPage.notificationsTitle' => 'تفعيل الإشعارات',

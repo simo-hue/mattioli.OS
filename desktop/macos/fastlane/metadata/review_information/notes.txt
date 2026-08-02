@@ -1,17 +1,105 @@
 Hello Apple Review Team,
 
-This macOS submission addresses both issues raised in submission
-45b246ec-3001-488c-b434-3e5081bd777d (reviewed 22 July 2026).
+Thank you for the 1 August 2026 review of build 1.0.0 (26). Section 1
+below answers the open Guideline 5.1.2 item directly. Sections 2 to 6
+are retained from the previous round for context.
 
-1. HOW TO REACH THE SUBSCRIPTION SCREEN - PLEASE READ FIRST
+1. GUIDELINE 5.1.2 - DATA USE AND SHARING
 
-Our previous notes wrongly said that signing in was not needed. That was
-our error, and we apologise: it sent the review into the app's offline
-mode, where nothing is offered for sale, so the subscription information
-could not be seen. Please follow these steps instead.
+1a) CONTACTS - PLEASE NOTE
 
-a) Launch Evolve. On the sign-in screen, do NOT choose the button
-   labelled "Continue privately on this Mac".
+Evolve does NOT access the user's Contacts, and does not upload Contacts
+to any server. It never has. There is no Contacts code path anywhere in
+the app.
+
+This is verifiable from the binary itself: the app declares no
+NSContactsUsageDescription key (nor any other NS*UsageDescription key)
+in its Info.plist, and its sandbox entitlements do not include
+com.apple.security.personal-information.addressbook. Without that
+entitlement the App Sandbox denies address-book access outright, so the
+app could not read Contacts even if it tried.
+
+The same is true of every other protected data class: Evolve does not
+access Calendars, Reminders, Photos, Camera, Microphone, Location,
+Speech Recognition or the file system outside files the user explicitly
+picks (com.apple.security.files.user-selected.read-write, used only for
+the manual "export / import backup" command).
+
+The complete list of entitlements the app requests, and why:
+ - app-sandbox
+ - network.client                  - our API and iCloud
+ - network.server                  - 127.0.0.1 OAuth loopback (section 6)
+ - files.user-selected.read-write  - manual backup export/import only
+ - applesignin                     - Sign in with Apple
+ - icloud-container-identifiers /
+   icloud-services (CloudKit)      - the user's own iCloud sync
+ - keychain-access-groups          - encryption keys, stored locally
+ - aps-environment                 - silent CloudKit zone-change pushes
+
+1b) WHAT THE APP DOES UPLOAD, AND THE CONSENT TAKEN FIRST
+
+Evolve is a habit and goal tracker, so the personal data it handles is
+data the user types into the app themselves. Nothing is read from
+elsewhere on the Mac.
+
+The first screen on a fresh launch, before any account exists and before
+any network call carrying user data, is a full-screen privacy gate. It
+cannot be dismissed or skipped: the "Continue" button stays disabled
+until the user ticks the acceptance box, and no part of the app is
+reachable until they do.
+
+In build 27 that screen now states, in plain language and in all five
+app languages, exactly what leaves the Mac:
+
+ - "With an Evolve account - goals, habits, mood check-ins and your
+   profile (name, email, photo) are uploaded to Evolve's servers to sync
+   your devices."
+ - "Privately on this Mac - nothing is uploaded to us; optional iCloud
+   sync is end-to-end encrypted and reaches only your own iCloud
+   account."
+ - "Never accessed - contacts, calendar, photos, camera, microphone,
+   location."
+
+The acceptance box beneath it reads "I have read the documents, I am at
+least 14 years old, and I agree to the upload described above." Links to
+our Privacy Policy and to the Terms of Use sit next to the Continue
+button on the same screen.
+
+The uploaded data lands in these tables and nowhere else: goals,
+goal_logs, goal_progress, long_term_goals, macro_goal_categories,
+daily_moods, habit_stats, profiles.
+
+1c) THE TWO OTHER TRANSMISSIONS, EACH SEPARATELY CONSENTED
+
+ - Crash diagnostics (Sentry). On the same privacy gate, as an explicit
+   opt-in switch that is OFF by default. Build 26 defaulted this ON and,
+   worse, started the SDK at cold start before the privacy gate had been
+   shown at all. Both are fixed in build 27: the SDK cannot initialise
+   until the user has answered the question, and answering "no" - the
+   default - keeps it off permanently. It can be withdrawn at any time
+   in Settings > Privacy > Crash reports, and it never runs at all in
+   Private mode.
+
+ - AI Coach. Sending a conversation to a model provider requires its own
+   separate, explicit consent dialog naming the recipient, shown before
+   the first message is ever sent. Consent is stored per account, so it
+   is never inherited by a different user on the same Mac. If the user
+   runs a local model instead (Ollama / LM Studio), nothing leaves the
+   Mac and no consent is requested, because no transmission occurs.
+
+1d) PRIVATE MODE
+
+A user who chooses "Continue privately on this Mac" gets the full app
+with no account and no upload to us at all. Their data is held in a
+SQLCipher-encrypted local database. If they additionally turn on iCloud
+sync, the payload is end-to-end encrypted on the device before it is
+handed to CloudKit and travels only to their own iCloud account; we
+cannot read it and it never touches our servers.
+
+2. HOW TO REACH THE SUBSCRIPTION SCREEN
+
+a) Launch Evolve. Accept the privacy gate described above. On the
+   sign-in screen, do NOT choose "Continue privately on this Mac".
 b) Sign in with the demo account below. Sign in with Apple and Google
    also work fully.
       Username: wowtesting@gmail.com
@@ -28,7 +116,7 @@ Before any purchase, that screen displays:
  - functional links to our Privacy Policy and to the standard Apple
    Terms of Use (EULA)
 
-2. WHY THE APP HAS TWO MODES
+3. WHY THE APP HAS TWO MODES
 
 Account mode syncs data through our servers and runs the AI Coach on our
 own provider key. Those carry running costs, and they are what the Evolve
@@ -50,17 +138,17 @@ is inherently account-specific: syncing across the user's devices, and
 running the AI Coach on our server-side key. Evolve Pro buys exactly
 those two things.
 
-3. GUIDELINE 3.1.2(c) - TERMS OF USE (EULA)
+4. GUIDELINE 3.1.2(c) - TERMS OF USE (EULA)
 
 We use the standard Apple Terms of Use (EULA). A functional link to
-https://www.apple.com/legal/internet-services/itunes/dev/stdeula/ is now
+https://www.apple.com/legal/internet-services/itunes/dev/stdeula/ is
 included in the App Description for every localisation of this macOS app,
 alongside the subscription titles, their lengths and the renewal terms.
 The same link is also shown in the app on the subscription screen above,
 next to our Privacy Policy link:
 https://simo-hue.github.io/evolve/privacy.html
 
-4. GUIDELINE 2.1(b) - IN-APP PURCHASE PRODUCTS
+5. GUIDELINE 2.1(b) - IN-APP PURCHASE PRODUCTS
 
 Evolve is a Universal Purchase (bundle ID com.simo.evolve) shared by the
 iOS and macOS apps. Both auto-renewable subscriptions are already
@@ -69,12 +157,9 @@ approved and live in the "Evolve Pro Group" subscription group:
  - com.simo.evolve.pro.monthly - Evolve Pro Mensile - 1 month
  - com.simo.evolve.pro.yearly - Evolve Pro Annuale - 1 year
 
-These are the same products the iOS app sells today. We believe the
-earlier report was caused by the review being unable to reach the
-purchase screen (see section 1). With the steps above, both products load
-and can be purchased on macOS.
+These are the same products the iOS app sells today.
 
-5. com.apple.security.network.server ENTITLEMENT
+6. com.apple.security.network.server ENTITLEMENT
 
 This app uses the OAuth 2.0 loopback redirect pattern (RFC 8252 section
 7.3) for Google sign-in. The app binds a temporary HTTP server on

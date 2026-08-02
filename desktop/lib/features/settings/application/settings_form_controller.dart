@@ -266,7 +266,10 @@ class SettingsFormController extends Notifier<SettingsFormState> {
       // Mobile parity: AI insights and weekly reports default OFF.
       aiInsights: preferences.getBool('notif_ai_insights') ?? false,
       weeklyReport: preferences.getBool('notif_weekly_reports') ?? false,
-      crashReports: preferences.getBool('has_sentry_consent') ?? true,
+      // Unanswered is not consent: the Settings switch has to read back the
+      // same OFF that the consent screen offers, or the UI would claim a
+      // permission the user never gave (Guideline 5.1.2).
+      crashReports: preferences.getBool('has_sentry_consent') ?? false,
       aiSuggestions: preferences.getBool('pref_ai_suggestions') ?? false,
       focusMode: preferences.getBool('pref_focus_mode') ?? false,
       milestones: preferences.getBool('pref_milestones') ?? true,

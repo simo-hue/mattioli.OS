@@ -230,3 +230,68 @@ string and the 30 locales together, after approval.
    a reviewer who never opens Settings > Account sees a populated grid that is
    not theirs. An empty state would be correct.
 3. **`lifeWeeks` label vs months grid** — see above; the app contradicts itself.
+
+---
+
+## 2026-08-02 — macOS Guideline 5.1.2 resubmission (build 27)
+
+The code, copy and review notes are done. These steps are yours.
+
+### Blocking — must happen before the build is resubmitted
+
+1. **Reply to the rejection in App Store Connect.** Apple explicitly invited
+   this: *"If the app does not actually upload the user's Contacts to a server,
+   reply to this rejection to confirm and add this information to the App Review
+   Information section."* Do both. Suggested reply:
+
+   > Evolve does not access the user's Contacts and does not upload Contacts to
+   > any server. The app declares no NSContactsUsageDescription key (nor any
+   > other NS*UsageDescription key) and does not request the
+   > com.apple.security.personal-information.addressbook sandbox entitlement, so
+   > it cannot read the address book. The same applies to Calendars, Reminders,
+   > Photos, Camera, Microphone and Location.
+   >
+   > The only personal data the app handles is data the user types into it
+   > (goals, habits, mood check-ins) plus their profile. Build 27 shows a
+   > full-screen, unskippable privacy gate on first launch — before any account
+   > exists and before any network call carrying user data — that states in plain
+   > language that this data is uploaded to our servers in Account mode, that
+   > Private mode uploads nothing to us, and that contacts, calendar, photos,
+   > camera, microphone and location are never accessed. Crash diagnostics are a
+   > separate opt-in switch that is now OFF by default and cannot start the SDK
+   > before the user has answered.
+
+2. **Paste the same text into App Review Information → Notes**, or push the file
+   with the `metadata` lane (`desktop/macos/fastlane/metadata/review_information/notes.txt`
+   is already rewritten and covers all of this in section 1).
+
+3. **Archive and upload build 27.** `pubspec.yaml` is now `1.2.1+27` and all
+   three `CURRENT_PROJECT_VERSION` slots are `27`. Build 26 cannot be reused —
+   App Store Connect rejects duplicate build numbers.
+
+4. **Check the App Privacy answers on the macOS record.** Nothing in the code
+   collects Contacts, so if the questionnaire declares a "Contacts" data type
+   that alone could have triggered this rejection. Verify the declared types
+   match what actually ships: Identifiers + Contact Info (email/name),
+   User Content (goals, habits, mood), Diagnostics (only if crash reporting is
+   consented), Purchases. **Nothing else.**
+
+5. **The ASC version string is still 1.0.0 while the project says 1.2.1.** Carried
+   over from the previous round and still unresolved — the reviewer's report says
+   "Version reviewed: 1.0.0 (26)". Decide which is authoritative before uploading.
+
+### Non-blocking, but real: the same defect is latent on iOS
+
+`mobile/lib/ui/screens/consent_screen.dart:28` declares
+`final bool _sentryConsent = true;` — a `final` field with **no UI control
+anywhere on the screen**. Tapping Continue therefore enables Sentry for every
+iOS user without ever asking them. iOS is not currently rejected for this, and
+the cold-start half of the bug is already fixed there
+(`mobile/lib/main.dart:158-166`), but "the user must provide consent" is not
+satisfied by an unasked default. The iOS screen also has no upload disclosure.
+
+Fixing it is small — the copy already exists in all five languages under
+`consentPage.upload*` / `crashSubtitle` in the desktop i18n files, ready to copy
+across. Left alone deliberately: it changes a shipped app's onboarding and needs
+its own submission, which is a release-timing decision, not a code one. Say the
+word and it gets done.

@@ -3070,20 +3070,41 @@ class Translations$consentPage$en {
 
 	// Translations
 
-	/// en: 'Before using Evolve Desktop, confirm the terms, privacy policy and the data processing required for syncing.'
-	String get subtitle => 'Before using Evolve Desktop, confirm the terms, privacy policy and the data processing required for syncing.';
+	/// en: 'Evolve uploads your personal data to a server only after you agree here.'
+	String get subtitle => 'Evolve uploads your personal data to a server only after you agree here.';
+
+	/// en: 'What leaves this Mac'
+	String get uploadTitle => 'What leaves this Mac';
+
+	/// en: 'With an Evolve account'
+	String get uploadAccountTitle => 'With an Evolve account';
+
+	/// en: 'goals, habits, mood check-ins and your profile (name, email, photo) are uploaded to Evolve's servers to sync your devices.'
+	String get uploadAccountBody => 'goals, habits, mood check-ins and your profile (name, email, photo) are uploaded to Evolve\'s servers to sync your devices.';
+
+	/// en: 'Privately on this Mac'
+	String get uploadPrivateTitle => 'Privately on this Mac';
+
+	/// en: 'nothing is uploaded to us; optional iCloud sync is end-to-end encrypted and reaches only your own iCloud account.'
+	String get uploadPrivateBody => 'nothing is uploaded to us; optional iCloud sync is end-to-end encrypted and reaches only your own iCloud account.';
+
+	/// en: 'Never accessed'
+	String get uploadNeverTitle => 'Never accessed';
+
+	/// en: 'contacts, calendar, photos, camera, microphone, location.'
+	String get uploadNeverBody => 'contacts, calendar, photos, camera, microphone, location.';
 
 	/// en: 'I accept the terms and privacy policy'
 	String get acceptTerms => 'I accept the terms and privacy policy';
 
-	/// en: 'I confirm I have read the documents and I am at least 14 years old.'
-	String get termsSubtitle => 'I confirm I have read the documents and I am at least 14 years old.';
+	/// en: 'I have read the documents, I am at least 14 years old, and I agree to the upload described above.'
+	String get termsSubtitle => 'I have read the documents, I am at least 14 years old, and I agree to the upload described above.';
 
 	/// en: 'Crash diagnostics'
 	String get crashDiagnostics => 'Crash diagnostics';
 
-	/// en: 'Allow sending anonymized technical reports.'
-	String get crashSubtitle => 'Allow sending anonymized technical reports.';
+	/// en: 'Off by default. When on, anonymized crash reports go to our diagnostics provider, Sentry.'
+	String get crashSubtitle => 'Off by default. When on, anonymized crash reports go to our diagnostics provider, Sentry.';
 
 	/// en: 'Open the privacy policy'
 	String get openPrivacy => 'Open the privacy policy';
@@ -5744,11 +5765,18 @@ extension on Translations {
 			'notifications.eveningReviewBody' => 'How did today go? Track your progress and update the Logbook.',
 			'privacy.biometricAuthReason' => 'Authenticate to enable app protection.',
 			'privacy.biometricUnlockReason' => 'Unlock the app to continue.',
-			'consentPage.subtitle' => 'Before using Evolve Desktop, confirm the terms, privacy policy and the data processing required for syncing.',
+			'consentPage.subtitle' => 'Evolve uploads your personal data to a server only after you agree here.',
+			'consentPage.uploadTitle' => 'What leaves this Mac',
+			'consentPage.uploadAccountTitle' => 'With an Evolve account',
+			'consentPage.uploadAccountBody' => 'goals, habits, mood check-ins and your profile (name, email, photo) are uploaded to Evolve\'s servers to sync your devices.',
+			'consentPage.uploadPrivateTitle' => 'Privately on this Mac',
+			'consentPage.uploadPrivateBody' => 'nothing is uploaded to us; optional iCloud sync is end-to-end encrypted and reaches only your own iCloud account.',
+			'consentPage.uploadNeverTitle' => 'Never accessed',
+			'consentPage.uploadNeverBody' => 'contacts, calendar, photos, camera, microphone, location.',
 			'consentPage.acceptTerms' => 'I accept the terms and privacy policy',
-			'consentPage.termsSubtitle' => 'I confirm I have read the documents and I am at least 14 years old.',
+			'consentPage.termsSubtitle' => 'I have read the documents, I am at least 14 years old, and I agree to the upload described above.',
 			'consentPage.crashDiagnostics' => 'Crash diagnostics',
-			'consentPage.crashSubtitle' => 'Allow sending anonymized technical reports.',
+			'consentPage.crashSubtitle' => 'Off by default. When on, anonymized crash reports go to our diagnostics provider, Sentry.',
 			'consentPage.openPrivacy' => 'Open the privacy policy',
 			'consentPage.openTerms' => 'Terms of Service',
 			'consentPage.notificationsTitle' => 'Enable notifications',

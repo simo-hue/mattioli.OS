@@ -1285,11 +1285,18 @@ class _Translations$consentPage$es extends Translations$consentPage$en {
 	final TranslationsEs _root; // ignore: unused_field
 
 	// Translations
-	@override String get subtitle => 'Antes de usar Evolve Desktop, confirma los términos, la política de privacidad y el tratamiento de datos necesario para la sincronización.';
+	@override String get subtitle => 'Evolve sube tus datos personales a un servidor solo después de que aceptes aquí.';
+	@override String get uploadTitle => 'Qué sale de este Mac';
+	@override String get uploadAccountTitle => 'Con una cuenta de Evolve';
+	@override String get uploadAccountBody => 'tus objetivos, hábitos, registros de ánimo y perfil (nombre, correo, foto) se suben a los servidores de Evolve para sincronizar tus dispositivos.';
+	@override String get uploadPrivateTitle => 'En privado en este Mac';
+	@override String get uploadPrivateBody => 'no se nos sube nada; la sincronización opcional con iCloud está cifrada de extremo a extremo y solo llega a tu propia cuenta de iCloud.';
+	@override String get uploadNeverTitle => 'Nunca consultados';
+	@override String get uploadNeverBody => 'contactos, calendario, fotos, cámara, micrófono, ubicación.';
 	@override String get acceptTerms => 'Acepto los términos y la política de privacidad';
-	@override String get termsSubtitle => 'Confirmo que he leído los documentos y que tengo al menos 14 años.';
+	@override String get termsSubtitle => 'He leído los documentos, tengo al menos 14 años y acepto la subida descrita arriba.';
 	@override String get crashDiagnostics => 'Diagnóstico de fallos';
-	@override String get crashSubtitle => 'Permite el envío de informes técnicos anonimizados.';
+	@override String get crashSubtitle => 'Desactivado por defecto. Si se activa, se envían informes anonimizados de fallos a nuestro proveedor de diagnóstico, Sentry.';
 	@override String get openPrivacy => 'Abrir la política de privacidad';
 	@override String get openTerms => 'Términos del servicio';
 	@override String get notificationsTitle => 'Activar notificaciones';
@@ -3153,11 +3160,18 @@ extension on TranslationsEs {
 			'notifications.eveningReviewBody' => '¿Cómo fue el día? Registra tu progreso y actualiza el historial.',
 			'privacy.biometricAuthReason' => 'Autentícate para activar la protección de la app.',
 			'privacy.biometricUnlockReason' => 'Desbloquea la app para continuar.',
-			'consentPage.subtitle' => 'Antes de usar Evolve Desktop, confirma los términos, la política de privacidad y el tratamiento de datos necesario para la sincronización.',
+			'consentPage.subtitle' => 'Evolve sube tus datos personales a un servidor solo después de que aceptes aquí.',
+			'consentPage.uploadTitle' => 'Qué sale de este Mac',
+			'consentPage.uploadAccountTitle' => 'Con una cuenta de Evolve',
+			'consentPage.uploadAccountBody' => 'tus objetivos, hábitos, registros de ánimo y perfil (nombre, correo, foto) se suben a los servidores de Evolve para sincronizar tus dispositivos.',
+			'consentPage.uploadPrivateTitle' => 'En privado en este Mac',
+			'consentPage.uploadPrivateBody' => 'no se nos sube nada; la sincronización opcional con iCloud está cifrada de extremo a extremo y solo llega a tu propia cuenta de iCloud.',
+			'consentPage.uploadNeverTitle' => 'Nunca consultados',
+			'consentPage.uploadNeverBody' => 'contactos, calendario, fotos, cámara, micrófono, ubicación.',
 			'consentPage.acceptTerms' => 'Acepto los términos y la política de privacidad',
-			'consentPage.termsSubtitle' => 'Confirmo que he leído los documentos y que tengo al menos 14 años.',
+			'consentPage.termsSubtitle' => 'He leído los documentos, tengo al menos 14 años y acepto la subida descrita arriba.',
 			'consentPage.crashDiagnostics' => 'Diagnóstico de fallos',
-			'consentPage.crashSubtitle' => 'Permite el envío de informes técnicos anonimizados.',
+			'consentPage.crashSubtitle' => 'Desactivado por defecto. Si se activa, se envían informes anonimizados de fallos a nuestro proveedor de diagnóstico, Sentry.',
 			'consentPage.openPrivacy' => 'Abrir la política de privacidad',
 			'consentPage.openTerms' => 'Términos del servicio',
 			'consentPage.notificationsTitle' => 'Activar notificaciones',

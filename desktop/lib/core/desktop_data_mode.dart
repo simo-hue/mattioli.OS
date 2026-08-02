@@ -43,11 +43,20 @@ class ActiveDesktopDataModeNotifier extends Notifier<DesktopDataMode> {
     state = mode;
 
     // Sentry boundary: disable in Private mode, re-enable when leaving.
+    //
+    // Re-entry goes through the same consent predicate as cold start — an
+    // absent `has_sentry_consent` means the question was never answered, not
+    // "yes", so leaving Private mode must not be a side door that starts the
+    // SDK without consent (Guideline 5.1.2).
     if (mode.isPrivate) {
       await DesktopSentryService.setEnabled(false);
     } else if (wasPrivate) {
-      final hasSentryConsent = prefs?.getBool('has_sentry_consent') ?? true;
-      if (hasSentryConsent) {
+      final allowed = DesktopSentryService.shouldRun(
+        hasCompletedConsent: prefs?.getBool('has_completed_consent') ?? false,
+        hasSentryConsent: prefs?.getBool('has_sentry_consent') ?? false,
+        isPrivateMode: false,
+      );
+      if (allowed) {
         await DesktopSentryService.ensureInitialized();
       }
     }

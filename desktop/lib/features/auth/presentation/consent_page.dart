@@ -20,7 +20,11 @@ class DesktopConsentPage extends ConsumerStatefulWidget {
 
 class _DesktopConsentPageState extends ConsumerState<DesktopConsentPage> {
   bool _acceptedTerms = false;
-  bool _sentryConsent = true;
+
+  /// Opt-IN, not opt-out. A pre-armed switch collects no consent — it collects
+  /// inattention — and it uploads to a third party either way, which is what
+  /// Guideline 5.1.2 asks us not to do (macOS 1.0.0(26) rejection, 2026-08-01).
+  bool _sentryConsent = false;
   bool _notificationsAllowed = false;
   bool _isSaving = false;
 
@@ -43,9 +47,14 @@ class _DesktopConsentPageState extends ConsumerState<DesktopConsentPage> {
     final colors = context.evolveColors;
     final accent = context.evolveAccent;
 
+    // The card is height-bounded and scrolls INTERNALLY, so Continue is pinned
+    // to the bottom of the panel and is on screen at any window size in any of
+    // the five languages. The whole card used to scroll as one piece, which put
+    // the only way forward below the fold once the disclosure was added — and a
+    // reviewer who cannot find Continue files a bug, not an approval.
     return Scaffold(
       body: Center(
-        child: SingleChildScrollView(
+        child: Padding(
           padding: const EdgeInsets.all(28),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 620),
@@ -54,6 +63,7 @@ class _DesktopConsentPageState extends ConsumerState<DesktopConsentPage> {
               radius: 20,
               glowColor: accent,
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
@@ -90,91 +100,116 @@ class _DesktopConsentPageState extends ConsumerState<DesktopConsentPage> {
                     ],
                   ),
                   const SizedBox(height: 22),
-                  _ConsentRow(
-                    child: CheckboxListTile(
-                      contentPadding: const EdgeInsetsDirectional.fromSTEB(
-                        16,
-                        6,
-                        12,
-                        6,
-                      ),
-                      value: _acceptedTerms,
-                      onChanged: (value) =>
-                          setState(() => _acceptedTerms = value ?? false),
-                      title: Text(
-                        t.consentPage.acceptTerms,
-                        style: _rowTitleStyle,
-                      ),
-                      subtitle: Text(
-                        t.consentPage.termsSubtitle,
-                        style: _rowSubtitleStyle,
-                      ),
-                    ),
-                  ),
-                  _ConsentRow(
-                    child: ListTile(
-                      contentPadding: const EdgeInsetsDirectional.fromSTEB(
-                        16,
-                        6,
-                        12,
-                        6,
-                      ),
-                      // Whole-row toggle (SwitchListTile parity).
-                      onTap: () =>
-                          setState(() => _sentryConsent = !_sentryConsent),
-                      title: Text(
-                        t.consentPage.crashDiagnostics,
-                        style: _rowTitleStyle,
-                      ),
-                      subtitle: Text(
-                        t.consentPage.crashSubtitle,
-                        style: _rowSubtitleStyle,
-                      ),
-                      trailing: EvolveSwitch(
-                        value: _sentryConsent,
-                        onChanged: (value) =>
-                            setState(() => _sentryConsent = value),
-                      ),
-                    ),
-                  ),
-                  _ConsentRow(
-                    child: ListTile(
-                      contentPadding: const EdgeInsetsDirectional.fromSTEB(
-                        12,
-                        6,
-                        12,
-                        6,
-                      ),
-                      leading: EvolveIconChip(
-                        icon: LucideIcons.bell,
-                        color: accent,
-                        size: 36,
-                        iconSize: 17,
-                        outlined: true,
-                      ),
-                      title: Text(
-                        t.consentPage.notificationsTitle,
-                        style: _rowTitleStyle,
-                      ),
-                      subtitle: Text(
-                        t.consentPage.notificationsSubtitle,
-                        style: _rowSubtitleStyle,
-                      ),
-                      trailing: _notificationsAllowed
-                          ? StatusPill(
-                              label: t.consentPage.notificationsEnabled,
-                              color: EvolveColors.success,
-                              icon: LucideIcons.check,
-                            )
-                          : TextButton(
-                              onPressed: _isSaving
-                                  ? null
-                                  : _requestNotifications,
-                              child: Text(t.consentPage.enableNotifications),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // The disclosure sits ABOVE the checkbox on purpose: the
+                          // guideline asks that the upload be made clear *and then*
+                          // consented to, so the user reads what leaves the Mac before
+                          // the control that agrees to it.
+                          const _UploadDisclosure(),
+                          const SizedBox(height: 14),
+                          _ConsentRow(
+                            child: CheckboxListTile(
+                              contentPadding:
+                                  const EdgeInsetsDirectional.fromSTEB(
+                                    16,
+                                    6,
+                                    12,
+                                    6,
+                                  ),
+                              value: _acceptedTerms,
+                              onChanged: (value) => setState(
+                                () => _acceptedTerms = value ?? false,
+                              ),
+                              title: Text(
+                                t.consentPage.acceptTerms,
+                                style: _rowTitleStyle,
+                              ),
+                              subtitle: Text(
+                                t.consentPage.termsSubtitle,
+                                style: _rowSubtitleStyle,
+                              ),
                             ),
+                          ),
+                          _ConsentRow(
+                            child: ListTile(
+                              contentPadding:
+                                  const EdgeInsetsDirectional.fromSTEB(
+                                    16,
+                                    6,
+                                    12,
+                                    6,
+                                  ),
+                              // Whole-row toggle (SwitchListTile parity).
+                              onTap: () => setState(
+                                () => _sentryConsent = !_sentryConsent,
+                              ),
+                              title: Text(
+                                t.consentPage.crashDiagnostics,
+                                style: _rowTitleStyle,
+                              ),
+                              subtitle: Text(
+                                t.consentPage.crashSubtitle,
+                                style: _rowSubtitleStyle,
+                              ),
+                              trailing: EvolveSwitch(
+                                value: _sentryConsent,
+                                onChanged: (value) =>
+                                    setState(() => _sentryConsent = value),
+                              ),
+                            ),
+                          ),
+                          _ConsentRow(
+                            child: ListTile(
+                              contentPadding:
+                                  const EdgeInsetsDirectional.fromSTEB(
+                                    12,
+                                    6,
+                                    12,
+                                    6,
+                                  ),
+                              leading: EvolveIconChip(
+                                icon: LucideIcons.bell,
+                                color: accent,
+                                size: 36,
+                                iconSize: 17,
+                                outlined: true,
+                              ),
+                              title: Text(
+                                t.consentPage.notificationsTitle,
+                                style: _rowTitleStyle,
+                              ),
+                              subtitle: Text(
+                                t.consentPage.notificationsSubtitle,
+                                style: _rowSubtitleStyle,
+                              ),
+                              trailing: _notificationsAllowed
+                                  ? StatusPill(
+                                      label: t.consentPage.notificationsEnabled,
+                                      color: EvolveColors.success,
+                                      icon: LucideIcons.check,
+                                    )
+                                  : TextButton(
+                                      onPressed: _isSaving
+                                          ? null
+                                          : _requestNotifications,
+                                      child: Text(
+                                        t.consentPage.enableNotifications,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 6),
+                  // Pinned, not scrolled: a Terms link the reviewer has to
+                  // scroll to find is how the 3.1.2(c) rejection happened once
+                  // already. Both documents stay visible next to Continue.
                   Wrap(
                     spacing: 4,
                     children: [
@@ -285,6 +320,131 @@ class _DesktopConsentPageState extends ConsumerState<DesktopConsentPage> {
           completed: true,
         );
     if (mounted) setState(() => _isSaving = false);
+  }
+}
+
+/// The pre-consent disclosure required by App Store Guideline 5.1.2: personal
+/// data may not be uploaded to a server until the user has been told, in the
+/// app, that it will be — and has agreed.
+///
+/// It names the recipient in each case rather than saying "third parties", and
+/// it states the negative too (contacts, calendar, photos, camera, microphone,
+/// location are never touched). The negative is not padding: the rejection
+/// arrived on Apple's Contacts template, and the app has never held a
+/// `NSContactsUsageDescription` key or an address-book entitlement to explain
+/// itself with. Saying so on screen is the only place a user — or a reviewer —
+/// can read it without taking our word for it in a reply.
+class _UploadDisclosure extends StatelessWidget {
+  const _UploadDisclosure();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.evolveColors;
+    final accent = context.evolveAccent;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+      decoration: BoxDecoration(
+        color: colors.panel.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: colors.border.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            t.consentPage.uploadTitle,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.4,
+              color: colors.muted,
+            ),
+          ),
+          const SizedBox(height: 10),
+          _DisclosureBullet(
+            icon: LucideIcons.cloudUpload,
+            color: accent,
+            title: t.consentPage.uploadAccountTitle,
+            body: t.consentPage.uploadAccountBody,
+          ),
+          _DisclosureBullet(
+            icon: LucideIcons.laptop,
+            color: EvolveColors.success,
+            title: t.consentPage.uploadPrivateTitle,
+            body: t.consentPage.uploadPrivateBody,
+          ),
+          _DisclosureBullet(
+            icon: LucideIcons.eyeOff,
+            color: colors.muted,
+            title: t.consentPage.uploadNeverTitle,
+            body: t.consentPage.uploadNeverBody,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One disclosure line: bold lead-in, then the detail, on the same flowing
+/// paragraph.
+///
+/// Stacked title-over-body would read as well but costs ~50pt a bullet, and the
+/// consent card has to stay inside the default 1440x900 window — a Continue
+/// button below the fold is how a reviewer decides the app is broken.
+class _DisclosureBullet extends StatelessWidget {
+  const _DisclosureBullet({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.body,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.evolveColors;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsetsDirectional.only(end: 10, top: 2),
+            child: Icon(icon, size: 15, color: color),
+          ),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: colors.foreground,
+                    ),
+                  ),
+                  const TextSpan(text: ' — '),
+                  TextSpan(text: body),
+                ],
+              ),
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w500,
+                height: 1.45,
+                color: colors.muted.withValues(alpha: 0.9),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

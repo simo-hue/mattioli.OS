@@ -1285,11 +1285,18 @@ class _Translations$consentPage$de extends Translations$consentPage$en {
 	final TranslationsDe _root; // ignore: unused_field
 
 	// Translations
-	@override String get subtitle => 'Bevor du Evolve Desktop verwendest, bestätige die Bedingungen, die Datenschutzrichtlinie und die für die Synchronisierung erforderliche Datenverarbeitung.';
+	@override String get subtitle => 'Evolve lädt deine personenbezogenen Daten erst auf einen Server, nachdem du hier zugestimmt hast.';
+	@override String get uploadTitle => 'Was diesen Mac verlässt';
+	@override String get uploadAccountTitle => 'Mit einem Evolve-Konto';
+	@override String get uploadAccountBody => 'Ziele, Gewohnheiten, Stimmungs-Check-ins und dein Profil (Name, E-Mail, Foto) werden auf die Server von Evolve geladen, um deine Geräte zu synchronisieren.';
+	@override String get uploadPrivateTitle => 'Privat auf diesem Mac';
+	@override String get uploadPrivateBody => 'zu uns wird nichts hochgeladen; die optionale iCloud-Synchronisierung ist Ende-zu-Ende-verschlüsselt und erreicht nur dein eigenes iCloud-Konto.';
+	@override String get uploadNeverTitle => 'Nie abgerufen';
+	@override String get uploadNeverBody => 'Kontakte, Kalender, Fotos, Kamera, Mikrofon, Standort.';
 	@override String get acceptTerms => 'Ich akzeptiere die Bedingungen und die Datenschutzrichtlinie';
-	@override String get termsSubtitle => 'Ich bestätige, dass ich die Dokumente gelesen habe und mindestens 14 Jahre alt bin.';
+	@override String get termsSubtitle => 'Ich habe die Dokumente gelesen, bin mindestens 14 Jahre alt und stimme dem oben beschriebenen Hochladen zu.';
 	@override String get crashDiagnostics => 'Absturzdiagnose';
-	@override String get crashSubtitle => 'Erlaube das Senden anonymisierter technischer Berichte.';
+	@override String get crashSubtitle => 'Standardmäßig aus. Wenn aktiviert, gehen anonymisierte Absturzberichte an unseren Diagnoseanbieter Sentry.';
 	@override String get openPrivacy => 'Datenschutzrichtlinie öffnen';
 	@override String get openTerms => 'Nutzungsbedingungen';
 	@override String get notificationsTitle => 'Benachrichtigungen aktivieren';
@@ -3153,11 +3160,18 @@ extension on TranslationsDe {
 			'notifications.eveningReviewBody' => 'Wie lief der Tag? Erfasse deinen Fortschritt und aktualisiere den Verlauf.',
 			'privacy.biometricAuthReason' => 'Authentifiziere dich, um den App-Schutz zu aktivieren.',
 			'privacy.biometricUnlockReason' => 'Entsperre die App, um fortzufahren.',
-			'consentPage.subtitle' => 'Bevor du Evolve Desktop verwendest, bestätige die Bedingungen, die Datenschutzrichtlinie und die für die Synchronisierung erforderliche Datenverarbeitung.',
+			'consentPage.subtitle' => 'Evolve lädt deine personenbezogenen Daten erst auf einen Server, nachdem du hier zugestimmt hast.',
+			'consentPage.uploadTitle' => 'Was diesen Mac verlässt',
+			'consentPage.uploadAccountTitle' => 'Mit einem Evolve-Konto',
+			'consentPage.uploadAccountBody' => 'Ziele, Gewohnheiten, Stimmungs-Check-ins und dein Profil (Name, E-Mail, Foto) werden auf die Server von Evolve geladen, um deine Geräte zu synchronisieren.',
+			'consentPage.uploadPrivateTitle' => 'Privat auf diesem Mac',
+			'consentPage.uploadPrivateBody' => 'zu uns wird nichts hochgeladen; die optionale iCloud-Synchronisierung ist Ende-zu-Ende-verschlüsselt und erreicht nur dein eigenes iCloud-Konto.',
+			'consentPage.uploadNeverTitle' => 'Nie abgerufen',
+			'consentPage.uploadNeverBody' => 'Kontakte, Kalender, Fotos, Kamera, Mikrofon, Standort.',
 			'consentPage.acceptTerms' => 'Ich akzeptiere die Bedingungen und die Datenschutzrichtlinie',
-			'consentPage.termsSubtitle' => 'Ich bestätige, dass ich die Dokumente gelesen habe und mindestens 14 Jahre alt bin.',
+			'consentPage.termsSubtitle' => 'Ich habe die Dokumente gelesen, bin mindestens 14 Jahre alt und stimme dem oben beschriebenen Hochladen zu.',
 			'consentPage.crashDiagnostics' => 'Absturzdiagnose',
-			'consentPage.crashSubtitle' => 'Erlaube das Senden anonymisierter technischer Berichte.',
+			'consentPage.crashSubtitle' => 'Standardmäßig aus. Wenn aktiviert, gehen anonymisierte Absturzberichte an unseren Diagnoseanbieter Sentry.',
 			'consentPage.openPrivacy' => 'Datenschutzrichtlinie öffnen',
 			'consentPage.openTerms' => 'Nutzungsbedingungen',
 			'consentPage.notificationsTitle' => 'Benachrichtigungen aktivieren',

@@ -66,13 +66,21 @@ Future<void> main() async {
   await DesktopNotificationService.instance.init();
 
   // Sentry: disabled in Private mode; in Supabase mode honour user consent.
-  if (isPrivateMode) {
-    await DesktopSentryService.setEnabled(false);
-  } else {
-    await DesktopSentryService.setEnabled(
-      sharedPreferences.getBool('has_sentry_consent') ?? true,
-    );
-  }
+  //
+  // Gated on the consent question having been ANSWERED, not just on the answer:
+  // 'has_sentry_consent' is absent on a fresh install, so gating on it alone
+  // started the SDK — and shipped diagnostics to a third-party server — before
+  // the consent screen was ever shown. Guideline 5.1.2 rejection, macOS
+  // 1.0.0(26), 2026-08-01. Once the user answers, DesktopConsentController
+  // starts the SDK itself.
+  await DesktopSentryService.setEnabled(
+    DesktopSentryService.shouldRun(
+      hasCompletedConsent:
+          sharedPreferences.getBool('has_completed_consent') ?? false,
+      hasSentryConsent: sharedPreferences.getBool('has_sentry_consent') ?? false,
+      isPrivateMode: isPrivateMode,
+    ),
+  );
 
   final container = ProviderContainer(
     overrides: [sharedPreferencesProvider.overrideWithValue(sharedPreferences)],

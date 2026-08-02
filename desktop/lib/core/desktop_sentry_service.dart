@@ -32,6 +32,30 @@ class DesktopSentryService {
     return dsn.isNotEmpty && dsn != _placeholderDsn;
   }
 
+  /// Whether the SDK is allowed to run right now.
+  ///
+  /// [hasCompletedConsent] is load-bearing, not redundant: `has_sentry_consent`
+  /// is absent on a fresh install, and gating on that key alone starts the SDK
+  /// at cold start — i.e. it uploads diagnostics to a third-party server before
+  /// the consent screen has ever been shown. That is precisely the "data
+  /// uploaded before the user consented" that App Store Guideline 5.1.2 forbids,
+  /// and it is what the macOS 1.0.0(26) submission was rejected for on
+  /// 2026-08-01. Requiring the question to have been ANSWERED keeps a first
+  /// launch silent until the user has actually been asked.
+  ///
+  /// Deliberately does NOT consult [isConfigured]: this is the CONSENT policy,
+  /// and it stays a pure function of the user's choices so it can be reasoned
+  /// about and tested without a provisioned DSN. Whether the SDK can physically
+  /// start is a separate question, asked at the init sites.
+  ///
+  /// Mirrors mobile's `SentryService.shouldRun` exactly — the two apps make the
+  /// same promise to the user, so they answer with the same predicate.
+  static bool shouldRun({
+    required bool hasCompletedConsent,
+    required bool hasSentryConsent,
+    required bool isPrivateMode,
+  }) => hasCompletedConsent && hasSentryConsent && !isPrivateMode;
+
   static Future<void> setEnabled(bool enabled) async {
     if (enabled) {
       await ensureInitialized();

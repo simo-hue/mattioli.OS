@@ -1285,11 +1285,18 @@ class _Translations$consentPage$it extends Translations$consentPage$en {
 	final TranslationsIt _root; // ignore: unused_field
 
 	// Translations
-	@override String get subtitle => 'Prima di usare Evolve Desktop conferma termini, privacy policy e trattamento dei dati necessari alla sincronizzazione.';
+	@override String get subtitle => 'Evolve carica i tuoi dati personali su un server solo dopo il tuo consenso qui.';
+	@override String get uploadTitle => 'Cosa esce da questo Mac';
+	@override String get uploadAccountTitle => 'Con un account Evolve';
+	@override String get uploadAccountBody => 'obiettivi, abitudini, check-in dell\'umore e profilo (nome, email, foto) vengono caricati sui server di Evolve per sincronizzare i tuoi dispositivi.';
+	@override String get uploadPrivateTitle => 'In privato su questo Mac';
+	@override String get uploadPrivateBody => 'non ci viene caricato nulla; la sincronizzazione iCloud facoltativa è cifrata end-to-end e raggiunge solo il tuo account iCloud.';
+	@override String get uploadNeverTitle => 'Mai consultati';
+	@override String get uploadNeverBody => 'contatti, calendario, foto, fotocamera, microfono, posizione.';
 	@override String get acceptTerms => 'Accetto termini e privacy policy';
-	@override String get termsSubtitle => 'Confermo di aver letto i documenti e di avere almeno 14 anni.';
+	@override String get termsSubtitle => 'Ho letto i documenti, ho almeno 14 anni e acconsento al caricamento descritto sopra.';
 	@override String get crashDiagnostics => 'Diagnostica crash';
-	@override String get crashSubtitle => 'Consenti l\'invio di segnalazioni tecniche anonimizzate.';
+	@override String get crashSubtitle => 'Disattivata per impostazione predefinita. Se attiva, invia segnalazioni anonimizzate di crash al nostro fornitore di diagnostica, Sentry.';
 	@override String get openPrivacy => 'Apri la privacy policy';
 	@override String get openTerms => 'Termini di servizio';
 	@override String get notificationsTitle => 'Abilita le notifiche';
@@ -3153,11 +3160,18 @@ extension on TranslationsIt {
 			'notifications.eveningReviewBody' => 'Com’è andata oggi? Traccia i tuoi progressi e aggiorna il Diario di Bordo.',
 			'privacy.biometricAuthReason' => 'Autenticati per abilitare la protezione dell\'app.',
 			'privacy.biometricUnlockReason' => 'Sblocca l\'app per continuare.',
-			'consentPage.subtitle' => 'Prima di usare Evolve Desktop conferma termini, privacy policy e trattamento dei dati necessari alla sincronizzazione.',
+			'consentPage.subtitle' => 'Evolve carica i tuoi dati personali su un server solo dopo il tuo consenso qui.',
+			'consentPage.uploadTitle' => 'Cosa esce da questo Mac',
+			'consentPage.uploadAccountTitle' => 'Con un account Evolve',
+			'consentPage.uploadAccountBody' => 'obiettivi, abitudini, check-in dell\'umore e profilo (nome, email, foto) vengono caricati sui server di Evolve per sincronizzare i tuoi dispositivi.',
+			'consentPage.uploadPrivateTitle' => 'In privato su questo Mac',
+			'consentPage.uploadPrivateBody' => 'non ci viene caricato nulla; la sincronizzazione iCloud facoltativa è cifrata end-to-end e raggiunge solo il tuo account iCloud.',
+			'consentPage.uploadNeverTitle' => 'Mai consultati',
+			'consentPage.uploadNeverBody' => 'contatti, calendario, foto, fotocamera, microfono, posizione.',
 			'consentPage.acceptTerms' => 'Accetto termini e privacy policy',
-			'consentPage.termsSubtitle' => 'Confermo di aver letto i documenti e di avere almeno 14 anni.',
+			'consentPage.termsSubtitle' => 'Ho letto i documenti, ho almeno 14 anni e acconsento al caricamento descritto sopra.',
 			'consentPage.crashDiagnostics' => 'Diagnostica crash',
-			'consentPage.crashSubtitle' => 'Consenti l\'invio di segnalazioni tecniche anonimizzate.',
+			'consentPage.crashSubtitle' => 'Disattivata per impostazione predefinita. Se attiva, invia segnalazioni anonimizzate di crash al nostro fornitore di diagnostica, Sentry.',
 			'consentPage.openPrivacy' => 'Apri la privacy policy',
 			'consentPage.openTerms' => 'Termini di servizio',
 			'consentPage.notificationsTitle' => 'Abilita le notifiche',

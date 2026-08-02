@@ -230,11 +230,11 @@ string and the 30 locales together, after approval.
 
 ---
 
-## 2026-08-02 — SHIP macOS 1.0.0 (27) + iOS 1.1.2 (43)
+## 2026-08-02 — SHIP macOS 1.0.0 (27) + iOS 1.1.3 (43)
 
 Both apps are code-complete and green. The privacy policy is live (pushed to
-`simo-hue/evolve`). Versions are as you set them in `0e8ac85` — the ASC/project
-mismatch I flagged last round is resolved. Below is everything left, in order.
+`simo-hue/evolve`). macOS is as you set it in `0e8ac85`; iOS is bumped to
+**1.1.3** per your call. Below is everything left, in order.
 
 ### 0. Prereqs (Mac mini, once)
 
@@ -261,7 +261,7 @@ Push the metadata + review notes (no binary):
 cd ~/Developer/mattioli.OS/desktop/macos && fastlane mac metadata
 ```
 
-### 2. iOS — 1.1.2 (43)
+### 2. iOS — 1.1.3 (43)
 
 ```bash
 cd ~/Developer/mattioli.OS/mobile/ios && pod install
@@ -276,11 +276,17 @@ cd ~/Developer/mattioli.OS/mobile && flutter build ipa --release
 
 Then Xcode: `mobile/ios/Runner.xcworkspace` → Archive → Upload.
 
-Push the metadata + review notes (validates first, aborts on failure):
+In App Store Connect, create the **1.1.3** version first (iOS app ▸ + Version)
+— `upload_metadata` writes into the version currently in an editable state, so
+without it the copy lands on the wrong one. Then:
 
 ```bash
 cd ~/Developer/mattioli.OS/mobile/ios && fastlane ios upload_metadata
 ```
+
+**Release notes are stale.** All 39 locales still describe 1.1.2's headline (the
+no-account choice screen). 1.1.3's headline is the privacy gate. Say the word and
+I will write them; I did not rewrite 39 locales of your marketing copy unasked.
 
 ### 3. App Store Connect — do this before submitting either app
 

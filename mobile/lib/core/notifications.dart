@@ -337,17 +337,54 @@ class NotificationService {
     }
   }
 
+  /// Shared in-flight replay, so two callers on the same foreground run ONE.
+  /// Both the lifecycle observer and the manual-target sweep replay on resume —
+  /// the sweep must, because a queued Done is a verdict it would otherwise read
+  /// as an untouched day. Without this they raced on `_pendingLogsKey`: harmless
+  /// (the upserts are idempotent) but doubled every network call, and a loser
+  /// writing its own `remaining` could resurrect an entry the winner had already
+  /// applied.
+  Future<({int written, bool drained})>? _replayInFlight;
+
   /// Replay queued habit-log actions accumulated while the app was terminated
   /// or offline. Safe to call on every foreground: no-ops when the queue is
   /// empty or there's still no session. Entries that fail are kept for retry.
-  Future<void> replayPendingHabitLogs() async {
+  ///
+  /// Reports what happened, because two different callers need two different
+  /// facts about it:
+  ///
+  ///  * **written** — how many entries actually landed. Reloading the verdict
+  ///    map is only worth its cost when this is > 0. (Returning void made the
+  ///    only honest reaction "assume it wrote something", i.e. invalidate on
+  ///    every single foreground.)
+  ///  * **drained** — whether the queue is now EMPTY. A queue that still holds
+  ///    entries is a set of habit-days whose verdict the user has decided and
+  ///    the server has not been told about, so the in-memory map does not show
+  ///    them. Auto-fail must not run against that map: it would read those days
+  ///    as untouched and write 'missed' over the user's own Done, with no
+  ///    goal_progress row for any later pass to re-derive it from.
+  ///
+  /// The two differ exactly when every upsert fails — offline, or a 5xx — which
+  /// is precisely when a naive `written > 0` check says "nothing happened, carry
+  /// on".
+  Future<({int written, bool drained})> replayPendingHabitLogs() =>
+      _replayInFlight ??= _replayPendingHabitLogs()
+          .whenComplete(() => _replayInFlight = null);
+
+  Future<({int written, bool drained})> _replayPendingHabitLogs() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final pending = prefs.getStringList(_pendingLogsKey);
-      if (pending == null || pending.isEmpty) return;
+      if (pending == null || pending.isEmpty) {
+        return (written: 0, drained: true);
+      }
 
       final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) return; // no session yet; retry next foreground
+      if (user == null) {
+        // No session yet; retry next foreground. The queue still holds decided
+        // days, so it is NOT drained.
+        return (written: 0, drained: false);
+      }
 
       final remaining = <String>[];
       for (final entry in pending) {
@@ -371,8 +408,17 @@ class NotificationService {
           '[Notifications] Replayed pending logs; ${remaining.length} remaining',
         );
       }
+      // Only entries that actually landed count as written: a retry-kept entry
+      // changed nothing on the server, so it must not make the caller reload.
+      return (
+        written: pending.length - remaining.length,
+        drained: remaining.isEmpty,
+      );
     } catch (e, stack) {
       AppLogger.error('[Notifications] replayPendingHabitLogs error', e, stack);
+      // Unknown queue state — assume undrained, the direction that withholds
+      // permission to write rather than granting it.
+      return (written: 0, drained: false);
     }
   }
 

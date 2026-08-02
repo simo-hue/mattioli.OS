@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/goal.dart';
 import 'auth_provider.dart';
 import 'settings_provider.dart';
+import 'shared_prefs_provider.dart';
 import '../core/notifications.dart';
 import '../core/navigator_key.dart';
 import '../core/app_logger.dart';
@@ -128,6 +129,34 @@ Future<bool> awaitStableBarrier(Future<void>? Function() current) async {
   }
   return false;
 }
+
+/// Whether a settled load left behind a map that may be READ AS EVIDENCE — that
+/// is, one where an absent entry can be trusted to mean "the user recorded
+/// nothing" rather than "the load did not answer".
+///
+/// The loaders swallow their own errors and leave an empty map, so the barrier
+/// settles either way and [awaitStableBarrier] alone cannot tell the two apart.
+/// This is the rule that can:
+///
+///  * [settled] false — the barrier gave up. Never trustworthy.
+///  * [syncFailed] with [cacheSeeded] — offline, or a 5xx, but the on-disk
+///    mirror populated the map. **Trustworthy**, and deliberately so: this is
+///    what shipped before the flag existed, and it is what keeps a limit habit's
+///    quiet days resolving on a phone with no signal. The alternative — treating
+///    every failed server leg as a failed load — silently stops resolving
+///    anything for offline users.
+///  * [syncFailed] without [cacheSeeded] — nothing loaded. The map is empty
+///    BECAUSE it failed, which is the one case that must never be read as
+///    evidence. Not trustworthy.
+///
+/// Shared by both notifiers rather than inlined twice, for the reason
+/// [loadBarrier]'s own doc records about the second copy.
+bool loadIsTrustworthy({
+  required bool settled,
+  required bool syncFailed,
+  required bool cacheSeeded,
+}) =>
+    settled && (!syncFailed || cacheSeeded);
 
 class GoalsNotifier extends Notifier<List<Goal>> {
   static const String _cacheKey = 'goals_cache';
@@ -741,13 +770,62 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
   /// See [GoalsNotifier._serverStateApplied].
   bool _serverStateApplied = false;
 
+  /// The initial population of [state] for the current data mode, still in
+  /// flight — the same barrier [HabitProgressNotifier._initialLoad] keeps, and
+  /// for a sibling reason.
+  ///
+  /// [build] returns `{}` synchronously, so "no verdict stored" and "the verdicts
+  /// have not loaded yet" are indistinguishable to any reader. Widgets don't care
+  /// (they rebuild when the load lands). The manual-target sweep does: it decides
+  /// whether to write by comparing the derived verdict against the STORED one, so
+  /// an unloaded map makes every closed day look pending — and auto-fail would
+  /// then stamp `missed` over real `done` days and sync it. The progress barrier
+  /// alone doesn't cover this: the two maps load independently, so progress can
+  /// be ready while logs are still in flight.
+  Future<void>? _initialLoad;
+
+  /// Set when a loader GAVE UP, and cleared by a load that answers. Both loaders
+  /// swallow their own errors and leave `{}` behind, so the barrier settles
+  /// either way — meaning "the load finished" and "the load failed" are
+  /// otherwise indistinguishable, and a caller that reads an absent verdict as
+  /// permission to write one would act on a map that never loaded. The mobile
+  /// counterpart of the desktop snapshot's `progressStale`.
+  bool _syncFailed = false;
+
+  /// Awaits the in-flight initial load and reports whether [state] is the
+  /// STORED TRUTH — settled, and answered by its real source rather than
+  /// degraded to the offline mirror.
+  ///
+  /// Deliberately stricter than [loadIsTrustworthy], which the progress map
+  /// uses, and the asymmetry is the point. Both maps gate the same sweep, but
+  /// they gate different risks:
+  ///
+  ///  * The progress map drives limit resolution, which derives every verdict
+  ///    from a NUMBER. A stale-but-real mirror produces the same answer the
+  ///    server would, and refusing it just stops an offline phone resolving
+  ///    anything — a regression with no safety payoff.
+  ///  * This map gates AUTO-FAIL, the one rule that reads an ABSENT verdict as
+  ///    permission to write one. The verdict it would destroy is a 'done' with
+  ///    no number behind it, which nothing can re-derive. The mirror cannot see
+  ///    a check-in made on another device since the last successful sync, so
+  ///    accepting it means overwriting that check-in with 'missed', for good.
+  ///
+  /// Deferring auto-fail costs nothing: the day stays pending and is scored by
+  /// the next sweep that does reach the server, still inside the backfill
+  /// window. Never rethrows — see [awaitStableBarrier].
+  Future<bool> ensureLoaded() async {
+    final settled = await awaitStableBarrier(() => _initialLoad);
+    return settled && !_syncFailed;
+  }
+
   @override
   HabitLogsMap build() {
     final dataMode = ref.watch(activeDataModeProvider);
     ref.onDispose(_flushCache);
+    _syncFailed = false;
 
     if (dataMode == AppDataMode.private) {
-      _loadFromPrivateStore();
+      _initialLoad = _loadFromPrivateStore();
       return {};
     }
 
@@ -755,7 +833,12 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
 
     ref.listen(authProvider, (previous, next) {
       if (next.isLoggedIn && next.user != null) {
-        _syncFromSupabase();
+        // Re-arm the barrier: the logout branch below empties `state` without
+        // rebuilding the notifier, so leaving the old completed future in place
+        // would let the sweep read `{}` as "no verdicts stored". The flags are
+        // re-armed with it — a fresh attempt is not yet a failure.
+        _syncFailed = false;
+        _initialLoad = _syncFromSupabase();
       } else if (!next.isLoggedIn) {
         // Clear only in-memory state for the /login redirect; keep the on-disk
         // cache so a transient logout doesn't destroy the offline mirror (see
@@ -767,8 +850,13 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
     final authState = ref.read(authProvider);
     final user = authState.user;
     if (authState.isLoggedIn && user != null) {
-      _seedFromCache(user.id);
-      _syncFromSupabase();
+      // BOTH loaders, like the progress barrier: waiting on the server call
+      // alone resolves early whenever it fails fast (offline, a 5xx) while the
+      // cache seed is still in flight, which is exactly the empty-map read this
+      // barrier exists to prevent.
+      _initialLoad = loadBarrier([_seedFromCache(user.id), _syncFromSupabase()]);
+    } else {
+      _initialLoad = null;
     }
 
     return {};
@@ -793,6 +881,11 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
       state = await ref.read(privateLocalDatabaseProvider).loadHabitLogs();
     } catch (e, stack) {
       AppLogger.error('[HabitLogs] Private load error', e, stack);
+      // `{}` here is the FAILURE state, not an empty history — flag it, or a
+      // reader cannot tell "this user has no verdicts" from "the store did not
+      // answer". Private mode has no mirror to fall back on, so this is fatal
+      // to trust. See [loadIsTrustworthy].
+      _syncFailed = true;
       state = {};
     }
   }
@@ -867,11 +960,17 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
 
       _serverStateApplied = true;
       state = newLogs;
+      // A later success must re-enable what an earlier failure disabled, or one
+      // bad cold-start sync keeps the sweep off for the whole session.
+      _syncFailed = false;
       if (await cacheOverwriteAllowed(user.id, isEmptyResult: newLogs.isEmpty)) {
         _saveToCache(newLogs);
       }
     } catch (e, stack) {
       AppLogger.error('[HabitLogs] Sync error', e, stack);
+      // Offline or a 5xx. Survivable IF the mirror seeded — see
+      // [loadIsTrustworthy]; fatal to trust if it did not.
+      _syncFailed = true;
     }
   }
 
@@ -1256,10 +1355,25 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
   /// So the sweep awaits this first. See [_ensureLoaded].
   Future<void>? _initialLoad;
 
+  /// The twin of [HabitLogsNotifier._syncFailed], needed for the same reason:
+  /// both loaders swallow their error and leave `{}`, so the barrier settles on
+  /// a failure and "loaded, nothing stored" and "never loaded" stay
+  /// indistinguishable. Awaiting the barrier alone is therefore NOT enough to
+  /// earn the right to read absence as evidence, which is exactly what the
+  /// paragraph above says this map must not do.
+  bool _syncFailed = false;
+
+  /// Set when the offline mirror populated [state]. See [loadIsTrustworthy]:
+  /// sweeping a cache-seeded map is what shipped, and is what keeps limit
+  /// habits resolving with no signal.
+  bool _cacheSeeded = false;
+
   @override
   HabitProgressMap build() {
     final dataMode = ref.watch(activeDataModeProvider);
     ref.onDispose(_flushCache);
+    _syncFailed = false;
+    _cacheSeeded = false;
 
     if (dataMode == AppDataMode.private) {
       _initialLoad = _loadFromPrivateStore();
@@ -1272,7 +1386,10 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
         // Re-arm the barrier: the logout branch below empties `state` without
         // rebuilding the notifier, so leaving the old completed future in place
         // would let the sweep read `{}` as "no progress recorded" and delete
-        // real rows.
+        // real rows. The flags are re-armed with it — a fresh attempt is not yet
+        // a failure, and the previous account's seed says nothing about this one.
+        _syncFailed = false;
+        _cacheSeeded = false;
         _initialLoad = _syncFromSupabase();
       } else if (!next.isLoggedIn) {
         state = {};
@@ -1298,7 +1415,14 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
   /// Awaits the in-flight initial load, if any, so a caller that must not
   /// mistake "not loaded yet" for "no data" can wait for the real map. Returns
   /// false if it never settled. Never rethrows — see [awaitStableBarrier].
-  Future<bool> _ensureLoaded() => awaitStableBarrier(() => _initialLoad);
+  Future<bool> _ensureLoaded() async {
+    final settled = await awaitStableBarrier(() => _initialLoad);
+    return loadIsTrustworthy(
+      settled: settled,
+      syncFailed: _syncFailed,
+      cacheSeeded: _cacheSeeded,
+    );
+  }
 
   Future<void> _seedFromCache(String userId) async {
     if (!await cacheSeedAllowed(userId)) return;
@@ -1310,6 +1434,8 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
     final cached = _loadFromCache();
     if (cached.isEmpty) return;
     state = cached;
+    // The mirror answered: a failed server leg is now survivable.
+    _cacheSeeded = true;
   }
 
   Future<void> _loadFromPrivateStore() async {
@@ -1317,6 +1443,11 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
       state = await ref.read(privateLocalDatabaseProvider).loadHabitProgress();
     } catch (e, stack) {
       AppLogger.error('[HabitProgress] Private load error', e, stack);
+      // See [loadIsTrustworthy]: `{}` here is the failure, not an empty history,
+      // and for an atMost target absence means "quiet success" — the single most
+      // destructive thing this map can be wrong about. Private mode has no
+      // mirror to fall back on.
+      _syncFailed = true;
       state = {};
     }
   }
@@ -1383,12 +1514,18 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
       });
       _serverStateApplied = true;
       state = newProgress;
+      // A later success re-enables what an earlier failure disabled.
+      _syncFailed = false;
       if (await cacheOverwriteAllowed(user.id,
           isEmptyResult: newProgress.isEmpty)) {
         _saveToCache(newProgress);
       }
     } catch (e, stack) {
       AppLogger.error('[HabitProgress] Sync error', e, stack);
+      // Offline or a 5xx. Survivable IF the mirror seeded — see
+      // [loadIsTrustworthy]; otherwise the sweep must stand down rather than
+      // read absence as "no progress".
+      _syncFailed = true;
     }
   }
 
@@ -1502,20 +1639,75 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
 
   /// End-of-day resolution for manual targets: materialises the `goal_logs`
   /// verdict for every CLOSED day whose live-derived verdict never caught up —
-  /// above all a limit habit's quiet days, which are successes only knowable
-  /// once the day is over. Call on foreground; a no-op when there are no manual
+  /// a limit habit's quiet days (successes only knowable once the day is over)
+  /// and, from the auto-fail anchor on, a count habit's untouched days (misses
+  /// for the same reason). Call on foreground; a no-op when there are no manual
   /// targets or nothing changed.
   ///
   /// Reuses [setProgress] as the applier (one write path), so each corrected day
-  /// re-derives and persists exactly as a live edit would, streaks included.
-  /// [now] is injectable for tests.
-  Future<void> reconcileManualTargets({DateTime? now}) async {
+  /// re-derives and persists exactly as a live edit would, streaks included —
+  /// EXCEPT for a `verdictOnly` change, which had no stored number and so writes
+  /// the verdict alone rather than "setting" a progress of 0. See
+  /// [TargetReconcileChange.verdictOnly]. [now] is injectable for tests.
+  ///
+  /// [allowAutoFail] lets the caller withhold auto-fail for one pass while still
+  /// running the rest of the sweep — used when the notification queue could not
+  /// be drained, i.e. when habit-days the user has already decided are known to
+  /// be missing from the verdict map.
+  Future<void> reconcileManualTargets({
+    DateTime? now,
+    bool allowAutoFail = true,
+  }) async {
+    // ORDER MATTERS HERE, and it is the whole reason this reads oddly.
+    //
+    // `awaitStableBarrier` proves a map is loaded *as of the moment it returns*.
+    // Riverpod reuses a notifier across `invalidate`, so any await between that
+    // proof and the synchronous read below reopens the exact window the barrier
+    // exists to close — and `ref.mounted` cannot see it, because the notifier
+    // was never disposed. The progress barrier therefore has to be the LAST
+    // await before the reads, with nothing between them.
+    //
+    // So the logs barrier and the anchor (a platform-channel round trip on its
+    // first run) are settled FIRST, and the logs map is captured the instant its
+    // barrier returns. Then the progress barrier, then straight into the loop.
+
+    // AUTO-FAIL alone needs the VERDICT map to be trustworthy, and it is the only
+    // part of this sweep that does: it is the only rule that reads an ABSENT
+    // verdict as permission to write one. An unloaded or failed logs map makes
+    // every closed day look untouched, and the day it would destroy is the one
+    // that cannot heal — a 'done' with no number behind it (the reminder's Done
+    // action writes exactly that), which no later sweep can re-derive.
+    //
+    // The rest of the sweep is unharmed by a thin logs map, because it derives
+    // from goal_progress: a quiet limit day resolves to 'done' and a recorded
+    // breach re-derives to 'missed' whether or not the stored verdict was
+    // visible. So a bad logs read disables auto-fail for this pass and leaves
+    // shipped behaviour exactly as it was, rather than standing the whole sweep
+    // down and leaving limit habits unresolved offline.
+    final logsTrustworthy = allowAutoFail &&
+        await ref.read(habitLogsProvider.notifier).ensureLoaded();
+    if (!ref.mounted) return;
+    // Captured NOW, while the barrier's proof still holds — not re-read after
+    // the anchor await below.
+    final logs = ref.read(habitLogsProvider);
+    if (!logsTrustworthy) {
+      AppLogger.warning(
+        '[Targets] the verdict map is not trustworthy for this pass '
+        '(allowAutoFail=$allowAutoFail) — auto-fail is off rather than reading '
+        'an unloaded or incomplete map as "no verdict stored"',
+      );
+    }
+    final today = now ?? DateTime.now();
+    final autoFailFrom =
+        logsTrustworthy ? await _resolveAutoFailAnchor(today) : null;
+    if (!ref.mounted) return;
+
     // Never sweep a map that has not finished loading: for an `atMost` target an
     // absent entry means "quiet success", so an unloaded map resolves every
-    // stored breach to 'done' and DELETES the amount behind it. See
-    // [_initialLoad]. A barrier that gave up is NOT a load — decline the sweep
-    // rather than run it on a map that may be mid-flight; the next foreground
-    // will try again.
+    // stored breach to 'done' — and, before the verdict-only path, applied that
+    // as amount 0, which DELETES the amount behind it. See [_initialLoad]. A
+    // barrier that gave up is NOT a load — decline the sweep rather than run it
+    // on a map that may be mid-flight; the next foreground will try again.
     if (!await _ensureLoaded()) {
       AppLogger.warning(
         '[Targets] goal progress did not settle — skipping the manual-target '
@@ -1524,8 +1716,7 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
       return;
     }
     if (!ref.mounted) return;
-    final today = now ?? DateTime.now();
-    final logs = ref.read(habitLogsProvider);
+    // NO awaits from here to the end of the loop.
     final changes = <TargetReconcileChange>[];
     for (final goal in ref.read(goalsProvider)) {
       final target = goal.target;
@@ -1549,6 +1740,7 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
         isScheduled: goal.isScheduledOn,
         progressFor: (dateKey) => state[dateKey]?[goal.id],
         statusFor: (dateKey) => logs[dateKey]?[goal.id],
+        autoFailUnmetFrom: autoFailFrom,
       ));
     }
     if (changes.isEmpty) return;
@@ -1557,8 +1749,36 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
     // so applying in date order builds streaks correctly rather than racing.
     final byGoal = {for (final g in ref.read(goalsProvider)) g.id: g};
     for (final change in changes) {
-      final target = byGoal[change.goalId]?.target;
+      final goal = byGoal[change.goalId];
+      final target = goal?.target;
       if (target == null) continue;
+      // One owner per habit-day, re-checked at APPLY time. `setProgress` makes
+      // this check itself, so the ordinary path is covered; the verdict-only
+      // path writes the log directly and would otherwise inherit only the
+      // snapshot taken before the awaits above. A habit that gained a rule mid
+      // sweep must be left to the verification pipeline.
+      if (goal!.verificationRule != null) continue;
+      if (change.verdictOnly) {
+        // No stored number, so there is nothing to "set" — writing the verdict
+        // alone keeps this path incapable of deleting a real count. Still the
+        // one goal_logs writer setProgress itself delegates to, so streaks and
+        // the stats invalidation behave identically. The status is re-derived
+        // rather than spelled 'missed' here: evaluateTarget owns the whole
+        // progress→status mapping, and a second copy of it is exactly the drift
+        // that mapping was centralised to stop. `progress: null` is the honest
+        // input — there is no row — and for a manual target it resolves to 0.
+        final verdict = evaluateTarget(
+          target: target,
+          progress: null,
+          periodIsOver: true,
+        );
+        await ref.read(habitLogsProvider.notifier).setDerivedStatus(
+              goalId: change.goalId,
+              dateKey: change.dateKey,
+              status: verdict.logStatus,
+            );
+        continue;
+      }
       await setProgress(
         dateKey: change.dateKey,
         goalId: change.goalId,
@@ -1568,6 +1788,22 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
       );
     }
   }
+
+  /// Reads the auto-fail anchor, stamping today the first time it is missing.
+  /// The RULE lives in [resolveAndStampAutoFailAnchor], shared with macOS; only
+  /// the preference plumbing is local.
+  Future<DateTime?> _resolveAutoFailAnchor(DateTime today) =>
+      resolveAndStampAutoFailAnchor(
+        today: today,
+        read: () => ref.read(sharedPrefsProvider).getString(kAutoFailAnchorPrefKey),
+        write: (value) =>
+            ref.read(sharedPrefsProvider).setString(kAutoFailAnchorPrefKey, value),
+        // Warning, not error: a handled degradation with a safe outcome —
+        // auto-fail stays off this pass and the next foreground tries again.
+        onError: (e) => AppLogger.warning(
+            '[Targets] auto-fail anchor unavailable — auto-fail off for this '
+            'pass: $e'),
+      );
 
   void clearAll() {
     state = {};

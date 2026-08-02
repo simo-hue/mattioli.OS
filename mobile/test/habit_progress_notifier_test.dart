@@ -23,7 +23,14 @@ class _RecordingStore extends FakePrivateDataStore {
     this.seededGoals = const <Goal>[],
     this.seededProgress = const <String, Map<String, double>>{},
     this.seededLogs = const <String, Map<String, String>>{},
+    this.logsLoadDelay = Duration.zero,
   });
+
+  /// Holds [loadHabitLogs] open, so a test can fire the sweep while the verdict
+  /// map is genuinely still in flight. Without this the load resolves during the
+  /// sweep's first await and the race never happens — the barrier test would
+  /// then pass whether or not the barrier exists.
+  final Duration logsLoadDelay;
 
   /// Goals returned by [loadGoals] on init, so a test can start from a habit
   /// whose target has been effective since a PAST date (a genuinely "started
@@ -50,8 +57,10 @@ class _RecordingStore extends FakePrivateDataStore {
       {for (final e in seededProgress.entries) e.key: {...e.value}};
 
   @override
-  Future<Map<String, Map<String, String>>> loadHabitLogs() async =>
-      {for (final e in seededLogs.entries) e.key: {...e.value}};
+  Future<Map<String, Map<String, String>>> loadHabitLogs() async {
+    if (logsLoadDelay > Duration.zero) await Future<void>.delayed(logsLoadDelay);
+    return {for (final e in seededLogs.entries) e.key: {...e.value}};
+  }
 
   @override
   Future<void> setHabitProgress({
@@ -97,6 +106,44 @@ class _RecordingStore extends FakePrivateDataStore {
   }
 }
 
+/// SharedPreferences whose ANCHOR read throws — a corrupt entry, or the value
+/// stored under a type the plugin cannot decode. Scoped to that one key so the
+/// rest of the container (the data-mode provider reads prefs in its build) still
+/// works, and the test isolates the anchor's failure branch.
+class _ThrowingPrefs implements SharedPreferences {
+  _ThrowingPrefs(this._inner);
+  final SharedPreferences _inner;
+
+  @override
+  String? getString(String key) {
+    if (key == kAutoFailAnchorPrefKey) throw StateError('prefs unavailable');
+    return _inner.getString(key);
+  }
+
+  @override
+  Future<bool> setString(String key, String value) =>
+      _inner.setString(key, value);
+
+  @override
+  bool? getBool(String key) => _inner.getBool(key);
+
+  @override
+  noSuchMethod(Invocation invocation) => throw UnimplementedError(
+      'unexpected SharedPreferences call: ${invocation.memberName}');
+}
+
+/// A store whose VERDICT load fails while everything else works — the shape a
+/// disk error (private mode) or an offline/5xx sync (account mode) leaves
+/// behind. Both leave an empty map, which is exactly why the failure has to be
+/// signalled out of band.
+class _ThrowingLogsStore extends _RecordingStore {
+  _ThrowingLogsStore({super.seededGoals});
+
+  @override
+  Future<Map<String, Map<String, String>>> loadHabitLogs() async =>
+      throw StateError('disk failure');
+}
+
 Goal _countGoal() => Goal(
       id: 'g1',
       title: 'Push-ups',
@@ -138,8 +185,54 @@ Goal _verifiedCountGoal() => Goal(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  Future<ProviderContainer> container(FakePrivateDataStore store) async {
-    SharedPreferences.setMockInitialValues({'active_data_mode': 'private'});
+  group('loadIsTrustworthy — when absence may be read as evidence', () {
+    test('a barrier that gave up is never trustworthy', () {
+      expect(
+        loadIsTrustworthy(settled: false, syncFailed: false, cacheSeeded: true),
+        isFalse,
+      );
+    });
+
+    test('a clean load is trustworthy', () {
+      expect(
+        loadIsTrustworthy(settled: true, syncFailed: false, cacheSeeded: false),
+        isTrue,
+        reason: 'a genuinely empty history must not be mistaken for a failure, '
+            'or a new user never gets their first days resolved',
+      );
+    });
+
+    test('offline WITH the mirror seeded is trustworthy', () {
+      // The regression this rule exists to prevent: treating every failed server
+      // leg as a failed load stopped a no-signal phone resolving anything, where
+      // before it swept the last-known-good mirror.
+      expect(
+        loadIsTrustworthy(settled: true, syncFailed: true, cacheSeeded: true),
+        isTrue,
+      );
+    });
+
+    test('a failed load with NOTHING seeded is not trustworthy', () {
+      // The map is empty BECAUSE it failed — the one case that must never be
+      // read as "the user recorded nothing".
+      expect(
+        loadIsTrustworthy(settled: true, syncFailed: true, cacheSeeded: false),
+        isFalse,
+      );
+    });
+  });
+
+  /// [autoFailAnchor] pre-seeds the auto-fail anchor (a `YYYY-MM-DD` string).
+  /// Leaving it null is the fresh-install case: the sweep stamps it at `now`, so
+  /// nothing that closed earlier can be auto-failed.
+  Future<ProviderContainer> container(
+    FakePrivateDataStore store, {
+    String? autoFailAnchor,
+  }) async {
+    SharedPreferences.setMockInitialValues({
+      'active_data_mode': 'private',
+      kAutoFailAnchorPrefKey: ?autoFailAnchor,
+    });
     final prefs = await SharedPreferences.getInstance();
     final c = ProviderContainer(
       overrides: [
@@ -380,6 +473,144 @@ void main() {
           reason: 'a breach must not be rewritten as a success');
     });
 
+    test('an earned day survives a sweep racing the LOGS load', () async {
+      // The hazard auto-fail introduces. The two maps load independently, so
+      // progress can be ready while logs are still in flight — and an empty logs
+      // map makes every closed day look untouched.
+      //
+      // The day here is the one that cannot heal itself: a 'done' written by the
+      // reminder's Done action, with NO number behind it. Nothing in
+      // goal_progress can restore it, so a sweep that ran blind would replace a
+      // deliberate answer with 'missed' permanently, and sync that to CloudKit
+      // and the Mac.
+      final store = _RecordingStore(
+        seededGoals: [
+          _countGoal().copyWith(
+            startDate: DateTime(2026, 7, 22),
+            targetEffectiveFrom: DateTime(2026, 7, 22),
+          ),
+        ],
+        seededLogs: const {'2026-07-22': {'g1': 'done'}},
+        // Slow enough that the sweep's own awaits cannot accidentally let the
+        // logs land first — the race has to be real for this test to mean
+        // anything.
+        logsLoadDelay: const Duration(milliseconds: 50),
+      );
+      final c = await container(store, autoFailAnchor: '2026-07-01');
+      // Warm goals + progress, then force ONLY the logs map to reload so its
+      // async load is in flight when the sweep fires — the mirror image of the
+      // progress-map race below.
+      c.read(goalsProvider.notifier);
+      c.read(habitProgressProvider.notifier);
+      await settle();
+      c.invalidate(habitLogsProvider);
+      c.read(habitLogsProvider.notifier);
+      final progress = c.read(habitProgressProvider.notifier);
+
+      // No settle() before sweeping — main.dart's resume handler doesn't either.
+      await progress.reconcileManualTargets(now: now);
+      await settle();
+
+      expect(c.read(habitLogsProvider)['2026-07-22']?['g1'], 'done',
+          reason: 'an earned day must not be auto-failed because its verdict '
+              'had not loaded yet');
+      expect(
+        store.logWrites.where(
+            (w) => w['date'] == '2026-07-22' && w['status'] == 'missed'),
+        isEmpty,
+      );
+    });
+
+    test('a FAILED logs load disables auto-fail (not just an unfinished one)',
+        () async {
+      // A settled barrier is not a successful one. Both logs loaders swallow
+      // their error and leave `{}` behind, so "no verdicts stored" and "the
+      // store did not answer" look identical downstream. Reading the second as
+      // the first is how a reminder-written 'done' — which has no number to
+      // re-derive it from — gets permanently replaced by 'missed' and synced.
+      final store = _ThrowingLogsStore(seededGoals: [
+        _countGoal().copyWith(
+          startDate: DateTime(2026, 7, 22),
+          targetEffectiveFrom: DateTime(2026, 7, 22),
+        ),
+      ]);
+      final c = await container(store, autoFailAnchor: '2026-07-01');
+      c.read(goalsProvider.notifier);
+      c.read(habitLogsProvider.notifier);
+      final progress = c.read(habitProgressProvider.notifier);
+      await settle();
+
+      await progress.reconcileManualTargets(now: now);
+
+      expect(store.logWrites, isEmpty,
+          reason: 'auto-fail must stand down when the verdict map failed to '
+              'load, rather than scoring every day as untouched');
+    });
+
+    test('an UNDRAINED notification queue disables auto-fail', () async {
+      // A queued Done is a habit-day the user already decided, which the verdict
+      // map cannot show until the queue reaches the server. Auto-fail would read
+      // it as untouched and write 'missed' over it — and with no goal_progress
+      // row behind a reminder-written Done, nothing could re-derive it.
+      final store = _RecordingStore(seededGoals: [
+        _countGoal().copyWith(
+          startDate: DateTime(2026, 7, 22),
+          targetEffectiveFrom: DateTime(2026, 7, 22),
+        ),
+      ]);
+      final c = await container(store, autoFailAnchor: '2026-07-01');
+      c.read(goalsProvider.notifier);
+      c.read(habitLogsProvider.notifier);
+      final progress = c.read(habitProgressProvider.notifier);
+      await settle();
+
+      await progress.reconcileManualTargets(now: now, allowAutoFail: false);
+
+      expect(store.logWrites, isEmpty);
+    });
+
+    test('a drained queue lets auto-fail run (the guard is not a kill switch)',
+        () async {
+      final store = _RecordingStore(seededGoals: [
+        _countGoal().copyWith(
+          startDate: DateTime(2026, 7, 22),
+          targetEffectiveFrom: DateTime(2026, 7, 22),
+        ),
+      ]);
+      final c = await container(store, autoFailAnchor: '2026-07-01');
+      c.read(goalsProvider.notifier);
+      c.read(habitLogsProvider.notifier);
+      final progress = c.read(habitProgressProvider.notifier);
+      await settle();
+
+      await progress.reconcileManualTargets(now: now, allowAutoFail: true);
+
+      expect(c.read(habitLogsProvider)['2026-07-22']?['g1'], 'missed');
+    });
+
+    test('a failed logs load still lets the LIMIT sweep run', () async {
+      // The gate is deliberately narrow. Limit resolution derives from
+      // goal_progress (barriered separately) and is unharmed by a thin logs
+      // map, so a logs failure must not leave an offline user's limit habits
+      // perpetually unresolved — that would be a regression in shipped
+      // behaviour, traded for a hazard that only auto-fail has.
+      final store = _ThrowingLogsStore(seededGoals: [
+        _limitGoal().copyWith(
+          startDate: DateTime(2026, 7, 22),
+          targetEffectiveFrom: DateTime(2026, 7, 22),
+        ),
+      ]);
+      final c = await container(store, autoFailAnchor: '2026-07-01');
+      c.read(goalsProvider.notifier);
+      c.read(habitLogsProvider.notifier);
+      final progress = c.read(habitProgressProvider.notifier);
+      await settle();
+
+      await progress.reconcileManualTargets(now: now);
+
+      expect(store.logWrites.map((w) => w['status']), contains('done'));
+    });
+
     test('the sweep still materialises a genuinely quiet closed day', () async {
       // The guard must not defeat the feature: with the map loaded and truly
       // empty, an untouched limit day is still a success.
@@ -448,7 +679,12 @@ void main() {
           reason: 'the second sweep must be a no-op');
     });
 
-    test('does not invent misses for an untouched count habit', () async {
+    test('does not invent misses for days that closed BEFORE the anchor',
+        () async {
+      // The first sweep on this build stamps the auto-fail anchor at today, so
+      // every day that closed before the rule existed is out of reach. This is
+      // what stops shipping auto-fail from retroactively reddening history a
+      // user has already seen and moved on from.
       final store = _RecordingStore(seededGoals: [
         _countGoal().copyWith(
           startDate: DateTime(2026, 7, 20),
@@ -463,9 +699,165 @@ void main() {
 
       await progress.reconcileManualTargets(now: now);
 
-      // An atLeast habit the user never touched stays absent — like a checkbox.
       expect(store.logWrites, isEmpty);
       expect(c.read(habitLogsProvider)['2026-07-22']?['g1'], isNull);
+      // ... and the anchor was stamped, so tomorrow's sweep can score today.
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString(kAutoFailAnchorPrefKey), '2026-07-24');
+    });
+
+    test('auto-fails an untouched count day from the anchor on', () async {
+      // The bug this feature fixes: 0 push-ups is 0 push-ups whether or not the
+      // user ever opened the sheet. With the anchor already in the past, every
+      // closed scheduled day the user never touched resolves to 'missed'.
+      final store = _RecordingStore(seededGoals: [
+        _countGoal().copyWith(
+          startDate: DateTime(2026, 7, 21),
+          targetEffectiveFrom: DateTime(2026, 7, 21),
+        ),
+      ]);
+      final c = await container(store, autoFailAnchor: '2026-07-01');
+      c.read(goalsProvider.notifier);
+      c.read(habitLogsProvider.notifier);
+      final progress = c.read(habitProgressProvider.notifier);
+      await settle();
+
+      await progress.reconcileManualTargets(now: now);
+
+      final logs = c.read(habitLogsProvider);
+      expect(logs['2026-07-21']?['g1'], 'missed');
+      expect(logs['2026-07-22']?['g1'], 'missed');
+      expect(logs['2026-07-23']?['g1'], 'missed');
+      // Today is still open — it must stay pending, not pre-fail.
+      expect(logs['2026-07-24']?['g1'], isNull);
+    });
+
+    test('auto-fail writes the verdict ONLY — goal_progress is never touched',
+        () async {
+      // A day with no entry has no number to write, so the sweep must not route
+      // it through setProgress: `amount 0` DELETES, and a delete driven by an
+      // absence is how a real count gets destroyed if the map is ever wrong.
+      final store = _RecordingStore(seededGoals: [
+        _countGoal().copyWith(
+          startDate: DateTime(2026, 7, 22),
+          targetEffectiveFrom: DateTime(2026, 7, 22),
+        ),
+      ]);
+      final c = await container(store, autoFailAnchor: '2026-07-01');
+      c.read(goalsProvider.notifier);
+      c.read(habitLogsProvider.notifier);
+      final progress = c.read(habitProgressProvider.notifier);
+      await settle();
+
+      await progress.reconcileManualTargets(now: now);
+
+      expect(c.read(habitLogsProvider)['2026-07-22']?['g1'], 'missed');
+      expect(store.progressWrites, isEmpty);
+      expect(store.progressDeletes, isEmpty,
+          reason: 'auto-fail must not issue a delete on the strength of an '
+              'absent progress row');
+    });
+
+    test('auto-fail is idempotent — a second pass writes nothing new', () async {
+      final store = _RecordingStore(seededGoals: [
+        _countGoal().copyWith(
+          startDate: DateTime(2026, 7, 22),
+          targetEffectiveFrom: DateTime(2026, 7, 22),
+        ),
+      ]);
+      final c = await container(store, autoFailAnchor: '2026-07-01');
+      c.read(goalsProvider.notifier);
+      c.read(habitLogsProvider.notifier);
+      final progress = c.read(habitProgressProvider.notifier);
+      await settle();
+
+      await progress.reconcileManualTargets(now: now);
+      final writesAfterFirst = store.logWrites.length;
+      expect(writesAfterFirst, greaterThan(0));
+      await progress.reconcileManualTargets(now: now);
+
+      expect(store.logWrites.length, writesAfterFirst);
+    });
+
+    test('logging the number afterwards reverses an auto-failed day', () async {
+      // Auto-fail must never be a trap: entering the push-ups you did flips the
+      // day straight back to done.
+      final store = _RecordingStore(seededGoals: [
+        _countGoal().copyWith(
+          startDate: DateTime(2026, 7, 23),
+          targetEffectiveFrom: DateTime(2026, 7, 23),
+        ),
+      ]);
+      final c = await container(store, autoFailAnchor: '2026-07-01');
+      c.read(goalsProvider.notifier);
+      c.read(habitLogsProvider.notifier);
+      final progress = c.read(habitProgressProvider.notifier);
+      await settle();
+
+      await progress.reconcileManualTargets(now: now);
+      expect(c.read(habitLogsProvider)['2026-07-23']?['g1'], 'missed');
+
+      await progress.setProgress(
+        dateKey: '2026-07-23',
+        goalId: 'g1',
+        amount: 80,
+        target: _countGoal().target!,
+        now: now,
+      );
+
+      expect(c.read(habitLogsProvider)['2026-07-23']?['g1'], 'done');
+      expect(c.read(habitProgressProvider)['2026-07-23']?['g1'], 80);
+    });
+
+    test('an unreadable anchor turns auto-fail OFF, not on', () async {
+      // A failed preference read must NARROW what gets written, never widen it.
+      // The tempting default — "no anchor stored, so score everything" — would
+      // turn a broken prefs store into a retroactive 45-day red streak.
+      final store = _RecordingStore(seededGoals: [
+        _countGoal().copyWith(
+          startDate: DateTime(2026, 7, 22),
+          targetEffectiveFrom: DateTime(2026, 7, 22),
+        ),
+      ]);
+      SharedPreferences.setMockInitialValues({'active_data_mode': 'private'});
+      final prefs = await SharedPreferences.getInstance();
+      final c = ProviderContainer(overrides: [
+        sharedPrefsProvider.overrideWithValue(_ThrowingPrefs(prefs)),
+        privateLocalDatabaseProvider.overrideWith((ref) => store),
+        initialGoalsProvider.overrideWithValue('[]'),
+        initialLogsProvider.overrideWithValue('{}'),
+        initialProgressProvider.overrideWithValue('{}'),
+      ]);
+      addTearDown(c.dispose);
+      c.read(goalsProvider.notifier);
+      c.read(habitLogsProvider.notifier);
+      final progress = c.read(habitProgressProvider.notifier);
+      await settle();
+
+      await progress.reconcileManualTargets(now: now);
+
+      expect(store.logWrites, isEmpty);
+    });
+
+    test('a verified habit is never auto-failed either (one owner)', () async {
+      final store = _RecordingStore(seededGoals: [
+        _verifiedCountGoal().copyWith(
+          startDate: DateTime(2026, 7, 21),
+          targetEffectiveFrom: DateTime(2026, 7, 21),
+        ),
+      ]);
+      final c = await container(store, autoFailAnchor: '2026-07-01');
+      c.read(goalsProvider.notifier);
+      c.read(habitLogsProvider.notifier);
+      final progress = c.read(habitProgressProvider.notifier);
+      await settle();
+
+      await progress.reconcileManualTargets(now: now);
+
+      // "Couldn't verify" is not "you failed" — the verification pipeline owns
+      // this habit's verdict and auto-fail must not reach into it.
+      expect(store.logWrites, isEmpty);
+      expect(c.read(habitLogsProvider)['2026-07-22']?['gv'], isNull);
     });
 
     test('resolves a partial count day left pending into a miss', () async {

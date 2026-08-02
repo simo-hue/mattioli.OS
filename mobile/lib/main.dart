@@ -651,14 +651,44 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
     // Quantitative targets: end-of-day resolution on foreground. Independent of
     // the verification flag and of data mode — a manual target is plain local
     // data that works in both modes — and a no-op until a habit actually has a
-    // manual target. This is what materialises a limit habit's quiet days into
-    // 'done' verdicts for days that closed while the app was shut.
+    // manual target. This is what resolves days that closed while the app was
+    // shut: a limit habit's quiet days into 'done', and — from the auto-fail
+    // anchor on — a count habit's untouched days into 'missed'.
     if (state == AppLifecycleState.resumed) {
       unawaited(() async {
         try {
+          // Drain the notification queue BEFORE sweeping. A Done tapped on a
+          // reminder while the app had no session is written to `goal_logs`
+          // only — no number — and lands in that queue, not in the in-memory
+          // map. Sweep first and auto-fail sees the day as untouched, writes
+          // 'missed' over the user's own answer, and there is no goal_progress
+          // row for any later pass to re-derive it from. Same "absence is not
+          // evidence" trap as the rest of the sweep, one layer out.
+          //
+          // Reload the verdict map ONLY when the replay actually wrote
+          // something. Invalidating unconditionally cost a full re-download of
+          // `goal_logs` (or a full SQLCipher read) on EVERY foreground, repainted
+          // every calendar empty for a frame — and, offline, re-seeded the map
+          // from the blob frozen at app launch, silently reverting every
+          // check-in made since. Failing here must not skip the sweep, so the
+          // replay is guarded separately.
+          var queueDrained = true;
+          try {
+            final replay = await NotificationService().replayPendingHabitLogs();
+            if (replay.written > 0) ref.invalidate(habitLogsProvider);
+            queueDrained = replay.drained;
+          } catch (e, stack) {
+            AppLogger.error('[Targets] pending-log replay before the sweep '
+                'failed', e, stack);
+            queueDrained = false;
+          }
+          // An undrained queue means habit-days the user has already DECIDED are
+          // not in the verdict map — so auto-fail would read them as untouched
+          // and overwrite a Done with 'missed', unrecoverably. The rest of the
+          // sweep still runs: it derives from numbers and is unaffected.
           await ref
               .read(habitProgressProvider.notifier)
-              .reconcileManualTargets();
+              .reconcileManualTargets(allowAutoFail: queueDrained);
         } catch (e, stack) {
           AppLogger.error('[Targets] foreground reconcile failed', e, stack);
         }

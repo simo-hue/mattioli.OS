@@ -314,11 +314,21 @@ which returns `Denied` and never prompts.
 
 ### Still open — not blocking, your call
 
-- **iOS fetches Inter from `fonts.gstatic.com` at runtime** (desktop bundles it),
-  so the consent screen contacts Google before consent. Fix = bundle Inter under
-  `mobile/assets/` + `GoogleFonts.config.allowRuntimeFetching = false` in
-  `main()`. Not done: the repo has no Inter-Black (w900) and a missing weight
-  silently degrades typography app-wide — needs a device check.
+- ~~iOS fetches Inter from `fonts.gstatic.com` at runtime~~ **FIXED 2026-08-02**
+  — and it was worse than this note said: FOUR families were fetched, not one.
+  The `google_fonts` dependency is removed outright (not just disabled), Inter is
+  bundled from the desktop client's own binaries, and a test fails the build if
+  it ever returns. **Still needs your eyes on a device:** ~215 `fontFamily:
+  'Inter'` literals had been silently falling back to San Francisco (mobile
+  declared no font family at all) and now render in real Inter, and the 7 `w900`
+  sites resolve to ExtraBold since the repo has no Inter Black. No simulator here
+  — this Mac has Command Line Tools only — so nothing visual was checked.
+- **`metadata/review_information/notes.txt` is 8,893 characters.** App Store
+  Connect's review-notes field caps at 4,000, and the repo's own
+  `validate_metadata.py` enforces 4,000 on `description.txt` and
+  `release_notes.txt` but explicitly SKIPS `review_information`, so nothing has
+  been checking it. It needs one editorial pass down to the cap before
+  submission — that is your message to Apple, so I have not cut it myself.
 - **Three minimum ages**: app says 14, live Terms say 13 "(or 16 in the EU)",
   privacy policy is silent. The German build asserts 14 while its own German
   Terms say 16. You collect `date_of_birth` and never check it against anything.
@@ -328,3 +338,68 @@ which returns `Denied` and never prompts.
   not. So delete-and-reinstall = live session, consent unanswered, and the token
   refresh / `profiles` read / `Purchases.configure` fire behind the gate. Sentry
   is gated; these are not. Same shape as the bug that got you rejected.
+
+## Auto-fail for untouched count habits (2026-08-02)
+
+- ~~DECISION NEEDED — an auto-failed day older than yesterday cannot be
+  corrected.~~ **RESOLVED 2026-08-02, Simone's call: leave it.** The edit gate
+  stays at today + yesterday, and an auto-failed day older than that is
+  permanent by design — the record is meant to be honest. No code change; the
+  DST fix to the gate itself (so *yesterday* stays editable the day after a
+  transition) still applies and is already in.
+- **On-device QA of the anchor.** The stamp happens on the first foreground
+  sweep, so confirm `target_auto_fail_from` lands on the day you expect and that
+  nothing before it turned red on the iPhone. Then confirm a day auto-failed on
+  the iPhone renders the same on the Mac: the two apps write the verdict through
+  different helpers (mobile `setDerivedStatus`, which computes its own streak;
+  desktop `setHabitProgressForDay`, which writes `streak:` on the row), and no
+  test asserts the two agree on the streak number.
+- **Reinstalling re-stamps the anchor later**, which only ever narrows what gets
+  scored. Worth knowing before you read a reinstall as "the feature broke".
+
+### Found while reviewing this work — NOT fixed, not in scope
+
+- **macOS fetches `goal_logs` and `goal_progress` unpaginated**
+  (`desktop/.../dashboard_repository.dart`, plain `.select().eq(user_id)` with no
+  `.range()`). Mobile paginates both *because* PostgREST's `db-max-rows` silently
+  truncates. On a large history the Mac now sees a truncated map, reads real days
+  as untouched, and auto-fail writes `missed` over a real `done` — and this is
+  the one configuration where the two devices genuinely oscillate, since the
+  iPhone re-derives `done` from the row it can see and writes it back. This
+  matters more now than it did last week.
+- ~~`progressStale` is not persisted to the desktop cache~~ **FIXED 2026-08-02**
+  — it now round-trips, and an absent key reads as `true` (a cache written before
+  the key existed cannot prove its progress map was healthy).
+
+### From the adversarial review round (2026-08-02)
+
+- ~~The same DST bug family is still live in the ANALYTICS layer.~~ **DONE
+  2026-08-02** — swept across both apps with before/after numbers; see the
+  DOCUMENTATION.md entry. 21 call sites converted, 0 divergences remaining
+  against a UTC oracle across 8 timezones.
+- **Reminder scheduling was examined and deliberately NOT changed.**
+  `_nextInstanceOfTime` / `_nextInstanceOnWeekday` in both apps step with
+  `Duration(days: 1)`, but on `tz.TZDateTime` (the `timezone` package), not Dart
+  `DateTime` — different semantics — and the schedules carry
+  `matchDateTimeComponents`, so the OS re-matches the wall-clock time on every
+  occurrence and only the SEED could be an hour off, on a transition day. It
+  changes when notifications fire, which I cannot verify without a device, so it
+  stays as-is. Worth a look when you next have a device in hand.
+- **`_saveLocal()` runs once per applied change inside the desktop sweep.**
+  Returning from a 45-day absence with 5 quantitative habits is ~225 full-snapshot
+  JSON encodes + keychain writes and 225 round trips in one foreground. Hoisting
+  it out of the loop cuts it by ~N×45 at no correctness cost, but it adds an
+  early-return path (the loop can bail on `_disposed` or a mid-sweep
+  `progressStale`), so I did not add it late in the session.
+- **Nothing proves the two week calendars actually call `weekDaysFor`.** The
+  helper is well tested; reverting a single call site inside
+  `habits_page.dart` / `weekly_view_widget.dart` back to a `Duration` would be
+  invisible to CI. Both widgets are private, so this needs a widget test that
+  pumps the page.
+- **CI cannot exercise the DST tests.** They assert zone-independent invariants,
+  so they pass in UTC no matter what. Add a `TZ=Europe/Rome` leg if you want the
+  guard to be automatic.
+- **Account mode is untested on mobile.** No test runs `HabitLogsNotifier` or
+  `HabitProgressNotifier` with a Supabase session, so the cache-seed / sync-fail
+  combinations that `loadIsTrustworthy` exists to distinguish are covered only as
+  a pure function, not end to end.

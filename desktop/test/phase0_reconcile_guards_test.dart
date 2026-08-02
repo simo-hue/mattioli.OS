@@ -18,6 +18,7 @@ import 'package:evolve_verification/evolve_verification.dart';
 import 'package:evolve_targets/evolve_targets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _RecordingRepository extends DashboardRepository {
   _RecordingRepository(this._snapshot);
@@ -39,6 +40,7 @@ class _RecordingRepository extends DashboardRepository {
     required double amount,
     required String? derivedStatus,
     required int streak,
+    bool verdictOnly = false,
   }) async {
     progressCalls.add({
       'habitId': habitId,
@@ -72,6 +74,16 @@ void main() {
   // Thu 2026-07-23. Its week (Mon-start) is 07-20 .. 07-26.
   final now = DateTime(2026, 7, 23);
   final limit = TargetPresetCatalog.limitCountDaily.targetWith(amount: 1);
+  final count = TargetPresetCatalog.countDaily.targetWith(amount: 80, step: 20);
+
+  // Preferences must be readable, with the auto-fail anchor backdated, or every
+  // count-habit test below would silently run with auto-fail OFF (the anchor
+  // read fails without a binding) and prove nothing about the guard it names.
+  setUp(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    SharedPreferences.setMockInitialValues(
+        {kAutoFailAnchorPrefKey: '2026-07-01'});
+  });
 
   DashboardHabit habitWith({
     HabitTarget? target,
@@ -156,6 +168,33 @@ void main() {
 
       expect(repo.progressCalls, isNotEmpty,
           reason: 'quiet closed limit days must still resolve to done');
+    });
+
+    test('a stale snapshot must not let AUTO-FAIL read absence as zero',
+        () async {
+      // The same finding, now with the opposite sign. A failed goal_progress
+      // fetch leaves every count day looking untouched, and auto-fail's whole
+      // premise is that an untouched day means the user did zero. It does not
+      // mean that when the number simply never arrived — the 07-21 day below
+      // was a completed 80, and the day already carries the 'done' it earned.
+      final (c, repo) = build(snap(
+        habitWith(target: count, startDate: DateTime(2026, 7, 20)),
+        logs: const {
+          '2026-07-21': {'h1': 'done'},
+        },
+        progress: const {},
+        progressStale: true,
+      ));
+
+      await c
+          .read(dashboardControllerProvider.notifier)
+          .reconcileManualTargets(now: now);
+
+      expect(repo.progressCalls, isEmpty);
+      expect(c.read(dashboardControllerProvider).habitLogs['2026-07-21']?['h1'],
+          'done',
+          reason: 'an earned day must not be auto-failed because the progress '
+              'read failed');
     });
   });
 

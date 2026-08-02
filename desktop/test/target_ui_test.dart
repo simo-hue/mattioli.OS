@@ -29,6 +29,7 @@ class _Repo extends DashboardRepository {
     required double amount,
     required String? derivedStatus,
     required int streak,
+    bool verdictOnly = false,
   }) async =>
       progressCalls.add({'amount': amount, 'status': derivedStatus});
 }

@@ -11,6 +11,7 @@ import 'package:evolve_verification/evolve_verification.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:sqflite_sqlcipher/sqflite.dart';
 import 'package:uuid/uuid.dart';
+import 'package:evolve_desktop/core/calendar_days.dart';
 
 /// [DashboardRepository] backed by the local encrypted SQLite database.
 ///
@@ -308,6 +309,7 @@ class PrivateDashboardRepository extends DashboardRepository {
     required double amount,
     required String? derivedStatus,
     required int streak,
+    bool verdictOnly = false,
   }) async {
     final db = await DesktopPrivateDb.instance.database;
     final dateKey = dashboardDateKey(date);
@@ -316,8 +318,12 @@ class PrivateDashboardRepository extends DashboardRepository {
     // 1) The progress number. Deterministic id ('<goalId>:<date>', matching
     // PrivateDbSchema.goalProgressId) with update-or-insert rather than INSERT OR
     // REPLACE, so a UNIQUE conflict never fires the AFTER-DELETE sync-tombstone
-    // trigger (same reasoning as setHabitStatus).
-    if (amount <= 0) {
+    // trigger (same reasoning as setHabitStatus). Skipped entirely for a
+    // verdict-only write — see [progressRowWriteFor].
+    final rowWrite = progressRowWriteFor(verdictOnly: verdictOnly, amount: amount);
+    if (rowWrite == ProgressRowWrite.none) {
+      // nothing to write: the day never had a number
+    } else if (rowWrite == ProgressRowWrite.delete) {
       await db.delete(
         'goal_progress',
         where: 'goal_id = ? AND date = ?',
@@ -539,11 +545,11 @@ class PrivateDashboardRepository extends DashboardRepository {
     }
 
     final now = DateTime.now();
-    final monday = DateTime(
+    final monday = shiftDays(DateTime(
       now.year,
       now.month,
       now.day,
-    ).subtract(Duration(days: now.weekday - 1));
+    ), -(now.weekday - 1));
 
     final habits = [
       for (final row in habitRows) _habitFromRow(row, logs, monday, now),
@@ -568,7 +574,7 @@ class PrivateDashboardRepository extends DashboardRepository {
     );
 
     final trendDays = [
-      for (var i = 6; i >= 0; i--) now.subtract(Duration(days: i)),
+      for (var i = 6; i >= 0; i--) shiftDays(now, -i),
     ];
 
     return temporary.copyWith(
@@ -617,7 +623,7 @@ class PrivateDashboardRepository extends DashboardRepository {
       ),
       weeklyProgress: [
         for (var day = 0; day < 7; day++)
-          logs[dashboardDateKey(monday.add(Duration(days: day)))]?[id] ==
+          logs[dashboardDateKey(shiftDays(monday, day))]?[id] ==
               'done',
       ],
       state: logs[dashboardDateKey(now)]?[id] == 'done'

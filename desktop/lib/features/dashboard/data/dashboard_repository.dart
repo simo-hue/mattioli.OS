@@ -17,6 +17,7 @@ import 'package:evolve_desktop/features/dashboard/domain/macro_goal_progress.dar
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
+import 'package:evolve_desktop/core/calendar_days.dart';
 
 abstract class DashboardRepository {
   bool get isCloudBacked => false;
@@ -57,12 +58,21 @@ abstract class DashboardRepository {
   /// null ⇒ no verdict yet). [streak] is the controller's `computeStreak` result
   /// for the day, written directly. Base is a no-op (used by the offline proxy
   /// before the real repository resolves).
+  ///
+  /// [verdictOnly] skips the `goal_progress` leg entirely and writes the verdict
+  /// alone. It exists for the auto-fail sweep, whose days have NO stored number
+  /// by definition — going through the normal path would issue `amount 0`, and
+  /// `amount 0` *deletes*. On a day that really has no row that delete is a
+  /// no-op, but if the in-memory map were ever wrong it would destroy a real
+  /// count and tombstone the deletion to sync. Not writing is the only way to be
+  /// sure. See `TargetReconcileChange.verdictOnly`.
   Future<void> setHabitProgress({
     required String habitId,
     required DateTime date,
     required double amount,
     required String? derivedStatus,
     required int streak,
+    bool verdictOnly = false,
   }) async {}
 
   Future<DashboardGoal> createGoal(DashboardGoal goal) async => goal;
@@ -176,6 +186,7 @@ class _PrivateRepositoryProxy extends DashboardRepository {
     required double amount,
     required String? derivedStatus,
     required int streak,
+    bool verdictOnly = false,
   }) async {
     _inner ??= PrivateDashboardRepository(
       ownerId: await DesktopPrivateDb.instance.ownerId,
@@ -186,6 +197,7 @@ class _PrivateRepositoryProxy extends DashboardRepository {
       amount: amount,
       derivedStatus: derivedStatus,
       streak: streak,
+      verdictOnly: verdictOnly,
     );
   }
 
@@ -266,6 +278,7 @@ class UnavailableDashboardRepository extends DashboardRepository {
     required double amount,
     required String? derivedStatus,
     required int streak,
+    bool verdictOnly = false,
   }) => _requireSession();
 
   @override
@@ -551,13 +564,18 @@ class SupabaseDashboardRepository extends DashboardRepository {
     required double amount,
     required String? derivedStatus,
     required int streak,
+    bool verdictOnly = false,
   }) async {
     final dateKey = dashboardDateKey(date);
 
     // 1) The progress number (goal_progress). Deterministic id matches the
     // private store's PrivateDbSchema.goalProgressId so the two backends can't
-    // mint different ids for one habit-day.
-    if (amount <= 0) {
+    // mint different ids for one habit-day. Skipped entirely for a verdict-only
+    // write — see [progressRowWriteFor].
+    final rowWrite = progressRowWriteFor(verdictOnly: verdictOnly, amount: amount);
+    if (rowWrite == ProgressRowWrite.none) {
+      // nothing to write: the day never had a number
+    } else if (rowWrite == ProgressRowWrite.delete) {
       final filters = {'user_id': _userId, 'goal_id': habitId, 'date': dateKey};
       await _runOrQueue(
         _PendingMutation.delete('goal_progress', filters),
@@ -845,11 +863,11 @@ class SupabaseDashboardRepository extends DashboardRepository {
     }
 
     final now = DateTime.now();
-    final monday = DateTime(
+    final monday = shiftDays(DateTime(
       now.year,
       now.month,
       now.day,
-    ).subtract(Duration(days: now.weekday - 1));
+    ), -(now.weekday - 1));
     final habits = [
       for (final row in habitRows)
         DashboardHabit.fromRemoteJson(
@@ -857,7 +875,7 @@ class SupabaseDashboardRepository extends DashboardRepository {
           weeklyProgress: [
             for (var day = 0; day < 7; day++)
               logs[dashboardDateKey(
-                    monday.add(Duration(days: day)),
+                    shiftDays(monday, day),
                   )]?[row['id']] ==
                   'done',
           ],
@@ -884,7 +902,7 @@ class SupabaseDashboardRepository extends DashboardRepository {
       moods: moods,
     );
     final trendDays = [
-      for (var i = 6; i >= 0; i--) now.subtract(Duration(days: i)),
+      for (var i = 6; i >= 0; i--) shiftDays(now, -i),
     ];
 
     return temporary.copyWith(
@@ -910,13 +928,8 @@ class SupabaseDashboardRepository extends DashboardRepository {
   }
 
   int _nextStreak(String habitId, DateTime date, String nextStatus) {
-    final previousDate = dashboardDateKey(
-      DateTime(
-        date.year,
-        date.month,
-        date.day,
-      ).subtract(const Duration(days: 1)),
-    );
+    final previousDate =
+        dashboardDateKey(shiftDays(DateTime(date.year, date.month, date.day), -1));
     final previousStatus = _snapshot.habitLogs[previousDate]?[habitId];
     final previous = _snapshot.habits
         .where((habit) => habit.id == habitId)
@@ -975,6 +988,12 @@ class SupabaseDashboardRepository extends DashboardRepository {
     'check_in': snapshot.checkIn.toJson(),
     'habit_logs': snapshot.habitLogs,
     'habit_progress': snapshot.habitProgress,
+    // The staleness of `habit_progress` travels WITH it. A snapshot whose
+    // progress fetch failed is cached like any other; without this flag it comes
+    // back reporting a healthy empty map, and the sweep's guard — the one thing
+    // standing between a failed read and "the user recorded nothing" — passes on
+    // data it was written to reject.
+    'progress_stale': snapshot.progressStale,
     'moods': {
       for (final mood in snapshot.moods.entries) mood.key: mood.value.toJson(),
     },
@@ -1039,9 +1058,52 @@ class SupabaseDashboardRepository extends DashboardRepository {
       ),
       habitLogs: logs,
       habitProgress: progress,
+      // Absent ⇒ a cache written before this key existed, whose progress map may
+      // have been empty-because-it-failed with nothing recording that. Distrust
+      // it: the cost is one skipped sweep, and the sweep is idempotent and runs
+      // again on the next refresh. The cost of the other default is writing
+      // verdicts from a map that never loaded.
+      progressStale: json['progress_stale'] as bool? ?? true,
       moods: moods,
     );
   }
+}
+
+/// What a `setHabitProgress` call must do to the `goal_progress` ROW.
+enum ProgressRowWrite {
+  /// Leave the row completely alone — there is no number to record.
+  none,
+
+  /// Remove the row: the day's amount went back to zero.
+  delete,
+
+  /// Store the amount.
+  upsert,
+}
+
+/// The one place that decides whether a habit-day's `goal_progress` row is
+/// touched, and how. Both backends switch on this rather than each re-deriving
+/// it from `verdictOnly` and `amount`.
+///
+/// It is a shared function and not two `if`s because the [ProgressRowWrite.none]
+/// case is the entire safety argument of the auto-fail sweep, and it is the
+/// hardest branch to reach in a test: the real backends need a live SQLCipher
+/// database or a Supabase client, so nothing in the suite executes those
+/// statements. Pulling the DECISION out means the branch that decides whether a
+/// DELETE reaches the user's data is covered even though the statement issuing
+/// it is not.
+///
+/// [ProgressRowWrite.none] is not the same as [ProgressRowWrite.delete] against
+/// an absent row. They produce the same database on a day that genuinely has no
+/// row — and diverge exactly when the in-memory map is WRONG, which is the case
+/// the flag exists for: a delete driven by a misread absence destroys a real
+/// count and tombstones it to sync, while `none` cannot.
+ProgressRowWrite progressRowWriteFor({
+  required bool verdictOnly,
+  required double amount,
+}) {
+  if (verdictOnly) return ProgressRowWrite.none;
+  return amount <= 0 ? ProgressRowWrite.delete : ProgressRowWrite.upsert;
 }
 
 class DashboardRefreshException implements Exception {

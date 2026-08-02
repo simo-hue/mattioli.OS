@@ -14,6 +14,8 @@ import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_targets/evolve_targets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:evolve_desktop/core/calendar_days.dart';
 
 final dashboardControllerProvider =
     NotifierProvider<DashboardController, DashboardSnapshot>(
@@ -170,13 +172,25 @@ class DashboardController extends Notifier<DashboardSnapshot> {
   /// Only manual targets are user-enterable — a measured target's ring is filled
   /// by the verification pipeline, so this is a no-op for one. [now] is injectable
   /// for tests.
+  ///
+  /// [verdictOnly] is for the auto-fail sweep: the day has no stored number, so
+  /// the progress map and the `goal_progress` row are left strictly untouched and
+  /// only the verdict moves. Everything else — the derivation, the streak, the
+  /// weekly grid, the local save — runs exactly as it would for a live edit, so
+  /// there is no second code path to keep in step. See
+  /// `TargetReconcileChange.verdictOnly`.
   Future<void> setHabitProgressForDay(
     String id,
     DateTime date,
     double amount, {
     DateTime? now,
+    bool verdictOnly = false,
   }) async {
-    final habit = state.habits.firstWhere((habit) => habit.id == id);
+    // orElse rather than a throwing firstWhere: the sweep applies its changes one
+    // awaited write at a time, and a pull that removes a habit mid-pass would
+    // otherwise abandon every remaining change with a StateError.
+    final habit = state.habits.where((habit) => habit.id == id).firstOrNull;
+    if (habit == null) return;
     final target = habit.displayTarget;
     // A verified habit's goal_logs verdict is owned by the verification pipeline
     // (one owner per habit-day) — never let a manual increment derive/overwrite
@@ -194,12 +208,17 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     final dateKey = dashboardDateKey(date);
     final weekdayIndex = date.weekday - 1;
 
-    // Optimistic progress map (deep copy so the old state stays intact).
+    // Optimistic progress map (deep copy so the old state stays intact). A
+    // verdict-only write never touches it: there is no number to record, and
+    // removing a key on the strength of an absence is how a real count gets
+    // erased.
     final progress = {
       for (final entry in state.habitProgress.entries)
         entry.key: Map<String, double>.from(entry.value),
     };
-    if (clamped == 0) {
+    if (verdictOnly) {
+      // leave the map exactly as it is
+    } else if (clamped == 0) {
       progress[dateKey]?.remove(id);
       if (progress[dateKey]?.isEmpty ?? false) progress.remove(dateKey);
     } else {
@@ -230,11 +249,29 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     } else {
       dayLogs[id] = derivedStatus;
     }
+    // The streak stored ON the row is that DAY's streak — what the row means.
     final nextStreak = derivedStatus == null
         ? 0
         : computeStreak(
             habitId: id,
             date: date,
+            logs: logs,
+            startDate: habit.startDate ?? date,
+            frequencyDays: habit.frequencyDays,
+          );
+    // The streak shown on the TILE is always today's, which is a different
+    // number whenever [date] is not today. Writing the row's streak onto the
+    // tile made the sweep leave whatever the LAST backfilled day happened to
+    // score: auto-fail Mon–Thu, finish today, and the card read 💔4 for a habit
+    // completed an hour ago, until the next full refresh.
+    final tileStreak = _isToday(date)
+        ? nextStreak
+        : computeStreak(
+            habitId: id,
+            // The injected clock, like every other date decision here — `_now()`
+            // would ignore a test's `now:` and silently score against the wall
+            // clock.
+            date: now ?? _now(),
             logs: logs,
             startDate: habit.startDate ?? date,
             frequencyDays: habit.frequencyDays,
@@ -247,7 +284,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
             weekdayIndex,
             _isToday(date),
             derivedStatus == 'done',
-            nextStreak,
+            tileStreak,
             inCurrentWeek: _isCurrentWeek(date),
           )
         else
@@ -266,6 +303,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
         amount: clamped,
         derivedStatus: derivedStatus,
         streak: nextStreak,
+        verdictOnly: verdictOnly,
       ),
     );
   }
@@ -273,21 +311,38 @@ class DashboardController extends Notifier<DashboardSnapshot> {
   /// End-of-day resolution for manual targets — the desktop counterpart of
   /// mobile's `HabitProgressNotifier.reconcileManualTargets`. Materialises the
   /// `goal_logs` verdict for every CLOSED day whose live-derived verdict never
-  /// caught up (a limit habit's quiet days above all). Reuses
-  /// [setHabitProgressForDay] as the applier, so each corrected day re-derives
-  /// and persists exactly as a live edit would. No-op when there are no manual
-  /// targets or nothing changed. [now] is injectable for tests.
+  /// caught up: a limit habit's quiet days (successes only knowable once the day
+  /// is over) and, from the auto-fail anchor on, a count habit's untouched days
+  /// (misses for the same reason). Reuses [setHabitProgressForDay] as the
+  /// applier, so each corrected day re-derives and persists exactly as a live
+  /// edit would — EXCEPT for a `verdictOnly` change, which had no stored number
+  /// and so moves the verdict without touching `goal_progress` at all. No-op
+  /// when there are no manual targets or nothing changed. [now] is injectable
+  /// for tests.
   ///
   /// Runs on macOS too, deliberately: unlike verification (a device measurement
   /// iOS owns), a manual target is plain local data already synced to the Mac,
   /// so a Mac-primary user's limit habits must resolve here or they would look
   /// perpetually unlogged.
   Future<void> reconcileManualTargets({DateTime? now}) async {
+    // The anchor is resolved FIRST because reading it is a platform-channel
+    // round trip, and `refresh()` replaces `state` wholesale — it is fired from
+    // launch, refocus, the periodic poll and after every write, with no
+    // re-entrancy guard. Any await between the staleness check and the reads
+    // below would let a fresh (or degraded) snapshot land in between, so the
+    // guard would have vetted a snapshot the loop never sees.
+    final today = now ?? _now();
+    final autoFailFrom = await _resolveAutoFailAnchor(today);
+    if (_disposed) return;
+
     // Never sweep when the goal_progress read FAILED. For an atMost target an
     // absent entry means a quiet SUCCESS, so a degraded map resolves every
-    // recorded breach to 'done' and applies it as amount 0 — which DELETES the
-    // real row on the server, irreversibly and idempotently (a later healthy
-    // refresh sees no progress and status 'done', so nothing restores it).
+    // recorded breach to 'done'; for a count target it means "did zero", so
+    // auto-fail scores a day the user may well have completed. Neither is
+    // survivable, and before the verdict-only path the first also applied
+    // amount 0 — which DELETES the real row on the server, irreversibly and
+    // idempotently (a later healthy refresh sees no progress and status 'done',
+    // so nothing restores it).
     if (state.progressStale) {
       AppLogger.info(
         'Manual-target reconcile skipped: goal_progress is stale, so absence '
@@ -295,7 +350,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
       );
       return;
     }
-    final today = now ?? _now();
+    // NO awaits from here to the end of the loop.
     final changes = <TargetReconcileChange>[];
     for (final habit in state.habits) {
       final target = habit.target;
@@ -317,6 +372,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
         progressFor: (dateKey) =>
             state.habitProgress[dateKey]?[habit.id],
         statusFor: (dateKey) => state.habitLogs[dateKey]?[habit.id],
+        autoFailUnmetFrom: autoFailFrom,
       ));
     }
     // Sequential so each day's streak builds on the last (setHabitProgressForDay
@@ -324,14 +380,55 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     // between awaits — this runs as a fire-and-forget tail of refresh().
     for (final change in changes) {
       if (_disposed) return;
+      // Re-check the guard every iteration, not just once before the loop. This
+      // list can be 45 days × N habits of awaited writes, and `refresh()` fires
+      // from the periodic poll, refocus and every write with no re-entrancy
+      // guard — so a degraded snapshot can land MID-loop. `setHabitProgressForDay`
+      // re-reads `state` on each iteration, so from that point on it would be
+      // deriving verdicts from a progress map that failed to load.
+      if (state.progressStale) {
+        AppLogger.info(
+          'Manual-target reconcile stopped part-way: goal_progress went stale '
+          'mid-sweep, so absence can no longer be read as "no progress".',
+        );
+        return;
+      }
       final date = DateTime.parse(change.dateKey);
       await setHabitProgressForDay(
         change.goalId,
         date,
         change.amount,
         now: today,
+        verdictOnly: change.verdictOnly,
       );
     }
+  }
+
+  /// Reads the auto-fail anchor, stamping today the first time it is missing.
+  /// The RULE lives in [resolveAndStampAutoFailAnchor], shared with iOS; only
+  /// the preference plumbing is local (macOS has no prefs provider, so this
+  /// reaches for `getInstance()` like the app's other two call sites).
+  Future<DateTime?> _resolveAutoFailAnchor(DateTime today) async {
+    final SharedPreferences prefs;
+    try {
+      prefs = await SharedPreferences.getInstance();
+    } catch (error) {
+      // Reaching the store at all can fail (no platform binding, a broken
+      // plist). Same rule as a failed read: auto-fail off, never wider.
+      AppLogger.warning(
+          'Auto-fail anchor store unavailable — auto-fail off for this pass: '
+          '$error');
+      return null;
+    }
+    return resolveAndStampAutoFailAnchor(
+      today: today,
+      read: () => prefs.getString(kAutoFailAnchorPrefKey),
+      write: (value) => prefs.setString(kAutoFailAnchorPrefKey, value),
+      // Warning, not error: a handled degradation with a safe outcome, and an
+      // error-level log would dump a stack for a condition the caller copes with.
+      onError: (error) => AppLogger.warning(
+          'Auto-fail anchor unavailable — auto-fail off for this pass: $error'),
+    );
   }
 
   /// Creates a habit. Returns `false` — without persisting — when the free-tier
@@ -812,12 +909,12 @@ class DashboardController extends Notifier<DashboardSnapshot> {
 
   bool _isCurrentWeek(DateTime date) {
     final now = _now();
-    final monday = DateTime(
+    final monday = shiftDays(DateTime(
       now.year,
       now.month,
       now.day,
-    ).subtract(Duration(days: now.weekday - 1));
-    final sunday = monday.add(const Duration(days: 6));
+    ), -(now.weekday - 1));
+    final sunday = shiftDays(monday, 6);
     final normalized = DateTime(date.year, date.month, date.day);
     return !normalized.isBefore(monday) && !normalized.isAfter(sunday);
   }

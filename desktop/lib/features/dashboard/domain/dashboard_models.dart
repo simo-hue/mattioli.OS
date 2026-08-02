@@ -2,6 +2,7 @@ import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_targets/evolve_targets.dart';
 import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter/material.dart';
+import 'package:evolve_desktop/core/calendar_days.dart';
 
 enum HabitState { pending, completed }
 
@@ -663,7 +664,7 @@ class DashboardSnapshot {
   double get currentWeekCompletionRate => _weekCompletionRate(DateTime.now());
 
   double get previousWeekCompletionRate =>
-      _weekCompletionRate(DateTime.now().subtract(const Duration(days: 7)));
+      _weekCompletionRate(shiftDays(DateTime.now(), -7));
 
   double get weeklyMomentum =>
       currentWeekCompletionRate - previousWeekCompletionRate;
@@ -737,15 +738,15 @@ class DashboardSnapshot {
       habits.where((habit) => habit.isScheduledOn(date)).toList();
 
   double _weekCompletionRate(DateTime anchor) {
-    final monday = DateTime(
+    final monday = shiftDays(DateTime(
       anchor.year,
       anchor.month,
       anchor.day,
-    ).subtract(Duration(days: anchor.weekday - 1));
+    ), -(anchor.weekday - 1));
     var done = 0;
     var total = 0;
     for (var day = 0; day < 7; day++) {
-      final date = monday.add(Duration(days: day));
+      final date = shiftDays(monday, day);
       final activeHabits = habitsFor(date);
       total += activeHabits.length;
       done += activeHabits.where((habit) {
@@ -813,12 +814,12 @@ String dashboardDateKey(DateTime date) {
 
 bool _isDashboardCurrentWeek(DateTime date) {
   final now = DateTime.now();
-  final monday = DateTime(
+  final monday = shiftDays(DateTime(
     now.year,
     now.month,
     now.day,
-  ).subtract(Duration(days: now.weekday - 1));
-  final sunday = monday.add(const Duration(days: 6));
+  ), -(now.weekday - 1));
+  final sunday = shiftDays(monday, 6);
   final normalized = DateTime(date.year, date.month, date.day);
   return !normalized.isBefore(monday) && !normalized.isAfter(sunday);
 }

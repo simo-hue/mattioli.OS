@@ -17,6 +17,7 @@
 /// the latter into the former, which is what lets both render as the same ring.
 library;
 
+export 'src/auto_fail_anchor.dart';
 export 'src/habit_target.dart';
 export 'src/macro_goal_progress.dart';
 export 'src/target_axes.dart';

@@ -1,3 +1,3 @@
-Evolve opent nu met een duidelijke keuze: gebruiken zonder account, of inloggen om te synchroniseren tussen je apparaten. Zonder account blijft alles op deze iPhone, zonder limieten en zonder iets te kopen.
+Evolve laat nu duidelijk zien wat je iPhone verlaat voordat je ergens mee instemt: wat er synchroniseert met een account, wat hier blijft zonder account, en waar de app nooit aan komt — je contacten, agenda, microfoon en locatie. Ook gegevens uit Gezondheid en Schermtijd blijven op je iPhone; alleen of je een gewoonte hebt gehaald wordt gesynchroniseerd.
 
-Het privacybeleid en de gebruiksvoorwaarden zijn nu altijd beschikbaar via Instellingen.
+Crashrapporten staan nu uit tot je ze zelf aanzet. We hebben ook de knop “Enable” voor meldingen op dat scherm gerepareerd en het scherm volledig bruikbaar gemaakt met VoiceOver en de grootste tekstgroottes.

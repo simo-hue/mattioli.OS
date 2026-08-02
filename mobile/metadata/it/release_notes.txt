@@ -1,3 +1,3 @@
-Evolve ora si apre con una scelta chiara: usalo senza alcun account, oppure accedi per sincronizzare tra i tuoi dispositivi. Senza account tutto resta su questo iPhone, senza limiti e senza nulla da acquistare.
+Evolve ora dice chiaramente cosa esce dal tuo iPhone prima che tu accetti qualsiasi cosa: cosa si sincronizza se usi un account, cosa resta qui se non lo usi e cosa l'app non tocca mai — contatti, calendario, microfono e posizione. Anche i dati di Salute e Tempo di utilizzo restano sul tuo iPhone: viene sincronizzato solo se hai rispettato o meno un'abitudine.
 
-L'informativa sulla privacy e i termini d'uso sono ora disponibili in qualsiasi momento dalle Impostazioni.
+Le segnalazioni di crash ora sono disattivate finché non le attivi tu. Abbiamo anche corretto il pulsante “Abilita” delle notifiche in quella schermata e l'abbiamo resa pienamente utilizzabile con VoiceOver e con i testi più grandi.

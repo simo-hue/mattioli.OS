@@ -1,3 +1,3 @@
-Evolve s'ouvre désormais sur un choix clair : l'utiliser sans aucun compte, ou se connecter pour synchroniser entre vos appareils. Sans compte, tout reste sur cet iPhone, sans limite et sans rien à acheter.
+Evolve indique désormais clairement ce qui quitte votre iPhone avant que vous n'acceptiez quoi que ce soit : ce qui se synchronise avec un compte, ce qui reste ici sans compte, et ce que l'app ne touche jamais — vos contacts, votre calendrier, votre microphone et votre position. Les données Santé et Temps d'écran restent elles aussi sur votre iPhone ; seul le fait d'avoir tenu ou non une habitude est synchronisé.
 
-La politique de confidentialité et les conditions d'utilisation sont maintenant accessibles à tout moment depuis les Réglages.
+Les rapports de plantage sont maintenant désactivés tant que vous ne les activez pas. Nous avons aussi corrigé le bouton « Enable » des notifications sur cet écran et l'avons rendu pleinement utilisable avec VoiceOver et avec les plus grandes tailles de texte.

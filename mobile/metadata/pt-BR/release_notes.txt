@@ -1,3 +1,3 @@
-O Evolve agora abre com uma escolha clara: usar sem conta nenhuma, ou entrar para sincronizar entre os seus dispositivos. Sem conta, tudo fica neste iPhone, sem limites e sem nada para comprar.
+O Evolve agora diz com clareza o que sai do seu iPhone antes de você aceitar qualquer coisa: o que sincroniza com uma conta, o que fica aqui sem conta e o que o app nunca toca — seus contatos, calendário, microfone e localização. Os dados de Saúde e Tempo de Uso também ficam no seu iPhone; só é sincronizado se você cumpriu ou não um hábito.
 
-A política de privacidade e os termos de uso estão agora disponíveis a qualquer momento nos Ajustes.
+Os relatórios de falhas agora ficam desativados até você ativá-los. Também corrigimos o botão “Enable” das notificações nessa tela e a deixamos totalmente utilizável com o VoiceOver e com os maiores tamanhos de texto.

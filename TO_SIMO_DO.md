@@ -284,9 +284,10 @@ without it the copy lands on the wrong one. Then:
 cd ~/Developer/mattioli.OS/mobile/ios && fastlane ios upload_metadata
 ```
 
-**Release notes are stale.** All 39 locales still describe 1.1.2's headline (the
-no-account choice screen). 1.1.3's headline is the privacy gate. Say the word and
-I will write them; I did not rewrite 39 locales of your marketing copy unasked.
+Release notes for 1.1.3 are written and generated (all 39 locales). Read
+`mobile/metadata/en-US/release_notes.txt` before you upload — it is your voice,
+not mine, so change anything that does not sound like you and re-run
+`python3 tool/appstore/build_metadata.py` from `mobile/`.
 
 ### 3. App Store Connect — do this before submitting either app
 

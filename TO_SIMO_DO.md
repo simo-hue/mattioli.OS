@@ -145,12 +145,9 @@ can take. Order matters.
    (`desktop_subscription_controller.dart:514`), so this is also the screen your
    3.1.2 screen recording has to show.
 
-3. **Rename the macOS version in App Store Connect: 1.0.0 → 1.2.1.**
-   `desktop/pubspec.yaml` is `1.2.1+26` and a 1.2.1 build cannot be attached to a
-   1.0.0 version page. macOS 1.0.0 was never approved, so this is still the
-   platform's first release and the version string is freely editable while the
-   version sits in Rejected. Do NOT downgrade pubspec to 1.0.0+6 instead — that
-   would desync desktop from mobile (also 1.2.1) and throw away 21 builds.
+3. ~~**Rename the macOS version in App Store Connect: 1.0.0 → 1.2.1.**~~
+   **RESOLVED 2026-07-30 (`0e8ac85`), the other way round:** `desktop/pubspec.yaml`
+   is now `1.0.0+27`, matching the ASC version page. Nothing to rename.
 
 4. **Push the metadata**, from `desktop/macos`:
    `fastlane mac metadata`
@@ -158,8 +155,8 @@ can take. Order matters.
    **Italian** description shows the EULA link — Italian is the locale ASC
    actually serves for this app, and it is the one the reviewer read.
 
-5. **Upload build 1.2.1 (26)** (`fastlane mac release`, or Transporter via
-   `fastlane mac build_for_transporter`).
+5. ~~**Upload build 1.2.1 (26)**~~ — superseded: build 26 was the one rejected.
+   Ship **1.0.0 (27)**; see the 2026-08-02 section at the end of this file.
 
 6. **Set the App Review Information fields** if fastlane did not: tick
    "Sign-in required" and confirm the username/password fields are populated.
@@ -233,10 +230,11 @@ string and the 30 locales together, after approval.
 
 ---
 
-## 2026-08-02 — SHIP macOS 27 + iOS 43
+## 2026-08-02 — SHIP macOS 1.0.0 (27) + iOS 1.1.2 (43)
 
-Both apps are code-complete and green. The privacy policy is already live
-(pushed to `simo-hue/evolve`). Below is everything left, in order.
+Both apps are code-complete and green. The privacy policy is live (pushed to
+`simo-hue/evolve`). Versions are as you set them in `0e8ac85` — the ASC/project
+mismatch I flagged last round is resolved. Below is everything left, in order.
 
 ### 0. Prereqs (Mac mini, once)
 
@@ -248,7 +246,7 @@ cd ~/Developer/mattioli.OS && git pull
 gitignored — if this is a fresh checkout, create them from their `.example`
 files first.
 
-### 1. macOS — build 27
+### 1. macOS — 1.0.0 (27)
 
 ```bash
 cd ~/Developer/mattioli.OS/desktop && flutter build macos --release --dart-define-from-file=.env
@@ -263,7 +261,7 @@ Push the metadata + review notes (no binary):
 cd ~/Developer/mattioli.OS/desktop/macos && fastlane mac metadata
 ```
 
-### 2. iOS — build 43
+### 2. iOS — 1.1.2 (43)
 
 ```bash
 cd ~/Developer/mattioli.OS/mobile/ios && pod install
@@ -298,9 +296,7 @@ cd ~/Developer/mattioli.OS/mobile/ios && fastlane ios upload_metadata
    `date_of_birth` is probably missing today; also add
    `NSPrivacyCollectedDataTypeOtherDataTypes` to
    `mobile/ios/Runner/PrivacyInfo.xcprivacy`.
-3. **macOS version string**: ASC says 1.0.0, the project says 1.2.1. Unresolved
-   from the last round — pick one before uploading.
-4. Submit both for review.
+3. Submit both for review.
 
 ### 4. On-device check after installing iOS 43
 

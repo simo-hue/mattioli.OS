@@ -3079,8 +3079,8 @@ class Translations$consentPage$en {
 	/// en: 'With an Evolve account'
 	String get uploadAccountTitle => 'With an Evolve account';
 
-	/// en: 'goals, habits, mood check-ins and your profile (name, email, photo) are uploaded to Evolve's servers to sync your devices.'
-	String get uploadAccountBody => 'goals, habits, mood check-ins and your profile (name, email, photo) are uploaded to Evolve\'s servers to sync your devices.';
+	/// en: 'goals, habits, mood check-ins, your app settings and your profile (name, email, date of birth) are uploaded to Evolve's servers to sync your devices. Your profile picture stays on this Mac.'
+	String get uploadAccountBody => 'goals, habits, mood check-ins, your app settings and your profile (name, email, date of birth) are uploaded to Evolve\'s servers to sync your devices. Your profile picture stays on this Mac.';
 
 	/// en: 'Privately on this Mac'
 	String get uploadPrivateTitle => 'Privately on this Mac';
@@ -3091,8 +3091,8 @@ class Translations$consentPage$en {
 	/// en: 'Never accessed'
 	String get uploadNeverTitle => 'Never accessed';
 
-	/// en: 'contacts, calendar, photos, camera, microphone, location.'
-	String get uploadNeverBody => 'contacts, calendar, photos, camera, microphone, location.';
+	/// en: 'contacts, calendar, camera, microphone, location.'
+	String get uploadNeverBody => 'contacts, calendar, camera, microphone, location.';
 
 	/// en: 'I accept the terms and privacy policy'
 	String get acceptTerms => 'I accept the terms and privacy policy';
@@ -5768,11 +5768,11 @@ extension on Translations {
 			'consentPage.subtitle' => 'Evolve uploads your personal data to a server only after you agree here.',
 			'consentPage.uploadTitle' => 'What leaves this Mac',
 			'consentPage.uploadAccountTitle' => 'With an Evolve account',
-			'consentPage.uploadAccountBody' => 'goals, habits, mood check-ins and your profile (name, email, photo) are uploaded to Evolve\'s servers to sync your devices.',
+			'consentPage.uploadAccountBody' => 'goals, habits, mood check-ins, your app settings and your profile (name, email, date of birth) are uploaded to Evolve\'s servers to sync your devices. Your profile picture stays on this Mac.',
 			'consentPage.uploadPrivateTitle' => 'Privately on this Mac',
 			'consentPage.uploadPrivateBody' => 'nothing is uploaded to us; optional iCloud sync is end-to-end encrypted and reaches only your own iCloud account.',
 			'consentPage.uploadNeverTitle' => 'Never accessed',
-			'consentPage.uploadNeverBody' => 'contacts, calendar, photos, camera, microphone, location.',
+			'consentPage.uploadNeverBody' => 'contacts, calendar, camera, microphone, location.',
 			'consentPage.acceptTerms' => 'I accept the terms and privacy policy',
 			'consentPage.termsSubtitle' => 'I have read the documents, I am at least 14 years old, and I agree to the upload described above.',
 			'consentPage.crashDiagnostics' => 'Crash diagnostics',

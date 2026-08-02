@@ -1,6 +1,7 @@
 Hello Apple Review Team,
 
-Thank you for the 1 August 2026 review of build 1.0.0 (26). Section 1
+Thank you for the 1 August 2026 review of build 26 (submission
+45b246ec-3001-488c-b434-3e5081bd777d). Section 1
 below answers the open Guideline 5.1.2 item directly. Sections 2 to 6
 are retained from the previous round for context.
 
@@ -20,20 +21,32 @@ entitlement the App Sandbox denies address-book access outright, so the
 app could not read Contacts even if it tried.
 
 The same is true of every other protected data class: Evolve does not
-access Calendars, Reminders, Photos, Camera, Microphone, Location,
-Speech Recognition or the file system outside files the user explicitly
-picks (com.apple.security.files.user-selected.read-write, used only for
-the manual "export / import backup" command).
+access Calendars, Reminders, the Photos library, Camera, Microphone,
+Location or Speech Recognition. It reads no part of the file system
+except the individual files a user picks in an open or save panel
+(com.apple.security.files.user-selected.read-write - see the entitlement
+list below for the three places that happens).
 
 The complete list of entitlements the app requests, and why:
  - app-sandbox
  - network.client                  - our API and iCloud
  - network.server                  - 127.0.0.1 OAuth loopback (section 6)
- - files.user-selected.read-write  - manual backup export/import only
+ - files.user-selected.read-write  - only files the user picks in an open or
+                                     save panel: the manual backup
+                                     export/import, the diagnostic log export,
+                                     and choosing a profile picture. No Photos
+                                     library API is used.
  - applesignin                     - Sign in with Apple
  - icloud-container-identifiers /
-   icloud-services (CloudKit)      - the user's own iCloud sync
- - keychain-access-groups          - encryption keys, stored locally
+   icloud-services (CloudKit) /
+   icloud-container-environment    - the user's own iCloud sync, pinned to the
+                                     Production environment
+ - keychain-access-groups          - the local database encryption key and the
+                                     end-to-end sync key. The sync key is an
+                                     iCloud-Keychain item so the user's own
+                                     devices can share it; it never reaches our
+                                     servers, and we could not decrypt their
+                                     data without it.
  - aps-environment                 - silent CloudKit zone-change pushes
 
 1b) WHAT THE APP DOES UPLOAD, AND THE CONSENT TAKEN FIRST
@@ -51,41 +64,65 @@ reachable until they do.
 In build 27 that screen now states, in plain language and in all five
 app languages, exactly what leaves the Mac:
 
- - "With an Evolve account - goals, habits, mood check-ins and your
-   profile (name, email, photo) are uploaded to Evolve's servers to sync
-   your devices."
+ - "With an Evolve account - goals, habits, mood check-ins, your app
+   settings and your profile (name, email, date of birth) are uploaded to
+   Evolve's servers to sync your devices. Your profile picture stays on
+   this Mac."
  - "Privately on this Mac - nothing is uploaded to us; optional iCloud
    sync is end-to-end encrypted and reaches only your own iCloud
    account."
- - "Never accessed - contacts, calendar, photos, camera, microphone,
-   location."
+ - "Never accessed - contacts, calendar, camera, microphone, location."
 
 The acceptance box beneath it reads "I have read the documents, I am at
 least 14 years old, and I agree to the upload described above." Links to
 our Privacy Policy and to the Terms of Use sit next to the Continue
 button on the same screen.
 
-The uploaded data lands in these tables and nowhere else: goals,
-goal_logs, goal_progress, long_term_goals, macro_goal_categories,
-daily_moods, habit_stats, profiles.
+That data lands in these tables: goals, goal_logs, goal_progress,
+long_term_goals, macro_goal_categories, daily_moods, profiles. The
+account's own credentials and the name and date of birth given at sign-up
+are held by Supabase Auth in auth.users, which populates profiles. The AI
+Coach proxy additionally records a rate-limit row in ai_coach_usage
+containing a user id and a timestamp - no message content.
 
-1c) THE TWO OTHER TRANSMISSIONS, EACH SEPARATELY CONSENTED
+The profile picture is worth stating explicitly because it is the one
+thing users expect to be uploaded and is not: there is no object-storage
+call anywhere in the app. A picture the user chooses is written to a
+local directory and, in Private mode, may travel end-to-end encrypted
+through their own iCloud. It never reaches our servers.
+
+1c) THE THREE OTHER TRANSMISSIONS
 
  - Crash diagnostics (Sentry). On the same privacy gate, as an explicit
    opt-in switch that is OFF by default. Build 26 defaulted this ON and,
    worse, started the SDK at cold start before the privacy gate had been
    shown at all. Both are fixed in build 27: the SDK cannot initialise
    until the user has answered the question, and answering "no" - the
-   default - keeps it off permanently. It can be withdrawn at any time
-   in Settings > Privacy > Crash reports, and it never runs at all in
-   Private mode.
+   default - keeps it off permanently. It can be withdrawn at any time in
+   Settings > "Privacy & Security" > "Send crash reports", and it never
+   runs at all in Private mode.
 
  - AI Coach. Sending a conversation to a model provider requires its own
-   separate, explicit consent dialog naming the recipient, shown before
-   the first message is ever sent. Consent is stored per account, so it
-   is never inherited by a different user on the same Mac. If the user
-   runs a local model instead (Ollama / LM Studio), nothing leaves the
-   Mac and no consent is requested, because no transmission occurs.
+   separate, explicit consent dialog, shown before the first message is
+   ever sent; dismissing it counts as refusal. In Account mode the message
+   goes to our own server-side function, which holds our provider key and
+   forwards the request to OpenRouter, Inc., pinned to Google LLC (Google
+   AI Studio). In bring-your-own-key mode the user's own OpenRouter
+   account routes it, so we name that separately rather than pretend to
+   enumerate recipients we do not control. In Account mode the consent is
+   stored per account, so it is never inherited by a different user on the
+   same Mac; in Private mode, where there is no account, it lives in the
+   local encrypted database. If the user runs a local model instead
+   (Ollama / LM Studio), nothing leaves the Mac and no consent is
+   requested, because no transmission occurs.
+
+ - Subscription management (RevenueCat). In Account mode only, and only
+   once the user opens the subscription screen or restores a purchase, our
+   payments provider receives the account's user id and the App Store
+   purchase state in order to tell the app whether the subscription is
+   active. No habit, goal, mood or profile data is sent, and this path
+   does not exist at all in Private mode, where nothing is offered for
+   sale.
 
 1d) PRIVATE MODE
 

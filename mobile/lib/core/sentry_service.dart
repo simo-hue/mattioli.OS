@@ -80,10 +80,12 @@ class SentryService {
   /// Whether the SDK is allowed to run right now.
   ///
   /// [hasCompletedConsent] is load-bearing, not redundant: `has_sentry_consent`
-  /// is absent on a fresh install and reads back as `true`, so gating on it
-  /// alone starts the SDK at cold start before the consent screen has ever been
-  /// shown. Requiring the answer to exist keeps a first launch silent until the
-  /// user has actually been asked.
+  /// is ABSENT on a fresh install, and every read of it now defaults an absent
+  /// key to `false` — but that default is a second line of defence, not the
+  /// argument. Gating on the answer alone would still be wrong, because it
+  /// cannot distinguish "the user said no" from "the user was never asked".
+  /// Requiring the question to have been ANSWERED keeps a first launch silent
+  /// on its own terms, whatever a caller passes for the answer.
   /// Deliberately does NOT consult [isConfigured]: this is the CONSENT policy,
   /// and it stays a pure function of the user's choices so it can be reasoned
   /// about and tested without a provisioned DSN. Whether the SDK can physically

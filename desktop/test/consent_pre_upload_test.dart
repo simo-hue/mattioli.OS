@@ -26,6 +26,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  // slang loads non-base locales from DEFERRED libraries. `setLocaleSync`
+  // throws `_DeferredNotLoadedError` until they are loaded, and the async
+  // `setLocale` never completes when awaited *inside* a `testWidgets` body
+  // (the fake-async zone does not drive `loadLibrary()`), which hangs the run.
+  // Loading them all once out here, in real async, makes the sync setter usable
+  // in the tests below.
+  setUpAll(() async {
+    for (final locale in AppLocale.values) {
+      await LocaleSettings.setLocale(locale);
+    }
+    await LocaleSettings.setLocale(AppLocale.en);
+  });
+
   Future<ProviderContainer> containerWith(Map<String, Object> values) async {
     SharedPreferences.setMockInitialValues(values);
     final prefs = await SharedPreferences.getInstance();
@@ -202,34 +215,66 @@ void main() {
       expect(button.onPressed, isNull);
     });
 
-    // The disclosure made the card tall enough to push Continue off-screen when
-    // the whole card scrolled as one piece. It now scrolls internally with a
-    // pinned footer — assert that at BOTH the default window and the smallest
-    // one the app allows (MainFlutterWindow.swift: minSize 960x640).
+    // The invariant that matters is not "Continue is painted somewhere" — a
+    // permanently-disabled button is on screen too. It is that the user can
+    // actually GET THROUGH: tick the box, then press Continue.
+    //
+    // Asserting only the button's rect is what let the real defect ship for a
+    // while: with the checkbox inside the scroll region, at the window's own
+    // minSize it rendered at y447 against a viewport ending at y410 — off the
+    // internal fold, untappable, Continue disabled forever. The rect assertion
+    // passed the whole time.
+    //
+    // Every locale, because German and Arabic are the long ones and the pinned
+    // footer is what has to absorb them.
     for (final size in const [Size(1440, 900), Size(960, 640)]) {
-      testWidgets('Continue and both legal links are on screen at $size', (
-        tester,
-      ) async {
-        tester.view.physicalSize = size;
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(tester.view.reset);
+      for (final locale in AppLocale.values) {
+        testWidgets(
+          'the gate can be passed at $size in ${locale.languageCode}',
+          (tester) async {
+            tester.view.physicalSize = size;
+            tester.view.devicePixelRatio = 1.0;
+            addTearDown(tester.view.reset);
+            // Sync, not `setLocale`: the async variant never completes under
+            // `flutter test` and hangs the whole run.
+            LocaleSettings.setLocaleSync(locale);
+            addTearDown(() => LocaleSettings.setLocaleSync(AppLocale.en));
 
-        await pumpConsentPage(tester);
+            await pumpConsentPage(tester);
 
-        for (final finder in [
-          find.byType(FilledButton),
-          find.text(t.consentPage.openTerms),
-          find.text(t.consentPage.openPrivacy),
-        ]) {
-          final rect = tester.getRect(finder);
-          expect(
-            rect.bottom,
-            lessThanOrEqualTo(size.height),
-            reason: 'below the fold at $size — a reviewer would never find it',
-          );
-          expect(rect.top, greaterThanOrEqualTo(0.0));
-        }
-      });
+            // Continue starts disabled...
+            expect(
+              tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+              isNull,
+            );
+
+            // ...the checkbox is reachable and hit-testable...
+            final checkbox = find.byType(CheckboxListTile);
+            expect(checkbox, findsOneWidget);
+            await tester.tap(checkbox);
+            await tester.pumpAndSettle();
+
+            // ...and pressing it enables the only way forward.
+            expect(
+              tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+              isNotNull,
+              reason:
+                  'the accept control is unreachable at $size — hard lockout',
+            );
+
+            // The legal links stay pinned too (Guideline 3.1.2(c)).
+            for (final finder in [
+              find.byType(FilledButton),
+              find.text(t.consentPage.openTerms),
+              find.text(t.consentPage.openPrivacy),
+            ]) {
+              final rect = tester.getRect(finder);
+              expect(rect.bottom, lessThanOrEqualTo(size.height));
+              expect(rect.top, greaterThanOrEqualTo(0.0));
+            }
+          },
+        );
+      }
     }
   });
 }

@@ -40,8 +40,15 @@ class ActiveDataModeNotifier extends Notifier<AppDataMode> with ChangeNotifier {
     // never initialized. Late-init it now so crash reporting resumes — but only
     // with the user's previously-granted consent (SEC-4).
     if (wasPrivate && mode != AppDataMode.private) {
-      final hasSentryConsent = prefs.getBool('has_sentry_consent') ?? true;
-      if (hasSentryConsent) {
+      // Through the same predicate as cold start: an absent key means the
+      // question was never answered, not "yes", so leaving Private Mode must
+      // not be a side door that starts the SDK without consent.
+      final allowed = SentryService.shouldRun(
+        hasCompletedConsent: prefs.getBool('has_completed_consent') ?? false,
+        hasSentryConsent: prefs.getBool('has_sentry_consent') ?? false,
+        isPrivateMode: false,
+      );
+      if (allowed) {
         await SentryService.ensureInitialized();
       }
     }

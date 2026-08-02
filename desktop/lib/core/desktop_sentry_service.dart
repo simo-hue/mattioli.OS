@@ -25,8 +25,6 @@ class DesktopSentryService {
     defaultValue: '0.2',
   );
 
-  static bool _initialized = false;
-
   static bool get isConfigured {
     final dsn = _dsn.trim();
     return dsn.isNotEmpty && dsn != _placeholderDsn;
@@ -56,18 +54,27 @@ class DesktopSentryService {
     required bool isPrivateMode,
   }) => hasCompletedConsent && hasSentryConsent && !isPrivateMode;
 
+  /// Both sides ask the SDK itself, not a local bool.
+  ///
+  /// A local `_initialized` bool used to stand in for this, and [ensureInitialized] swallows a
+  /// throw from `SentryFlutter.init` without setting it. If init failed *after*
+  /// binding the hub, the flag said "not running" while the client was — and
+  /// `setEnabled(false)` then early-returned instead of calling
+  /// `Sentry.close()`. Entering Private mode, or withdrawing consent, would
+  /// silently fail to stop reporting: the exact boundary this class exists to
+  /// enforce. `Sentry.isEnabled` cannot drift from reality. Mirrors mobile's
+  /// `SentryService`.
   static Future<void> setEnabled(bool enabled) async {
     if (enabled) {
       await ensureInitialized();
       return;
     }
-    if (!_initialized) return;
+    if (!Sentry.isEnabled) return;
     await Sentry.close();
-    _initialized = false;
   }
 
   static Future<void> ensureInitialized() async {
-    if (_initialized || !isConfigured) return;
+    if (Sentry.isEnabled || !isConfigured) return;
     try {
       await SentryFlutter.init((options) {
         options
@@ -77,7 +84,6 @@ class DesktopSentryService {
           ..reportPackages = true
           ..beforeSend = _sanitizeEvent;
       });
-      _initialized = true;
     } catch (error, stack) {
       AppLogger.error('Unable to initialize desktop Sentry', error, stack);
     }

@@ -84,8 +84,10 @@ void main() {
     });
 
     test('stays off before the consent screen has been answered', () {
-      // A fresh install: 'has_sentry_consent' is absent and reads back as true,
-      // so only the completed flag keeps the cold start silent.
+      // Belt and braces. Every read of 'has_sentry_consent' now defaults an
+      // absent key to FALSE, so this input should not occur — but the completed
+      // flag is what makes the predicate correct regardless of how the answer
+      // was defaulted, and that is the property worth pinning.
       expect(
         SentryService.shouldRun(
           hasCompletedConsent: false,

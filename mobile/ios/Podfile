@@ -56,6 +56,37 @@ post_install do |installer|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
+
+      # Turn ON the one permission strategy this app actually uses.
+      #
+      # permission_handler_apple gates every strategy behind a PERMISSION_*
+      # macro that `PermissionHandlerEnums.h` defaults to **0**, and a strategy
+      # compiled out falls back to `UnknownPermissionStrategy`, whose
+      # `checkPermissionStatus:` returns `Denied` and whose `requestPermission:`
+      # returns `PermanentlyDenied` without ever showing an OS prompt.
+      #
+      # Nothing here has ever defined these macros. So on iOS today,
+      # `Permission.notification.status` always reads denied and
+      # `Permission.notification.request()` is a no-op — which makes the
+      # "Enable notifications" control on the consent screen a dead button that
+      # can never turn into its green checkmark. That is the FIRST screen App
+      # Review sees. Notifications themselves still work, because
+      # flutter_local_notifications asks for authorization through its own
+      # channel; only permission_handler's view of them was broken.
+      #
+      # Listing only NOTIFICATIONS is also a statement of intent: the defaults
+      # already keep Contacts, Calendars, Location, Photos, Camera and
+      # Microphone compiled out of the binary, and this line records that we
+      # want exactly one of them and no more — worth having in writing on an app
+      # answering a Contacts-shaped 5.1.2 rejection.
+      #
+      # Assigned by appending rather than `||=`, because Flutter's
+      # `flutter_additional_ios_build_settings` above may already have set this
+      # key, in which case `||=` would silently do nothing.
+      existing = config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] || ['$(inherited)']
+      existing = [existing] unless existing.is_a?(Array)
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] =
+        existing + ['PERMISSION_NOTIFICATIONS=1']
     end
   end
   # Suppress "Update to recommended settings" on the generated Pods project.

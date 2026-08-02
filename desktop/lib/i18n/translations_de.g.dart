@@ -1288,11 +1288,11 @@ class _Translations$consentPage$de extends Translations$consentPage$en {
 	@override String get subtitle => 'Evolve lädt deine personenbezogenen Daten erst auf einen Server, nachdem du hier zugestimmt hast.';
 	@override String get uploadTitle => 'Was diesen Mac verlässt';
 	@override String get uploadAccountTitle => 'Mit einem Evolve-Konto';
-	@override String get uploadAccountBody => 'Ziele, Gewohnheiten, Stimmungs-Check-ins und dein Profil (Name, E-Mail, Foto) werden auf die Server von Evolve geladen, um deine Geräte zu synchronisieren.';
+	@override String get uploadAccountBody => 'Ziele, Gewohnheiten, Stimmungs-Check-ins, deine App-Einstellungen und dein Profil (Name, E-Mail, Geburtsdatum) werden auf die Server von Evolve geladen, um deine Geräte zu synchronisieren. Dein Profilbild bleibt auf diesem Mac.';
 	@override String get uploadPrivateTitle => 'Privat auf diesem Mac';
 	@override String get uploadPrivateBody => 'zu uns wird nichts hochgeladen; die optionale iCloud-Synchronisierung ist Ende-zu-Ende-verschlüsselt und erreicht nur dein eigenes iCloud-Konto.';
 	@override String get uploadNeverTitle => 'Nie abgerufen';
-	@override String get uploadNeverBody => 'Kontakte, Kalender, Fotos, Kamera, Mikrofon, Standort.';
+	@override String get uploadNeverBody => 'Kontakte, Kalender, Kamera, Mikrofon, Standort.';
 	@override String get acceptTerms => 'Ich akzeptiere die Bedingungen und die Datenschutzrichtlinie';
 	@override String get termsSubtitle => 'Ich habe die Dokumente gelesen, bin mindestens 14 Jahre alt und stimme dem oben beschriebenen Hochladen zu.';
 	@override String get crashDiagnostics => 'Absturzdiagnose';
@@ -3163,11 +3163,11 @@ extension on TranslationsDe {
 			'consentPage.subtitle' => 'Evolve lädt deine personenbezogenen Daten erst auf einen Server, nachdem du hier zugestimmt hast.',
 			'consentPage.uploadTitle' => 'Was diesen Mac verlässt',
 			'consentPage.uploadAccountTitle' => 'Mit einem Evolve-Konto',
-			'consentPage.uploadAccountBody' => 'Ziele, Gewohnheiten, Stimmungs-Check-ins und dein Profil (Name, E-Mail, Foto) werden auf die Server von Evolve geladen, um deine Geräte zu synchronisieren.',
+			'consentPage.uploadAccountBody' => 'Ziele, Gewohnheiten, Stimmungs-Check-ins, deine App-Einstellungen und dein Profil (Name, E-Mail, Geburtsdatum) werden auf die Server von Evolve geladen, um deine Geräte zu synchronisieren. Dein Profilbild bleibt auf diesem Mac.',
 			'consentPage.uploadPrivateTitle' => 'Privat auf diesem Mac',
 			'consentPage.uploadPrivateBody' => 'zu uns wird nichts hochgeladen; die optionale iCloud-Synchronisierung ist Ende-zu-Ende-verschlüsselt und erreicht nur dein eigenes iCloud-Konto.',
 			'consentPage.uploadNeverTitle' => 'Nie abgerufen',
-			'consentPage.uploadNeverBody' => 'Kontakte, Kalender, Fotos, Kamera, Mikrofon, Standort.',
+			'consentPage.uploadNeverBody' => 'Kontakte, Kalender, Kamera, Mikrofon, Standort.',
 			'consentPage.acceptTerms' => 'Ich akzeptiere die Bedingungen und die Datenschutzrichtlinie',
 			'consentPage.termsSubtitle' => 'Ich habe die Dokumente gelesen, bin mindestens 14 Jahre alt und stimme dem oben beschriebenen Hochladen zu.',
 			'consentPage.crashDiagnostics' => 'Absturzdiagnose',

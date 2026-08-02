@@ -1288,11 +1288,11 @@ class _Translations$consentPage$es extends Translations$consentPage$en {
 	@override String get subtitle => 'Evolve sube tus datos personales a un servidor solo después de que aceptes aquí.';
 	@override String get uploadTitle => 'Qué sale de este Mac';
 	@override String get uploadAccountTitle => 'Con una cuenta de Evolve';
-	@override String get uploadAccountBody => 'tus objetivos, hábitos, registros de ánimo y perfil (nombre, correo, foto) se suben a los servidores de Evolve para sincronizar tus dispositivos.';
+	@override String get uploadAccountBody => 'tus objetivos, hábitos, registros de ánimo, los ajustes de la app y tu perfil (nombre, correo, fecha de nacimiento) se suben a los servidores de Evolve para sincronizar tus dispositivos. Tu foto de perfil se queda en este Mac.';
 	@override String get uploadPrivateTitle => 'En privado en este Mac';
 	@override String get uploadPrivateBody => 'no se nos sube nada; la sincronización opcional con iCloud está cifrada de extremo a extremo y solo llega a tu propia cuenta de iCloud.';
 	@override String get uploadNeverTitle => 'Nunca consultados';
-	@override String get uploadNeverBody => 'contactos, calendario, fotos, cámara, micrófono, ubicación.';
+	@override String get uploadNeverBody => 'contactos, calendario, cámara, micrófono, ubicación.';
 	@override String get acceptTerms => 'Acepto los términos y la política de privacidad';
 	@override String get termsSubtitle => 'He leído los documentos, tengo al menos 14 años y acepto la subida descrita arriba.';
 	@override String get crashDiagnostics => 'Diagnóstico de fallos';
@@ -3163,11 +3163,11 @@ extension on TranslationsEs {
 			'consentPage.subtitle' => 'Evolve sube tus datos personales a un servidor solo después de que aceptes aquí.',
 			'consentPage.uploadTitle' => 'Qué sale de este Mac',
 			'consentPage.uploadAccountTitle' => 'Con una cuenta de Evolve',
-			'consentPage.uploadAccountBody' => 'tus objetivos, hábitos, registros de ánimo y perfil (nombre, correo, foto) se suben a los servidores de Evolve para sincronizar tus dispositivos.',
+			'consentPage.uploadAccountBody' => 'tus objetivos, hábitos, registros de ánimo, los ajustes de la app y tu perfil (nombre, correo, fecha de nacimiento) se suben a los servidores de Evolve para sincronizar tus dispositivos. Tu foto de perfil se queda en este Mac.',
 			'consentPage.uploadPrivateTitle' => 'En privado en este Mac',
 			'consentPage.uploadPrivateBody' => 'no se nos sube nada; la sincronización opcional con iCloud está cifrada de extremo a extremo y solo llega a tu propia cuenta de iCloud.',
 			'consentPage.uploadNeverTitle' => 'Nunca consultados',
-			'consentPage.uploadNeverBody' => 'contactos, calendario, fotos, cámara, micrófono, ubicación.',
+			'consentPage.uploadNeverBody' => 'contactos, calendario, cámara, micrófono, ubicación.',
 			'consentPage.acceptTerms' => 'Acepto los términos y la política de privacidad',
 			'consentPage.termsSubtitle' => 'He leído los documentos, tengo al menos 14 años y acepto la subida descrita arriba.',
 			'consentPage.crashDiagnostics' => 'Diagnóstico de fallos',

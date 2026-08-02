@@ -18,7 +18,8 @@ class ConsentState {
     bool? hasAcceptedTerms,
   }) {
     return ConsentState(
-      hasCompletedOnboarding: hasCompletedOnboarding ?? this.hasCompletedOnboarding,
+      hasCompletedOnboarding:
+          hasCompletedOnboarding ?? this.hasCompletedOnboarding,
       hasSentryConsent: hasSentryConsent ?? this.hasSentryConsent,
       hasAcceptedTerms: hasAcceptedTerms ?? this.hasAcceptedTerms,
     );
@@ -35,7 +36,12 @@ class ConsentNotifier extends Notifier<ConsentState> {
     final prefs = ref.read(sharedPrefsProvider);
     return ConsentState(
       hasCompletedOnboarding: prefs.getBool(_keyCompleted) ?? false,
-      hasSentryConsent: prefs.getBool(_keySentry) ?? true,
+      // Absent means UNANSWERED, which is not consent (Guideline 5.1.2).
+      // `shouldRun` already refuses to start the SDK before the consent screen
+      // has been completed, but this value is also what the Privacy Settings
+      // switch renders — and a switch showing ON for a permission nobody gave
+      // is its own misstatement.
+      hasSentryConsent: prefs.getBool(_keySentry) ?? false,
       hasAcceptedTerms: prefs.getBool(_keyTerms) ?? false,
     );
   }
@@ -49,7 +55,7 @@ class ConsentNotifier extends Notifier<ConsentState> {
     await prefs.setBool(_keyTerms, acceptedTerms);
     await prefs.setBool(_keySentry, sentryConsent);
     await prefs.setBool(_keyCompleted, completed);
-    
+
     state = state.copyWith(
       hasAcceptedTerms: acceptedTerms,
       hasSentryConsent: sentryConsent,
@@ -58,4 +64,6 @@ class ConsentNotifier extends Notifier<ConsentState> {
   }
 }
 
-final consentProvider = NotifierProvider<ConsentNotifier, ConsentState>(ConsentNotifier.new);
+final consentProvider = NotifierProvider<ConsentNotifier, ConsentState>(
+  ConsentNotifier.new,
+);

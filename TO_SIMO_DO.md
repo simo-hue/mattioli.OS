@@ -233,65 +233,95 @@ string and the 30 locales together, after approval.
 
 ---
 
-## 2026-08-02 — macOS Guideline 5.1.2 resubmission (build 27)
+## 2026-08-02 — SHIP macOS 27 + iOS 43
 
-The code, copy and review notes are done. These steps are yours.
+Both apps are code-complete and green. The privacy policy is already live
+(pushed to `simo-hue/evolve`). Below is everything left, in order.
 
-### Blocking — must happen before the build is resubmitted
+### 0. Prereqs (Mac mini, once)
 
-1. **Reply to the rejection in App Store Connect.** Apple explicitly invited
-   this: *"If the app does not actually upload the user's Contacts to a server,
-   reply to this rejection to confirm and add this information to the App Review
-   Information section."* Do both. Suggested reply:
+```bash
+cd ~/Developer/mattioli.OS && git pull
+```
 
-   > Evolve does not access the user's Contacts and does not upload Contacts to
-   > any server. The app declares no NSContactsUsageDescription key (nor any
-   > other NS*UsageDescription key) and does not request the
-   > com.apple.security.personal-information.addressbook sandbox entitlement, so
-   > it cannot read the address book. The same applies to Calendars, Reminders,
-   > Photos, Camera, Microphone and Location.
-   >
-   > The only personal data the app handles is data the user types into it
-   > (goals, habits, mood check-ins) plus their profile. Build 27 shows a
-   > full-screen, unskippable privacy gate on first launch — before any account
-   > exists and before any network call carrying user data — that states in plain
-   > language that this data is uploaded to our servers in Account mode, that
-   > Private mode uploads nothing to us, and that contacts, calendar, photos,
-   > camera, microphone and location are never accessed. Crash diagnostics are a
-   > separate opt-in switch that is now OFF by default and cannot start the SDK
-   > before the user has answered.
+`desktop/.env` and `mobile/lib/core/{supabase_config,sentry_config}.dart` are
+gitignored — if this is a fresh checkout, create them from their `.example`
+files first.
 
-2. **Paste the same text into App Review Information → Notes**, or push the file
-   with the `metadata` lane (`desktop/macos/fastlane/metadata/review_information/notes.txt`
-   is already rewritten and covers all of this in section 1).
+### 1. macOS — build 27
 
-3. **Archive and upload build 27.** `pubspec.yaml` is now `1.2.1+27` and all
-   three `CURRENT_PROJECT_VERSION` slots are `27`. Build 26 cannot be reused —
-   App Store Connect rejects duplicate build numbers.
+```bash
+cd ~/Developer/mattioli.OS/desktop && flutter build macos --release --dart-define-from-file=.env
+```
 
-4. **Check the App Privacy answers on the macOS record.** Nothing in the code
-   collects Contacts, so if the questionnaire declares a "Contacts" data type
-   that alone could have triggered this rejection. Verify the declared types
-   match what actually ships: Identifiers + Contact Info (email/name),
-   User Content (goals, habits, mood), Diagnostics (only if crash reporting is
-   consented), Purchases. **Nothing else.**
+Then in Xcode: `desktop/macos/Runner.xcworkspace` → Product ▸ Archive →
+Distribute App ▸ App Store Connect ▸ Upload.
 
-5. **The ASC version string is still 1.0.0 while the project says 1.2.1.** Carried
-   over from the previous round and still unresolved — the reviewer's report says
-   "Version reviewed: 1.0.0 (26)". Decide which is authoritative before uploading.
+Push the metadata + review notes (no binary):
 
-### Non-blocking, but real: the same defect is latent on iOS
+```bash
+cd ~/Developer/mattioli.OS/desktop/macos && fastlane mac metadata
+```
 
-`mobile/lib/ui/screens/consent_screen.dart:28` declares
-`final bool _sentryConsent = true;` — a `final` field with **no UI control
-anywhere on the screen**. Tapping Continue therefore enables Sentry for every
-iOS user without ever asking them. iOS is not currently rejected for this, and
-the cold-start half of the bug is already fixed there
-(`mobile/lib/main.dart:158-166`), but "the user must provide consent" is not
-satisfied by an unasked default. The iOS screen also has no upload disclosure.
+### 2. iOS — build 43
 
-Fixing it is small — the copy already exists in all five languages under
-`consentPage.upload*` / `crashSubtitle` in the desktop i18n files, ready to copy
-across. Left alone deliberately: it changes a shipped app's onboarding and needs
-its own submission, which is a release-timing decision, not a code one. Say the
-word and it gets done.
+```bash
+cd ~/Developer/mattioli.OS/mobile/ios && pod install
+```
+
+`pod install` is **not optional this time** — the Podfile changed
+(`PERMISSION_NOTIFICATIONS=1`).
+
+```bash
+cd ~/Developer/mattioli.OS/mobile && flutter build ipa --release
+```
+
+Then Xcode: `mobile/ios/Runner.xcworkspace` → Archive → Upload.
+
+Push the metadata + review notes (validates first, aborts on failure):
+
+```bash
+cd ~/Developer/mattioli.OS/mobile/ios && fastlane ios upload_metadata
+```
+
+### 3. App Store Connect — do this before submitting either app
+
+1. **Reply to the macOS rejection** with the text in
+   `desktop/macos/fastlane/metadata/review_information/notes.txt` §1, and paste
+   the same into App Review Information. Short version: the app declares no
+   `NS*UsageDescription` key and no address-book entitlement, so it cannot read
+   Contacts; build 27 shows an unskippable privacy gate before any upload.
+2. **Fix the App Privacy answers on BOTH records.** What the code actually
+   uploads: name, email, **date of birth**; goals/habits/moods; account user id
+   (also to RevenueCat); crash diagnostics **only if opted in**; purchases.
+   **Not** Photos. **Not** Health — only the pass/fail verdict leaves the device.
+   `date_of_birth` is probably missing today; also add
+   `NSPrivacyCollectedDataTypeOtherDataTypes` to
+   `mobile/ios/Runner/PrivacyInfo.xcprivacy`.
+3. **macOS version string**: ASC says 1.0.0, the project says 1.2.1. Unresolved
+   from the last round — pick one before uploading.
+4. Submit both for review.
+
+### 4. On-device check after installing iOS 43
+
+Consent screen → tap **Enable notifications**. It must now show the iOS prompt
+and turn into a green checkmark. It never could before: with no `PERMISSION_*`
+macros, `Permission.notification` fell back to `UnknownPermissionStrategy`,
+which returns `Denied` and never prompts.
+
+### Still open — not blocking, your call
+
+- **iOS fetches Inter from `fonts.gstatic.com` at runtime** (desktop bundles it),
+  so the consent screen contacts Google before consent. Fix = bundle Inter under
+  `mobile/assets/` + `GoogleFonts.config.allowRuntimeFetching = false` in
+  `main()`. Not done: the repo has no Inter-Black (w900) and a missing weight
+  silently degrades typography app-wide — needs a device check.
+- **Three minimum ages**: app says 14, live Terms say 13 "(or 16 in the EU)",
+  privacy policy is silent. The German build asserts 14 while its own German
+  Terms say 16. You collect `date_of_birth` and never check it against anything.
+  Legal decision, not a code one.
+- **Reinstall path can reach Supabase + RevenueCat pre-consent.** The Keychain
+  session survives app deletion; `has_completed_consent` (NSUserDefaults) does
+  not. So delete-and-reinstall = live session, consent unanswered, and the token
+  refresh / `profiles` read / `Purchases.configure` fire behind the gate. Sentry
+  is gated; these are not. Same shape as the bug that got you rejected.

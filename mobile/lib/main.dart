@@ -42,7 +42,7 @@ import 'i18n/translations.g.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-  
+
   // ── Load persisted App Logs ───────────────────────────────────────────────
   await AppLogger.loadLogs();
 
@@ -58,7 +58,8 @@ void main() async {
   // NSUserDefaults didn't survive; default to Supabase here would silently hide
   // their intact local data behind a logged-out cloud view. Restore the mode so
   // the local DB is queried again (they can still switch in Settings).
-  if (savedDataMode == null && await PrivateLocalDatabase.databaseFileExists()) {
+  if (savedDataMode == null &&
+      await PrivateLocalDatabase.databaseFileExists()) {
     await prefs.setString('active_data_mode', AppDataMode.private.name);
     AppLogger.warning(
       '[Startup] Restored Private mode from the on-disk database after a '
@@ -149,19 +150,23 @@ void main() async {
   try {
     progressJson = await SecureStorageUtils.read('goal_progress_cache');
   } catch (e, stack) {
-    AppLogger.error('[Startup] goal_progress_cache secure read failed', e, stack);
+    AppLogger.error(
+      '[Startup] goal_progress_cache secure read failed',
+      e,
+      stack,
+    );
   }
   progressJson ??= '{}';
 
   // ── Sentry init ──────────────────────────────────────────────────────────
   // Gated on the consent question having been ANSWERED, not just on the answer:
-  // 'has_sentry_consent' is absent on a fresh install and reads back as true, so
-  // gating on it alone initializes Sentry before the consent screen is shown.
-  // Once the user answers, ConsentScreen starts the SDK itself, and
-  // _EvolveAppState keeps it aligned for the rest of the session.
+  // 'has_sentry_consent' is absent on a fresh install, so gating on it alone
+  // would initialize Sentry before the consent screen is shown. Once the user
+  // answers, ConsentScreen starts the SDK itself, and _EvolveAppState keeps it
+  // aligned for the rest of the session.
   final shouldStartSentry = SentryService.shouldRun(
     hasCompletedConsent: prefs.getBool('has_completed_consent') ?? false,
-    hasSentryConsent: prefs.getBool('has_sentry_consent') ?? true,
+    hasSentryConsent: prefs.getBool('has_sentry_consent') ?? false,
     isPrivateMode: startsInPrivateMode,
   );
 
@@ -212,11 +217,7 @@ void main() async {
       }
 
       // Registra l'errore globalmente (App Logs + Sentry se abilitato)
-      AppLogger.error(
-        '[System] Unhandled global exception',
-        error,
-        stack,
-      );
+      AppLogger.error('[System] Unhandled global exception', error, stack);
 
       final context = navigatorKey.currentContext;
       if (context != null) {
@@ -253,11 +254,7 @@ void main() async {
   if (shouldStartSentry && SentryService.isConfigured) {
     final info = await SentryService.releaseInfo();
     await SentryFlutter.init((options) {
-      SentryService.configure(
-        options,
-        release: info.release,
-        dist: info.dist,
-      );
+      SentryService.configure(options, release: info.release, dist: info.dist);
     }, appRunner: startApp);
   } else {
     startApp();
@@ -294,7 +291,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (dataMode != AppDataMode.private) SentryNavigatorObserver(),
     ],
     routes: [
-      GoRoute(path: '/', builder: (context, state) => const _PrivateAwareHome()),
+      GoRoute(
+        path: '/',
+        builder: (context, state) => const _PrivateAwareHome(),
+      ),
       GoRoute(path: '/login', builder: (context, state) => const AuthScreen()),
       // The signed-out landing screen. NOT '/login' — see
       // DataModeChoiceScreen's class doc for why the login wall could not stay
@@ -351,8 +351,7 @@ class _PrivateAwareHome extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isPrivate =
-        ref.watch(activeDataModeProvider) == AppDataMode.private;
+    final isPrivate = ref.watch(activeDataModeProvider) == AppDataMode.private;
     return isPrivate
         ? const PrivateModeGate(child: HomeScreen())
         : const HomeScreen();
@@ -404,18 +403,22 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _writeDebouncer =
-        SyncWriteDebouncer(onFlush: () => _syncAndRefresh(reason: 'write'));
+    _writeDebouncer = SyncWriteDebouncer(
+      onFlush: () => _syncAndRefresh(reason: 'write'),
+    );
     PrivateLocalDatabase.onPrivateWrite = _onPrivateWrite;
 
     // Launch sync. A cold start does NOT emit `resumed`, so without this the
     // first pull of a session waited for the user to background the app and
     // come back — the reason a freshly-opened iPhone could sit on stale data
     // indefinitely.
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) => _syncIfPrivate('launch'));
-    _periodicSync =
-        Timer.periodic(_periodicSyncInterval, (_) => _syncIfPrivate('poll'));
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _syncIfPrivate('launch'),
+    );
+    _periodicSync = Timer.periodic(
+      _periodicSyncInterval,
+      (_) => _syncIfPrivate('poll'),
+    );
 
     // Auto-verified habits: keep DeviceActivity monitoring in step with the goal
     // list. Creating, editing and deleting a Screen Time habit all land here, as
@@ -441,14 +444,10 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
     // not merely unnecessary here, it is forbidden: Riverpod asserts on
     // `weak && fireImmediately`.
     if (VerificationConfig.screenTimeEnabled) {
-      ref.listenManual(
-        goalsProvider,
-        (_, _) {
-          _goalsAlive = true;
-          _syncScreenTimeMonitoring();
-        },
-        weak: true,
-      );
+      ref.listenManual(goalsProvider, (_, _) {
+        _goalsAlive = true;
+        _syncScreenTimeMonitoring();
+      }, weak: true);
       // The Mode-A selection blob is stored separately from the goal, so both a
       // re-pick that leaves the goal untouched AND the initial pick (committed
       // after the goal is saved, keyed by the final id) have to reach
@@ -594,7 +593,8 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
           goals: goals,
           bridge: ref.read(screenTimeBridgeProvider),
           cache: ref.read(screenTimeSyncCacheProvider),
-          selectionFor: (id) => ref.read(screenTimeSelectionsProvider)[id]?.blob,
+          selectionFor: (id) =>
+              ref.read(screenTimeSelectionsProvider)[id]?.blob,
           onMonitorLimit: (e) =>
               ref.read(screenTimeMonitorLimitProvider.notifier).report(e),
         );
@@ -616,7 +616,10 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    AppLogger.info('[AppLifecycle] State changed to ${state.name}', category: 'lifecycle');
+    AppLogger.info(
+      '[AppLifecycle] State changed to ${state.name}',
+      category: 'lifecycle',
+    );
 
     // Foreground sync trigger: on resume, pull/push private data. Gated to
     // Private mode so it never opens the private DB or calls CloudKit in
@@ -636,7 +639,11 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
         try {
           await runVerificationReconcile(ref);
         } catch (e, stack) {
-          AppLogger.error('[Verification] foreground reconcile failed', e, stack);
+          AppLogger.error(
+            '[Verification] foreground reconcile failed',
+            e,
+            stack,
+          );
         }
       }());
     }
@@ -649,7 +656,9 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
     if (state == AppLifecycleState.resumed) {
       unawaited(() async {
         try {
-          await ref.read(habitProgressProvider.notifier).reconcileManualTargets();
+          await ref
+              .read(habitProgressProvider.notifier)
+              .reconcileManualTargets();
         } catch (e, stack) {
           AppLogger.error('[Targets] foreground reconcile failed', e, stack);
         }
@@ -670,8 +679,7 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
   /// remembering to.
   Future<void> _reconcileSentry() async {
     final consent = ref.read(consentProvider);
-    final isPrivate =
-        ref.read(activeDataModeProvider) == AppDataMode.private;
+    final isPrivate = ref.read(activeDataModeProvider) == AppDataMode.private;
     try {
       await SentryService.setEnabled(
         SentryService.shouldRun(
@@ -694,8 +702,9 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
     // conversation; sync must fail quietly and let it. Desktop's
     // DesktopSyncLifecycle already does this; the mobile twin never did.
     try {
-      final status =
-          await ref.read(privateSyncServiceProvider).syncNow(reason: reason);
+      final status = await ref
+          .read(privateSyncServiceProvider)
+          .syncNow(reason: reason);
       // If the sync pulled remote changes, refresh the cached providers so the
       // UI shows them (the engine writes straight to the local DB).
       if (mounted && status.appliedChanges > 0) {

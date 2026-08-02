@@ -82,7 +82,13 @@ class SettingsFormState {
         // holds still reaches the phone.
         aiInsights: false,
         weeklyReport: false,
-        crashReports: true,
+        // OFF for the same reason as the two above: `build()` returns this
+        // initial state and early-returns when SharedPreferences is absent,
+        // BEFORE reaching the `?? false` hydration below — so a `true` here is
+        // the value the Privacy switch would render, and keep, on that path.
+        // Not reachable in production (main.dart always overrides the
+        // provider), but it is the last place this key defaulted to consent.
+        crashReports: false,
         // Experience/Pro toggles (mobile parity — same keys and defaults as
         // mobile's AppSettings: ai/focus/deep-work OFF, milestones ON).
         aiSuggestions: false,

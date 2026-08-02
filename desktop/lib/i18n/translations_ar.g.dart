@@ -1288,11 +1288,11 @@ class _Translations$consentPage$ar extends Translations$consentPage$en {
 	@override String get subtitle => 'لا يرفع Evolve بياناتك الشخصية إلى أي خادم إلا بعد موافقتك هنا.';
 	@override String get uploadTitle => 'ما الذي يغادر هذا الـ Mac';
 	@override String get uploadAccountTitle => 'مع حساب Evolve';
-	@override String get uploadAccountBody => 'تُرفع أهدافك وعاداتك وتسجيلات مزاجك وملفك الشخصي (الاسم والبريد الإلكتروني والصورة) إلى خوادم Evolve لمزامنة أجهزتك.';
+	@override String get uploadAccountBody => 'تُرفع أهدافك وعاداتك وتسجيلات مزاجك وإعدادات التطبيق وملفك الشخصي (الاسم والبريد الإلكتروني وتاريخ الميلاد) إلى خوادم Evolve لمزامنة أجهزتك. تبقى صورة ملفك الشخصي على هذا الـ Mac.';
 	@override String get uploadPrivateTitle => 'بشكل خاص على هذا الـ Mac';
 	@override String get uploadPrivateBody => 'لا يُرفع إلينا أي شيء؛ ومزامنة iCloud الاختيارية مشفّرة من طرف إلى طرف ولا تصل إلا إلى حساب iCloud الخاص بك.';
 	@override String get uploadNeverTitle => 'لا يُطّلع عليها أبدًا';
-	@override String get uploadNeverBody => 'جهات الاتصال، التقويم، الصور، الكاميرا، الميكروفون، الموقع.';
+	@override String get uploadNeverBody => 'جهات الاتصال، التقويم، الكاميرا، الميكروفون، الموقع.';
 	@override String get acceptTerms => 'أوافق على الشروط وسياسة الخصوصية';
 	@override String get termsSubtitle => 'قرأت المستندات، وعمري 14 عامًا على الأقل، وأوافق على الرفع الموضّح أعلاه.';
 	@override String get crashDiagnostics => 'تشخيص الأعطال';
@@ -3163,11 +3163,11 @@ extension on TranslationsAr {
 			'consentPage.subtitle' => 'لا يرفع Evolve بياناتك الشخصية إلى أي خادم إلا بعد موافقتك هنا.',
 			'consentPage.uploadTitle' => 'ما الذي يغادر هذا الـ Mac',
 			'consentPage.uploadAccountTitle' => 'مع حساب Evolve',
-			'consentPage.uploadAccountBody' => 'تُرفع أهدافك وعاداتك وتسجيلات مزاجك وملفك الشخصي (الاسم والبريد الإلكتروني والصورة) إلى خوادم Evolve لمزامنة أجهزتك.',
+			'consentPage.uploadAccountBody' => 'تُرفع أهدافك وعاداتك وتسجيلات مزاجك وإعدادات التطبيق وملفك الشخصي (الاسم والبريد الإلكتروني وتاريخ الميلاد) إلى خوادم Evolve لمزامنة أجهزتك. تبقى صورة ملفك الشخصي على هذا الـ Mac.',
 			'consentPage.uploadPrivateTitle' => 'بشكل خاص على هذا الـ Mac',
 			'consentPage.uploadPrivateBody' => 'لا يُرفع إلينا أي شيء؛ ومزامنة iCloud الاختيارية مشفّرة من طرف إلى طرف ولا تصل إلا إلى حساب iCloud الخاص بك.',
 			'consentPage.uploadNeverTitle' => 'لا يُطّلع عليها أبدًا',
-			'consentPage.uploadNeverBody' => 'جهات الاتصال، التقويم، الصور، الكاميرا، الميكروفون، الموقع.',
+			'consentPage.uploadNeverBody' => 'جهات الاتصال، التقويم، الكاميرا، الميكروفون، الموقع.',
 			'consentPage.acceptTerms' => 'أوافق على الشروط وسياسة الخصوصية',
 			'consentPage.termsSubtitle' => 'قرأت المستندات، وعمري 14 عامًا على الأقل، وأوافق على الرفع الموضّح أعلاه.',
 			'consentPage.crashDiagnostics' => 'تشخيص الأعطال',

@@ -100,6 +100,16 @@ class _DesktopConsentPageState extends ConsumerState<DesktopConsentPage> {
                     ],
                   ),
                   const SizedBox(height: 22),
+                  // ONLY the disclosure and the two OPTIONAL rows scroll. The
+                  // accept-terms checkbox is pinned below with Continue,
+                  // because it is the one control that enables it.
+                  //
+                  // It used to live in here, and at the window's own minSize of
+                  // 960x640 (MainFlutterWindow.swift:7) it rendered at y447
+                  // against a viewport ending at y410 — off the internal fold,
+                  // untappable, with Continue therefore disabled forever and no
+                  // scrollbar thumb at rest to hint otherwise. A hard lockout on
+                  // the first screen, at a size the user can simply drag to.
                   Flexible(
                     child: SingleChildScrollView(
                       child: Column(
@@ -111,29 +121,6 @@ class _DesktopConsentPageState extends ConsumerState<DesktopConsentPage> {
                           // the control that agrees to it.
                           const _UploadDisclosure(),
                           const SizedBox(height: 14),
-                          _ConsentRow(
-                            child: CheckboxListTile(
-                              contentPadding:
-                                  const EdgeInsetsDirectional.fromSTEB(
-                                    16,
-                                    6,
-                                    12,
-                                    6,
-                                  ),
-                              value: _acceptedTerms,
-                              onChanged: (value) => setState(
-                                () => _acceptedTerms = value ?? false,
-                              ),
-                              title: Text(
-                                t.consentPage.acceptTerms,
-                                style: _rowTitleStyle,
-                              ),
-                              subtitle: Text(
-                                t.consentPage.termsSubtitle,
-                                style: _rowSubtitleStyle,
-                              ),
-                            ),
-                          ),
                           _ConsentRow(
                             child: ListTile(
                               contentPadding:
@@ -155,10 +142,19 @@ class _DesktopConsentPageState extends ConsumerState<DesktopConsentPage> {
                                 t.consentPage.crashSubtitle,
                                 style: _rowSubtitleStyle,
                               ),
-                              trailing: EvolveSwitch(
-                                value: _sentryConsent,
-                                onChanged: (value) =>
-                                    setState(() => _sentryConsent = value),
+                              // EvolveSwitch declares `Semantics(container:
+                              // true)`, which forces its own node and so does
+                              // NOT inherit the ListTile's title — it would
+                              // announce as an unnamed switch. Naming it here
+                              // is cheaper and more local than changing the
+                              // shared control.
+                              trailing: Semantics(
+                                label: t.consentPage.crashDiagnostics,
+                                child: EvolveSwitch(
+                                  value: _sentryConsent,
+                                  onChanged: (value) =>
+                                      setState(() => _sentryConsent = value),
+                                ),
                               ),
                             ),
                           ),
@@ -206,10 +202,34 @@ class _DesktopConsentPageState extends ConsumerState<DesktopConsentPage> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 14),
+                  // Pinned: the gate itself. Everything needed to move forward —
+                  // accept, read the documents, continue — is on screen at every
+                  // window size, in every language.
+                  _ConsentRow(
+                    child: CheckboxListTile(
+                      contentPadding: const EdgeInsetsDirectional.fromSTEB(
+                        16,
+                        6,
+                        12,
+                        6,
+                      ),
+                      value: _acceptedTerms,
+                      onChanged: (value) =>
+                          setState(() => _acceptedTerms = value ?? false),
+                      title: Text(
+                        t.consentPage.acceptTerms,
+                        style: _rowTitleStyle,
+                      ),
+                      subtitle: Text(
+                        t.consentPage.termsSubtitle,
+                        style: _rowSubtitleStyle,
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 6),
-                  // Pinned, not scrolled: a Terms link the reviewer has to
-                  // scroll to find is how the 3.1.2(c) rejection happened once
-                  // already. Both documents stay visible next to Continue.
+                  // A Terms link the reviewer has to scroll to find is how the
+                  // 3.1.2(c) rejection happened once already.
                   Wrap(
                     spacing: 4,
                     children: [

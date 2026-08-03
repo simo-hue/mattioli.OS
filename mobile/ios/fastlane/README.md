@@ -15,6 +15,22 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 ## iOS
 
+### ios validate_metadata
+
+```sh
+[bundle exec] fastlane ios validate_metadata
+```
+
+Validate App Store metadata. Runs before any upload, and in CI.
+
+### ios upload_metadata
+
+```sh
+[bundle exec] fastlane ios upload_metadata
+```
+
+Upload App Store metadata (no binary). Validates first and aborts on failure.
+
 ### ios update_notes
 
 ```sh

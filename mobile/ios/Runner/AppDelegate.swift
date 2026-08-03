@@ -1069,13 +1069,12 @@ enum HealthKitBridge {
   }
 
   private static func isAsleep(_ value: Int) -> Bool {
-    if #available(iOS 16.0, *) {
-      return value == HKCategoryValueSleepAnalysis.asleepCore.rawValue
-        || value == HKCategoryValueSleepAnalysis.asleepDeep.rawValue
-        || value == HKCategoryValueSleepAnalysis.asleepREM.rawValue
-        || value == HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue
-    }
-    return value == HKCategoryValueSleepAnalysis.asleep.rawValue
+    // Deployment target is iOS 16.0, so the granular sleep stages are always
+    // available. The legacy `.asleep` (deprecated in iOS 16) is no longer needed.
+    return value == HKCategoryValueSleepAnalysis.asleepCore.rawValue
+      || value == HKCategoryValueSleepAnalysis.asleepDeep.rawValue
+      || value == HKCategoryValueSleepAnalysis.asleepREM.rawValue
+      || value == HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue
   }
 
   // MARK: - Recent-data probe (Watch-dependency warning)

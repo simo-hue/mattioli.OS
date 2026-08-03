@@ -2,6 +2,10 @@
 
 ## Recent Changes
 
+- [2026-08-03]: **ITMS-90683 Fix — NSLocationWhenInUseUsageDescription**
+  - *Details*: Re-added `NSLocationWhenInUseUsageDescription` to `Info.plist` and all 5 localized `InfoPlist.strings` files (en, it, ar, es, de). Apple's automated binary scan (ITMS-90683) flagged the missing key because transitive dependencies (`permission_handler_apple`) reference location APIs even though the app never uses them. The purpose string is honest: "This app does not track your location." Users will never see this string since `requestWhenInUseAuthorization` is never called.
+  - *Tech Notes*: Build number bumped from 43 → 44 (`1.1.3+44`). No code changes, no new dependencies. The key was previously removed to comply with Guideline 5.1.1, but Apple's delivery validation requires it due to API references in the compiled binary.
+
 - [2026-08-02]: **App Store Connect Metadata Fixes**
   - *Details*: Condensed the App Store review notes to fit within the 4000-character limit and successfully uploaded the macOS metadata via `fastlane`. Also added `NSPrivacyCollectedDataTypeOtherDataTypes` to the iOS `PrivacyInfo.xcprivacy` to reflect date of birth collection.
   - *Tech Notes*: Addressed macOS rejection by resolving the `notes.txt` length violation. Updated `TO_SIMO_DO.md` to reflect automated progress for App Store Connect submission steps.

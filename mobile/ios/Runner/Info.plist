@@ -71,15 +71,15 @@
 	<string>Questa app accede ai tuoi dati su salute e fitness per verificare automaticamente le abitudini, come i passi, l'attività e il sonno.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Questa app richiede il permesso per aggiornare i tuoi dati su salute e fitness, anche se attualmente solo in lettura per verificare le abitudini.</string>
-	<!-- NSLocationWhenInUseUsageDescription was removed deliberately. The app has
-	     no location dependency at all -- there is no geolocator, no CoreLocation
-	     use, nothing in pubspec.yaml -- so the key declared a permission the app
-	     never requests, and justified it as "third-party integrations, even
-	     though it does not actively track it". Guideline 5.1.1 requires a purpose
-	     string to clearly and completely describe the use; a vague string for an
-	     unused permission is a finding waiting to happen. If location is ever
-	     genuinely needed, add the key back WITH the concrete feature that needs
-	     it. Also removed from all five Runner/<lang>.lproj/InfoPlist.strings. -->
+	<!-- NSLocationWhenInUseUsageDescription: The app does NOT use location, but
+	     Apple's ITMS-90683 automated scan detects that the compiled binary
+	     references location APIs (via permission_handler_apple's
+	     LocationPermissionStrategy or other transitive dependencies). Without
+	     this key, delivery produces the ITMS-90683 warning. Because the app never
+	     calls requestWhenInUseAuthorization, users will never see this string in
+	     a system prompt. Localized values live in Runner/<lang>.lproj/InfoPlist.strings. -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Questa app non traccia la tua posizione. Questa autorizzazione è dichiarata perché una libreria di terze parti fa riferimento alle API di localizzazione.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

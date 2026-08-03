@@ -1,6 +1,7 @@
 # TO_SIMO_DO.md
 - [ ] Widget for iPhone & MacOS
-- [ ] 
+- [ ] statistiche per obiettivi stile counter come vengono gestite ( sono binarie: failed or succeded oppure si tiene conto anche di quanto vicino ci sono arrivato a raggiungerle? )
+- [ ] Ci deve essere anche da desktop nella pagina dei goals la specifica informazione delle date esatte dei periodi ad esempio per la settimana numero Z ( da giorno X a Y ), ma la stessa cosa anche per gli obiettivi trimestrali
 - [ ] Macro goals still need a numeric target + progress bar (status already cycles active/completed/failed). Habits are DONE — the Checkbox / Number / Automatic picker and quantitative targets are live; MacroTargetsConfig.enabled is still false on both apps.
 
 ---

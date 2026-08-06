@@ -416,3 +416,44 @@ fixed. These are what it could not settle without you:
 - [ ] **Optional, low priority:** CI runs in UTC, so the DST-sensitive date tests
   never exercise a real transition. Pinning `TZ: Europe/Rome` on one CI job would
   make them bite. Say the word and I will add it.
+
+## Habit reorder + streak corruption (2026-08-06) — manual steps
+
+These cannot be done from code. Ordered by when they matter.
+
+1. **Apply the Supabase migration** — `migrations/20260806_add_goal_order_key.sql`.
+   Adds `goals.order_key` + `order_key_updated_at`. Additive and nullable, so
+   nothing breaks before you run it: the clients deliberately do NOT order by
+   `order_key` server-side precisely so a project without this migration still
+   returns the habit list. Only needed for account mode; Private mode migrates
+   itself (private schema v11 → v12).
+
+2. **Size the streak damage on your own data** (read-only, nothing is written):
+   ```
+   cd mobile && dart run tool/audit_streaks.dart ~/Downloads/evolve_private_export.json --all
+   ```
+   Export from Settings → Privacy → Export data. The file is plain JSON and the
+   tool is local-only. `[collapsed]` rows are the empty-goals-window corruption
+   (a real run stored as ±1); anything else is ordinary staleness. The in-app
+   repair fixes both on next launch regardless — this just tells you how much
+   there was.
+
+3. **After BOTH iPhone and Mac are on this build**, open Manage habits once and
+   check the order. The v12 migration backfills `order_key` from each device's
+   own `display_order`, and those had already diverged on a two-device setup —
+   that is the bug. Expect at most one settling pass. Re-drag anything that is
+   wrong; from then on it holds.
+
+4. **A v12 schema bump strands older builds** — `PrivateDbSchema.onDowngrade`
+   throws by design. A kept TestFlight build or an older macOS `.app` will show
+   the "database is too new" state until you update it. This is deliberate (the
+   alternative silently corrupts migration bookkeeping) but it means you cannot
+   roll back a device by reinstalling an older build.
+
+5. **On-device QA of the drag** — the parts no test can judge: the 44pt grip,
+   long-press-anywhere on a row, the lift/settle haptics, and the lift shadow
+   against the dark card. Also confirm tapping the pencil scrolls you to the
+   populated form (it now targets the form's key rather than offset 0).
+
+6. **Desktop needs a build** to pick up the shared v12 schema. It reads and
+   writes `order_key`, but it has not been run on a real machine in this work.

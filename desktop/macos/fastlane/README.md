@@ -23,6 +23,14 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 Build and upload a new macOS release to App Store Connect
 
+### mac metadata
+
+```sh
+[bundle exec] fastlane mac metadata
+```
+
+Push macOS App Store metadata only (no build): descriptions + review notes
+
 ### mac build_for_transporter
 
 ```sh

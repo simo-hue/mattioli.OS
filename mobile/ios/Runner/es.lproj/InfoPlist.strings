@@ -4,3 +4,4 @@
 "NSHealthShareUsageDescription" = "Esta app accede a tus datos de salud y forma física para verificar automáticamente hábitos como los pasos, la actividad y el sueño.";
 "NSHealthUpdateUsageDescription" = "Esta app necesita permiso para actualizar tus datos de salud y forma física, aunque actualmente solo los lee para verificar hábitos.";
 "NSPhotoLibraryUsageDescription" = "Esta app necesita acceso a la fototeca para que puedas subir tu foto de perfil.";
+"NSLocationWhenInUseUsageDescription" = "Esta app no rastrea tu ubicación. Este permiso se declara porque una biblioteca de terceros hace referencia a las API de ubicación.";

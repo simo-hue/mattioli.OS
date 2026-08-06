@@ -4,3 +4,4 @@
 "NSHealthShareUsageDescription" = "Diese App greift auf deine Gesundheits- und Fitnessdaten zu, um Gewohnheiten wie Schritte, Aktivität und Schlaf automatisch zu überprüfen.";
 "NSHealthUpdateUsageDescription" = "Diese App benötigt die Berechtigung zum Aktualisieren deiner Gesundheits- und Fitnessdaten, auch wenn sie diese derzeit nur zum Überprüfen von Gewohnheiten liest.";
 "NSPhotoLibraryUsageDescription" = "Diese App benötigt Zugriff auf die Fotomediathek, damit du dein Profilfoto hochladen kannst.";
+"NSLocationWhenInUseUsageDescription" = "Diese App verfolgt deinen Standort nicht. Diese Berechtigung wird deklariert, weil eine Drittanbieter-Bibliothek auf Standort-APIs verweist.";

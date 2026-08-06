@@ -1,13 +1,10 @@
 # TO_SIMO_DO.md
 - [ ] Widget for iPhone & MacOS
-- [ ] 
+- [ ] statistiche per obiettivi stile counter come vengono gestite ( sono binarie: failed or succeded oppure si tiene conto anche di quanto vicino ci sono arrivato a raggiungerle? )
+- [ ] Ci deve essere anche da desktop nella pagina dei goals la specifica informazione delle date esatte dei periodi ad esempio per la settimana numero Z ( da giorno X a Y ), ma la stessa cosa anche per gli obiettivi trimestrali
 - [ ] Macro goals still need a numeric target + progress bar (status already cycles active/completed/failed). Habits are DONE — the Checkbox / Number / Automatic picker and quantitative targets are live; MacroTargetsConfig.enabled is still false on both apps.
 
 ---
-
-# TO DOUBLE CHECK:
-
-- [ ]
 
 ## Arabic device QA — auto-verified habit line (2026-07-29)
 
@@ -229,133 +226,11 @@ string and the 30 locales together, after approval.
 3. **`lifeWeeks` label vs months grid** — see above; the app contradicts itself.
 
 ---
-
-## 2026-08-02 — SHIP macOS 1.0.0 (27) + iOS 1.1.3 (43)
-
-Both apps are code-complete and green. The privacy policy is live (pushed to
-`simo-hue/evolve`). macOS is as you set it in `0e8ac85`; iOS is bumped to
-**1.1.3** per your call. Below is everything left, in order.
-
-### 0. Prereqs (Mac mini, once)
-
-```bash
-cd ~/Developer/mattioli.OS && git pull
-```
-
-`desktop/.env` and `mobile/lib/core/{supabase_config,sentry_config}.dart` are
-gitignored — if this is a fresh checkout, create them from their `.example`
-files first.
-
-### 1. macOS — 1.0.0 (27)
-
-```bash
-cd ~/Developer/mattioli.OS/desktop && flutter build macos --release --dart-define-from-file=.env
-```
-
-Then in Xcode: `desktop/macos/Runner.xcworkspace` → Product ▸ Archive →
-Distribute App ▸ App Store Connect ▸ Upload.
-
-Push the metadata + review notes (no binary):
-
-```bash
-cd ~/Developer/mattioli.OS/desktop/macos && fastlane mac metadata
-```
-
-### 2. iOS — 1.1.3 (43)
-
-```bash
-cd ~/Developer/mattioli.OS/mobile/ios && pod install
-```
-
-`pod install` is **not optional this time** — the Podfile changed
-(`PERMISSION_NOTIFICATIONS=1`).
-
-```bash
-cd ~/Developer/mattioli.OS/mobile && flutter build ipa --release
-```
-
-Then Xcode: `mobile/ios/Runner.xcworkspace` → Archive → Upload.
-
-In App Store Connect, create the **1.1.3** version first (iOS app ▸ + Version)
-— `upload_metadata` writes into the version currently in an editable state, so
-without it the copy lands on the wrong one. Then:
-
-```bash
-cd ~/Developer/mattioli.OS/mobile/ios && fastlane ios upload_metadata
-```
-
-Release notes for 1.1.3 are written and generated (all 39 locales). Read
-`mobile/metadata/en-US/release_notes.txt` before you upload — it is your voice,
-not mine, so change anything that does not sound like you and re-run
-`python3 tool/appstore/build_metadata.py` from `mobile/`.
-
-### 3. App Store Connect — do this before submitting either app
-
-1. **Reply to the macOS rejection** with the text in
-   `desktop/macos/fastlane/metadata/review_information/notes.txt` §1, and paste
-   the same into App Review Information. Short version: the app declares no
-   `NS*UsageDescription` key and no address-book entitlement, so it cannot read
-   Contacts; build 27 shows an unskippable privacy gate before any upload.
-2. **Fix the App Privacy answers on BOTH records.** What the code actually
-   uploads: name, email, **date of birth**; goals/habits/moods; account user id
-   (also to RevenueCat); crash diagnostics **only if opted in**; purchases.
-   **Not** Photos. **Not** Health — only the pass/fail verdict leaves the device.
-   `date_of_birth` is probably missing today; also add
-   `NSPrivacyCollectedDataTypeOtherDataTypes` to
-   `mobile/ios/Runner/PrivacyInfo.xcprivacy`.
-3. Submit both for review.
-
-### 4. On-device check after installing iOS 43
-
-Consent screen → tap **Enable notifications**. It must now show the iOS prompt
-and turn into a green checkmark. It never could before: with no `PERMISSION_*`
-macros, `Permission.notification` fell back to `UnknownPermissionStrategy`,
-which returns `Denied` and never prompts.
-
-### Still open — not blocking, your call
-
-- ~~iOS fetches Inter from `fonts.gstatic.com` at runtime~~ **FIXED 2026-08-02**
-  — and it was worse than this note said: FOUR families were fetched, not one.
-  The `google_fonts` dependency is removed outright (not just disabled), Inter is
-  bundled from the desktop client's own binaries, and a test fails the build if
-  it ever returns. **Still needs your eyes on a device:** ~215 `fontFamily:
-  'Inter'` literals had been silently falling back to San Francisco (mobile
-  declared no font family at all) and now render in real Inter, and the 7 `w900`
-  sites resolve to ExtraBold since the repo has no Inter Black. No simulator here
-  — this Mac has Command Line Tools only — so nothing visual was checked.
-- **`metadata/review_information/notes.txt` is 8,893 characters.** App Store
-  Connect's review-notes field caps at 4,000, and the repo's own
-  `validate_metadata.py` enforces 4,000 on `description.txt` and
-  `release_notes.txt` but explicitly SKIPS `review_information`, so nothing has
-  been checking it. It needs one editorial pass down to the cap before
-  submission — that is your message to Apple, so I have not cut it myself.
-- **Three minimum ages**: app says 14, live Terms say 13 "(or 16 in the EU)",
-  privacy policy is silent. The German build asserts 14 while its own German
-  Terms say 16. You collect `date_of_birth` and never check it against anything.
-  Legal decision, not a code one.
 - **Reinstall path can reach Supabase + RevenueCat pre-consent.** The Keychain
   session survives app deletion; `has_completed_consent` (NSUserDefaults) does
   not. So delete-and-reinstall = live session, consent unanswered, and the token
   refresh / `profiles` read / `Purchases.configure` fire behind the gate. Sentry
   is gated; these are not. Same shape as the bug that got you rejected.
-
-## Auto-fail for untouched count habits (2026-08-02)
-
-- ~~DECISION NEEDED — an auto-failed day older than yesterday cannot be
-  corrected.~~ **RESOLVED 2026-08-02, Simone's call: leave it.** The edit gate
-  stays at today + yesterday, and an auto-failed day older than that is
-  permanent by design — the record is meant to be honest. No code change; the
-  DST fix to the gate itself (so *yesterday* stays editable the day after a
-  transition) still applies and is already in.
-- **On-device QA of the anchor.** The stamp happens on the first foreground
-  sweep, so confirm `target_auto_fail_from` lands on the day you expect and that
-  nothing before it turned red on the iPhone. Then confirm a day auto-failed on
-  the iPhone renders the same on the Mac: the two apps write the verdict through
-  different helpers (mobile `setDerivedStatus`, which computes its own streak;
-  desktop `setHabitProgressForDay`, which writes `streak:` on the row), and no
-  test asserts the two agree on the streak number.
-- **Reinstalling re-stamps the anchor later**, which only ever narrows what gets
-  scored. Worth knowing before you read a reinstall as "the feature broke".
 
 ### Found while reviewing this work — NOT fixed, not in scope
 

@@ -120,7 +120,7 @@ void main() {
     // Nudge so the drag recognizer actually starts tracking before the caller
     // moves in earnest.
     await gesture.moveBy(const Offset(0, 12));
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 16));
     return gesture;
   }
 
@@ -133,7 +133,15 @@ void main() {
     final gesture = await startDrag(tester, 'Habit a');
     for (var i = 0; i < 4; i++) {
       await gesture.moveBy(const Offset(0, 20));
-      await tester.pump();
+      // REAL TIME, not a zero-duration pump. SliverReorderableList's drop runs
+      // through a 250ms proxy animation: `_DragInfo.end()` calls
+      // `_proxyAnimation.reverse()` and then `onEnd` (-> onReorderEnd)
+      // synchronously, while onReorderItem fires only when that reverse reaches
+      // `dismissed`. Pumping zero duration leaves the animation at 0.0, so
+      // reverse() completes SYNCHRONOUSLY and the two callbacks arrive in the
+      // opposite order from a real finger — which is how a total loss of
+      // reordering passed this suite.
+      await tester.pump(const Duration(milliseconds: 16));
     }
 
     // A reorder arrives from the other device while the finger is still down:
@@ -144,10 +152,12 @@ void main() {
     await tester.pump();
 
     await gesture.up();
+    await tester.pumpAndSettle();
     // The refusal logs a warning, and AppLogger debounces its save by 2s.
-    // That Timer has to be drained or the binding asserts at teardown — and
-    // its presence is itself evidence the guard fired.
-    await tester.pumpAndSettle(const Duration(seconds: 3));
+    // pumpAndSettle stops as soon as no frame is scheduled, so it never reaches
+    // that Timer — drain it explicitly or the binding asserts at teardown. Its
+    // presence is itself evidence the guard fired.
+    await tester.pump(const Duration(seconds: 3));
 
     expect(store.reorders, isEmpty,
         reason: 'the drop addressed the order the user SAW, which no longer '
@@ -166,7 +176,15 @@ void main() {
     final gesture = await startDrag(tester, 'Habit a');
     for (var i = 0; i < 8; i++) {
       await gesture.moveBy(const Offset(0, 20));
-      await tester.pump();
+      // REAL TIME, not a zero-duration pump. SliverReorderableList's drop runs
+      // through a 250ms proxy animation: `_DragInfo.end()` calls
+      // `_proxyAnimation.reverse()` and then `onEnd` (-> onReorderEnd)
+      // synchronously, while onReorderItem fires only when that reverse reaches
+      // `dismissed`. Pumping zero duration leaves the animation at 0.0, so
+      // reverse() completes SYNCHRONOUSLY and the two callbacks arrive in the
+      // opposite order from a real finger — which is how a total loss of
+      // reordering passed this suite.
+      await tester.pump(const Duration(milliseconds: 16));
     }
     await gesture.up();
     await tester.pumpAndSettle();
@@ -185,7 +203,15 @@ void main() {
     final gesture = await startDrag(tester, 'Habit a');
     for (var i = 0; i < 8; i++) {
       await gesture.moveBy(const Offset(0, 20));
-      await tester.pump();
+      // REAL TIME, not a zero-duration pump. SliverReorderableList's drop runs
+      // through a 250ms proxy animation: `_DragInfo.end()` calls
+      // `_proxyAnimation.reverse()` and then `onEnd` (-> onReorderEnd)
+      // synchronously, while onReorderItem fires only when that reverse reaches
+      // `dismissed`. Pumping zero duration leaves the animation at 0.0, so
+      // reverse() completes SYNCHRONOUSLY and the two callbacks arrive in the
+      // opposite order from a real finger — which is how a total loss of
+      // reordering passed this suite.
+      await tester.pump(const Duration(milliseconds: 16));
     }
 
     // Same ids, same order — a refresh carrying an unrelated change.

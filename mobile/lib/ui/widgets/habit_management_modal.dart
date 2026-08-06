@@ -752,11 +752,32 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final habits = ref.watch(goalsProvider).where((g) => g.isActiveOn(now)).toList();
+    // EVERY habit, deliberately unfiltered.
+    //
+    // This used to be `.where((g) => g.isActiveOn(now))`, and the drop handler
+    // passed those FILTERED indices to `GoalsNotifier.reorder`, which indexes
+    // the UNFILTERED list — so the moment any habit was inactive, a drag moved a
+    // different habit than the one under the finger. Since habit order is now
+    // persisted per-row and survives sync, that mistake became durable rather
+    // than transient.
+    //
+    // Removing the filter rather than remapping the indices is the deliberate
+    // choice. This is the MANAGE surface: it is where a habit is renamed,
+    // recoloured, rescheduled and DELETED, so hiding a habit here would make it
+    // unreachable — you cannot delete what you cannot see. Filtering belongs on
+    // the day card and the stats views, which ask "what is due today?"; this one
+    // asks "what do I have?". Desktop's Protocol tab keeps its own active-only
+    // filter for exactly that reason: it is a daily view, not this.
+    //
+    // Today the filter is also inert — nothing in either app ever WRITES
+    // `end_date` — so this changes nothing on screen while removing a whole
+    // class of index bug.
+    final habits = ref.watch(goalsProvider);
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
     final settings = ref.watch(settingsProvider);
     final isPro = settings.isPro;
+    // The free-tier gate counts habits you OWN, which is what `_onSave` has
+    // always counted (`ref.read(goalsProvider).length`); the two now agree.
     final currentHabitsCount = habits.length;
     // A habit's true class isn't offered here when it was authored on a device
     // where that class's flag is on but is off on this build (a mixed-version
@@ -1399,7 +1420,23 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
             // permutation nobody chose, with a haptic confirming it.
             onReorderStart: (_) =>
                 _dragOrder = [for (final h in habits) h.id],
-            onReorderEnd: (_) => _dragOrder = null,
+            // NO `onReorderEnd: (_) => _dragOrder = null`. That looks like the
+            // obvious teardown and it silently kills reordering outright.
+            //
+            // Flutter does not deliver the two callbacks in the order the names
+            // suggest. `_DragInfo.end()` calls `_proxyAnimation.reverse()` and
+            // then `onEnd` — so `onReorderEnd` fires SYNCHRONOUSLY on
+            // pointer-up — while `onReorderItem` is reached from
+            // `_dropCompleted`, the `dismissed` listener on that same 250ms
+            // animation. On a real drag the animation has run forward, so the
+            // reverse takes 250ms and the true order is
+            // start -> end -> (250ms) -> item. Clearing the snapshot in
+            // `onReorderEnd` therefore guaranteed `startedWith == null` at the
+            // drop, so EVERY drop was refused and nothing was ever reordered.
+            //
+            // `onReorderItem` clears it instead (below), and `onReorderStart`
+            // overwrites it before any later drop can read a stale value — so
+            // leaving it set after a no-move drag is harmless.
             onReorderItem: (oldIndex, newIndex) {
               final startedWith = _dragOrder;
               _dragOrder = null;

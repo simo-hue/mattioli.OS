@@ -126,6 +126,13 @@ class HabitManagementModal extends ConsumerStatefulWidget {
 class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
   final TextEditingController _nameController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+
+  /// The add/edit form's sliver. It now sits BELOW the habit list, so the two
+  /// places that used to `animateTo(0)` to reveal it would scroll to the
+  /// opposite end of the sheet — tapping the pencil would yank the list to the
+  /// top and leave the populated form off-screen, and a name-required error
+  /// would hide both itself and the button that raised it.
+  final GlobalKey _formKey = GlobalKey();
   late Color _selectedColor;
   Goal? _editingHabit;
   String? _reminderTime;
@@ -278,6 +285,30 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
     }
   }
 
+  /// Brings the add/edit form into view. Replaces the old `animateTo(0)`, which
+  /// pointed at the form only while it was the FIRST sliver.
+  void _revealForm() {
+    final ctx = _formKey.currentContext;
+    if (ctx != null) {
+      unawaited(Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+        alignment: 0.1,
+      ));
+      return;
+    }
+    // The sliver is off-screen and therefore unbuilt, so it has no context to
+    // scroll to. Jump to the end, where it lives.
+    if (_scrollController.hasClients) {
+      unawaited(_scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      ));
+    }
+  }
+
   Future<void> _onSave() async {
     if (_isSaving) return;
     final name = _nameController.text.trim();
@@ -289,13 +320,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       setState(() => _nameError = context.t.habits.nameRequired);
       // Reveal the name field (it may be scrolled above the Add button) so the
       // red error is actually seen.
-      if (_scrollController.hasClients) {
-        unawaited(_scrollController.animateTo(
-          0,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        ));
-      }
+      _revealForm();
       return;
     }
 
@@ -553,11 +578,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
         target: habit.target,
       );
     });
-    _scrollController.animateTo(
-      0,
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeInOut,
-    );
+    _revealForm();
   }
 
   /// The verification templates to offer — only those whose provider/mode is
@@ -841,6 +862,137 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                 ),
                 const SizedBox(height: 24),
 
+                // Habits List Section Header
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(
+                    context.t.common.habits,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.foreground,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
+          SliverReorderableList(
+            itemCount: habits.length,
+            // The order the rows were in when the finger went down. A drop
+            // reports INDICES, and indices only mean anything against the list
+            // the user was actually looking at.
+            //
+            // `SliverReorderableList.didUpdateWidget` cancels a drag ONLY when
+            // `itemCount` changes (flutter reorderable_list.dart:796-800) — it
+            // does not notice the contents being swapped underneath it. That
+            // used to be harmless here only by accident: an applied iCloud sync
+            // flashed this list empty, the count changed, and the drag was
+            // cancelled. Now that the list refreshes IN PLACE (see
+            // `GoalsNotifier.refresh`), a reorder pulled from another device
+            // arrives with the SAME count and a DIFFERENT order, the gesture
+            // survives, and `oldIndex` silently addresses a different habit than
+            // the one under the finger — committing, renumbering and syncing a
+            // permutation nobody chose, with a haptic confirming it.
+            // A custom lift, because the DEFAULT is Material: without a
+            // proxyDecorator Flutter wraps the floating row in an elevation
+            // shadow that reads as foreign against this app's flat cards.
+            proxyDecorator: (child, index, animation) => AnimatedBuilder(
+              animation: animation,
+              builder: (context, _) {
+                final t = Curves.easeOut.transform(animation.value);
+                return Transform.scale(
+                  scale: 1 + 0.02 * t,
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      // Matches _HabitListItem's own radius, so the shadow
+                      // hugs the rounded card instead of boxing it.
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: context.appColors.foreground
+                              .withValues(alpha: 0.18 * t),
+                          blurRadius: 18 * t,
+                          offset: Offset(0, 6 * t),
+                        ),
+                      ],
+                    ),
+                    child: child,
+                  ),
+                );
+              },
+            ),
+            onReorderStart: (_) {
+              _dragOrder = [for (final h in habits) h.id];
+              // The LIFT cue. Before this the only haptic was on drop, so
+              // nothing confirmed the row had been picked up.
+              ref.hapticMedium();
+            },
+            // NO `onReorderEnd: (_) => _dragOrder = null`. That looks like the
+            // obvious teardown and it silently kills reordering outright.
+            //
+            // Flutter does not deliver the two callbacks in the order the names
+            // suggest. `_DragInfo.end()` calls `_proxyAnimation.reverse()` and
+            // then `onEnd` — so `onReorderEnd` fires SYNCHRONOUSLY on
+            // pointer-up — while `onReorderItem` is reached from
+            // `_dropCompleted`, the `dismissed` listener on that same 250ms
+            // animation. On a real drag the animation has run forward, so the
+            // reverse takes 250ms and the true order is
+            // start -> end -> (250ms) -> item. Clearing the snapshot in
+            // `onReorderEnd` therefore guaranteed `startedWith == null` at the
+            // drop, so EVERY drop was refused and nothing was ever reordered.
+            //
+            // `onReorderItem` clears it instead (below), and `onReorderStart`
+            // overwrites it before any later drop can read a stale value — so
+            // leaving it set after a no-move drag is harmless.
+            onReorderItem: (oldIndex, newIndex) {
+              final startedWith = _dragOrder;
+              _dragOrder = null;
+              if (startedWith == null ||
+                  !listEquals(startedWith, [for (final h in habits) h.id])) {
+                // The list moved under the drag. Refusing is what the empty
+                // frame used to do by accident, and it is strictly better than
+                // committing a wrong order: the user's own drop is lost, but
+                // the remote order they can see is left intact and one more
+                // drag fixes it.
+                AppLogger.warning(
+                  '[Habits] drop ignored — the habit list changed mid-drag',
+                );
+                return;
+              }
+              ref.read(goalsProvider.notifier).reorder(oldIndex, newIndex);
+              // The SETTLE cue — iOS selection feedback, and only on a drop
+              // that actually moved something. The refusal branch above returns
+              // without buzzing: a haptic that fires when nothing happened
+              // teaches the thumb to trust a lie.
+              ref.hapticSelection();
+            },
+            itemBuilder: (context, index) {
+              final habit = habits[index];
+              return _HabitListItem(
+                key: ValueKey(habit.id),
+                index: index,
+                habit: habit,
+                onEdit: () => _onEdit(habit),
+                onDelete: () => unawaited(_showDeleteConfirmation(habit)),
+              );
+            },
+          ),
+          // The add/edit form sits BELOW the list.
+          //
+          // It used to sit above it, and the form is ~900pt tall — so the
+          // habits were off-screen on open, and dragging one toward the top
+          // auto-scrolled the FORM back into view mid-gesture, fighting the
+          // drag. Reordering and editing existing habits are the common
+          // actions here; creating one is not.
+          SliverToBoxAdapter(
+            key: _formKey,
+            child: Column(
+              children: [
+                const SizedBox(height: 24),
                 // Add/Edit Section
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -1382,89 +1534,8 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
-
-                // Habits List Section Header
-                Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: Text(
-                    context.t.common.habits,
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.foreground,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
               ],
             ),
-          ),
-          SliverReorderableList(
-            itemCount: habits.length,
-            // The order the rows were in when the finger went down. A drop
-            // reports INDICES, and indices only mean anything against the list
-            // the user was actually looking at.
-            //
-            // `SliverReorderableList.didUpdateWidget` cancels a drag ONLY when
-            // `itemCount` changes (flutter reorderable_list.dart:796-800) — it
-            // does not notice the contents being swapped underneath it. That
-            // used to be harmless here only by accident: an applied iCloud sync
-            // flashed this list empty, the count changed, and the drag was
-            // cancelled. Now that the list refreshes IN PLACE (see
-            // `GoalsNotifier.refresh`), a reorder pulled from another device
-            // arrives with the SAME count and a DIFFERENT order, the gesture
-            // survives, and `oldIndex` silently addresses a different habit than
-            // the one under the finger — committing, renumbering and syncing a
-            // permutation nobody chose, with a haptic confirming it.
-            onReorderStart: (_) =>
-                _dragOrder = [for (final h in habits) h.id],
-            // NO `onReorderEnd: (_) => _dragOrder = null`. That looks like the
-            // obvious teardown and it silently kills reordering outright.
-            //
-            // Flutter does not deliver the two callbacks in the order the names
-            // suggest. `_DragInfo.end()` calls `_proxyAnimation.reverse()` and
-            // then `onEnd` — so `onReorderEnd` fires SYNCHRONOUSLY on
-            // pointer-up — while `onReorderItem` is reached from
-            // `_dropCompleted`, the `dismissed` listener on that same 250ms
-            // animation. On a real drag the animation has run forward, so the
-            // reverse takes 250ms and the true order is
-            // start -> end -> (250ms) -> item. Clearing the snapshot in
-            // `onReorderEnd` therefore guaranteed `startedWith == null` at the
-            // drop, so EVERY drop was refused and nothing was ever reordered.
-            //
-            // `onReorderItem` clears it instead (below), and `onReorderStart`
-            // overwrites it before any later drop can read a stale value — so
-            // leaving it set after a no-move drag is harmless.
-            onReorderItem: (oldIndex, newIndex) {
-              final startedWith = _dragOrder;
-              _dragOrder = null;
-              if (startedWith == null ||
-                  !listEquals(startedWith, [for (final h in habits) h.id])) {
-                // The list moved under the drag. Refusing is what the empty
-                // frame used to do by accident, and it is strictly better than
-                // committing a wrong order: the user's own drop is lost, but
-                // the remote order they can see is left intact and one more
-                // drag fixes it.
-                AppLogger.warning(
-                  '[Habits] drop ignored — the habit list changed mid-drag',
-                );
-                return;
-              }
-              ref.read(goalsProvider.notifier).reorder(oldIndex, newIndex);
-              ref.hapticLight();
-            },
-            itemBuilder: (context, index) {
-              final habit = habits[index];
-              return _HabitListItem(
-                key: ValueKey(habit.id),
-                index: index,
-                habit: habit,
-                onEdit: () => _onEdit(habit),
-                onDelete: () => unawaited(_showDeleteConfirmation(habit)),
-              );
-            },
           ),
           // Extra space at bottom
           const SliverToBoxAdapter(child: SizedBox(height: 40)),
@@ -1500,19 +1571,49 @@ class _HabitListItem extends StatelessWidget {
       ),
       child: Row(
         children: [
-          ReorderableDragStartListener(
-            index: index,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-              child: Icon(
-                LucideIcons.gripVertical,
-                size: 16,
-                color: context.appColors.mutedForeground,
-              ),
-            ),
-          ),
-
-          const SizedBox(width: 12),
+          // Long-press ANYWHERE on the habit itself also starts a drag — the
+          // Reminders/Notes convention, and the gesture most people try first.
+          //
+          // It wraps ONLY the grip/dot/title, deliberately NOT the Edit and
+          // Delete buttons that follow. `ReorderableDelayedDragStartListener`
+          // does not politely wait for a button to decline: its
+          // DelayedMultiDragGestureRecognizer enters the SAME pointer's arena
+          // and at 500ms RESOLVES ACCEPTED, rejecting the button's tap. With the
+          // buttons inside, a hesitant press on the trash icon raised no
+          // confirmation at all — it lifted the row — and one that drifted a few
+          // pixels reordered and PERSISTED the habits instead of deleting.
+          //
+          // The transparent ColoredBox gives the listener something to hit-test:
+          // the row's decoration is an ANCESTOR of it now, not a descendant, so
+          // the gaps between children would otherwise not respond.
+          Expanded(
+            child: ReorderableDelayedDragStartListener(
+              index: index,
+              child: ColoredBox(
+                color: Colors.transparent,
+                child: Row(
+                  children: [
+                    // The grip starts a drag IMMEDIATELY (no long-press delay),
+                    // and its target is 44x44 — Apple's minimum. It was a 16pt
+                    // icon in 8/4 padding, about 32x24: barely half the required
+                    // size, and the ONLY way to start a drag. That alone made
+                    // this feel unreliable before any ordering bug was involved.
+                    // The icon is unchanged; only the tappable area grew.
+                    ReorderableDragStartListener(
+                      index: index,
+                      child: SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: Center(
+                          child: Icon(
+                            LucideIcons.gripVertical,
+                            size: 16,
+                            color: context.appColors.mutedForeground,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
           Container(
             width: 14,
             height: 14,
@@ -1558,6 +1659,11 @@ class _HabitListItem extends StatelessWidget {
                   ),
                 ],
               ],
+            ),
+          ),
+                  ],
+                ),
+              ),
             ),
           ),
           IconButton(

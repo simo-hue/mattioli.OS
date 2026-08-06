@@ -272,6 +272,38 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     );
   }
 
+  /// Reloads the habit list IN PLACE — the provider never emits `[]` on the way.
+  ///
+  /// Use this instead of `ref.invalidate(goalsProvider)` for a data REFRESH.
+  /// Invalidating re-runs [build], which in Private mode returns `[]`
+  /// synchronously and fills in asynchronously, so every listener observes an
+  /// empty habit list for a frame or two. That empty frame is not cosmetic, and
+  /// `invalidatePrivateDataProviders` reaches it on EVERY sync that applied a
+  /// pulled change — which the 60s poll can do once a minute:
+  ///
+  ///  * a drag in the Manage-habits sheet is CANCELLED outright. The sheet's
+  ///    `SliverReorderableList` gets its `itemCount` from this provider, and
+  ///    `didUpdateWidget` calls `cancelReorder()` when the count changes, so
+  ///    N → 0 → N mid-gesture drops the drop silently: no callback, no haptic,
+  ///    no error, and the row springs back.
+  ///  * the streak write paths resolve their goal to null and cannot compute a
+  ///    run length (see [unknownStreakFor]).
+  ///  * every barrier that guards a destructive action has to stand its pass
+  ///    down (see [ensureLoaded]).
+  ///
+  /// Reassigning [_initialLoad] synchronously is what keeps a concurrent
+  /// [ensureLoaded] honest: [awaitStableBarrier] notices the load it awaited is
+  /// no longer the current one and waits for this one instead.
+  Future<void> refresh() {
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+      return _initialLoad = _loadFromPrivateStore();
+    }
+    // Cloud mode with no session has nothing to reload; leave state and the
+    // existing barrier alone rather than replacing it with an instant no-op.
+    if (supabase.auth.currentUser == null) return Future<void>.value();
+    return _initialLoad = _syncFromSupabase();
+  }
+
   /// Serves the offline mirror as initial state, but only once the cache is
   /// confirmed to belong to [userId] — the owner marker lives in the keychain,
   /// so the check is async and the notifier starts empty rather than showing

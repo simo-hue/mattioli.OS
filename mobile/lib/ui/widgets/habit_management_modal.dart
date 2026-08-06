@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -169,6 +170,11 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
   /// True while the name still holds a template-derived default (so switching
   /// the metric can update it, but a name the user typed is never overwritten).
   bool _nameAutoFilled = false;
+
+  /// The visible habit ids as they were when the current drag STARTED, or null
+  /// when no drag is in flight. See the `onReorderStart` comment on the
+  /// [SliverReorderableList] below for why a drop has to be checked against it.
+  List<String>? _dragOrder;
 
   /// True while a save is in flight. The form is only reset once the write
   /// returns, so without this both entry points (the button and the name
@@ -1376,7 +1382,39 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
           ),
           SliverReorderableList(
             itemCount: habits.length,
+            // The order the rows were in when the finger went down. A drop
+            // reports INDICES, and indices only mean anything against the list
+            // the user was actually looking at.
+            //
+            // `SliverReorderableList.didUpdateWidget` cancels a drag ONLY when
+            // `itemCount` changes (flutter reorderable_list.dart:796-800) — it
+            // does not notice the contents being swapped underneath it. That
+            // used to be harmless here only by accident: an applied iCloud sync
+            // flashed this list empty, the count changed, and the drag was
+            // cancelled. Now that the list refreshes IN PLACE (see
+            // `GoalsNotifier.refresh`), a reorder pulled from another device
+            // arrives with the SAME count and a DIFFERENT order, the gesture
+            // survives, and `oldIndex` silently addresses a different habit than
+            // the one under the finger — committing, renumbering and syncing a
+            // permutation nobody chose, with a haptic confirming it.
+            onReorderStart: (_) =>
+                _dragOrder = [for (final h in habits) h.id],
+            onReorderEnd: (_) => _dragOrder = null,
             onReorderItem: (oldIndex, newIndex) {
+              final startedWith = _dragOrder;
+              _dragOrder = null;
+              if (startedWith == null ||
+                  !listEquals(startedWith, [for (final h in habits) h.id])) {
+                // The list moved under the drag. Refusing is what the empty
+                // frame used to do by accident, and it is strictly better than
+                // committing a wrong order: the user's own drop is lost, but
+                // the remote order they can see is left intact and one more
+                // drag fixes it.
+                AppLogger.warning(
+                  '[Habits] drop ignored — the habit list changed mid-drag',
+                );
+                return;
+              }
               ref.read(goalsProvider.notifier).reorder(oldIndex, newIndex);
               ref.hapticLight();
             },

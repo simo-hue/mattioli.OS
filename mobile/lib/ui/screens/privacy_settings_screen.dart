@@ -1330,6 +1330,10 @@ class PrivacySettingsScreen extends ConsumerWidget {
           AppLogger.error('iCloud full reset failed during delete', e, stack);
         }
         await privateStore.deleteAllPrivateData();
+        // Deliberately an INVALIDATE, not `GoalsNotifier.refresh()`. Everything
+        // has just been wiped, so the empty list is the CORRECT answer and the
+        // sooner it shows the better — the opposite of a sync refresh, where an
+        // empty frame is a transient lie. See [GoalsNotifier.refresh].
         ref.invalidate(goalsProvider);
         ref.invalidate(habitLogsProvider);
         ref.invalidate(habitStatsProvider);

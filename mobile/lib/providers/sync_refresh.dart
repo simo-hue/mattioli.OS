@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'goal_provider.dart';
@@ -32,7 +34,22 @@ void refreshSyncEnabled(WidgetRef ref) => ref.invalidate(syncEnabledProvider);
 /// to the local DB; these providers cache in memory and won't otherwise notice.
 /// Mirrors the invalidation the delete/reset flow performs.
 void invalidatePrivateDataProviders(WidgetRef ref) {
-  ref.invalidate(goalsProvider);
+  // NOT `ref.invalidate(goalsProvider)`. Invalidating re-runs `build`, which in
+  // Private mode returns `[]` synchronously and fills in asynchronously — so
+  // every listener sees the habit list go empty and back on EVERY applied sync,
+  // which the 60s poll can reach once a minute. That empty frame cancels an
+  // in-flight drag in the Manage-habits sheet outright (SliverReorderableList
+  // calls `cancelReorder()` when its itemCount changes), leaves the streak write
+  // paths unable to resolve their goal, and forces every destructive-action
+  // barrier to stand its pass down. `refresh()` reloads in place instead: the
+  // list is only ever reassigned once the real data has arrived.
+  //
+  // Deliberately goalsProvider ONLY. The other providers below carry their own
+  // trustworthiness guards (`_syncFailed` / `loadIsTrustworthy`), so their empty
+  // frame is a cosmetic flicker rather than a correctness problem, and widening
+  // this would multiply the blast radius across the subsystems this repo has
+  // been burned in before.
+  unawaited(ref.read(goalsProvider.notifier).refresh());
   ref.invalidate(habitLogsProvider);
   // Quantitative-target progress. Its absence here was a DATA-LOSS bug, not a
   // stale-UI one: `goal_progress` rows pulled by the sync engine (or written by

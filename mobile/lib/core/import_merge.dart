@@ -1062,7 +1062,7 @@ Future<ImportMergeStats> applyPrivateImportMerge({
   }
 
   // ── Recompute streaks over the merged history for every touched goal. ──
-  await _recomputeStreaks(txn, affectedGoals);
+  await recomputeStreaks(txn, affectedGoals);
 
   return stats;
 }
@@ -1146,7 +1146,36 @@ String _dateKey(DateTime d) =>
 /// Recomputes the signed `streak` for every log of each goal in [goalIds] from
 /// the full persisted history, and writes back only the rows whose streak
 /// actually changed (minimizing sync churn).
-Future<void> _recomputeStreaks(Transaction txn, Set<String> goalIds) async {
+///
+/// Returns the number of rows it corrected, so a caller can report how much
+/// damage there was — the one-time repair in
+/// [PrivateLocalDatabase.repairAllStreaks] needs that, and an import can log it.
+///
+/// PUBLIC because it is the single implementation of "what should this row's
+/// streak be": the import path and the repair path must never disagree, and a
+/// second copy is exactly how they would.
+/// [stampUpdatedAt], when given, is written to `updated_at` on every row this
+/// corrects. That is REQUIRED for a repair and deliberately omitted for the
+/// import.
+///
+/// The AFTER UPDATE sync trigger stamps `sync_state` from the ROW's own
+/// `updated_at`, not from now (private_db_schema.dart), so a row corrected
+/// without a new stamp goes dirty carrying its ORIGINAL timestamp. It is pushed
+/// with that stamp, and every peer applies on strict greater-than
+/// (`if (rec.updatedAtMs <= localMs) return skipped`, sync_engine.dart) — an
+/// equal timestamp loses. The corrected value would reach the zone and be
+/// discarded by every other device, leaving a multi-device user permanently
+/// half-repaired. `sync_local_store.dart` states the same rule: an unbumped row
+/// loses LWW on the other devices and never propagates.
+///
+/// The import path passes null because it is already inside an LWW merge that
+/// manages its own timestamps.
+Future<int> recomputeStreaks(
+  Transaction txn,
+  Set<String> goalIds, {
+  String? stampUpdatedAt,
+}) async {
+  var corrected = 0;
   for (final goalId in goalIds) {
     final goalRows = await txn.query('goals',
         columns: ['start_date', 'frequency_days'],
@@ -1190,11 +1219,19 @@ Future<void> _recomputeStreaks(Transaction txn, Set<String> goalIds) async {
           frequencyDays: frequencyDays);
       final old = (r['streak'] as num?)?.toInt() ?? 0;
       if (newStreak != old) {
-        await txn.update('goal_logs', {'streak': newStreak},
-            where: 'id = ?', whereArgs: [id]);
+        await txn.update(
+            'goal_logs',
+            {
+              'streak': newStreak,
+              'updated_at': ?stampUpdatedAt,
+            },
+            where: 'id = ?',
+            whereArgs: [id]);
+        corrected++;
       }
     }
   }
+  return corrected;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

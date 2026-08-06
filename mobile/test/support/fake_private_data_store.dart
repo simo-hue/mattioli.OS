@@ -85,6 +85,12 @@ class FakePrivateDataStore implements PrivateDataStore {
     calls.add('deleteHabitLog');
   }
 
+  @override
+  Future<int?> repairAllStreaks() async {
+    calls.add('repairAllStreaks');
+    return 0;
+  }
+
   // ── Habit progress (quantitative targets) ────────────────────────────────
   @override
   Future<Map<String, Map<String, double>>> loadHabitProgress() async =>

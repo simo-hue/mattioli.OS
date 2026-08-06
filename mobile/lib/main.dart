@@ -27,6 +27,7 @@ import 'ui/widgets/error_modal.dart';
 import 'core/navigator_key.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'core/app_logger.dart';
+import 'core/streak_repair.dart';
 import 'core/secure_local_storage.dart';
 import 'core/secure_storage_utils.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -417,6 +418,11 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _syncIfPrivate('launch'),
     );
+
+    // One-time repair of the streaks the empty-goals window corrupted. Runs
+    // once per install, after the writers that caused it were fixed — running
+    // it before would simply re-corrupt. Best-effort and off the critical path.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _repairStreaksOnce());
     _periodicSync = Timer.periodic(_periodicSyncInterval, (_) {
       _syncIfPrivate('poll');
       // Midnight rollover. Nothing else can cover it: an app left open across
@@ -710,6 +716,23 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
   /// identity several times per launch and per mutation, and overlapping passes
   /// would race each other's writes. Fire-and-forget and fully guarded — both
   /// passes are best-effort, so a failure must never surface in the UI.
+  /// Fires the one-time streak repair in Private mode. Cloud-mode rows are
+  /// repaired by their own path (a backup import's `_recomputeCloudStreaks`) —
+  /// there is no equivalent local pass to run here.
+  Future<void> _repairStreaksOnce() async {
+    if (!mounted) return;
+    if (ref.read(activeDataModeProvider) != AppDataMode.private) return;
+    final corrected = await runStreakRepairOnce(
+      store: ref.read(privateLocalDatabaseProvider),
+      prefs: ref.read(sharedPrefsProvider),
+    );
+    // A repair that changed rows makes every in-memory streak stale.
+    if (corrected != null && corrected > 0 && mounted) {
+      ref.invalidate(habitStatsProvider);
+      ref.invalidate(habitAnalyticsProvider);
+    }
+  }
+
   void _scheduleReconciles(String reason) {
     if (!mounted) return;
     if (_reconcileRunning) {

@@ -611,6 +611,52 @@ class PrivateLocalDatabase implements PrivateDataStore {
     _notifyWrite();
   }
 
+  /// Recomputes `goal_logs.streak` for EVERY habit from its full history and
+  /// writes back only the rows that were wrong. Returns how many it corrected.
+  ///
+  /// This is the repair for the empty-goals-window corruption: `applyAutoVerdict`
+  /// and `setDerivedStatus` used to recompute the streak from a LIVE
+  /// `goalsProvider` read, and when that list was transiently empty the goal
+  /// resolved to null, `startDate` fell back to the day being written, and
+  /// `computeStreak`'s backward walk broke on its first step — persisting a long
+  /// run as ±1 into a table that syncs to every device, which nothing re-derives.
+  ///
+  /// `streak` is a CACHE of a pure function of data still on disk (the habit's
+  /// log history + its start date + its weekly schedule), so every wrong value is
+  /// recoverable exactly. Runs in ONE transaction and shares
+  /// [recomputeStreaks] with the import path, so the repair and the import can
+  /// never disagree about what a row's streak should be.
+  ///
+  /// Must run only AFTER the writers that corrupt it are fixed, or it re-corrupts.
+  ///
+  /// Returns null when this owner has NO habits yet — which is NOT the same as
+  /// "nothing to fix", and the difference is load-bearing. [ownerId] returns a
+  /// device-local uuid until the first sync adopts the canonical owner, so on a
+  /// restored or second device the owner-filtered query below legitimately
+  /// selects nothing while the user's entire (corrupted) history is still on its
+  /// way. Reporting 0 there would let the caller mark the repair permanently
+  /// done before the data arrived. Null means "could not scan — ask again".
+  @override
+  Future<int?> repairAllStreaks() async {
+    final db = await _database();
+    final owner = await ownerId();
+    final goalRows = await db.query(
+      'goals',
+      columns: ['id'],
+      where: 'user_id = ?',
+      whereArgs: [owner],
+    );
+    if (goalRows.isEmpty) return null;
+    final ids = {for (final r in goalRows) r['id'] as String};
+    final corrected = await db.transaction<int>(
+      // A fresh stamp is what lets the correction WIN last-write-wins on every
+      // other device; without it the peers discard it. See [recomputeStreaks].
+      (txn) => recomputeStreaks(txn, ids, stampUpdatedAt: _now()),
+    );
+    if (corrected > 0) _notifyWrite();
+    return corrected;
+  }
+
   /// Persist multiple goals (used by drag-reorder) in ONE transaction, so a
   /// partial failure can't leave display_order half-applied and so the write is
   /// a single atomic unit rather than N separate ones.

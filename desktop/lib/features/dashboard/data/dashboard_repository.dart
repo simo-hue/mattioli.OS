@@ -1,3 +1,4 @@
+import 'package:evolve_sync/evolve_sync.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -341,6 +342,9 @@ class SupabaseDashboardRepository extends DashboardRepository {
             .from('goals')
             .select()
             .eq('user_id', _userId)
+            // NOT order_key: a project without migrations/20260806 would
+            // reject the whole SELECT and cost the user their habit list. The
+            // client sorts by the key after loading.
             .order('display_order', ascending: true)
             .order('created_at', ascending: true),
         _client.from('goal_logs').select().eq('user_id', _userId),
@@ -502,18 +506,34 @@ class SupabaseDashboardRepository extends DashboardRepository {
   @override
   Future<void> reorderHabits(List<DashboardHabit> habits) async {
     if (habits.isEmpty) return;
-    // One atomic batch upsert of just {id, display_order} (these are existing
-    // rows, so PostgREST takes the ON CONFLICT (id) DO UPDATE path). Mirrors the
-    // mobile client against the same Supabase backend. A SINGLE request is
-    // deliberate: N separate updates could half-apply on a mid-loop failure and
-    // corrupt the persisted order. Not routed through the single-row offline
-    // queue — a failed offline reorder simply keeps the local order until the
-    // user reorders again (a cheap, idempotent action).
-    final updates = [
-      for (var i = 0; i < habits.length; i++)
-        {'id': habits[i].id, 'display_order': i},
-    ];
-    await _client.from('goals').upsert(updates, onConflict: 'id');
+    // N single-row UPDATEs, NOT a batch upsert of `{id, display_order}`.
+    //
+    // The comment this replaces asserted that "these are existing rows, so
+    // PostgREST takes the ON CONFLICT (id) DO UPDATE path" — and that premise is
+    // wrong. PostgREST turns an upsert into `INSERT .. ON CONFLICT`, and
+    // PostgreSQL evaluates the INSERT-side RLS policy (`WITH CHECK
+    // auth.uid() = user_id`) and every NOT NULL column against the PROPOSED
+    // tuple BEFORE the conflict arbiter is considered. A partial row carrying
+    // neither `user_id` nor `title`/`color`/`start_date` is therefore rejected
+    // outright (42501, or 23502 with RLS bypassed). That is why no reorder has
+    // ever persisted in account mode, on either app.
+    //
+    // An UPDATE has no INSERT path, so it is checked only against the
+    // UPDATE/USING policy on the existing row — which passes.
+    //
+    // The old single-request atomicity argument does not survive either: the
+    // request was rejected in full, so nothing was atomic about it. A mid-loop
+    // failure here leaves a prefix applied, which the next reorder overwrites —
+    // and every write is idempotent.
+    final now = DateTime.now().toUtc().toIso8601String();
+    final keys = renumberedOrderKeys(habits.length);
+    for (var i = 0; i < habits.length; i++) {
+      await _client.from('goals').update({
+        'display_order': i,
+        'order_key': keys[i],
+        'order_key_updated_at': now,
+      }).eq('id', habits[i].id);
+    }
   }
 
   @override

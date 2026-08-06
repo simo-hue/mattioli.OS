@@ -77,6 +77,21 @@ final privateLocalDatabaseProvider = Provider<PrivateDataStore>((ref) {
   return PrivateLocalDatabase();
 });
 
+/// The order the habit list is READ in (private schema v12).
+///
+/// `order_key` first — a habit's position is a property of its own row, which is
+/// what makes the sync engine's per-row merge correct.
+///
+/// `order_key IS NULL` leads so that keyless rows sort LAST, not first: SQLite
+/// puts NULL first in an ASC sort, and that is precisely how a habit created
+/// after a reorder used to leap to the top of the list. A row is keyless only
+/// until the v12 backfill or the next write reaches it — a peer on an older
+/// build, or an import — so it falls back to the legacy sequence rather than
+/// being given an arbitrary position.
+const String kGoalsOrderBy =
+    'order_key IS NULL, order_key ASC, display_order IS NULL, '
+    'display_order ASC, created_at ASC, id ASC';
+
 /// Resolves the value written to `goal_logs.streak`.
 ///
 /// [requested] null means "unknown — keep whatever is stored", NOT zero. The
@@ -598,7 +613,7 @@ class PrivateLocalDatabase implements PrivateDataStore {
       'goals',
       where: 'user_id = ?',
       whereArgs: [owner],
-      orderBy: 'display_order ASC, created_at ASC',
+      orderBy: kGoalsOrderBy,
     );
     return rows.map(_goalFromRow).toList();
   }
@@ -1239,7 +1254,7 @@ class PrivateLocalDatabase implements PrivateDataStore {
 
     final goals = await rows(
       'goals',
-      orderBy: 'display_order ASC, created_at ASC',
+      orderBy: kGoalsOrderBy,
     );
     final logs = await rows('goal_logs');
     final progress = await rows('goal_progress');
@@ -1270,6 +1285,12 @@ class PrivateLocalDatabase implements PrivateDataStore {
             'start_date': g['start_date'],
             'end_date': g['end_date'],
             'display_order': g['display_order'],
+            // v12 position. Without these a backup/restore silently reverts the
+            // habit order: display_order is frozen at migration time (only
+            // reorderHabits/reorder maintain the key now), so a restored list
+            // comes back in an order the user abandoned.
+            'order_key': g['order_key'],
+            'order_key_updated_at': g['order_key_updated_at'],
             'created_at': g['created_at'],
             'updated_at': g['updated_at'],
             'reminder_time': g['reminder_time'],
@@ -2535,6 +2556,8 @@ class PrivateLocalDatabase implements PrivateDataStore {
       'start_date': row['start_date'],
       'end_date': row['end_date'],
       'display_order': row['display_order'],
+      'order_key': row['order_key'],
+      'order_key_updated_at': row['order_key_updated_at'],
       'reminder_time': row['reminder_time'],
       'verify_provider': row['verify_provider'],
       'verify_metric': row['verify_metric'],
@@ -2562,6 +2585,8 @@ class PrivateLocalDatabase implements PrivateDataStore {
       'start_date': goal.startDate.toIso8601String(),
       'end_date': goal.endDate?.toIso8601String(),
       'display_order': goal.displayOrder,
+      'order_key': goal.orderKey,
+      'order_key_updated_at': goal.orderKeyUpdatedAt,
       'reminder_time': goal.reminderTime,
       // Always write ALL verification columns (null when absent): upsertGoal uses
       // ConflictAlgorithm.replace, so an omitted column would be wiped to NULL on

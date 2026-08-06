@@ -1,3 +1,4 @@
+import '../features/dashboard/data/private_dashboard_repository.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -970,7 +971,7 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
 
     final goals = await rows(
       'goals',
-      orderBy: 'display_order ASC, created_at ASC',
+      orderBy: kDesktopGoalsOrderBy,
     );
     final logs = await rows('goal_logs');
     final progress = await rows('goal_progress');
@@ -1008,6 +1009,8 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
             'start_date': g['start_date'],
             'end_date': g['end_date'],
             'display_order': g['display_order'],
+            'order_key': g['order_key'],
+            'order_key_updated_at': g['order_key_updated_at'],
             'created_at': g['created_at'],
             'updated_at': g['updated_at'],
             'reminder_time': g['reminder_time'],
@@ -2005,6 +2008,10 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
     // ── Recompute streaks over the merged history for every touched goal, so
     // the stored signed streak reflects local + imported logs combined. ──
     await recomputeStreaksForGoals(txn, affectedGoals);
+    // Key any goal the import brought in without one (a pre-v12 backup, or a
+    // web export). Mirrors mobile — without it an imported habit stays keyless
+    // and sorts behind its keyed siblings forever.
+    await PrivateDbSchema.backfillOrderKeys(txn, bumpUpdatedAt: false);
 
     // Restore the profile (name / date of birth / settings) onto the owner row.
     // sanitizeSettings filters to known columns, coerces bools, and drops the
@@ -2117,6 +2124,8 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
       'start_date': g['start_date'] ?? g['created_at'] ?? updatedAt,
       'end_date': g['end_date'],
       'display_order': g['display_order'],
+      'order_key': g['order_key'],
+      'order_key_updated_at': g['order_key_updated_at'],
       'reminder_time': g['reminder_time'],
       'verify_provider': g['verify_provider'],
       'verify_metric': g['verify_metric'],

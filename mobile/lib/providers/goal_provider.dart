@@ -17,6 +17,7 @@ import '../core/verification_config.dart';
 import '../core/verification_providers.dart';
 import '../core/secure_storage_utils.dart';
 import '../core/data_mode.dart';
+import 'package:evolve_sync/evolve_sync.dart';
 import '../core/private_local_database.dart';
 import '../core/streak_utils.dart';
 import '../core/supabase_macro_goal_progress.dart';
@@ -402,10 +403,18 @@ class GoalsNotifier extends Notifier<List<Goal>> {
           .from('goals')
           .select()
           .eq('user_id', user.id)
+          // Deliberately NOT ordered by `order_key` server-side. The column is
+          // added by migrations/20260806_add_goal_order_key.sql, and a project
+          // that has not run it yet would reject the whole SELECT with a 400 —
+          // costing the user their ENTIRE habit list rather than just its order.
+          // The client sorts by the key below instead, which is exact and free
+          // at this list size.
           .order('display_order', ascending: true)
           .order('created_at', ascending: true);
 
-      final goals = (response as List).map((j) => Goal.fromJson(j)).toList();
+      final goals = _sortedByOrderKey(
+        (response as List).map((j) => Goal.fromJson(j)).toList(),
+      );
       _serverStateApplied = true;
       state = goals;
       _syncFailed = false;
@@ -443,6 +452,28 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       previous: null,
       today: DateTime.now(),
     );
+    // A new habit goes at the END of the list, which means a key after the
+    // current last one. Without this it would be written keyless and sort by the
+    // legacy fallback — and a NULL display_order sorts FIRST in SQLite, which is
+    // exactly how a freshly-added habit used to leap to the top after a restart.
+    if (habit.orderKey == null) {
+      final keys = state.map((g) => g.orderKey).whereType<double>().toList();
+      // Only key the new habit when the list is ALREADY keyed (or empty). A
+      // keyed row sorts BEFORE every keyless one, so keying the newcomer while
+      // its siblings have no keys would send it straight to the TOP — the exact
+      // "new habit leaps to the top" symptom this is meant to end. In account
+      // mode nothing backfills Postgres, so a wholly-keyless list is normal
+      // there; the newcomer joins the legacy ordering and appends.
+      if (keys.length == state.length) {
+        final lastKey =
+            keys.isEmpty ? null : keys.reduce((a, b) => a > b ? a : b);
+        habit = habit.copyWith(
+          orderKey: orderKeyBetween(lastKey, null),
+          orderKeyUpdatedAt: DateTime.now().toUtc().toIso8601String(),
+        );
+      }
+    }
+
     // Snapshot for optimistic rollback if persistence fails.
     final previousGoals = state;
     final newGoals = [...state, habit];
@@ -798,24 +829,58 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     }
   }
 
+  /// Moves the habit at [oldIndex] to [newIndex].
+  ///
+  /// [newIndex] is the FINAL resting position, matching `onReorderItem`'s
+  /// contract (the framework has already accounted for the removal). The old
+  /// code subtracted one AGAIN, so every downward drag landed a slot short and a
+  /// one-slot-down drag was a complete no-op.
+  ///
+  /// Writes ONE row in the ordinary case. Order is a fractional [Goal.orderKey]
+  /// — a property of the moved habit, not of the collection — so its neighbours
+  /// are untouched, the sync engine's per-row merge stays correct, and a drag no
+  /// longer dirties every habit for push. Only an exhausted gap renumbers, and
+  /// that path writes the whole list exactly as this used to.
   Future<void> reorder(int oldIndex, int newIndex) async {
-    // Snapshot for optimistic rollback if persistence fails.
+    if (oldIndex == newIndex) return;
     final previousGoals = state;
-    final list = List<Goal>.from(state);
-    if (newIndex > oldIndex) newIndex -= 1;
-    final item = list.removeAt(oldIndex);
-    list.insert(newIndex, item);
-
-    // Aggiorna gli order localmente
-    for (int i = 0; i < list.length; i++) {
-      list[i] = list[i].copyWith(displayOrder: i);
+    if (oldIndex < 0 ||
+        oldIndex >= state.length ||
+        newIndex < 0 ||
+        newIndex >= state.length) {
+      AppLogger.warning(
+        '[Goals] reorder out of range: $oldIndex -> $newIndex of ${state.length}',
+      );
+      return;
     }
 
-    state = list;
+    final changes = orderKeyMoveResult(
+      current: [for (final g in state) g.orderKey],
+      fromIndex: oldIndex,
+      toIndex: newIndex,
+    );
+    if (changes.isEmpty) return;
+
+    final stamp = DateTime.now().toUtc().toIso8601String();
+    final updated = <Goal>[
+      for (var i = 0; i < state.length; i++)
+        if (changes.containsKey(i))
+          state[i].copyWith(orderKey: changes[i], orderKeyUpdatedAt: stamp)
+        else
+          state[i],
+    ];
+    // Only the rows that actually moved are persisted.
+    final touched = [
+      for (var i = 0; i < updated.length; i++)
+        if (changes.containsKey(i)) updated[i],
+    ];
+
+    // The list the UI shows is sorted by the key, not by array position.
+    state = _sortedByOrderKey(updated);
 
     if (ref.read(activeDataModeProvider) == AppDataMode.private) {
       try {
-        await ref.read(privateLocalDatabaseProvider).reorderGoals(list);
+        await ref.read(privateLocalDatabaseProvider).reorderGoals(touched);
       } catch (e, stack) {
         AppLogger.error('[Goals] Private reorder error', e, stack);
         state = previousGoals;
@@ -828,14 +893,20 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       return;
     }
 
-    _saveToCache(list);
+    _saveToCache(state);
 
-    // Sync massivo degli order su Supabase
     try {
-      final updates = list
-          .map((g) => {'id': g.id, 'display_order': g.displayOrder})
-          .toList();
-      await supabase.from('goals').upsert(updates);
+      // One UPDATE per moved row — normally exactly one. NOT a partial-column
+      // upsert: PostgREST turns that into INSERT .. ON CONFLICT and evaluates
+      // the INSERT RLS policy and every NOT NULL column against the proposed
+      // tuple FIRST, so `upsert([{id, order_key}])` is rejected outright. That
+      // is why no reorder has ever persisted in account mode.
+      for (final g in touched) {
+        await supabase.from('goals').update({
+          'order_key': g.orderKey,
+          'order_key_updated_at': g.orderKeyUpdatedAt,
+        }).eq('id', g.id);
+      }
     } catch (e, stack) {
       AppLogger.error('[Goals] Reorder error', e, stack);
       state = previousGoals;
@@ -916,6 +987,31 @@ Map<String, Object?> goalLogUpsertPayload({
       'status': status,
       'streak': ?streak,
     };
+
+/// Sorts habits the way both stores read them back: by [Goal.orderKey], with
+/// keyless rows LAST (never first — SQLite's NULLs-first ASC is how a habit
+/// created after a reorder used to leap to the top) and a deterministic
+/// tie-break so two devices agree.
+List<Goal> _sortedByOrderKey(List<Goal> goals) {
+  final sorted = [...goals];
+  sorted.sort((a, b) {
+    final ak = a.orderKey, bk = b.orderKey;
+    if (ak != null && bk != null) {
+      final byKey = ak.compareTo(bk);
+      if (byKey != 0) return byKey;
+    } else if (ak != null) {
+      return -1;
+    } else if (bk != null) {
+      return 1;
+    }
+    final ad = a.displayOrder, bd = b.displayOrder;
+    if (ad != null && bd != null && ad != bd) return ad.compareTo(bd);
+    if (ad != null && bd == null) return -1;
+    if (ad == null && bd != null) return 1;
+    return a.id.compareTo(b.id);
+  });
+  return sorted;
+}
 
 int? unknownStreakFor({
   required String? previousStatus,

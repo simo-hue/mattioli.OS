@@ -15,6 +15,7 @@ library;
 
 import 'dart:convert';
 
+import 'package:evolve_sync/evolve_sync.dart';
 import 'package:sqflite_sqlcipher/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
@@ -106,6 +107,8 @@ Map<String, dynamic> _normalizeWeb(Map<String, dynamic> raw) {
       'start_date': g['start_date'],
       'end_date': g['end_date'],
       'display_order': g['display_order'],
+      'order_key': g['order_key'],
+      'order_key_updated_at': g['order_key_updated_at'],
       'created_at': g['created_at'],
       'updated_at': g['updated_at'],
       'reminder_time': g['reminder_time'],
@@ -213,6 +216,8 @@ Map<String, dynamic> _normalizeNative(Map<String, dynamic> raw) {
       'start_date': g['start_date'],
       'end_date': g['end_date'],
       'display_order': g['display_order'],
+      'order_key': g['order_key'],
+      'order_key_updated_at': g['order_key_updated_at'],
       'created_at': g['created_at'],
       'updated_at': g['updated_at'],
       'reminder_time': g['reminder_time'],
@@ -544,6 +549,8 @@ ValidatedBackup validateCanonical(Map<String, dynamic> canonical) {
       'start_date': start,
       'end_date': end,
       'display_order': _int(g['display_order']),
+      'order_key': g['order_key'],
+      'order_key_updated_at': _str(g['order_key_updated_at']),
       'created_at': _str(g['created_at']),
       'updated_at': _str(g['updated_at']),
       'reminder_time': _reminderTime(g['reminder_time']),
@@ -1063,6 +1070,11 @@ Future<ImportMergeStats> applyPrivateImportMerge({
 
   // ── Recompute streaks over the merged history for every touched goal. ──
   await recomputeStreaks(txn, affectedGoals);
+  // Key any goal the import brought in without one — a pre-v12 backup, or a
+  // web-app export, which has no concept of order_key. Without this an imported
+  // habit is keyless forever (nothing else ever backfills), so it sorts by the
+  // legacy fallback while its keyed siblings sort ahead of it.
+  await PrivateDbSchema.backfillOrderKeys(txn, bumpUpdatedAt: false);
 
   return stats;
 }
@@ -1369,6 +1381,8 @@ CloudImportPlan planCloudImport({
       'start_date': g['start_date'],
       'end_date': g['end_date'],
       'display_order': g['display_order'],
+      'order_key': g['order_key'],
+      'order_key_updated_at': g['order_key_updated_at'],
       'created_at': g['created_at'] ?? now,
       'updated_at': g['updated_at'] ?? now,
       'reminder_time': g['reminder_time'],

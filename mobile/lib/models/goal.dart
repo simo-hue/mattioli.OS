@@ -13,6 +13,24 @@ class Goal {
   final DateTime startDate;
   final DateTime? endDate;
   final int? displayOrder;
+
+  /// Fractional position in the habit list (private schema v12).
+  ///
+  /// Replaces [displayOrder] as the ordering the app READS. A habit's position
+  /// is a property of its own row — a value strictly between its neighbours —
+  /// which is what makes the sync engine's per-row last-write-wins merge
+  /// correct. [displayOrder] was a dense 0..n-1 sequence, i.e. a property of the
+  /// whole collection, so one pulled row overwrote one habit's slot in isolation
+  /// and left duplicates for `created_at` to tie-break arbitrarily.
+  ///
+  /// Null on a row that predates the migration, or one written by an older
+  /// build; the loaders sort those after the keyed rows rather than before.
+  final double? orderKey;
+
+  /// When [orderKey] was last set, for FIELD-level last-write-wins on that one
+  /// column — so an unrelated edit arriving from another device cannot drag the
+  /// habit back to a position the user already moved it out of.
+  final String? orderKeyUpdatedAt;
   final String? reminderTime; // "HH:mm" or null
 
   /// Auto-verification rule (null ⇒ ordinary manual habit). Round-tripped
@@ -83,6 +101,8 @@ class Goal {
     required this.startDate,
     this.endDate,
     this.displayOrder,
+    this.orderKey,
+    this.orderKeyUpdatedAt,
     this.reminderTime,
     this.verificationRule,
     this.verifyEffectiveFrom,
@@ -192,6 +212,8 @@ class Goal {
     DateTime? endDate,
     bool clearEndDate = false,
     int? displayOrder,
+    double? orderKey,
+    String? orderKeyUpdatedAt,
     String? reminderTime,
     bool clearReminderTime = false,
     VerificationRule? verificationRule,
@@ -218,6 +240,8 @@ class Goal {
       startDate: startDate ?? this.startDate,
       endDate: clearEndDate ? null : (endDate ?? this.endDate),
       displayOrder: displayOrder ?? this.displayOrder,
+      orderKey: orderKey ?? this.orderKey,
+      orderKeyUpdatedAt: orderKeyUpdatedAt ?? this.orderKeyUpdatedAt,
       reminderTime: clearReminderTime ? null : (reminderTime ?? this.reminderTime),
       verificationRule: clearVerificationRule
           ? null
@@ -291,6 +315,8 @@ class Goal {
       startDate: parseDate(json['start_date']) ?? DateTime(2000),
       endDate: parseDate(json['end_date']),
       displayOrder: json['display_order'] as int?,
+      orderKey: (json['order_key'] as num?)?.toDouble(),
+      orderKeyUpdatedAt: json['order_key_updated_at'] as String?,
       reminderTime: json['reminder_time'] as String?,
       verificationRule: conditions.isEmpty ? null : conditions.first,
       additionalConditions:
@@ -337,6 +363,10 @@ class Goal {
       'start_date': startDate.toIso8601String(),
       if (endDate != null) 'end_date': endDate!.toIso8601String(),
       if (displayOrder != null) 'display_order': displayOrder,
+      // Omitted when null so a partial payload never CLEARS a position another
+      // client set — same reason display_order above is conditional.
+      if (orderKey != null) 'order_key': orderKey,
+      if (orderKeyUpdatedAt != null) 'order_key_updated_at': orderKeyUpdatedAt,
       if (reminderTime != null) 'reminder_time': reminderTime,
       // Emitted for a real rule OR to preserve an undecodable newer-client
       // compound blob (target-free); a plain manual habit stays column-free so

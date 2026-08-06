@@ -124,8 +124,8 @@ void main() {
   });
 
   group('wiring', () {
-    test('the schema version is 11', () {
-      expect(PrivateDbSchema.version, 11);
+    test('the schema version is 12', () {
+      expect(PrivateDbSchema.version, 12);
     });
   });
 }

@@ -292,6 +292,8 @@ class DesktopBackupImportService {
         'start_date': g['start_date'],
         'end_date': g['end_date'],
         'display_order': g['display_order'],
+        'order_key': g['order_key'],
+        'order_key_updated_at': g['order_key_updated_at'],
         'created_at': g['created_at'],
         'updated_at': g['updated_at'],
         'reminder_time': g['reminder_time'],

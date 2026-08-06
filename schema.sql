@@ -67,6 +67,23 @@ CREATE TABLE public.goals (
     start_date timestamp with time zone NOT NULL,
     end_date timestamp with time zone,
     display_order integer,
+    -- Fractional habit order (v12). A habit's position is a property of ITS OWN
+    -- ROW - a value strictly between its neighbours - which is what makes the
+    -- private sync engine's per-row last-write-wins merge correct.
+    -- `display_order` was a dense 0..n-1 sequence, i.e. a property of the whole
+    -- COLLECTION, so one pulled row overwrote one habit's slot in isolation and
+    -- left duplicates for created_at to tie-break arbitrarily. Kept alongside
+    -- display_order, which older clients still read and write.
+    --
+    -- double precision, NOT text: SQLite compares TEXT with BINARY collation
+    -- while PostgreSQL uses a locale-aware default, so lexicographic keys would
+    -- order differently on the two backends unless every comparison and index
+    -- carried COLLATE "C".
+    order_key double precision,
+    -- When order_key was last set, for FIELD-level LWW on that one column in
+    -- the private (CloudKit) engine. Carried here so a cloud round-trip does not
+    -- drop it.
+    order_key_updated_at timestamp with time zone,
     -- Auto-verified habits: the verification rule (all null => manual habit).
     -- Unconstrained by design so a future provider/metric round-trips instead
     -- of being rejected; validity is enforced in the client.

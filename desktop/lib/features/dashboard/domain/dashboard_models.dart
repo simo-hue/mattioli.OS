@@ -67,6 +67,8 @@ class DashboardHabit {
     this.startDate,
     this.endDate,
     this.displayOrder,
+    this.orderKey,
+    this.orderKeyUpdatedAt,
     this.reminderTime,
     this.verificationRule,
     this.verifyEffectiveFrom,
@@ -91,6 +93,18 @@ class DashboardHabit {
   final DateTime? startDate;
   final DateTime? endDate;
   final int? displayOrder;
+
+  /// Fractional list position (private schema v12) — the ordering the app READS.
+  /// A habit's position is a property of its own row, which is what makes the
+  /// sync engine's per-row last-write-wins merge correct; `displayOrder` was a
+  /// dense sequence, i.e. a property of the whole collection. Null on rows that
+  /// predate the migration; those sort AFTER the keyed ones.
+  final double? orderKey;
+
+  /// When [orderKey] was last set, for field-level LWW on that column alone, so
+  /// an unrelated edit cannot drag a habit back to a position the user already
+  /// moved it out of.
+  final String? orderKeyUpdatedAt;
   final String? reminderTime;
 
   /// Auto-verification rule (null ⇒ manual habit). macOS never verifies — this
@@ -261,6 +275,8 @@ class DashboardHabit {
     DateTime? startDate,
     DateTime? endDate,
     int? displayOrder,
+    double? orderKey,
+    String? orderKeyUpdatedAt,
     VerificationRule? verificationRule,
     bool clearVerificationRule = false,
     DateTime? verifyEffectiveFrom,
@@ -290,6 +306,8 @@ class DashboardHabit {
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       displayOrder: displayOrder ?? this.displayOrder,
+      orderKey: orderKey ?? this.orderKey,
+      orderKeyUpdatedAt: orderKeyUpdatedAt ?? this.orderKeyUpdatedAt,
       reminderTime: clearReminder ? null : (reminderTime ?? this.reminderTime),
       verificationRule: clearVerificationRule
           ? null
@@ -331,6 +349,8 @@ class DashboardHabit {
     'start_date': (startDate ?? DateTime.now()).toIso8601String(),
     if (endDate != null) 'end_date': endDate!.toIso8601String(),
     if (displayOrder != null) 'display_order': displayOrder,
+    if (orderKey != null) 'order_key': orderKey,
+    if (orderKeyUpdatedAt != null) 'order_key_updated_at': orderKeyUpdatedAt,
     if (reminderTime != null) 'reminder_time': reminderTime,
     // For a real rule OR to preserve an undecodable newer-client compound blob
     // (target-free); a plain manual habit stays column-free so its writes don't
@@ -384,6 +404,8 @@ class DashboardHabit {
       startDate: DateTime.tryParse(json['start_date'] as String? ?? ''),
       endDate: DateTime.tryParse(json['end_date'] as String? ?? ''),
       displayOrder: json['display_order'] as int?,
+      orderKey: (json['order_key'] as num?)?.toDouble(),
+      orderKeyUpdatedAt: json['order_key_updated_at'] as String?,
       reminderTime: json['reminder_time'] as String?,
       verificationRule: conditions.isEmpty ? null : conditions.first,
       additionalConditions:

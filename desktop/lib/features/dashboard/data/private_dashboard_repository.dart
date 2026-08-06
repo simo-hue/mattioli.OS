@@ -1,3 +1,4 @@
+import 'package:evolve_sync/evolve_sync.dart';
 import 'dart:convert';
 
 import 'package:evolve_desktop/core/app_logger.dart';
@@ -19,6 +20,16 @@ import 'package:evolve_desktop/core/calendar_days.dart';
 /// is [PrivateDbSchema] (aligned with the mobile client): `created_at` /
 /// `updated_at` are NOT NULL with no default, so every write stamps them
 /// explicitly.
+/// The order the habit list is READ in (private schema v12).
+///
+/// `order_key` first — a habit's position is a property of its own row.
+/// `order_key IS NULL` leads so keyless rows sort LAST, not first: SQLite puts
+/// NULL first in an ASC sort, which is how a habit written by an older build
+/// would otherwise leap to the top. Mirrors `kGoalsOrderBy` on mobile.
+const String kDesktopGoalsOrderBy =
+    'order_key IS NULL, order_key ASC, display_order IS NULL, '
+    'display_order ASC, created_at ASC, id ASC';
+
 class PrivateDashboardRepository extends DashboardRepository {
   PrivateDashboardRepository({required this.ownerId});
 
@@ -42,7 +53,7 @@ class PrivateDashboardRepository extends DashboardRepository {
         'goals',
         where: 'user_id = ?',
         whereArgs: [ownerId],
-        orderBy: 'display_order ASC, created_at ASC',
+        orderBy: kDesktopGoalsOrderBy,
       );
       final logRows = await db.query(
         'goal_logs',
@@ -104,6 +115,7 @@ class PrivateDashboardRepository extends DashboardRepository {
       'start_date': (habit.startDate ?? DateTime.now()).toIso8601String(),
       'end_date': habit.endDate?.toIso8601String(),
       'display_order': habit.displayOrder,
+      // See the note in the insert map: only reorderHabits writes the position.
       'reminder_time': habit.reminderTime,
       // Preserves an undecodable newer-client compound blob (verifyColumnValues)
       // so a REPLACE-write can't strip it, exactly like targetColumnValue.
@@ -139,6 +151,12 @@ class PrivateDashboardRepository extends DashboardRepository {
         'start_date': (habit.startDate ?? DateTime.now()).toIso8601String(),
         'end_date': habit.endDate?.toIso8601String(),
         'display_order': habit.displayOrder,
+        // order_key is DELIBERATELY absent from this map. It is written by
+        // exactly ONE code path — reorderHabits — mirroring mobile. An ordinary
+        // edit carries the habit's PRE-DRAG key and stamp in memory, so writing
+        // it here would silently undo a reorder: rename a habit and it walks
+        // back to where it used to be. It must not be possible to move a habit
+        // by renaming it.
         'reminder_time': habit.reminderTime,
         // Preserves an undecodable newer-client compound blob (verifyColumnValues).
         ...habit.verifyColumnValues,
@@ -174,16 +192,31 @@ class PrivateDashboardRepository extends DashboardRepository {
   }
 
   @override
+  @override
   Future<void> reorderHabits(List<DashboardHabit> habits) async {
-    // Update only `display_order` (never the whole row) so a reorder can't reset
-    // start_date/frequency and only bumps the sync-relevant timestamp.
+    // Writes `order_key` (v12), not the dense `display_order` sequence: a
+    // habit's position is a property of its own row, so the sync engine's
+    // per-row merge stays correct and the keys the iPhone wrote are not
+    // renumbered out from under it. Still only the ordering columns — never the
+    // whole row — so a reorder cannot reset start_date/frequency.
+    //
+    // [habits] arrives in the desired display order; each takes the key for its
+    // position. Desktop renumbers rather than computing a single midpoint
+    // because its list widget hands back the whole reordered list rather than a
+    // (from, to) pair.
     final db = await DesktopPrivateDb.instance.database;
     final now = _now();
+    final keys = renumberedOrderKeys(habits.length);
     final batch = db.batch();
     for (var i = 0; i < habits.length; i++) {
       batch.update(
         'goals',
-        {'display_order': i, 'updated_at': now},
+        {
+          'display_order': i,
+          'order_key': keys[i],
+          'order_key_updated_at': now,
+          'updated_at': now,
+        },
         where: 'id = ?',
         whereArgs: [habits[i].id],
       );
@@ -635,6 +668,8 @@ class PrivateDashboardRepository extends DashboardRepository {
       startDate: DateTime.tryParse(row['start_date'] as String? ?? ''),
       endDate: DateTime.tryParse(row['end_date'] as String? ?? ''),
       displayOrder: row['display_order'] as int?,
+      orderKey: (row['order_key'] as num?)?.toDouble(),
+      orderKeyUpdatedAt: row['order_key_updated_at'] as String?,
       reminderTime: row['reminder_time'] as String?,
       verificationRule: conditions.isEmpty ? null : conditions.first,
       additionalConditions:

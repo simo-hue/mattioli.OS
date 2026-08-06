@@ -330,6 +330,54 @@ class SyncLocalStore {
   /// the losing row, and `macro_goal_categories`' `ON DELETE SET NULL` would
   /// drop exactly the child association [_mergeChildrenOntoWinner] re-points
   /// onto the winner. The pull applies rows in FK-safe parent→child order.
+  /// Drops `order_key` / `order_key_updated_at` from [data] when the LOCAL row
+  /// already holds a position set more recently than the incoming one.
+  ///
+  /// Mutates [data] in place, so the caller's single UPDATE simply does not
+  /// touch those columns. Comparing the stamps as ISO-8601 STRINGS is safe and
+  /// deliberate: every writer produces UTC (`toUtc().toIso8601String()`), and
+  /// UTC ISO-8601 is lexicographically ordered.
+  ///
+  /// A remote row with no stamp cannot prove it is newer, so it never wins. A
+  /// LOCAL row with no stamp has never been positioned by this device (a
+  /// pre-v12 row), so the remote position is taken.
+  /// Returns true when it kept the LOCAL position, i.e. the row about to be
+  /// written is a MERGE (remote fields + this device's position) that no peer
+  /// has seen.
+  Future<bool> _preserveNewerOrderKey(
+    DatabaseExecutor txn,
+    String table,
+    String id,
+    Map<String, Object?> data,
+  ) async {
+    if (table != 'goals') return false;
+    if (!data.containsKey('order_key')) return false;
+
+    final localRows = await txn.query(
+      'goals',
+      columns: ['order_key_updated_at'],
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+    // A brand-new row: nothing to preserve.
+    if (localRows.isEmpty) return false;
+
+    final localStamp = localRows.first['order_key_updated_at'] as String?;
+    // Never positioned here (a backfilled or pre-v12 row) — take the remote, so
+    // two migrated devices converge on one set of keys.
+    if (localStamp == null) return false;
+
+    final remoteStamp = data['order_key_updated_at'] as String?;
+    if (remoteStamp != null && remoteStamp.compareTo(localStamp) > 0) {
+      return false;
+    }
+
+    data.remove('order_key');
+    data.remove('order_key_updated_at');
+    return true;
+  }
+
   Future<bool> applyUpsert(
     String table,
     String recordName,
@@ -374,6 +422,23 @@ class SyncLocalStore {
     await _db.execute('PRAGMA foreign_keys = OFF');
     try {
       await _db.transaction((txn) async {
+        // FIELD-level last-write-wins for `goals.order_key`.
+        //
+        // Everything else here is whole-row LWW, which is right for fields the
+        // row owns. A habit's POSITION is different: it is edited by a distinct
+        // gesture, on its own schedule, and the rest of the row is not. Whole-row
+        // LWW therefore lets an unrelated edit carry a stale position — rename a
+        // habit on the Mac and its `order_key` (from before you reordered on the
+        // phone) rides along inside that newer row and drags the habit back to
+        // where the Mac still thinks it belongs. The user moved it; nobody moved
+        // it back.
+        //
+        // So this one column is merged on ITS OWN timestamp. The incoming
+        // position is taken only when it is genuinely newer than the position
+        // this device already holds. It must not be possible to move a habit by
+        // renaming it — on this device or any other.
+        final mergedOrderKey =
+            await _preserveNewerOrderKey(txn, table, id, data);
         final rival = await _naturalKeyRival(txn, table, row, id);
         if (rival != null) {
           if (!_remoteWinsNaturalKey(remoteUpdatedAtMs, id, rival)) {
@@ -390,9 +455,31 @@ class SyncLocalStore {
         if (changed == 0) {
           await txn.insert(table, data);
         }
+        if (mergedOrderKey) {
+          // The row now holds the peer's fields AND this device's position — a
+          // state NO peer has. Whole-row LWW made the peer's record the winner,
+          // so the peer will never look at our order_key again on its own
+          // (sync_engine skips a record that is not strictly newer), and
+          // `dirty: 0` below would end the conversation with the two devices
+          // permanently showing different orders.
+          //
+          // Re-stamp and re-dirty so the merge propagates and actually WINS:
+          // the peer's clock is whatever it just sent, and `at` is later.
+          await txn.update(
+            table,
+            {'updated_at': at},
+            where: 'id = ?',
+            whereArgs: [id],
+          );
+        }
         await txn.update(
           PrivateDbSchema.syncStateTable,
-          {'dirty': 0, 'deleted': 0, 'last_synced_at': at, 'last_error': null},
+          {
+            'dirty': mergedOrderKey ? 1 : 0,
+            'deleted': 0,
+            'last_synced_at': at,
+            'last_error': null,
+          },
           where: 'record_name = ?',
           whereArgs: [recordName],
         );

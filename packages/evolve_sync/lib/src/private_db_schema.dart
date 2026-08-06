@@ -1,5 +1,6 @@
 import 'package:sqflite_common/sqlite_api.dart';
 
+import 'order_key.dart';
 import 'private_db_open_failure.dart';
 
 /// Schema + migrations for the Private-Mode local database — the single source
@@ -79,7 +80,7 @@ class PrivateDbSchema {
   ///   target's amount (or changing a habit's tracking class) applies forward
   ///   instead of retroactively re-deriving past `done`/`missed` verdicts.
   ///   Additive and unconstrained for the same round-trip reason as `verify_*`.
-  static const int version = 11;
+  static const int version = 12;
 
   /// The user-data tables whose rows sync to iCloud. Each gets dirty/tombstone
   /// triggers that maintain [syncStateTable]. (Order matters for nothing here,
@@ -245,6 +246,9 @@ class PrivateDbSchema {
     if (oldVersion < 11) {
       await _upgradeToV11(db);
     }
+    if (oldVersion < 12) {
+      await _upgradeToV12(db);
+    }
   }
 
   /// Fail closed on a schema downgrade. With NO onDowngrade, sqflite's default
@@ -321,6 +325,120 @@ CREATE TABLE user_settings (
     'progress_amount REAL',
     'linked_goal_id TEXT REFERENCES goals(id) ON DELETE SET NULL',
   ];
+
+  /// v12: fractional habit ordering.
+  ///
+  /// Adds `order_key` (REAL) and `order_key_updated_at` (TEXT) to `goals` and
+  /// BACKFILLS them from the existing `display_order`, tie-broken by
+  /// `created_at` then `id` so two devices computing this independently agree
+  /// wherever their inputs already agree.
+  ///
+  /// Backfilling from `display_order` rather than from `created_at` alone is
+  /// deliberate: a single-device user's hand-picked order is preserved exactly,
+  /// and only rows whose `display_order` genuinely diverged between devices can
+  /// move. Seeding from `created_at` would converge perfectly but reset the
+  /// order of every user whose order was never broken.
+  ///
+  /// The rows are stamped with a fresh `updated_at` so the backfill PROPAGATES:
+  /// the AFTER UPDATE trigger records `sync_state.updated_at` from the row's own
+  /// value, and peers apply on strict greater-than, so an unbumped row would be
+  /// pushed and then discarded everywhere. That is what makes the settling
+  /// happen once, right after both apps update, rather than latently weeks later.
+  ///
+  /// Idempotent (a version round-trip re-enters it), like every migration here.
+  static Future<void> _upgradeToV12(DatabaseExecutor db) async {
+    final existing = <String>{
+      for (final row in await db.rawQuery('PRAGMA table_info(goals)'))
+        row['name'] as String,
+    };
+    if (existing.contains('order_key')) return;
+    await db.execute('ALTER TABLE goals ADD COLUMN order_key REAL');
+    await db.execute('ALTER TABLE goals ADD COLUMN order_key_updated_at TEXT');
+
+    // Both of the following need `user_id`, which every real database has (it
+    // is in the v1 DDL). Guard anyway, for the reason _upgradeToV10 guards a
+    // missing table: a migration that ASSUMES its predecessor's side effects is
+    // how an upgrade chain becomes unrecoverable, and an index or UPDATE naming
+    // a column that is not there THROWS — wedging every future open.
+    if (!existing.contains('user_id')) return;
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_goals_user_order_key '
+      'ON goals (user_id, order_key)',
+    );
+    await backfillOrderKeys(db);
+  }
+
+  /// Assigns `order_key` to every goal that has none, per owner, following the
+  /// order the app currently displays (`display_order ASC, created_at ASC`,
+  /// with `id` as the final tie-break so the result is fully deterministic).
+  ///
+  /// Public so both apps can re-run it after an import, which writes goal rows
+  /// straight into the table without keys.
+  /// [bumpUpdatedAt] controls whether corrected rows also get a fresh
+  /// `updated_at`. The MIGRATION needs it (the AFTER UPDATE trigger stamps
+  /// sync_state from the row's own value, and peers apply on strict
+  /// greater-than, so an unbumped row is pushed and then discarded). The IMPORT
+  /// must NOT have it: `applyPrivateImportMerge` decides add/update/unchanged by
+  /// comparing `updated_at`, so rewriting it here makes every later import lose
+  /// its own last-write-wins comparison against the rows this just touched.
+  static Future<void> backfillOrderKeys(
+    DatabaseExecutor db, {
+    bool bumpUpdatedAt = true,
+  }) async {
+    // Callable from the import path, which runs against whatever shape the
+    // database happens to be — including a fixture or an older schema with no
+    // `order_key`. Querying a missing column THROWS and would roll the whole
+    // import back, so check first rather than assume the migration has run.
+    final columns = <String>{
+      for (final row in await db.rawQuery('PRAGMA table_info(goals)'))
+        row['name'] as String,
+    };
+    if (!columns.contains('order_key') || !columns.contains('user_id')) return;
+
+    final owners = await db.rawQuery(
+      'SELECT DISTINCT user_id FROM goals WHERE order_key IS NULL',
+    );
+    for (final ownerRow in owners) {
+      final owner = ownerRow['user_id'];
+      final rows = await db.rawQuery(
+        'SELECT id FROM goals WHERE user_id = ? '
+        'ORDER BY display_order IS NULL, display_order ASC, created_at ASC, id ASC',
+        [owner],
+      );
+      final stamp = DateTime.now().toUtc().toIso8601String();
+      for (var i = 0; i < rows.length; i++) {
+        await db.update(
+          'goals',
+          {
+            'order_key': kOrderKeyStep * (i + 1),
+            // DELIBERATELY LEFT NULL. `order_key_updated_at` is the FIELD-level
+            // LWW clock (SyncLocalStore._preserveNewerOrderKey), not a
+            // propagation stamp — writing `now` here would be this migration
+            // CLAIMING to have positioned every habit at migration time.
+            //
+            // iOS and macOS ship independently, so the second device routinely
+            // migrates days after the first. Every drag made on device A in that
+            // window carries an older stamp than B's migration, so B's backfill
+            // would win the field merge on every row and the user's order would
+            // snap back to B's stale `display_order` — then propagate to A.
+            //
+            // A fixed constant does not work either: the merge needs STRICTLY
+            // greater, so two devices with equal stamps would each keep their own
+            // keys and never converge. NULL is the honest value and resolves
+            // both: a null LOCAL stamp means "never positioned here", so a peer's
+            // key is adopted (devices converge); a null REMOTE stamp cannot prove
+            // it is newer, so a real drag always defends its position against a
+            // backfill.
+            'order_key_updated_at': null,
+            // See [bumpUpdatedAt].
+            if (bumpUpdatedAt) 'updated_at': stamp,
+          },
+          where: 'id = ?',
+          whereArgs: [rows[i]['id']],
+        );
+      }
+    }
+  }
 
   static Future<void> _upgradeToV11(DatabaseExecutor db) async {
     // Forward-only quantitative-target edits: one nullable `target_effective_from`
@@ -780,6 +898,19 @@ CREATE TABLE goals (
   start_date TEXT NOT NULL,
   end_date TEXT,
   display_order INTEGER,
+  -- Fractional habit order (v12). A habit's position is a property of ITS OWN
+  -- ROW — a value strictly between its neighbours — which is what makes the
+  -- sync engine's per-row last-write-wins merge correct. `display_order` was a
+  -- dense 0..n-1 sequence, i.e. a property of the whole COLLECTION, so one
+  -- pulled row overwrote one habit's slot in isolation and left duplicates and
+  -- holes for `created_at` to tie-break arbitrarily. Kept alongside
+  -- display_order, which older builds still read.
+  order_key REAL,
+  -- When order_key was last set, for FIELD-level last-write-wins on that one
+  -- column. Whole-row LWW would let an unrelated edit (a rename on another
+  -- device, carrying its own older order_key) drag a habit back to a position
+  -- the user already moved it out of. See SyncLocalStore.applyUpsert.
+  order_key_updated_at TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   reminder_time TEXT,
@@ -879,6 +1010,11 @@ CREATE TABLE macro_goal_categories (
 
     await db.execute(
       'CREATE INDEX idx_goals_user_order ON goals (user_id, display_order)',
+    );
+    // v12 reads order_key first; the legacy index stays for older builds, which
+    // still sort by display_order.
+    await db.execute(
+      'CREATE INDEX idx_goals_user_order_key ON goals (user_id, order_key)',
     );
     await db.execute(
       'CREATE INDEX idx_goal_logs_user_date ON goal_logs (user_id, date DESC)',

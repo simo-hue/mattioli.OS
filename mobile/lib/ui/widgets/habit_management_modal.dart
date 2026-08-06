@@ -13,6 +13,7 @@ import '../../core/haptics.dart';
 import '../../core/targets_config.dart';
 import '../../core/verification_config.dart';
 import '../../core/verification_providers.dart';
+import '../../core/verification_wiring.dart';
 import 'compound_conditions_field.dart';
 import 'target_field.dart';
 import 'target_ring.dart';
@@ -649,27 +650,35 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
     });
   }
 
+  /// Every condition the habit is being saved with, primary first — the input
+  /// to both HealthKit authorization helpers. See [healthKitTypeIdsFor].
+  List<VerificationRule> get _allConditions =>
+      [?_verificationRule, ..._additionalConditions];
+
   Future<void> _grantHealthAccess() async {
-    final rule = _verificationRule;
-    if (rule == null || !rule.isHealthKit) return;
-    final typeId = rule.template?.healthKitTypeIdentifier ?? rule.metricKey;
+    final typeIds = healthKitTypeIdsFor(_allConditions);
+    if (typeIds.isEmpty) return;
     ref.hapticMedium();
-    await ref.read(healthKitBridgeProvider).requestAuthorization({typeId});
+    await ref.read(healthKitBridgeProvider).requestAuthorization(typeIds);
     // iOS can't report read-grant, so treat "prompt shown" as done: remember it
-    // so the button disappears for this metric from now on.
-    await ref
-        .read(healthAuthRequestedTypesProvider.notifier)
-        .markRequested(typeId);
+    // so the button disappears for these metrics from now on. Marked only after
+    // the request returns, and only for ids that were actually in the set handed
+    // to it — marking a type we never asked about would latch the affordance
+    // shut over a metric that has never been prompted, which is the failure this
+    // whole change exists to undo.
+    final notifier = ref.read(healthAuthRequestedTypesProvider.notifier);
+    for (final id in typeIds) {
+      await notifier.markRequested(id);
+    }
   }
 
-  /// Whether to show the proactive "Grant Health access" button: only for a
-  /// HealthKit rule whose metric hasn't been requested yet.
-  bool get _showGrantHealthAccess {
-    final rule = _verificationRule;
-    if (rule == null || !rule.isHealthKit) return false;
-    final typeId = rule.template?.healthKitTypeIdentifier ?? rule.metricKey;
-    return !ref.watch(healthAuthRequestedTypesProvider).contains(typeId);
-  }
+  /// Whether to show the proactive "Grant Health access" button: whenever ANY
+  /// HealthKit condition's metric hasn't been prompted for yet. The rule lives
+  /// in [needsHealthAuthorization]; only the provider read is local.
+  bool get _showGrantHealthAccess => needsHealthAuthorization(
+        _allConditions,
+        ref.watch(healthAuthRequestedTypesProvider),
+      );
 
   void _showCupertinoTimePicker() {
     final settings = ref.read(settingsProvider);

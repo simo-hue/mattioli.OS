@@ -97,7 +97,7 @@ void main() {
       from: today.subtract(const Duration(days: 2)),
       to: today.add(const Duration(days: 1)),
     );
-    return res[habitId]?.contains(today) ?? false;
+    return res[habitId]?.containsKey(today) ?? false;
   }
 
   test('Done from a notification records a manual freeze for today', () async {

@@ -387,4 +387,132 @@ void main() {
       expect(celebrationNotices(writes, {'g': 'Steps'}, '2026-07-13'), isEmpty);
     });
   });
+
+  // The compound-habit bug: HealthKit read authorization was requested for the
+  // PRIMARY rule only, so a 2nd/3rd condition's metric stayed undetermined
+  // forever. An undetermined read is indistinguishable from an empty one (both
+  // nil), so that condition scored couldNotVerify on every past day, which folds
+  // the whole day to couldNotVerify under AND — and couldNotVerify writes no
+  // goal_logs row. The habit never changed status while iOS Settings showed the
+  // primary metric enabled.
+  group('HealthKit authorization covers every condition', () {
+    final exercise = VerificationCatalog.exerciseMinutes.ruleWith(30);
+    final sleep = VerificationCatalog.sleepHours.ruleWith(8);
+
+    test('collects the type id of EVERY HealthKit condition, not just the '
+        'first', () {
+      expect(
+        healthKitTypeIdsFor([steps, exercise, sleep]),
+        {'stepCount', 'appleExerciseTime', 'sleepAnalysis'},
+      );
+    });
+
+    test('excludes Screen Time conditions — they carry no HealthKit type', () {
+      expect(healthKitTypeIdsFor([screen]), isEmpty);
+      expect(healthKitTypeIdsFor([steps, screen]), {'stepCount'});
+    });
+
+    test('an empty condition list needs nothing', () {
+      expect(healthKitTypeIdsFor(const []), isEmpty);
+      expect(needsHealthAuthorization(const [], const {}), isFalse);
+    });
+
+    test('THE REGRESSION: a compound habit whose primary was already prompted '
+        'still needs authorization for its second condition', () {
+      // Exactly the shipped failure: `stepCount` requested by an earlier habit,
+      // so the primary-only predicate returned false, the button hid itself and
+      // the pre-save prompt no-opped — leaving `appleExerciseTime` undetermined
+      // with no affordance anywhere that would ever ask for it.
+      expect(
+        needsHealthAuthorization([steps, exercise], {'stepCount'}),
+        isTrue,
+      );
+    });
+
+    test('a new PRIMARY metric is prompted for even when another type was '
+        'requested long ago', () {
+      expect(needsHealthAuthorization([exercise], {'stepCount'}), isTrue);
+    });
+
+    test('stays quiet once every condition has been asked about — "prompt '
+        'shown" is the only terminal state iOS gives us', () {
+      expect(
+        needsHealthAuthorization(
+          [steps, exercise],
+          {'stepCount', 'appleExerciseTime'},
+        ),
+        isFalse,
+      );
+    });
+
+    test('a Screen-Time-only rule never asks for Health access', () {
+      expect(needsHealthAuthorization([screen], const {}), isFalse);
+    });
+  });
+
+  // The queued-verdict overlay. It is what makes the stale-freeze rule safe: a
+  // reminder Done writes its D9 freeze first and queues the row when there is
+  // no session, so between the tap and a successful replay the day has a freeze
+  // and NO verdict — the exact shape reconcile now reads as "the write never
+  // landed". Without the overlay the pass would clear the user's freeze and
+  // overwrite their Done with a sensor verdict.
+  group('mergeVerdictMaps', () {
+    test('a queued verdict counts as a verdict', () {
+      expect(
+        mergeVerdictMaps(const {}, const {
+          '2026-07-22': {'g1': 'done'},
+        }),
+        {
+          '2026-07-22': {'g1': 'done'},
+        },
+      );
+    });
+
+    test('the STORED row wins — a replayed entry is in both, and the stored one '
+        'is authoritative', () {
+      expect(
+        mergeVerdictMaps(const {
+          '2026-07-22': {'g1': 'missed'},
+        }, const {
+          '2026-07-22': {'g1': 'done'},
+        }),
+        {
+          '2026-07-22': {'g1': 'missed'},
+        },
+      );
+    });
+
+    test('merges per goal within a day rather than replacing the day', () {
+      expect(
+        mergeVerdictMaps(const {
+          '2026-07-22': {'g1': 'done'},
+        }, const {
+          '2026-07-22': {'g2': 'missed'},
+        }),
+        {
+          '2026-07-22': {'g1': 'done', 'g2': 'missed'},
+        },
+      );
+    });
+
+    test('an empty queue returns the stored map untouched', () {
+      const stored = {
+        '2026-07-22': {'g1': 'done'},
+      };
+      expect(identical(mergeVerdictMaps(stored, const {}), stored), isTrue);
+    });
+
+    test('does not mutate the caller\'s stored map', () {
+      final stored = {
+        '2026-07-22': {'g1': 'done'},
+      };
+      mergeVerdictMaps(stored, const {
+        '2026-07-22': {'g2': 'missed'},
+        '2026-07-23': {'g1': 'done'},
+      });
+      expect(stored, {
+        '2026-07-22': {'g1': 'done'},
+      });
+    });
+  });
 }

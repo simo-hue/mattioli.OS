@@ -60,12 +60,73 @@ void main() {
     expect(report.couldNotVerify, greaterThanOrEqualTo(1));
   });
 
-  test('a manually-frozen day is never auto-written (D9)', () async {
+  test('a manually-frozen day WITH a verdict is never auto-written (D9)',
+      () async {
     await store.markManual('g', daysAgo(1));
     health.setQuantity('stepCount', daysAgo(1), 5000); // would be a fail
+    final logged = {
+      'g': {daysAgo(1): VerificationOutcome.pass}, // the user said done
+    };
+    await controller.reconcile(
+        goals: [steps()], loggedOutcomes: logged, today: today);
+
+    expect(wroteOn(daysAgo(1)), isFalse);
+    expect(
+        await store.manualDays(goalIds: ['g'], from: daysAgo(3), to: today),
+        {
+          'g': {daysAgo(1): null}
+        },
+        reason: 'a freeze that IS protecting a verdict must survive the pass');
+  });
+
+  // A freeze whose `goal_logs` row is not visible must never be JUDGED. It is
+  // indistinguishable from a merely-stale map: a reminder Done upserts straight
+  // to the server and queues nothing, so "freeze present, row invisible" is a
+  // perfectly legitimate state. The freeze carries the status the user chose, so
+  // reconcile restores it instead of guessing.
+  test('a freeze whose row is not visible is RESTORED, not scored', () async {
+    await store.markManual('g', daysAgo(1), status: 'done');
+    health.setQuantity('stepCount', daysAgo(1), 5000); // would be a fail
+
     await controller.reconcile(
         goals: [steps()], loggedOutcomes: const {}, today: today);
+
+    expect(wroteOn(daysAgo(1), outcome: VerificationOutcome.pass), isTrue,
+        reason: "the user said done; the sensor's answer must not replace it");
+    expect(wroteOn(daysAgo(1), outcome: VerificationOutcome.fail), isFalse);
+  });
+
+  test('the freeze SURVIVES the restore, so the day stays the user\'s', () async {
+    await store.markManual('g', daysAgo(1), status: 'missed');
+    health.setQuantity('stepCount', daysAgo(1), 12000); // would be a pass
+
+    await controller.reconcile(
+        goals: [steps()], loggedOutcomes: const {}, today: today);
+
+    expect(
+      await store.manualDays(goalIds: ['g'], from: daysAgo(3), to: today),
+      {
+        'g': {daysAgo(1): 'missed'}
+      },
+    );
+    expect(wroteOn(daysAgo(1), outcome: VerificationOutcome.fail), isTrue);
+  });
+
+  test('a freeze with NO recorded status is left alone — nothing to restore, '
+      'and guessing is what this rule refuses to do', () async {
+    await store.markManual('g', daysAgo(1)); // legacy freeze, pre-status
+    health.setQuantity('stepCount', daysAgo(1), 5000);
+
+    await controller.reconcile(
+        goals: [steps()], loggedOutcomes: const {}, today: today);
+
     expect(wroteOn(daysAgo(1)), isFalse);
+    expect(
+      await store.manualDays(goalIds: ['g'], from: daysAgo(3), to: today),
+      {
+        'g': {daysAgo(1): null}
+      },
+    );
   });
 
   test('an unchanged logged outcome is not rewritten (idempotent)', () async {

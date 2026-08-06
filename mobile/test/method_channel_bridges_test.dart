@@ -51,6 +51,123 @@ void main() {
       expect(args['endMs'], DateTime(2026, 7, 14).millisecondsSinceEpoch);
     });
 
+    // Sleep is attributed to the day you WAKE. A midnight-to-midnight window
+    // with `.strictStartDate` files a sample under the day it STARTED, so
+    // anyone asleep before midnight had last night filed under yesterday and
+    // today read empty until they slept past midnight — a "sleep ≥ 8h" habit
+    // never resolved on the day it was met, and an AND compound containing it
+    // could not complete at all.
+    group('sleep is read over a NIGHT window, not a calendar day', () {
+      test('dailyQuantity sends the sleep-day window for sleepAnalysis',
+          () async {
+        mock(channel, (_) => 7.5);
+        await bridge.dailyQuantity(
+          typeIdentifier: 'sleepAnalysis',
+          aggregation: VerificationAggregation.sum,
+          day: DateTime(2026, 7, 13),
+        );
+        final args = lastCall!.arguments as Map;
+        expect(args['startMs'],
+            DateTime(2026, 7, 12, 18).millisecondsSinceEpoch);
+        expect(args['endMs'], DateTime(2026, 7, 13, 18).millisecondsSinceEpoch);
+      });
+
+      // The properties that actually matter, stated as properties rather than
+      // as the arithmetic restated back. The native predicate is
+      // `.strictStartDate`, so a sample belongs to the window its START falls
+      // in — these pin which day that is for the cases that broke.
+      DateTime sleepDayFor(DateTime onset) {
+        // The day whose window contains this sleep onset.
+        for (var offset = -1; offset <= 2; offset++) {
+          final day = DateTime(onset.year, onset.month, onset.day + offset);
+          final (start, end) =
+              MethodChannelHealthKitBridge.windowFor('sleepAnalysis', day);
+          if (!onset.isBefore(start) && onset.isBefore(end)) return day;
+        }
+        fail('no sleep window contains $onset');
+      }
+
+      test('a pre-midnight onset belongs to the day you WAKE — the whole bug',
+          () {
+        // Asleep 23:00 on the 12th, awake on the 13th.
+        expect(sleepDayFor(DateTime(2026, 7, 12, 23)), DateTime(2026, 7, 13));
+      });
+
+      test('an after-midnight onset belongs to that same day', () {
+        expect(sleepDayFor(DateTime(2026, 7, 13, 1)), DateTime(2026, 7, 13));
+      });
+
+      test('a late-morning sleep is NOT split — it belongs to the day it '
+          'started, in full', () {
+        // 05:00 → 14:00. A window closing at noon would report 7h of a 9h
+        // sleep and score a false `missed` against "sleep >= 8h".
+        expect(sleepDayFor(DateTime(2026, 7, 13, 5)), DateTime(2026, 7, 13));
+        final (_, end) = MethodChannelHealthKitBridge.windowFor(
+            'sleepAnalysis', DateTime(2026, 7, 13));
+        expect(DateTime(2026, 7, 13, 14).isBefore(end), isTrue,
+            reason: 'the whole sleep must sit inside one window, or the native '
+                'query would report a truncated union as a measurement');
+      });
+
+      test('tonight\'s onset is not swallowed into today', () {
+        expect(sleepDayFor(DateTime(2026, 7, 13, 22)), DateTime(2026, 7, 14));
+      });
+
+      test('the windows tile the timeline exactly — no gap, no overlap, so no '
+          'sleep is counted twice or lost between days', () {
+        for (var d = 10; d <= 16; d++) {
+          final (_, end) = MethodChannelHealthKitBridge.windowFor(
+              'sleepAnalysis', DateTime(2026, 7, d));
+          final (nextStart, _) = MethodChannelHealthKitBridge.windowFor(
+              'sleepAnalysis', DateTime(2026, 7, d + 1));
+          expect(end, nextStart, reason: 'day $d');
+        }
+      });
+
+      test('the sleep window opens and closes at the same WALL-CLOCK hour, '
+          'including across a DST transition', () {
+        // Deliberately not `end.difference(start) == 24h`: under Europe/Rome the
+        // spring-forward day is 23 real hours long, and asserting a fixed
+        // Duration would both fail there and pass for a `Duration`-built
+        // implementation — the very thing invariant 6 forbids. The property that
+        // actually matters is that both edges sit at 18:00 LOCAL, which is what
+        // keeps a 22:00 onset on the correct side of the boundary on every day
+        // of the year.
+        for (final day in [
+          DateTime(2026, 3, 29), // Europe/Rome springs forward
+          DateTime(2026, 10, 25), // and falls back
+          DateTime(2026, 7, 13),
+          DateTime(2026, 1, 1), // year boundary
+          DateTime(2026, 3, 1), // month boundary
+        ]) {
+          final (start, end) =
+              MethodChannelHealthKitBridge.windowFor('sleepAnalysis', day);
+          expect(start.hour, 18, reason: '$day open');
+          expect(end.hour, 18, reason: '$day close');
+          expect(start, DateTime(day.year, day.month, day.day - 1, 18),
+              reason: '$day opens the previous calendar day');
+        }
+      });
+
+      test('every other metric keeps its calendar day', () {
+        for (final id in const [
+          'stepCount',
+          'appleExerciseTime',
+          'activeEnergyBurned',
+          'distanceWalkingRunning',
+          'appleStandHour',
+          'mindfulSession',
+          'workout',
+        ]) {
+          final (start, end) =
+              MethodChannelHealthKitBridge.windowFor(id, DateTime(2026, 7, 13));
+          expect(start, DateTime(2026, 7, 13), reason: id);
+          expect(end, DateTime(2026, 7, 14), reason: id);
+        }
+      });
+
+    });
+
     test('dailyQuantity coerces an int NSNumber to double', () async {
       mock(channel, (_) => 12); // e.g. a whole stand-hours count
       final v = await bridge.dailyQuantity(

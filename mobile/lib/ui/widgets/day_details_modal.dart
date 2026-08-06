@@ -1,5 +1,6 @@
 import 'package:evolve_targets/evolve_targets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show CustomSemanticsAction;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -20,6 +21,23 @@ import '../kit/evolve_toast.dart';
 import '../kit/evolve_button.dart';
 import '../kit/evolve_sheet.dart';
 
+/// Whether [date] is still resolvable by hand — today or yesterday.
+///
+/// Evaluated against the clock at CALL time, never at build time: a sheet left
+/// open across midnight would otherwise keep offering an edit for a day that has
+/// since aged out. Shared by the card's tap and the freeze-release control, so
+/// the two cannot disagree about which days a user may still change.
+///
+/// [shiftDays], not a fixed 24h step: off a 25-hour fall-back day `subtract`
+/// lands at 01:00 of yesterday, and yesterday's own midnight is `isBefore` that
+/// — so the day after the autumn transition, yesterday silently became
+/// uneditable.
+bool _isWithinEditWindow(DateTime date) {
+  final now = DateTime.now();
+  final yesterday = shiftDays(DateTime(now.year, now.month, now.day), -1);
+  return !DateTime(date.year, date.month, date.day).isBefore(yesterday);
+}
+
 class DayDetailsModal extends ConsumerWidget {
   final DateTime date;
 
@@ -29,8 +47,9 @@ class DayDetailsModal extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final habits = ref.watch(goalsProvider);
     final logs = ref.watch(habitLogsProvider);
-    final progress =
-        TargetsConfig.enabled ? ref.watch(habitProgressProvider) : const {};
+    final progress = TargetsConfig.enabled
+        ? ref.watch(habitProgressProvider)
+        : const {};
     final dateKey =
         '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
     final dayRecord = logs[dateKey] ?? {};
@@ -38,6 +57,10 @@ class DayDetailsModal extends ConsumerWidget {
     // Days an auto-verified habit couldn't be verified (drives the "?" state).
     final couldNotVerifyByGoal =
         ref.watch(couldNotVerifyDaysProvider).asData?.value ?? const {};
+    // Days the user's own check-in froze against auto verdicts (D9) — drives
+    // the "set by you" marker and its release.
+    final manuallyResolvedByGoal =
+        ref.watch(manuallyResolvedDaysProvider).asData?.value ?? const {};
 
     // Habits scheduled on this date (active range AND this weekday). Off-day
     // habits are hidden here, not shown-and-uncompletable.
@@ -86,7 +109,10 @@ class DayDetailsModal extends ConsumerWidget {
               ),
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: Icon(LucideIcons.x, color: context.appColors.mutedForeground),
+                icon: Icon(
+                  LucideIcons.x,
+                  color: context.appColors.mutedForeground,
+                ),
               ),
             ],
           ),
@@ -149,9 +175,11 @@ class DayDetailsModal extends ConsumerWidget {
                       final status = dayRecord[habit.id];
                       // An unresolved auto-verification for this habit-day: no
                       // terminal status yet + a couldn't-verify marker.
-                      final couldNotVerify = status == null &&
-                          (couldNotVerifyByGoal[habit.id]
-                                  ?.contains(dateMidnight) ??
+                      final couldNotVerify =
+                          status == null &&
+                          (couldNotVerifyByGoal[habit.id]?.contains(
+                                dateMidnight,
+                              ) ??
                               false);
 
                       // A MANUAL quantitative target: the card shows a progress
@@ -160,7 +188,8 @@ class DayDetailsModal extends ConsumerWidget {
                       // verification rule is measured, its value lives in
                       // goal_logs.value not goal_progress, so its ring would read
                       // empty; a verified habit keeps its checkbox + badge here.
-                      final target = TargetsConfig.enabled &&
+                      final target =
+                          TargetsConfig.enabled &&
                               (habit.target?.isUserEnterable ?? false)
                           ? habit.target
                           : null;
@@ -172,7 +201,10 @@ class DayDetailsModal extends ConsumerWidget {
                               target: target,
                               progress: progressAmount,
                               periodIsOver: periodIsOver(
-                                  target.period, date, DateTime.now()),
+                                target.period,
+                                date,
+                                DateTime.now(),
+                              ),
                             );
 
                       // Signed streak via the shared, deterministic helper
@@ -185,39 +217,67 @@ class DayDetailsModal extends ConsumerWidget {
                         frequencyDays: habit.frequencyDays,
                       );
 
+                      // The user's check-in owns this day, so reconcile will
+                      // skip it until they hand it back.
+                      final manuallyResolved =
+                          habit.isVerified &&
+                          (manuallyResolvedByGoal[habit.id]?.contains(
+                                dateMidnight,
+                              ) ??
+                              false);
+
                       return GoalLogCard(
                         habit: habit,
                         date: date,
                         status: status,
                         streak: streak,
                         couldNotVerify: couldNotVerify,
+                        manuallyResolved: manuallyResolved,
+                        onRelease: manuallyResolved
+                            ? () {
+                                // The SAME resolvable-window guard the card's
+                                // own tap applies, re-evaluated against the
+                                // clock right now.
+                                //
+                                // The marker's own bound cannot substitute for
+                                // it: `manuallyResolvedDaysProvider` computes
+                                // [yesterday, today] when it BUILDS and is not
+                                // recomputed at midnight, so a sheet left open
+                                // across 00:00 still offers a release for a day
+                                // that has since become uneditable — and this
+                                // release DELETES a goal_logs row, which the tap
+                                // path would have refused outright.
+                                if (!_isWithinEditWindow(date)) {
+                                  ref.hapticMedium();
+                                  showEvolveToast(
+                                    context,
+                                    message: context
+                                        .t.habits.youCanOnlyEditTodayAnd,
+                                    kind: EvolveToastKind.error,
+                                  );
+                                  return;
+                                }
+                                ref.hapticLight();
+                                ref
+                                    .read(habitLogsProvider.notifier)
+                                    .releaseToAutoVerification(date, habit.id);
+                                // Both markers are read from the same store and
+                                // both change on release: the freeze goes, and a
+                                // day that was couldn't-verify before the user
+                                // took it over can legitimately come back.
+                                ref.invalidate(manuallyResolvedDaysProvider);
+                                ref.invalidate(couldNotVerifyDaysProvider);
+                              }
+                            : null,
                         target: target,
                         verdict: verdict,
                         progressAmount: progressAmount,
                         onTap: () {
-                          final today = DateTime(
-                            DateTime.now().year,
-                            DateTime.now().month,
-                            DateTime.now().day,
-                          );
-                          // [shiftDays], not a fixed 24h step: off a 25-hour
-                          // fall-back day `subtract` lands at 01:00 of
-                          // yesterday, and yesterday's own midnight is `isBefore`
-                          // that — so the day after the autumn transition,
-                          // yesterday silently became uneditable.
-                          final yesterday = shiftDays(today, -1);
-                          final dateMidnight = DateTime(
-                            date.year,
-                            date.month,
-                            date.day,
-                          );
-
-                          if (dateMidnight.isBefore(yesterday)) {
+                          if (!_isWithinEditWindow(date)) {
                             ref.hapticMedium();
                             showEvolveToast(
                               context,
-                              message:
-                                  context.t.habits.youCanOnlyEditTodayAnd,
+                              message: context.t.habits.youCanOnlyEditTodayAnd,
                               kind: EvolveToastKind.error,
                             );
                             return;
@@ -244,8 +304,16 @@ class DayDetailsModal extends ConsumerWidget {
                           // couldn't-verify marker in the store — refresh the
                           // "?" source so a later un-resolve doesn't resurrect a
                           // stale "?" from the cached provider.
+                          //
+                          // And refresh the freeze source, because THIS TAP is
+                          // what creates the freeze. Without it the "set by you"
+                          // marker would not appear until something else
+                          // happened to invalidate the provider — so the very
+                          // feedback that makes the freeze visible would arrive
+                          // too late to connect it to the tap that caused it.
                           if (habit.isVerified) {
                             ref.invalidate(couldNotVerifyDaysProvider);
+                            ref.invalidate(manuallyResolvedDaysProvider);
                           }
                         },
                       );
@@ -274,6 +342,22 @@ class GoalLogCard extends ConsumerWidget {
   /// (D6): renders the "?" resolve affordance in place of the pending circle.
   final bool couldNotVerify;
 
+  /// True when the user's own check-in has taken this verified habit-day over,
+  /// freezing it against auto verdicts (D9).
+  ///
+  /// The freeze is deliberate — without it the next reconcile pass would
+  /// overwrite a correction the user made on purpose. What it was missing is
+  /// any sign that it happened: cycling a verified habit's status silently
+  /// switched Apple Health off for that day, so a habit could sit at `missed`
+  /// while the sensor said otherwise and the app simply looked broken.
+  final bool manuallyResolved;
+
+  /// Hands the day back to auto-verification. Non-null only when
+  /// [manuallyResolved] — it is the release half of the marker, so the user does
+  /// not have to discover that a third tap on the row means "let Apple Health
+  /// decide again".
+  final VoidCallback? onRelease;
+
   /// The habit's display target (own manual, or a projected rule). When set,
   /// the leading slot shows a progress ring + count instead of the status icon.
   final HabitTarget? target;
@@ -288,6 +372,8 @@ class GoalLogCard extends ConsumerWidget {
     required this.onTap,
     required this.date,
     this.couldNotVerify = false,
+    this.manuallyResolved = false,
+    this.onRelease,
     this.target,
     this.verdict,
     this.progressAmount = 0,
@@ -334,8 +420,8 @@ class GoalLogCard extends ConsumerWidget {
     // while pending.
     final a11yStatus = target != null
         ? '${formatTargetAmount(progressAmount)} / '
-            '${formatTargetAmount(target!.amount)}'
-            '${targetUnitShortLabel(context.t, target!.unit).isEmpty ? '' : ' ${targetUnitShortLabel(context.t, target!.unit)}'}'
+              '${formatTargetAmount(target!.amount)}'
+              '${targetUnitShortLabel(context.t, target!.unit).isEmpty ? '' : ' ${targetUnitShortLabel(context.t, target!.unit)}'}'
         : status == 'done'
         ? context.t.a11y.statusDone
         : status == 'missed'
@@ -343,6 +429,13 @@ class GoalLogCard extends ConsumerWidget {
         : couldNotVerify
         ? context.t.verification.couldNotVerifyTapToResolve
         : context.t.a11y.statusPending;
+
+    // The marker only makes sense where the freeze does: on a verified habit,
+    // and only when a release is actually wired up. A habit whose rule was
+    // removed reads as manual now — there is nothing for Apple Health to take
+    // back, so claiming otherwise would be a lie.
+    final showManualMarker =
+        habit.isVerified && manuallyResolved && onRelease != null;
 
     // Whether the verification line gives up its rule for the resolve prompt.
     // ONE predicate drives both the visible line and the spoken label — they
@@ -362,21 +455,38 @@ class GoalLogCard extends ConsumerWidget {
     final a11yVerification = !habit.isVerified || lineShowsPrompt
         ? ''
         : ruleInEffect
-            ? ', ${context.t.verification.autoVerified}, '
-                '${habitVerificationLabel(
-                context.t,
-                conditions: habit.verificationConditions,
-                join: habit.verificationJoin,
-                habitTitle: habit.title,
-              )}'
-            : ', ${context.t.verification.autoVerified}';
+        ? ', ${context.t.verification.autoVerified}, '
+              '${habitVerificationLabel(context.t, conditions: habit.verificationConditions, join: habit.verificationJoin, habitTitle: habit.title)}'
+        : ', ${context.t.verification.autoVerified}';
+
+    // The freeze, spoken. The card sets `excludeSemantics`, so the chip below is
+    // invisible to VoiceOver no matter how it is built — its meaning has to be
+    // carried here or not at all. Stated as a consequence ("will not change this
+    // day"), because "set by you" alone does not explain why the habit has
+    // stopped moving, which is the whole question the marker exists to answer.
+    final a11yManual = showManualMarker
+        ? ', ${context.t.verification.manualOverrideHint(app: context.t.health.appName)}'
+        : '';
 
     return Semantics(
       button: true,
       container: true,
       excludeSemantics: true,
-      label: '${habit.title}, $a11yStatus$a11yVerification',
+      label: '${habit.title}, $a11yStatus$a11yVerification$a11yManual',
       hint: context.t.a11y.toggleHint,
+      // The release as a rotor action rather than a reachable button, for the
+      // same reason: the excluded subtree cannot expose one. This is the only
+      // route by which a VoiceOver user can hand the day back without cycling
+      // the status twice more and hoping.
+      customSemanticsActions: showManualMarker
+          ? {
+              CustomSemanticsAction(
+                label: context.t.verification.manualReleaseToAuto(
+                  app: context.t.health.appName,
+                ),
+              ): onRelease!,
+            }
+          : const {},
       child: GestureDetector(
         onTap: () {
           ref.hapticLight();
@@ -513,6 +623,15 @@ class GoalLogCard extends ConsumerWidget {
                         ),
                       ),
                     ],
+                    // The freeze, made visible and undoable. Its own row rather
+                    // than folded into [VerificationLine]: that line states the
+                    // RULE, and this states that the rule is not being applied
+                    // to this day — putting them in one line would read as a
+                    // qualification of the rule instead of a contradiction of it.
+                    if (showManualMarker) ...[
+                      const SizedBox(height: 4),
+                      _ManualOverrideChip(onRelease: onRelease!),
+                    ],
                   ],
                 ),
               ),
@@ -520,6 +639,90 @@ class GoalLogCard extends ConsumerWidget {
                 streak: streak,
                 isMissed: status == 'missed',
                 isDone: status == 'done',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The "set by you" marker on a frozen verified habit-day, and its release.
+///
+/// Marker and control in one element on purpose. Two would have been a label
+/// that explains the state next to a button that undoes it, which is more
+/// chrome on a row that is otherwise a single tap target — and the release only
+/// ever applies when the marker is showing, so nothing is lost by fusing them.
+///
+/// Its own [GestureDetector] wins the tap over the card's, so releasing the day
+/// cannot be mistaken for cycling it. That matters: the card's tap is what
+/// created the freeze in the first place, and an undo that advanced the cycle
+/// instead would be the same trap one step along.
+class _ManualOverrideChip extends StatelessWidget {
+  const _ManualOverrideChip({required this.onRelease});
+
+  final VoidCallback onRelease;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final app = context.t.health.appName;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onRelease,
+      // 44pt is the HIG minimum, and here it is a safety margin rather than a
+      // guideline: the control DIRECTLY BELOW this strip is the card's own tap
+      // target, which cycles the status — so a near-miss on "hand this day back"
+      // would instead flip done→missed AND re-freeze it. The text is 12pt; the
+      // padding is what makes the target real.
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 44),
+        child: Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(LucideIcons.userPen, size: 12, color: colors.mutedForeground),
+              const SizedBox(width: 4),
+              // The inert label yields first. Both halves were Flexible with
+              // equal weight, so at narrow widths / large Dynamic Type the
+              // ACTIONABLE half ellipsized just as readily as the explanatory
+              // one — the user could be left reading "Set by yo… Use App…".
+              // `flex: 0` lets "Set by you" shrink to nothing before the action
+              // loses a character.
+              Flexible(
+                flex: 0,
+                child: Text(
+                  context.t.verification.manualSetByYou,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 12,
+                    color: colors.mutedForeground,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Icon(
+                LucideIcons.rotateCcw,
+                size: 12,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: 3),
+              Flexible(
+                child: Text(
+                  context.t.verification.manualReleaseToAuto(app: app),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
               ),
             ],
           ),

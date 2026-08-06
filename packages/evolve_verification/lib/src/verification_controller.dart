@@ -22,6 +22,7 @@ class ReconcileReport {
   /// layer turns these into "did you keep it?" nudges (D6/D11).
   final List<CouldNotVerifyEntry> nudges;
 
+
   const ReconcileReport({
     this.writes = const [],
     this.couldNotVerify = 0,
@@ -86,14 +87,23 @@ class VerificationController {
       final logged = <DateTime, VerificationOutcome>{
         for (final e in rawLogged.entries) _dateOnly(e.key): e.value,
       };
-      final manualSet = manual[goal.goalId] ?? const <DateTime>{};
-      if (logged.isEmpty && manualSet.isEmpty) continue;
+      final manualDays = manual[goal.goalId] ?? const <DateTime, String?>{};
+      if (logged.isEmpty && manualDays.isEmpty) continue;
 
       final byDay = <DateTime, ExistingDay>{};
-      for (final day in {...logged.keys, ...manualSet}) {
+      for (final day in {...logged.keys, ...manualDays.keys}) {
         byDay[day] = ExistingDay(
           loggedOutcome: logged[day],
-          manual: manualSet.contains(day),
+          manual: manualDays.containsKey(day),
+          // The verdict the user chose, so a freeze whose row is not visible can
+          // be restored rather than judged. An unrecognised status decodes to
+          // null and the freeze is simply left alone — the same conservative
+          // outcome as a pre-status freeze.
+          manualOutcome: switch (manualDays[day]) {
+            'done' => VerificationOutcome.pass,
+            'missed' => VerificationOutcome.fail,
+            _ => null,
+          },
         );
       }
       existing[goal.goalId] = byDay;
@@ -115,6 +125,7 @@ class VerificationController {
       // A day that used to be couldn't-verify has now resolved.
       await store.resolveCouldNotVerify(w.goalId, w.day);
     }
+
 
     for (final c in plan.couldNotVerify) {
       await store.recordCouldNotVerify(c.goalId, c.day);

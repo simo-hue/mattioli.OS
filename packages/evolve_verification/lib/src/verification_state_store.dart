@@ -11,9 +11,21 @@
 /// in `goal_logs` (done/missed) and would only duplicate state. The concrete
 /// implementation is a small on-device database in the app; tests use a fake.
 abstract interface class VerificationStateStore {
-  /// The set of manually-resolved (frozen) days for each of [goalIds] within
-  /// the inclusive range [from]..[to]. Keys omit goals with no manual days.
-  Future<Map<String, Set<DateTime>>> manualDays({
+  /// The manually-resolved (frozen) days for each of [goalIds] within the
+  /// inclusive range [from]..[to], each mapped to the STATUS the user chose
+  /// (`done`/`missed`), or **null** for a freeze recorded before the status was
+  /// stored. Keys omit goals with no manual days.
+  ///
+  /// The status is what makes a freeze self-describing, and that is what keeps
+  /// this table incapable of losing a check-in. A freeze whose `goal_logs` row
+  /// is not visible used to be indistinguishable from a write that never landed,
+  /// so reconcile deleted the freeze and let the sensor score the day — over the
+  /// user's own answer. It cannot tell those apart, because both look identical
+  /// from here: a reminder Done that upserted STRAIGHT TO THE SERVER queues
+  /// nothing, so a merely-stale in-memory map presents exactly as a failed
+  /// write. Carrying the status means reconcile never has to guess: it restores
+  /// what the user chose.
+  Future<Map<String, Map<DateTime, String?>>> manualDays({
     required Iterable<String> goalIds,
     required DateTime from,
     required DateTime to,
@@ -24,7 +36,14 @@ abstract interface class VerificationStateStore {
 
   /// Freeze [day] as manually resolved (called from the check-in path). Clears
   /// any couldn't-verify marker for the same day.
-  Future<void> markManual(String goalId, DateTime day);
+  ///
+  /// [status] is the verdict the user chose — `done` or `missed`. Pass it
+  /// whenever it is known: it is what lets reconcile RESTORE the day if the
+  /// `goal_logs` write did not land, instead of having to choose between
+  /// leaving the day pending forever and overwriting the user's answer with the
+  /// sensor's. Null is accepted so a caller that genuinely does not know cannot
+  /// be forced to invent one; such a freeze is simply never healed.
+  Future<void> markManual(String goalId, DateTime day, {String? status});
 
   /// Undo a manual freeze (e.g. the user cleared their check-in).
   Future<void> clearManual(String goalId, DateTime day);

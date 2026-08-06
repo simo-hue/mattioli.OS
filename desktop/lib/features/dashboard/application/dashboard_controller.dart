@@ -38,6 +38,27 @@ class DashboardController extends Notifier<DashboardSnapshot> {
   @override
   DashboardSnapshot build() {
     final repository = ref.watch(dashboardRepositoryProvider);
+    // RESET, because `build()` running means this notifier is alive again.
+    //
+    // Riverpod runs `onDispose` on every REBUILD, not only on teardown, and it
+    // REUSES the notifier instance across both — so without this line the flag
+    // was a one-way latch on an object that goes on being used. And a rebuild is
+    // not rare: `dashboardRepositoryProvider` watches the auth user id, which
+    // flips null → id the moment a cloud session restores, i.e. on essentially
+    // every signed-in launch.
+    //
+    // Everything guarded by `_disposed` was therefore dead for the rest of the
+    // session, from before the first sweep ever ran: the reconcile tail of
+    // `refresh()`, `reconcileManualTargets` itself, and both apply loops. On
+    // macOS that is the same symptom the iOS trigger gap produced — a count
+    // habit's closed day keeping no verdict, forever — reached by a completely
+    // different route.
+    //
+    // Ordering is what makes this correct: Riverpod runs the previous build's
+    // dispose callbacks BEFORE the new `build()`, so the reset always lands
+    // after the latch it is undoing, and the fresh callback registered below
+    // still fires on a genuine teardown.
+    _disposed = false;
     ref.onDispose(() => _disposed = true);
     final snapshot = repository.load();
     // load() is only ever a synchronous best-effort cache: Supabase has nothing
@@ -404,6 +425,79 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     }
   }
 
+  /// Scores [previous]'s outstanding closed days against the target it is about
+  /// to be edited AWAY from — the desktop half of mobile's
+  /// `HabitProgressNotifier.materialiseDaysBeforeTargetChange`, and it exists
+  /// for exactly the same reason.
+  ///
+  /// `target_effective_from` is forward-only: changing a target's amount stamps
+  /// it to today and [reconcileManualTargetDays] never looks before the anchor.
+  /// Right for a day that already carries a verdict — it keeps the one it earned
+  /// under the old target — but a day that never got one becomes permanently
+  /// unreachable and sits at pending for good.
+  ///
+  /// Letting the sweep fill those days afterwards is NOT the fix: it would score
+  /// them against the NEW target, which was not in force on them, so raising a
+  /// goal from 3 to 10 would write `missed` over a day that did 3 and passed.
+  /// A fabricated verdict is worse than an absent one — `null` writes no row at
+  /// all, so a pending day is merely invisible, while a wrong one poisons
+  /// streaks and every rate that counts it. Scoring here, while the old target
+  /// is still in hand, is what keeps every day judged by the target that was
+  /// actually in force on it.
+  ///
+  /// Best-effort: guarded by the caller, because failing to materialise history
+  /// must never cost the user the edit they asked for.
+  Future<void> _materialiseDaysBeforeTargetChange(
+    DashboardHabit previous, {
+    DateTime? now,
+  }) async {
+    final target = previous.target;
+    if (target == null ||
+        !target.isUserEnterable ||
+        previous.verificationRule != null) {
+      return;
+    }
+    final today = now ?? _now();
+    // Same veto as the ordinary sweep: absence may only be read as "no
+    // progress" when the progress map actually loaded.
+    if (state.progressStale) {
+      AppLogger.info(
+        'Not materialising ${previous.id} before its target edit: '
+        'goal_progress is stale, so absence cannot be read as "no progress". '
+        'Days left unscored before the anchor will stay pending.',
+      );
+      return;
+    }
+    final changes = reconcileManualTargetDays(
+      goalId: previous.id,
+      target: target,
+      today: today,
+      start: previous.startDate ?? today,
+      effectiveFrom: previous.targetEffectiveFrom,
+      isScheduled: previous.isScheduledOn,
+      progressFor: (dateKey) => state.habitProgress[dateKey]?[previous.id],
+      statusFor: (dateKey) => state.habitLogs[dateKey]?[previous.id],
+      // NO auto-fail here, matching mobile. This pass preserves what the old
+      // target already DECIDED from a stored number; auto-fail makes the
+      // opposite claim — that an ABSENT number means the user did zero — and
+      // scoring a run of untouched days at the moment the user edits the habit
+      // would land as a wall of red they never saw coming. Untouched days are
+      // the ordinary sweep's job, and this edit does not put them out of its
+      // reach: auto-fail has its own anchor, independent of the v11 one.
+      autoFailUnmetFrom: null,
+    );
+    for (final change in changes) {
+      if (_disposed || state.progressStale) return;
+      await setHabitProgressForDay(
+        change.goalId,
+        DateTime.parse(change.dateKey),
+        change.amount,
+        now: today,
+        verdictOnly: change.verdictOnly,
+      );
+    }
+  }
+
   /// Reads the auto-fail anchor, stamping today the first time it is missing.
   /// The RULE lives in [resolveAndStampAutoFailAnchor], shared with iOS; only
   /// the preference plumbing is local (macOS has no prefs provider, so this
@@ -492,6 +586,39 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     final canonicalDays = _canonicalFrequencyDays(frequencyDays);
     final priorMatches = state.habits.where((h) => h.id == id);
     final previous = priorMatches.isEmpty ? null : priorMatches.first;
+
+    // Score whatever the OLD target still owes before the anchor moves past it.
+    // Once the stamp below sets it to today the sweep can never reach an earlier
+    // day again, and any day not yet materialised is stranded at pending for
+    // good. Only when the scoring meaning is actually changing — a rename or
+    // reschedule preserves the anchor, so nothing is about to become
+    // unreachable. Guarded: history bookkeeping must never fail the user's edit.
+    // See [_materialiseDaysBeforeTargetChange].
+    final previousTarget = previous?.target;
+    if (previousTarget != null &&
+        !(target?.hasSameScoringMeaningAs(previousTarget) ?? false)) {
+      try {
+        await _materialiseDaysBeforeTargetChange(previous!);
+      } catch (error, stack) {
+        AppLogger.error(
+          'Could not materialise $id\'s days before its target edit — earlier '
+          'unscored days will stay pending',
+          error,
+          stack,
+        );
+      }
+      // Deliberately NO `if (_disposed) return;` here, and it is worth saying
+      // why, because it looks like the obvious guard and it is a bug.
+      //
+      // `_disposed` is latched by an `ref.onDispose` registered in `build()`,
+      // and Riverpod runs onDispose on every REBUILD while reusing the notifier
+      // — so a data-mode switch or a restored session flipping the repository's
+      // auth dependency latches it permanently. It is sound on the
+      // fire-and-forget reconcile tails, which is what it was written for. On
+      // THIS path it would sit between the user's edit and its persistence and
+      // silently throw the edit away — the title, colour, reminder and schedule
+      // along with the target. History bookkeeping must never cost the save.
+    }
     final habits = [
       for (final habit in state.habits)
         if (habit.id == id)

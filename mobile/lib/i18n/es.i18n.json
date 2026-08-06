@@ -1346,7 +1346,10 @@
       "statusAuthorized": "El acceso a Tiempo de uso está activo",
       "statusNotAuthorized": "El acceso a Tiempo de uso debe activarse",
       "openSettings": "Abrir Ajustes"
-    }
+    },
+    "manualSetByYou": "Definido por ti",
+    "manualReleaseToAuto": "Usar {app}",
+    "manualOverrideHint": "Definido por ti: {app} no cambiará este día"
   },
   "health": {
     "appName": "Salud",

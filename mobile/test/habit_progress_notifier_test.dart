@@ -588,6 +588,114 @@ void main() {
       expect(c.read(habitLogsProvider)['2026-07-22']?['g1'], 'missed');
     });
 
+    // A queued reminder-Done used to switch auto-fail off for EVERY habit and
+    // EVERY day for as long as it sat there — and some entries never drain
+    // (`goal_logs.goal_id` is a foreign key, so a queued Done for a deleted
+    // habit is rejected on every replay, forever). The queue is now passed
+    // through as verdicts instead, so it protects the days it names and nothing
+    // else.
+    test('a queued verdict protects ITS OWN day from auto-fail', () async {
+      final store = _RecordingStore(seededGoals: [
+        _countGoal().copyWith(
+          startDate: DateTime(2026, 7, 22),
+          targetEffectiveFrom: DateTime(2026, 7, 22),
+        ),
+      ]);
+      final c = await container(store, autoFailAnchor: '2026-07-01');
+      c.read(goalsProvider.notifier);
+      c.read(habitLogsProvider.notifier);
+      final progress = c.read(habitProgressProvider.notifier);
+      await settle();
+
+      await progress.reconcileManualTargets(
+        now: now,
+        pendingVerdicts: const {
+          '2026-07-22': {'g1': 'done'},
+        },
+      );
+
+      expect(
+        store.logWrites.where((w) => w['date'] == '2026-07-22'),
+        isEmpty,
+        reason: 'the user tapped Done on the reminder; auto-fail must not '
+            'overwrite it with missed just because the server has not been '
+            'told yet',
+      );
+      expect(c.read(habitLogsProvider)['2026-07-22']?['g1'], isNull);
+    });
+
+    test('a queued verdict for ONE day does not spare the others — the fix is '
+        'per-day, not another kill switch', () async {
+      final store = _RecordingStore(seededGoals: [
+        _countGoal().copyWith(
+          startDate: DateTime(2026, 7, 21),
+          targetEffectiveFrom: DateTime(2026, 7, 21),
+        ),
+      ]);
+      final c = await container(store, autoFailAnchor: '2026-07-01');
+      c.read(goalsProvider.notifier);
+      c.read(habitLogsProvider.notifier);
+      final progress = c.read(habitProgressProvider.notifier);
+      await settle();
+
+      await progress.reconcileManualTargets(
+        now: now,
+        pendingVerdicts: const {
+          '2026-07-21': {'g1': 'done'},
+        },
+      );
+
+      expect(c.read(habitLogsProvider)['2026-07-21']?['g1'], isNull,
+          reason: 'the decided day stays untouched');
+      expect(c.read(habitLogsProvider)['2026-07-22']?['g1'], 'missed',
+          reason: 'THE REGRESSION: one stuck entry used to park auto-fail for '
+              'every other day too, permanently');
+    });
+
+    test('a queued verdict for ANOTHER habit does not spare this one',
+        () async {
+      final store = _RecordingStore(seededGoals: [
+        _countGoal().copyWith(
+          startDate: DateTime(2026, 7, 22),
+          targetEffectiveFrom: DateTime(2026, 7, 22),
+        ),
+      ]);
+      final c = await container(store, autoFailAnchor: '2026-07-01');
+      c.read(goalsProvider.notifier);
+      c.read(habitLogsProvider.notifier);
+      final progress = c.read(habitProgressProvider.notifier);
+      await settle();
+
+      // 'deleted-habit' is exactly the entry that can never drain.
+      await progress.reconcileManualTargets(
+        now: now,
+        pendingVerdicts: const {
+          '2026-07-22': {'deleted-habit': 'done'},
+        },
+      );
+
+      expect(c.read(habitLogsProvider)['2026-07-22']?['g1'], 'missed');
+    });
+
+    test('an UNREADABLE queue still withholds auto-fail wholesale — the one '
+        'case where we cannot say which days are decided', () async {
+      final store = _RecordingStore(seededGoals: [
+        _countGoal().copyWith(
+          startDate: DateTime(2026, 7, 22),
+          targetEffectiveFrom: DateTime(2026, 7, 22),
+        ),
+      ]);
+      final c = await container(store, autoFailAnchor: '2026-07-01');
+      c.read(goalsProvider.notifier);
+      c.read(habitLogsProvider.notifier);
+      final progress = c.read(habitProgressProvider.notifier);
+      await settle();
+
+      await progress.reconcileManualTargets(now: now, allowAutoFail: false);
+
+      expect(store.logWrites, isEmpty);
+    });
+
     test('a failed logs load still lets the LIMIT sweep run', () async {
       // The gate is deliberately narrow. Limit resolution derives from
       // goal_progress (barriered separately) and is unharmed by a thin logs

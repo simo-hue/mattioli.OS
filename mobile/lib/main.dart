@@ -32,6 +32,8 @@ import 'core/secure_storage_utils.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/data_mode.dart';
 import 'core/private_local_database.dart';
+import 'core/reconcile_triggers.dart';
+import 'models/goal.dart';
 import 'core/verification_config.dart';
 import 'core/verification_providers.dart';
 import 'core/verification_wiring.dart';
@@ -415,10 +417,41 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _syncIfPrivate('launch'),
     );
-    _periodicSync = Timer.periodic(
-      _periodicSyncInterval,
-      (_) => _syncIfPrivate('poll'),
-    );
+    _periodicSync = Timer.periodic(_periodicSyncInterval, (_) {
+      _syncIfPrivate('poll');
+      // Midnight rollover. Nothing else can cover it: an app left open across
+      // 00:00 receives no lifecycle event, so before this the previous day was
+      // never resolved — a count habit's closed day kept no verdict and a
+      // verified habit's day was never scored. Cheap: a date comparison per
+      // minute, and it schedules a pass only on the tick the date actually
+      // changes.
+      _reconcileIfDayChanged();
+    });
+
+    // The COLD-LAUNCH and habit-edit trigger for both end-of-day passes.
+    //
+    // `AppLifecycleState.resumed` — which was their only trigger — is not
+    // delivered on a cold start, exactly as the launch-sync comment above
+    // records for iCloud. So a force-quit → launch loop, the way a build is
+    // actually tested on device, never ran either pass: no verdict was ever
+    // written for a verified habit, and no closed count day was ever resolved.
+    //
+    // Listening to the goal list rather than calling from each mutation site
+    // keeps the trigger in one place, so no future write path can forget it —
+    // the same reasoning as the Screen Time registration listener below, and
+    // `weak: true` is load-bearing here for the same reason: a normal
+    // subscription would instantiate `GoalsNotifier` in `initState` and open the
+    // encrypted private database ahead of `PrivateModeGate`, which on a device
+    // left mid-recovery can turn a recoverable "locked" state into a permanently
+    // undecryptable one.
+    //
+    // NOT gated on `VerificationConfig` — the manual-target sweep is independent
+    // of the verification flag, and `_runReconciles` gates the verification half
+    // on its own.
+    ref.listenManual(goalsProvider, (_, next) {
+      _goalsAlive = true;
+      _reconcileIfGoalsChanged(next);
+    }, weak: true);
 
     // Auto-verified habits: keep DeviceActivity monitoring in step with the goal
     // list. Creating, editing and deleting a Screen Time habit all land here, as
@@ -513,6 +546,23 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
   /// database — ahead of `PrivateModeGate`, which is exactly what weak listening
   /// exists to prevent.
   bool _goalsAlive = false;
+
+  /// True while a reconcile pass is running; a trigger arriving meanwhile only
+  /// queues a re-run. Set BEFORE the async body starts, so no early return
+  /// inside it can invert the flag. See [_scheduleReconciles].
+  bool _reconcileRunning = false;
+
+  /// Set when a trigger arrives while a pass is running: the in-flight pass
+  /// re-runs once it finishes, with freshly-read state (latest wins).
+  bool _reconcileQueued = false;
+
+  /// The calendar day the last reconcile pass ran for, or null if none has run
+  /// this session. Drives the midnight rollover trigger.
+  DateTime? _lastReconciledDay;
+
+  /// The goal-list signature the last pass was triggered by, so identity churn
+  /// that leaves scoring-relevant content untouched costs nothing.
+  String? _lastGoalSignature;
 
   /// Pushes the current Screen Time goals to DeviceActivity.
   ///
@@ -630,70 +680,206 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
       unawaited(_syncAndRefresh(reason: 'resume'));
     }
 
-    // Auto-verified habits: lazy reconcile on foreground is the authoritative
-    // verdict path (D3). Gated by the feature flag (off ⇒ dead code) and
-    // fire-and-forget so it never affects the UI; it no-ops when nothing is
-    // verifiable and applies verdicts through the habit-log providers itself.
-    if (state == AppLifecycleState.resumed && VerificationConfig.enabled) {
-      unawaited(() async {
+    // Auto-verified habits (D3) and quantitative targets: the two end-of-day
+    // passes. `resumed` used to be their ONLY trigger, which meant they never
+    // ran on a cold launch — see [_scheduleReconciles].
+    if (state == AppLifecycleState.resumed) {
+      _scheduleReconciles('resume');
+    }
+  }
+
+  /// Runs the two end-of-day passes — the auto-verified verdict reconcile and
+  /// the manual-target sweep — coalesced and serialized, latest wins.
+  ///
+  /// THREE triggers now feed this, because `resumed` alone reached none of the
+  /// cases that actually matter:
+  ///
+  ///  * **`resumed`** — the original, and still the one that matters for a
+  ///    background → foreground round trip.
+  ///  * **the goal-list listener** — covers the COLD LAUNCH, which `resumed`
+  ///    does not (see [reconcile_triggers.dart] for the framework mechanism).
+  ///    A force-quit → launch loop therefore used to score nothing at all, ever:
+  ///    a verified habit's day never became done/missed and a count habit's
+  ///    closed day kept no verdict. The same listener covers the moment a habit
+  ///    is CREATED or EDITED, so a freshly made verifiable habit no longer waits
+  ///    for a background round trip to be judged.
+  ///  * **the periodic date check** — covers an app left open across midnight,
+  ///    which emits no lifecycle event at all, so yesterday was never resolved.
+  ///
+  /// Coalesced exactly like [_syncScreenTimeMonitoring]: the goal list changes
+  /// identity several times per launch and per mutation, and overlapping passes
+  /// would race each other's writes. Fire-and-forget and fully guarded — both
+  /// passes are best-effort, so a failure must never surface in the UI.
+  void _scheduleReconciles(String reason) {
+    if (!mounted) return;
+    if (_reconcileRunning) {
+      _reconcileQueued = true;
+      return;
+    }
+    _reconcileRunning = true;
+    unawaited(_runReconciles(reason));
+  }
+
+  Future<void> _runReconciles(String reason) async {
+    try {
+      do {
+        _reconcileQueued = false;
+        AppLogger.info(
+          '[Reconcile] running both passes ($reason)',
+          category: 'lifecycle',
+        );
+
+        // Drain the notification queue BEFORE either pass, and exactly once.
+        //
+        // A Done tapped on a reminder while the app had no session is written to
+        // `goal_logs` only — no number — and lands in that queue, not in the
+        // in-memory map. BOTH passes would otherwise misread those days, in
+        // mirror-image ways: the target sweep's auto-fail would see an untouched
+        // day and write 'missed' over the user's own answer, and the
+        // verification pass would see a D9 freeze with no verdict behind it,
+        // conclude the write never landed, clear the freeze and overwrite the
+        // day with a sensor verdict. Same "absence is not evidence" trap, one
+        // layer out, once per pipeline.
+        //
+        // Reload the verdict map ONLY when the replay actually wrote something.
+        // Invalidating unconditionally cost a full re-download of `goal_logs`
+        // (or a full SQLCipher read) on EVERY foreground, repainted every
+        // calendar empty for a frame — and, offline, re-seeded the map from the
+        // blob frozen at app launch, silently reverting every check-in made
+        // since. Failing here must not skip either pass, so the replay is
+        // guarded separately.
+        //
+        // `pendingVerdicts == null` means the queue could not be READ — the only
+        // state in which either pass withholds judgement wholesale, because it is
+        // the only one where we cannot say which days the user has decided.
+        Map<String, Map<String, String>>? pendingVerdicts;
         try {
-          await runVerificationReconcile(ref);
+          final replay = await NotificationService().replayPendingHabitLogs();
+          if (replay.written > 0) ref.invalidate(habitLogsProvider);
+          pendingVerdicts = replay.pending;
         } catch (e, stack) {
           AppLogger.error(
-            '[Verification] foreground reconcile failed',
+            '[Reconcile] pending-log replay failed ($reason)',
             e,
             stack,
           );
+          pendingVerdicts = null;
         }
-      }());
-    }
+        if (!mounted) return;
 
-    // Quantitative targets: end-of-day resolution on foreground. Independent of
-    // the verification flag and of data mode — a manual target is plain local
-    // data that works in both modes — and a no-op until a habit actually has a
-    // manual target. This is what resolves days that closed while the app was
-    // shut: a limit habit's quiet days into 'done', and — from the auto-fail
-    // anchor on — a count habit's untouched days into 'missed'.
-    if (state == AppLifecycleState.resumed) {
-      unawaited(() async {
-        try {
-          // Drain the notification queue BEFORE sweeping. A Done tapped on a
-          // reminder while the app had no session is written to `goal_logs`
-          // only — no number — and lands in that queue, not in the in-memory
-          // map. Sweep first and auto-fail sees the day as untouched, writes
-          // 'missed' over the user's own answer, and there is no goal_progress
-          // row for any later pass to re-derive it from. Same "absence is not
-          // evidence" trap as the rest of the sweep, one layer out.
-          //
-          // Reload the verdict map ONLY when the replay actually wrote
-          // something. Invalidating unconditionally cost a full re-download of
-          // `goal_logs` (or a full SQLCipher read) on EVERY foreground, repainted
-          // every calendar empty for a frame — and, offline, re-seeded the map
-          // from the blob frozen at app launch, silently reverting every
-          // check-in made since. Failing here must not skip the sweep, so the
-          // replay is guarded separately.
-          var queueDrained = true;
+        // Auto-verified habits: lazy reconcile is the authoritative verdict path
+        // (D3). Gated by the feature flag (off ⇒ dead code). Isolated in its own
+        // try so a HealthKit/channel failure cannot cost the target sweep below —
+        // they share a trigger, not a fate.
+        if (VerificationConfig.enabled) {
           try {
-            final replay = await NotificationService().replayPendingHabitLogs();
-            if (replay.written > 0) ref.invalidate(habitLogsProvider);
-            queueDrained = replay.drained;
+            // Passed through UNCHANGED, null included: null means "the queue
+            // could not be read", and the pass stands down on it. `?? const {}`
+            // here would tell it the queue is empty — a confident claim made out
+            // of ignorance, in the one state where it would clear a freeze
+            // protecting a check-in the user cannot get back.
+            await runVerificationReconcile(
+              ref,
+              pendingVerdicts: pendingVerdicts,
+            );
           } catch (e, stack) {
-            AppLogger.error('[Targets] pending-log replay before the sweep '
-                'failed', e, stack);
-            queueDrained = false;
+            AppLogger.error(
+              '[Verification] reconcile failed ($reason)',
+              e,
+              stack,
+            );
           }
-          // An undrained queue means habit-days the user has already DECIDED are
-          // not in the verdict map — so auto-fail would read them as untouched
-          // and overwrite a Done with 'missed', unrecoverably. The rest of the
-          // sweep still runs: it derives from numbers and is unaffected.
+        }
+        if (!mounted) return;
+
+        // Quantitative targets: end-of-day resolution. Independent of the
+        // verification flag and of data mode — a manual target is plain local
+        // data that works in both modes — and a no-op until a habit actually has
+        // a manual target. This is what resolves days that closed while the app
+        // was shut: a limit habit's quiet days into 'done', and — from the
+        // auto-fail anchor on — a count habit's untouched days into 'missed'.
+        try {
+          // A day still sitting in the queue is one the user has DECIDED but the
+          // server has not been told about, so it is absent from the verdict map
+          // — and auto-fail would read it as untouched and overwrite a Done with
+          // 'missed', unrecoverably. Passing the entries through protects
+          // exactly those days; it used to switch auto-fail off entirely, which
+          // one permanently-unwritable entry then did forever.
           await ref
               .read(habitProgressProvider.notifier)
-              .reconcileManualTargets(allowAutoFail: queueDrained);
+              .reconcileManualTargets(
+                allowAutoFail: pendingVerdicts != null,
+                pendingVerdicts: pendingVerdicts ?? const {},
+              );
         } catch (e, stack) {
-          AppLogger.error('[Targets] foreground reconcile failed', e, stack);
+          AppLogger.error('[Targets] sweep failed ($reason)', e, stack);
         }
-      }());
+
+        // Stamped AFTER the passes, not before.
+        //
+        // This is the rollover trigger's "we have looked at this day" marker,
+        // and stamping it up front marked days as looked-at that a declined pass
+        // never reached — a barrier that did not settle, or an unreadable queue,
+        // and the day then went unresolved until the next resume because the
+        // rollover would not fire again. Stamping late cannot cause the churn it
+        // was moved early to avoid: a tick arriving mid-pass only sets
+        // `_reconcileQueued`, and a date that genuinely changed mid-pass DESERVES
+        // the extra run.
+        final finishedAt = DateTime.now();
+        _lastReconciledDay =
+            DateTime(finishedAt.year, finishedAt.month, finishedAt.day);
+      } while (_reconcileQueued && mounted);
+    } finally {
+      _reconcileRunning = false;
     }
+  }
+
+  /// Fires the passes when the calendar day has rolled over since the last one.
+  /// Driven by the existing 60-second tick, so an app sitting open at midnight
+  /// resolves yesterday instead of waiting for the user to background it.
+  void _reconcileIfDayChanged() {
+    if (!mounted) return;
+    if (!shouldReconcileForDayChange(
+      lastReconciledDay: _lastReconciledDay,
+      now: DateTime.now(),
+    )) {
+      return;
+    }
+    _scheduleReconciles('rollover');
+  }
+
+  /// Fires the passes when the goal list's SCORING-RELEVANT content changes.
+  ///
+  /// Signature-compared rather than identity-compared: the list is rebuilt on
+  /// every applied iCloud sync, which the 60s poll can reach once a minute, and
+  /// an identity trigger would run a full HealthKit pass (7 days × every
+  /// condition) that often. See [goalReconcileSignature].
+  ///
+  /// Takes the listener's own `next` value rather than reading the provider:
+  /// `ref.read(goalsProvider)` would INSTANTIATE `GoalsNotifier`, whose `build()`
+  /// opens the encrypted private database, and the whole point of the `weak: true`
+  /// subscription is to never do that ahead of `PrivateModeGate`. The callback's
+  /// value is already in hand and costs nothing.
+  void _reconcileIfGoalsChanged(List<Goal> goals) {
+    if (!mounted) return;
+    // An EMPTY list is never treated as a content change.
+    //
+    // `GoalsNotifier.build()` returns `[]` synchronously and fills in
+    // asynchronously, and it re-runs on every applied iCloud sync — which the
+    // 60s poll can reach once a minute. So the signature toggles
+    // real → '' → real on each of those, firing two passes where one was
+    // warranted, the first of them against a list that is empty only because it
+    // has not loaded yet. Same "absence is not evidence" reading as everywhere
+    // else: an empty list here is a not-yet-answered question, not an answer.
+    //
+    // Nothing is lost by ignoring it — the load lands moments later and fires
+    // the listener again with the real list. A user who genuinely deletes their
+    // last habit has nothing left to reconcile.
+    if (goals.isEmpty) return;
+    final signature = goalReconcileSignature(goals);
+    if (signature == _lastGoalSignature) return;
+    _lastGoalSignature = signature;
+    _scheduleReconciles('goals');
   }
 
   /// Bring the Sentry SDK back in line with the user's current privacy choice.

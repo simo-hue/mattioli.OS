@@ -34,7 +34,7 @@ void main() {
     await store.markManual('other', day(5));
     final res =
         await store.manualDays(goalIds: ['g'], from: day(1), to: day(10));
-    expect(res['g'], {day(5)}); // day(20) out of range, 'other' excluded
+    expect(res['g'], {day(5): null}); // day(20) out of range, 'other' excluded
   });
 
   test('markManual clears any couldn\'t-verify marker for the day', () async {
@@ -79,7 +79,7 @@ void main() {
       await store
           .manualDays(goalIds: ['g', 'other'], from: day(1), to: day(31)),
       {
-        'other': {day(5)}
+        'other': {day(5): null}
       },
     );
     expect(await store.couldNotVerifyDays('g'), isEmpty);
@@ -180,5 +180,68 @@ CREATE TABLE verification_state (
     await store.recordCouldNotVerify('g', day(1));
     await store.markNudged('g', day(1));
     expect(await store.nudgedDays('g'), {day(1)});
+  });
+
+  // The status is what lets reconcile RESTORE a freeze whose `goal_logs` row is
+  // not visible, instead of judging the day by the sensor and overwriting the
+  // user's own check-in. A freeze that carries no status is left alone.
+  test('markManual round-trips the status the user chose', () async {
+    await store.markManual('g', day(10), status: 'done');
+    await store.markManual('g', day(11), status: 'missed');
+    await store.markManual('g', day(12)); // legacy shape: no status
+    final res =
+        await store.manualDays(goalIds: ['g'], from: day(1), to: day(31));
+    expect(res['g'], {day(10): 'done', day(11): 'missed', day(12): null});
+  });
+
+  test('re-freezing a day overwrites the status with the newer choice', () async {
+    await store.markManual('g', day(10), status: 'done');
+    await store.markManual('g', day(10), status: 'missed');
+    final res =
+        await store.manualDays(goalIds: ['g'], from: day(1), to: day(31));
+    expect(res['g'], {day(10): 'missed'},
+        reason: 'the most recent choice is the one to restore');
+  });
+
+  test('a v2 database migrates to v3 keeping its freezes, with a null status',
+      () async {
+    // Rebuild the table in exactly the v2 shape. `inMemoryDatabasePath` is
+    // cached by path, so this is the same handle `setUp` opened — drop first or
+    // the CREATE collides with the v3 table already there.
+    await db.execute('DROP TABLE IF EXISTS ${SqfliteVerificationStateStore.table}');
+    await db.execute('''
+CREATE TABLE ${SqfliteVerificationStateStore.table} (
+  goal_id TEXT NOT NULL,
+  date TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('manual', 'could_not_verify')),
+  recorded_at TEXT NOT NULL,
+  nudged_at TEXT,
+  PRIMARY KEY (goal_id, date, kind)
+)
+''');
+    await db.insert(SqfliteVerificationStateStore.table, {
+      'goal_id': 'g',
+      'date': '2026-07-10',
+      'kind': 'manual',
+      'recorded_at': '2026-07-10T00:00:00Z',
+    });
+
+    await SqfliteVerificationStateStore.migrateToV3(db);
+
+    final res =
+        await store.manualDays(goalIds: ['g'], from: day(1), to: day(31));
+    expect(res['g'], {DateTime(2026, 7, 10): null},
+        reason: 'the freeze must survive the migration; its status is unknown, '
+            'which is the honest value and the one that makes reconcile leave '
+            'the day alone');
+  });
+
+  test('migrateToV3 is idempotent', () async {
+    await SqfliteVerificationStateStore.migrateToV3(db);
+    await SqfliteVerificationStateStore.migrateToV3(db);
+    await store.markManual('g', day(10), status: 'done');
+    final res =
+        await store.manualDays(goalIds: ['g'], from: day(1), to: day(31));
+    expect(res['g'], {day(10): 'done'});
   });
 }

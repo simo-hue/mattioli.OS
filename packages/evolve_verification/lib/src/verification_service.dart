@@ -70,7 +70,18 @@ class ExistingDay {
   /// day against all future auto-writes (D9).
   final bool manual;
 
-  const ExistingDay({this.loggedOutcome, this.manual = false});
+  /// The verdict the user chose when they froze the day, when the freeze
+  /// recorded one. Null for a freeze from before the status was stored.
+  ///
+  /// Only meaningful with [manual]. It is what lets a freeze whose `goal_logs`
+  /// row is not visible be HEALED rather than judged.
+  final VerificationOutcome? manualOutcome;
+
+  const ExistingDay({
+    this.loggedOutcome,
+    this.manual = false,
+    this.manualOutcome,
+  });
 }
 
 /// One idempotent write the caller should apply to `goal_logs` (pass→'done',
@@ -141,6 +152,7 @@ class CouldNotVerifyEntry {
 class ReconcilePlan {
   final List<LogWrite> writes;
   final List<CouldNotVerifyEntry> couldNotVerify;
+
 
   const ReconcilePlan({
     this.writes = const [],
@@ -369,7 +381,61 @@ class VerificationService {
         final existingDay = existing[goal.goalId]?[day];
 
         // Manual entries freeze the day — reconcile never touches them (D9).
+        //
+        // But a freeze exists to protect a VERDICT, and with no terminal outcome
+        // there is no verdict to protect. That combination is not a user
+        // decision, it is a WRITE THAT DID NOT LAND, and every path that
+        // produces it commits the freeze before (or independently of) the row:
+        //
+        //  * the reminder's Done/Skip awaits `_freezeManualForToday` first — on
+        //    purpose, so the freeze survives a background isolate torn down
+        //    mid-write — and then queues the row when there is no session, or on
+        //    an error; a queue entry that is later dropped leaves the freeze
+        //    behind with nothing behind it;
+        //  * the in-app `cycleStatus` marks provenance fire-and-forget and rolls
+        //    back only its optimistic STATE when persistence fails, never the
+        //    freeze.
+        //
+        // Treating that as frozen is the worst possible reading: the day is
+        // skipped by every future pass, so it keeps no verdict at all and no
+        // later reconcile can ever re-derive one. Pending, permanently,
+        // unrecoverably — which is precisely the outcome the freeze was added to
+        // prevent, arrived at from the other side.
+        //
+        // So the day is scored normally AND the dangling marker is reported for
+        // clearing (see [ReconcilePlan.staleFreezes]). Clearing matters as much
+        // as scoring: left in place, the marker would re-freeze the day the
+        // moment an AUTO verdict landed, permanently mislabelling a sensor's
+        // answer as the user's own.
+        // Manual entries freeze the day — reconcile never scores them (D9).
+        //
+        // A freeze whose verdict is NOT visible is the interesting case, and it
+        // is never scored either. It cannot be read as "the write never landed":
+        // a reminder Done upserts straight to the server and queues nothing, so
+        // a merely-stale in-memory map is indistinguishable from a failed write.
+        // Judging that day meant overwriting the user's own check-in with the
+        // sensor's answer, permanently — the exact loss D9 exists to prevent.
+        //
+        // So the freeze is HEALED instead: it carries the status the user chose,
+        // and that status is (re)written. If the row was only invisible the
+        // write is an idempotent no-op; if it truly never landed, the user's
+        // answer is restored. Either way nothing is judged and nothing is lost,
+        // and no caller has to know which case it was.
+        //
+        // A freeze with no recorded status (written before the status was
+        // stored) is simply left alone: there is nothing to restore, and
+        // guessing is what this whole rule refuses to do.
         if (existingDay?.manual ?? false) {
+          final restore = existingDay?.loggedOutcome == null
+              ? existingDay?.manualOutcome
+              : null;
+          if (restore != null) {
+            writes.add(LogWrite(
+              goalId: goal.goalId,
+              day: day,
+              outcome: restore,
+            ));
+          }
           day = _nextDay(day);
           continue;
         }

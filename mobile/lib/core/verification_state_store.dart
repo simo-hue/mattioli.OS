@@ -38,11 +38,13 @@ class SqfliteVerificationStateStore implements VerificationStateStore {
     final path = p.join(await getDatabasesPath(), dbFileName);
     final db = await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: (db, _) => createTable(db),
       onUpgrade: (db, oldVersion, _) async {
         // v1 → v2 added the `nudged_at` column (couldn't-verify nudge de-dup).
         if (oldVersion < 2) await migrateToV2(db);
+        // v2 → v3 added `status` — the verdict a manual freeze protects.
+        if (oldVersion < 3) await migrateToV3(db);
       },
     );
     // Idempotent — also creates the table for a DB opened at an existing version.
@@ -59,6 +61,7 @@ CREATE TABLE IF NOT EXISTS $table (
   kind TEXT NOT NULL CHECK (kind IN ('$_manual', '$_cnv')),
   recorded_at TEXT NOT NULL,
   nudged_at TEXT,
+  status TEXT,
   PRIMARY KEY (goal_id, date, kind)
 )
 ''');
@@ -85,6 +88,26 @@ CREATE TABLE IF NOT EXISTS $table (
     }
   }
 
+  /// v2 → v3 migration: add the nullable `status` column — the verdict a manual
+  /// freeze protects (`done`/`missed`).
+  ///
+  /// Additive and null-filling, so existing freezes survive with `status IS
+  /// NULL`. That is the honest value for them: they were recorded before the
+  /// status was stored, so nothing is known about what the user chose, and
+  /// reconcile leaves such a day alone rather than restoring a guess. They heal
+  /// on the next check-in, which rewrites the row with a status.
+  ///
+  /// Guarded by a column probe, like [migrateToV2], so it is idempotent and safe
+  /// on a table that already has the column.
+  static Future<void> migrateToV3(DatabaseExecutor db) async {
+    final columns = await db.rawQuery('PRAGMA table_info($table)');
+    if (columns.isEmpty) return; // no table → createTable will build it fresh
+    final hasStatus = columns.any((c) => c['name'] == 'status');
+    if (!hasStatus) {
+      await db.execute('ALTER TABLE $table ADD COLUMN status TEXT');
+    }
+  }
+
   static String _key(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-'
       '${d.month.toString().padLeft(2, '0')}-'
@@ -98,7 +121,7 @@ CREATE TABLE IF NOT EXISTS $table (
   String _now() => DateTime.now().toUtc().toIso8601String();
 
   @override
-  Future<Map<String, Set<DateTime>>> manualDays({
+  Future<Map<String, Map<DateTime, String?>>> manualDays({
     required Iterable<String> goalIds,
     required DateTime from,
     required DateTime to,
@@ -108,14 +131,15 @@ CREATE TABLE IF NOT EXISTS $table (
     final placeholders = List.filled(ids.length, '?').join(', ');
     final rows = await _db.query(
       table,
-      columns: ['goal_id', 'date'],
+      columns: ['goal_id', 'date', 'status'],
       where: "kind = '$_manual' AND goal_id IN ($placeholders) "
           'AND date BETWEEN ? AND ?',
       whereArgs: [...ids, _key(from), _key(to)],
     );
-    final out = <String, Set<DateTime>>{};
+    final out = <String, Map<DateTime, String?>>{};
     for (final r in rows) {
-      (out[r['goal_id'] as String] ??= {}).add(_parse(r['date'] as String));
+      (out[r['goal_id'] as String] ??= {})[_parse(r['date'] as String)] =
+          r['status'] as String?;
     }
     return out;
   }
@@ -132,11 +156,20 @@ CREATE TABLE IF NOT EXISTS $table (
   }
 
   @override
-  Future<void> markManual(String goalId, DateTime day) async {
+  Future<void> markManual(String goalId, DateTime day, {String? status}) async {
     final key = _key(day);
     await _db.insert(
       table,
-      {'goal_id': goalId, 'date': key, 'kind': _manual, 'recorded_at': _now()},
+      {
+        'goal_id': goalId,
+        'date': key,
+        'kind': _manual,
+        'recorded_at': _now(),
+        // The verdict this freeze protects. `ConflictAlgorithm.replace` means a
+        // re-freeze overwrites it, which is what should happen — the user's most
+        // recent choice is the one to restore.
+        'status': status,
+      },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
     // Manual resolution supersedes any couldn't-verify marker for the day.

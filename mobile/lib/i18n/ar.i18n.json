@@ -1346,7 +1346,10 @@
       "statusAuthorized": "الوصول إلى وقت الشاشة مفعّل",
       "statusNotAuthorized": "يجب تفعيل الوصول إلى وقت الشاشة",
       "openSettings": "فتح الإعدادات"
-    }
+    },
+    "manualSetByYou": "تم الضبط بواسطتك",
+    "manualReleaseToAuto": "استخدام {app}",
+    "manualOverrideHint": "تم الضبط بواسطتك — لن يغيّر {app} هذا اليوم"
   },
   "health": {
     "appName": "صحتي",

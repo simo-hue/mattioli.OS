@@ -403,3 +403,141 @@ which returns `Denied` and never prompts.
   `HabitProgressNotifier` with a Supabase session, so the cache-seed / sync-fail
   combinations that `loadIsTrustworthy` exists to distinguish are covered only as
   a pure function, not end to end.
+
+## Auto-verified habits + count targets — on-device checks (2026-08-04)
+
+The two bugs you reported are fixed in code (cold-launch/rollover triggers, and
+HealthKit authorization for every compound condition). These need a device.
+
+- [ ] **Re-grant Health access for your compound habit.** The fix makes the app
+  *ask* for the 2nd/3rd condition's metric, but iOS only shows a permission sheet
+  for a type it has never asked about. Your device has already been asked about
+  the primary metric and never about the others, so open the habit in the editor
+  and tap **Grant Health access** (it will reappear now), or Settings › Apple
+  Health › Allow access. Then check **iOS Settings › Health › Data Access &
+  Devices › Evolve** and confirm EVERY metric your habit uses is on — that screen
+  is the only place the truth is visible, because HealthKit never reports a
+  denied read back to the app.
+- [ ] **Verify the fix**: with the app force-quit, relaunch it and look at
+  YESTERDAY for both habits. Before this change a force-quit → launch loop ran
+  neither pass, so nothing ever resolved. Yesterday should now settle within a
+  second or two of launch.
+- [ ] **Counter habits need one full day.** Auto-fail for an *untouched* count day
+  is anchored to the first day the rule runs on your device (deliberately, so
+  shipping it does not retroactively redden history). So the earliest untouched
+  day that can turn red is the first day that CLOSES after this build's first
+  launch. A day where you moved the counter but fell short is not gated on that —
+  it resolves to `missed` as soon as the day closes.
+
+### An AND compound with a data-less metric can never complete (design limit, NOT fixed)
+
+If your two conditions are joined by **All of these (AND)** and one of them is a
+metric your devices do not record — Exercise minutes or Stand hours without an
+Apple Watch, Workouts, Mindful minutes, Sleep — that habit will never turn green
+or red, no matter what permissions you grant. HealthKit returns nothing for "no
+data" and for "read denied" alike, and the app refuses to score silence as zero
+(scoring it as zero would mark you failed for merely denying a read). AND then
+folds an unreadable condition over the whole day.
+
+- [ ] Decide which you want:
+  - **Switch that habit to "Any of these (OR)"** — a habit passes as soon as the
+    readable condition is met. Works today, no code change.
+  - **Or ask me to build the diagnostic**: probe each condition at creation time
+    with `HealthKitBridge.hasRecentData` (already implemented, currently zero
+    callers) and warn "your devices have not recorded Exercise minutes in 30 days
+    — an All-of-these habit using it can never complete", plus name the
+    unreadable condition on the day row instead of the current bare "?".
+
+### Other defects found in the same sweep — verified real, not yet fixed
+
+Each was confirmed by an adversarial pass. None is the cause of what you
+reported; say the word and I will take them.
+
+- [x] ~~**A single tap freezes a verified day, invisibly.**~~ FIXED 2026-08-04.
+  The freeze stays (it must — it protects a deliberate correction from the next
+  reconcile), but a verified day the user took over now shows a "Set by you ·
+  Use Apple Health" chip that releases it in one tap, and VoiceOver gets the
+  same release as a rotor action. **Device QA:** check the chip does not
+  overflow in German and Arabic, and that the rotor action reads correctly.
+  *(Original report below for context.)*
+
+- [ ] **A single tap freezes a verified day, invisibly.** Tapping a habit row in
+  day-details calls `cycleStatus`, which records manual provenance — and
+  reconcile then skips that day forever. One or two exploratory taps ("let me see
+  if it changes") pin the day at done/missed and immune to HealthKit. A full
+  3-tap cycle back to no-status does release it. **If you tapped your compound
+  habit while testing, that day is frozen and will not move — test on a fresh
+  day.**
+- [x] ~~**A reminder "Done" tapped with no session freezes the day but writes no
+  verdict.**~~ FIXED 2026-08-04. The freeze still runs first (it must — that is
+  what makes it survive a background isolate torn down mid-write), but reconcile
+  now treats a freeze with NO verdict behind it as the failed write it is: the
+  day is scored normally and the dangling marker is cleared. Nothing for you to
+  do. *(Original report below for context.)*
+
+- [ ] **A reminder "Done" tapped with no session freezes the day but writes no
+  verdict.** `_freezeManualForToday` runs before the write, and the cloud branch
+  then queues the write instead of committing it. If that queue entry is ever
+  dropped, the day is frozen at *pending* permanently.
+- [x] ~~**A stuck notification-queue entry disables auto-fail forever.**~~ FIXED
+  2026-08-04. The queue is now handed to the sweep as DATA (the decided
+  (goal, day, verdict) triples) instead of as a global veto, so it protects the
+  days it names and nothing else. A queued verdict for a DELETED habit is
+  dropped on its foreign-key error rather than retried forever, and Private mode
+  no longer reaches for an uninitialised Supabase client. Nothing for you to do.
+  *(Original report below for context.)*
+
+- [ ] **A stuck notification-queue entry disables auto-fail forever.** A queued
+  "Done" for a habit you later DELETED fails its foreign key on every replay, so
+  `drained` stays false, so `allowAutoFail` stays false, so no untouched count
+  day is ever auto-failed again on that device. There is no retry cap and no
+  expiry.
+- [x] ~~**Editing a count habit's amount re-anchors `target_effective_from` to
+  today**~~ FIXED 2026-08-04, on BOTH apps. The days the old target still owed
+  are now scored at edit time, while that target is still in force, before the
+  anchor moves past them. Deliberately NOT the "fill empty pre-anchor days"
+  approach — that would score them against the NEW amount and write `missed`
+  over a day that actually met the old one. Nothing for you to do.
+  *(Original report below for context.)*
+
+- [ ] **Editing a count habit's amount re-anchors `target_effective_from` to
+  today**, and the sweep never looks before the anchor — so any earlier day that
+  had not already been materialised stays pending for good. Correct for days that
+  already carry a verdict (that is what the anchor is for), wrong for days that
+  never got one. Fix is to fill-if-empty before the anchor rather than skip.
+- [x] ~~**Sleep is attributed to the day the sample STARTED**~~ FIXED 2026-08-04,
+  entirely in Dart. The sleep window is now `[previous 18:00, today 18:00)` — a
+  full 24 hours, cycle-aligned — so a pre-midnight onset falls in the window of
+  the day you wake. The native query was NOT changed (an overlap+clipping version
+  was written and reverted: clipping reported a truncated union as a
+  measurement, so a real 05:00→14:00 sleep read 7h and scored a false `missed`).
+  **No uncompiled Swift ships from this.** Accepted limit: a sleep beginning
+  before 18:00 counts toward the previous day — in full, and once.
+  *(Original report below for context.)*
+
+- [ ] **Sleep is attributed to the day the sample STARTED** (`.strictStartDate` on
+  a calendar-day window), so a night that begins before midnight lands on the
+  previous day. An AND compound containing Sleep is affected daily.
+
+## After the 2026-08-04 quality review — what still needs YOU
+
+All five latent defects are fixed and the whole session was put through a
+15-agent adversarial review. Two data-loss bugs in my own fixes were found and
+fixed. These are what it could not settle without you:
+
+- [ ] **Nothing this session touches iOS Swift any more.** The sleep fix ended up
+  pure Dart and `AppDelegate.swift` is back to its committed state — so there is
+  no uncompiled native code to worry about. Verify with `git diff --stat
+  mobile/ios/` (expect: nothing).
+- [ ] **macOS: confirm the edit-after-rebuild fix on device.** Launch signed in,
+  switch data mode in Settings, then edit a habit's target amount and Save.
+  Before the fix the dialog closed and the edit vanished silently.
+- [ ] **The release chip at large Dynamic Type, in German and Arabic.** It is a
+  44pt target now with the actionable label given the width, but I cannot render
+  it here. Check it does not overflow and that the "Use Salute/Salud/صحتي" half
+  stays readable.
+- [ ] **VoiceOver: the release is a rotor action**, not a focusable button (the
+  card excludes descendant semantics). Confirm it is reachable and reads well.
+- [ ] **Optional, low priority:** CI runs in UTC, so the DST-sensitive date tests
+  never exercise a real transition. Pinning `TZ: Europe/Rome` on one CI job would
+  make them bite. Say the word and I will add it.

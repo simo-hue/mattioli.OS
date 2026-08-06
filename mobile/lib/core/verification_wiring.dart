@@ -102,6 +102,66 @@ List<VerifiableGoal> verifiableGoalsFrom(
 const String screenTimeAppsKey = 'screen_time_apps';
 const String screenTimeTotalKey = 'screen_time_total';
 
+/// The Apple sample identifiers [conditions] need READ access to — every
+/// HealthKit condition, not just the first. Screen Time conditions carry no
+/// HealthKit type and are excluded.
+///
+/// This exists because the habit editor asked for the primary rule's type alone.
+/// A compound habit's 2nd/3rd condition is always a DIFFERENT metric (the
+/// add-condition sheet excludes the ones already in use), so its type was never
+/// handed to `HKHealthStore.requestAuthorization` and stayed undetermined for
+/// good. HealthKit cannot report a denied read — an undetermined type and an
+/// empty day both come back nil — so that condition evaluated to couldNotVerify
+/// on every past day, and `combineVerdicts` folds a couldNotVerify to the whole
+/// day under AND (and under OR whenever the other condition merely fell short).
+/// A couldNotVerify writes no `goal_logs` row, so the habit sat at no status
+/// forever while iOS Settings showed the primary metric switched on — access
+/// looked granted, and the habit still never moved.
+Set<String> healthKitTypeIdsFor(Iterable<VerificationRule> conditions) => {
+      for (final c in conditions)
+        if (c.isHealthKit) c.template?.healthKitTypeIdentifier ?? c.metricKey,
+    };
+
+/// Whether to offer the proactive "Grant Health access" affordance: true when
+/// ANY of the habit's HealthKit metrics has not been prompted for yet.
+///
+/// Per-condition rather than primary-only. The old predicate was a one-way
+/// latch: once the primary metric was in [alreadyRequested] the button hid
+/// itself and the pre-save prompt no-opped, so a habit that later GAINED a
+/// second condition had no affordance anywhere in the editor that would ever
+/// request it. Asking per-condition also fixes the sibling case — a brand-new
+/// primary metric on a device where some other metric was requested long ago.
+///
+/// [alreadyRequested] records prompts SHOWN, not grants: iOS never reports
+/// whether a read was allowed, so "we asked" is the only honest terminal state
+/// and the affordance must still disappear once every type has been asked about.
+bool needsHealthAuthorization(
+  Iterable<VerificationRule> conditions,
+  Set<String> alreadyRequested,
+) =>
+    healthKitTypeIdsFor(conditions).any((id) => !alreadyRequested.contains(id));
+
+/// [stored] with [pending] laid underneath it — a verdict map where a day the
+/// user decided but the server has not been told about still counts as decided.
+///
+/// [stored] wins every conflict: a queue entry that has already been replayed
+/// appears in both, and the stored row is the authoritative one.
+@visibleForTesting
+Map<String, Map<String, String>> mergeVerdictMaps(
+  Map<String, Map<String, String>> stored,
+  Map<String, Map<String, String>> pending,
+) {
+  if (pending.isEmpty) return stored;
+  final out = <String, Map<String, String>>{
+    for (final e in stored.entries) e.key: {...e.value},
+  };
+  pending.forEach((dateKey, dayLogs) {
+    final day = out[dateKey] ??= <String, String>{};
+    dayLogs.forEach((goalId, status) => day.putIfAbsent(goalId, () => status));
+  });
+  return out;
+}
+
 /// The app's terminal outcomes per goal-day (done→pass, missed→fail), restricted
 /// to [goalIds]. `skipped`/unknown statuses are ignored.
 Map<String, Map<DateTime, VerificationOutcome>> loggedOutcomesFrom(
@@ -165,6 +225,61 @@ final couldNotVerifyDaysProvider =
     return out;
   } catch (e, stack) {
     AppLogger.error('[Verification] couldNotVerifyDays load failed', e, stack);
+    return const {};
+  }
+});
+
+/// Manually-frozen days per verified goal (goalId → date-only days) — the days
+/// a user check-in took over, which reconcile must never rewrite (D9).
+///
+/// This exists because the freeze was INVISIBLE. Tapping a verified habit's day
+/// in day-details cycles its status and, on the way, records manual provenance;
+/// from then on every reconcile pass skips that day. A user tapping once to see
+/// what happens had silently switched Apple Health off for that day, with
+/// nothing on screen saying so — which is how a habit sits at `missed` while the
+/// sensor says otherwise and the app looks broken. The freeze itself is correct
+/// and must stay (without it the next pass would overwrite a deliberate
+/// correction); what was missing was any way to SEE it, or to undo it short of
+/// guessing that a third tap hands the day back.
+///
+/// Bounded to the same resolvable window as the "?" affordance (today and
+/// yesterday), because that is the window in which the day can still be edited —
+/// a marker on an older, uneditable day would advertise a release the user
+/// cannot perform.
+///
+/// Degrades to empty when the feature is off, nothing is verifiable, or the
+/// store can't open (e.g. in a widget test), exactly like
+/// [couldNotVerifyDaysProvider]: a missing marker is a cosmetic loss, and must
+/// never be an error.
+final manuallyResolvedDaysProvider =
+    FutureProvider<Map<String, Set<DateTime>>>((ref) async {
+  if (!VerificationConfig.enabled) return const {};
+  final goals = verifiableGoalsFrom(
+    ref.watch(goalsProvider),
+    healthKitEnabled: VerificationConfig.healthKitEnabled,
+    screenTimeAppsEnabled: VerificationConfig.screenTimeAppsEnabled,
+    screenTimeTotalEnabled: VerificationConfig.screenTimeTotalEnabled,
+    compoundEnabled: VerificationConfig.compoundVerificationEnabled,
+    screenTimeSelectionFor: (id) =>
+        ref.watch(screenTimeSelectionsProvider)[id]?.blob,
+  );
+  if (goals.isEmpty) return const {};
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final yesterday = shiftDays(today, -1);
+  try {
+    final store = await ref.watch(verificationStateStoreProvider.future);
+    final manual = await store.manualDays(
+      goalIds: goals.map((g) => g.goalId),
+      from: yesterday,
+      to: today,
+    );
+    return {
+      for (final e in manual.entries)
+        if (e.value.isNotEmpty) e.key: e.value.keys.toSet(),
+    };
+  } catch (e, stack) {
+    AppLogger.error('[Verification] manualDays load failed', e, stack);
     return const {};
   }
 });
@@ -507,9 +622,63 @@ class GoalLogVerificationWriter implements VerificationLogWriter {
 /// responsible for the [VerificationConfig.enabled] gate — keeping this function
 /// flag-free makes it directly testable. Returns an empty report when there is
 /// nothing verifiable.
-Future<ReconcileReport> runVerificationReconcile(WidgetRef ref) async {
+///
+/// [pendingVerdicts] carries decided-but-unwritten habit-days from the
+/// notification queue (`dateKey → goalId → status`), merged into the logged
+/// outcomes this pass reasons about.
+///
+/// It is not an optimisation — it is what makes the stale-freeze rule safe. A
+/// reminder Done writes its D9 freeze first and queues the row when there is no
+/// session, so between the tap and a successful replay the day legitimately has
+/// a freeze and NO verdict. That is the exact shape
+/// [ReconcilePlan.staleFreezes] treats as a write that never landed, and without
+/// this the pass would clear the user's freeze and overwrite their Done with a
+/// sensor verdict — a worse bug than the one the rule fixes. Merged in, the
+/// queued row reads as the verdict it is, and the day stays frozen.
+///
+/// **NULL means the queue could not be READ**, and the pass stands down rather
+/// than running. That distinction is the whole point of the type being nullable:
+/// an empty map asserts "no day is queued", which is a claim, while null admits
+/// "I do not know which days are queued" — and the stale-freeze rule reads an
+/// absent verdict as permission to DELETE a freeze. Collapsing the two (`?? const
+/// {}`) hands the pass a confident answer assembled out of ignorance, in the one
+/// state where the user's own check-in is the thing at risk. Same shape as the
+/// two barriers below, and the same reason: absence is not evidence.
+Future<ReconcileReport> runVerificationReconcile(
+  WidgetRef ref, {
+  Map<String, Map<String, String>>? pendingVerdicts = const {},
+}) async {
+  // Wait out the goal load before believing an empty list, and DECLINE the pass
+  // rather than run it on one that may be mid-flight.
+  //
+  // This became load-bearing when the pass gained a cold-launch trigger. `build()`
+  // returns `[]` and fills in asynchronously, so a launch-time pass can arrive
+  // while the list is still empty — and empty is the DESTRUCTIVE direction here,
+  // because the Screen Time sync below reads an empty list as "you deleted your
+  // last verifiable habit, stop watching" and tears down DeviceActivity
+  // monitoring for goals that do exist. (The verdict half is merely a silent
+  // no-op on an empty list, which is its own bug: nothing would retry it.)
+  //
+  // Bounded, and both failure shapes land on the same cautious branch: the load
+  // never finishing (timeout) and the barrier giving up because rebuilds kept
+  // outpacing loads (`ensureLoaded` false). Neither is "the list is empty". A
+  // NON-empty list needs no barrier — it is real data either way. Same policy,
+  // deliberately the same shape, as `_runScreenTimeSync` in main.dart.
+  final loaded = await ref
+      .read(goalsProvider.notifier)
+      .ensureLoaded()
+      .timeout(const Duration(seconds: 10), onTimeout: () => false);
+  final currentGoals = ref.read(goalsProvider);
+  if (!loaded && currentGoals.isEmpty) {
+    AppLogger.warning(
+      '[Verification] the goal list did not settle — skipping the reconcile '
+      'pass rather than reading an unloaded list as "nothing is verifiable"',
+    );
+    return const ReconcileReport();
+  }
+
   final goals = verifiableGoalsFrom(
-    ref.read(goalsProvider),
+    currentGoals,
     healthKitEnabled: VerificationConfig.healthKitEnabled,
     screenTimeAppsEnabled: VerificationConfig.screenTimeAppsEnabled,
     screenTimeTotalEnabled: VerificationConfig.screenTimeTotalEnabled,
@@ -554,8 +723,25 @@ Future<ReconcileReport> runVerificationReconcile(WidgetRef ref) async {
     logWriter: GoalLogVerificationWriter(ref),
   );
 
+  // The verdict map must be LOADED before it is read as evidence, for the same
+  // reason the manual-target sweep barriers it: an absent outcome is what marks
+  // a freeze stale, so an unloaded map would make every frozen day look like a
+  // write that never landed — and this pass would clear the user's freezes and
+  // overwrite their check-ins wholesale. A failed barrier stands the pass down.
+  if (!await ref.read(habitLogsProvider.notifier).ensureLoaded()) {
+    AppLogger.warning(
+      '[Verification] the verdict map did not settle — skipping the reconcile '
+      'pass rather than reading an unloaded map as "no verdict stored"',
+    );
+    return const ReconcileReport();
+  }
+
   final logged = loggedOutcomesFrom(
-    ref.read(habitLogsProvider),
+    // Stored verdicts, plus the ones still queued in the notification service.
+    // A queued Done IS the user's verdict; it just has not reached the server.
+    // Stored wins on conflict — a replayed entry is in both, and the stored row
+    // is the authoritative one.
+    mergeVerdictMaps(ref.read(habitLogsProvider), pendingVerdicts ?? const {}),
     goals.map((g) => g.goalId).toSet(),
   );
 
@@ -567,7 +753,15 @@ Future<ReconcileReport> runVerificationReconcile(WidgetRef ref) async {
   );
 
   // Refresh the "?" affordance with any days this pass recorded / resolved.
-  if (report.changedAnything) ref.invalidate(couldNotVerifyDaysProvider);
+  // Refresh the "?" affordance with any days this pass recorded / resolved, and
+  // the "set by you" marker with any freeze it CLEARED: a stale freeze the pass
+  // just released is a day the chip would otherwise keep claiming Apple Health
+  // will not touch, while offering a release that now deletes a verdict the
+  // sensor owns.
+  if (report.changedAnything) {
+    ref.invalidate(couldNotVerifyDaysProvider);
+    ref.invalidate(manuallyResolvedDaysProvider);
+  }
 
   if (report.nudges.isEmpty && report.writes.isEmpty) return report;
 

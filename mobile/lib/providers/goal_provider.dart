@@ -468,18 +468,68 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     // is preserved so a title/colour/schedule edit never rewrites history.
     final priorMatches = state.where((h) => h.id == updatedHabit.id);
     final previous = priorMatches.isEmpty ? null : priorMatches.first;
+    // ONE clock for the whole edit. Read separately, the materialise window and
+    // the two anchors could straddle midnight on a slow save: the sweep would
+    // settle up to day D while the anchor landed on D+1, leaving D in a gap
+    // covered by neither — stranded at pending, which is the bug this method
+    // exists to close.
+    final editedAt = DateTime.now();
     updatedHabit = stampVerificationEffectiveFrom(
       updatedHabit,
       previous: previous,
-      today: DateTime.now(),
+      today: editedAt,
     );
+    // Score whatever the OLD target still owes before the anchor moves past it.
+    //
+    // Once `stampTargetEffectiveFrom` below sets the anchor to today, the sweep
+    // can never reach an earlier day again, so any day not yet materialised is
+    // stranded at pending for good. Scoring them here — rather than letting the
+    // sweep fill them afterwards — is what keeps them judged by the target that
+    // was actually in force on them; filling them later would score them against
+    // the NEW target and invent verdicts. See
+    // [HabitProgressNotifier.materialiseDaysBeforeTargetChange].
+    //
+    // The old target and anchor are read from `previous`, so this is correct
+    // wherever it sits in this method. It goes BEFORE the stamp and the write
+    // anyway, so that a crash or a failed save between the two cannot leave a
+    // moved anchor with the days it outran still unscored.
+    //
+    // Only when the scoring meaning is actually changing: a rename, recolour or
+    // reschedule preserves the anchor, so nothing is about to become
+    // unreachable and there is nothing to rush.
+    //
+    // Guarded AND bounded. This is history bookkeeping, not the user's edit —
+    // it must never fail the save, and it must never hang it behind a barrier
+    // that is waiting on a stalled network.
+    final previousTarget = previous?.target;
+    if (previousTarget != null &&
+        !(updatedHabit.target?.hasSameScoringMeaningAs(previousTarget) ??
+            false)) {
+      try {
+        // Awaited without an outer deadline: its own barriers are bounded, and
+        // `Future.timeout` would not stop it anyway — it would only let this
+        // method race ahead and stamp the anchor while the sweep was still
+        // writing days against a habit whose shape had changed underneath it.
+        await ref
+            .read(habitProgressProvider.notifier)
+            .materialiseDaysBeforeTargetChange(previous!, now: editedAt);
+      } catch (e, stack) {
+        AppLogger.error(
+          '[Targets] could not materialise ${updatedHabit.id}\'s days before '
+          'its target edit — earlier unscored days will stay pending',
+          e,
+          stack,
+        );
+      }
+    }
+
     // Forward-only target edits (v11): if the target's content changed (or was
     // just set), it takes effect today; otherwise the prior anchor is preserved
     // so a non-target edit never re-derives past days against the new target.
     updatedHabit = stampTargetEffectiveFrom(
       updatedHabit,
       previous: previous,
-      today: DateTime.now(),
+      today: editedAt,
     );
     // Snapshot for optimistic rollback if persistence fails.
     final previousGoals = state;
@@ -974,31 +1024,58 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
     }
   }
 
-  Future<void> cycleStatus(DateTime date, String habitId) async {
+  /// Advances a habit-day through the manual check-in cycle:
+  /// none → `done` → `missed` → none.
+  ///
+  /// For a VERIFIED habit the first two steps also freeze the day against auto
+  /// verdicts (D9) and the third releases it — see [_setManualStatus].
+  Future<void> cycleStatus(DateTime date, String habitId) {
+    final dateKey = _logDateKey(date);
+    final currentStatus = state[dateKey]?[habitId];
+    final nextStatus = switch (currentStatus) {
+      null => 'done',
+      'done' => 'missed',
+      _ => null, // rimosso
+    };
+    return _setManualStatus(date, habitId, nextStatus);
+  }
+
+  /// Hands a verified habit-day back to auto-verification: drops the user's
+  /// verdict AND the D9 manual freeze that came with it, so the next reconcile
+  /// pass scores the day from Apple Health again.
+  ///
+  /// Identical in effect to cycling round to "no status", and deliberately
+  /// implemented as exactly that rather than as a second write path. It exists
+  /// as its own entry point because the cycle is not a discoverable way to say
+  /// "I did not mean to take this day over": a user who taps a verified habit
+  /// once has silently disabled automation for that day, and needs a control
+  /// that says so rather than a third tap they have to guess at.
+  Future<void> releaseToAutoVerification(DateTime date, String habitId) =>
+      _setManualStatus(date, habitId, null);
+
+  String _logDateKey(DateTime date) =>
+      '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+  /// The single manual write path behind [cycleStatus] and
+  /// [releaseToAutoVerification]: persists [nextStatus] (null ⇒ delete the row),
+  /// recomputes the streak, and sets or clears the D9 manual freeze to match.
+  Future<void> _setManualStatus(
+    DateTime date,
+    String habitId,
+    String? nextStatus,
+  ) async {
     final isPrivateMode =
         ref.read(activeDataModeProvider) == AppDataMode.private;
     final user = isPrivateMode ? null : supabase.auth.currentUser;
     if (!isPrivateMode && user == null) return;
 
-    final dateKey =
-        '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    final dateKey = _logDateKey(date);
 
     // Snapshot for optimistic rollback if the persistence layer fails.
     final previousState = state;
 
     final newState = Map<String, Map<String, String>>.from(state);
     final dayLogs = Map<String, String>.from(newState[dateKey] ?? {});
-
-    final currentStatus = dayLogs[habitId];
-    String? nextStatus;
-
-    if (currentStatus == null) {
-      nextStatus = 'done';
-    } else if (currentStatus == 'done') {
-      nextStatus = 'missed';
-    } else {
-      nextStatus = null; // rimosso
-    }
 
     if (nextStatus != null) {
       dayLogs[habitId] = nextStatus;
@@ -1013,7 +1090,8 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
     // pass can't overwrite it with an auto verdict (D9). Fire-and-forget; gated
     // and inert while the feature is off.
     if (VerificationConfig.enabled) {
-      _markManualProvenance(habitId, date, set: nextStatus != null);
+      _markManualProvenance(habitId, date,
+          set: nextStatus != null, status: nextStatus);
     }
 
     // Deterministic streak for the toggled day, computed from the full ordered
@@ -1106,7 +1184,12 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
   /// Records (or clears) a manual-provenance freeze for a verified goal-day in
   /// the local verification store, so a subsequent reconcile leaves it alone
   /// (D9). Fire-and-forget — never blocks or fails the check-in.
-  void _markManualProvenance(String goalId, DateTime date, {required bool set}) {
+  void _markManualProvenance(
+    String goalId,
+    DateTime date, {
+    required bool set,
+    String? status,
+  }) {
     final goal =
         ref.read(goalsProvider).where((g) => g.id == goalId).firstOrNull;
     if (!(goal?.isVerified ?? false)) return;
@@ -1115,7 +1198,10 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
       try {
         final store = await ref.read(verificationStateStoreProvider.future);
         if (set) {
-          await store.markManual(goalId, day);
+          // The verdict travels WITH the freeze. A freeze whose `goal_logs` row
+          // later turns out to be invisible can then be restored to what the
+          // user actually chose, instead of being judged by the sensor.
+          await store.markManual(goalId, day, status: status);
         } else {
           await store.clearManual(goalId, day);
         }
@@ -1432,6 +1518,18 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
       return;
     }
     final cached = _loadFromCache();
+    // Deliberately NOT flagged for an empty mirror, and it is worth recording
+    // why, because "the mirror answered, and it says nothing is stored" is a
+    // tempting reading that is wrong here.
+    //
+    // An empty local mirror does NOT mean the account has no progress — it also
+    // describes a device that has never completed a sync. Pair that with a
+    // FAILED server leg (the only case this flag is consulted in) and the empty
+    // map is empty because nothing was ever downloaded, while the account may
+    // hold real rows. Treating that as trustworthy would let the sweep resolve
+    // every `atMost` day to a quiet 'done' — writing success over breaches this
+    // device simply could not see. Declining the sweep is the conservative
+    // direction and the intended one. See [loadIsTrustworthy].
     if (cached.isEmpty) return;
     state = cached;
     // The mirror answered: a failed server leg is now survivable.
@@ -1652,11 +1750,25 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
   ///
   /// [allowAutoFail] lets the caller withhold auto-fail for one pass while still
   /// running the rest of the sweep — used when the notification queue could not
-  /// be drained, i.e. when habit-days the user has already decided are known to
-  /// be missing from the verdict map.
+  /// be READ AT ALL, i.e. when it is unknown which habit-days the user has
+  /// already decided.
+  ///
+  /// [pendingVerdicts] carries the decided-but-unwritten days the caller DOES
+  /// know about (`dateKey → goalId → status`), drained from the notification
+  /// queue. They are overlaid on the stored verdict map, so auto-fail's existing
+  /// "only ever FILL an empty verdict" rule sees them as the verdicts they are.
+  ///
+  /// This replaces switching auto-fail off whenever the queue was non-empty.
+  /// That was the right instinct applied at the wrong granularity: some entries
+  /// never drain — `goal_logs.goal_id` is a foreign key onto `goals`, so a
+  /// queued Done for a habit the user later DELETED is rejected on every replay
+  /// forever — and a single one of them disabled auto-fail for every habit and
+  /// every day, permanently. Overlaying protects exactly the days the user
+  /// decided and leaves the rest scoreable.
   Future<void> reconcileManualTargets({
     DateTime? now,
     bool allowAutoFail = true,
+    Map<String, Map<String, String>> pendingVerdicts = const {},
   }) async {
     // ORDER MATTERS HERE, and it is the whole reason this reads oddly.
     //
@@ -1739,15 +1851,38 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
         effectiveFrom: goal.targetEffectiveFrom,
         isScheduled: goal.isScheduledOn,
         progressFor: (dateKey) => state[dateKey]?[goal.id],
-        statusFor: (dateKey) => logs[dateKey]?[goal.id],
+        // Stored verdict, or the one still sitting in the notification queue.
+        // A queued Done IS the user's verdict — it just hasn't reached the
+        // server — so auto-fail must read it as one and leave the day alone.
+        // Order matters: the stored map wins, because an entry that has already
+        // been replayed is in BOTH, and the stored row is the one the rest of
+        // the sweep derives from.
+        statusFor: (dateKey) =>
+            logs[dateKey]?[goal.id] ?? pendingVerdicts[dateKey]?[goal.id],
         autoFailUnmetFrom: autoFailFrom,
       ));
     }
     if (changes.isEmpty) return;
+    await _applyTargetChanges(
+      changes,
+      {for (final g in ref.read(goalsProvider)) g.id: g},
+      today,
+    );
+  }
 
+  /// Applies [changes] through the one write path, in order.
+  ///
+  /// [byGoal] resolves each change's habit — and, with it, the TARGET the day is
+  /// scored against. Passed in rather than read from `goalsProvider` so a caller
+  /// can score days against a target the habit is being edited away from; see
+  /// [materialiseDaysBeforeTargetChange].
+  Future<void> _applyTargetChanges(
+    List<TargetReconcileChange> changes,
+    Map<String, Goal> byGoal,
+    DateTime today,
+  ) async {
     // Sequential: each setProgress recomputes the streak from the running state,
     // so applying in date order builds streaks correctly rather than racing.
-    final byGoal = {for (final g in ref.read(goalsProvider)) g.id: g};
     for (final change in changes) {
       final goal = byGoal[change.goalId];
       final target = goal?.target;
@@ -1787,6 +1922,114 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
         now: today,
       );
     }
+  }
+
+  /// Scores [previous]'s outstanding closed days against the target it is about
+  /// to be edited AWAY from, so nothing is stranded when the v11 anchor moves.
+  ///
+  /// The anchor is forward-only: editing a target's amount (or its direction,
+  /// unit, period or aggregation) stamps `target_effective_from = today`, and
+  /// the sweep never looks before it. That is exactly right for a day that
+  /// ALREADY carries a verdict — it must keep the one it earned under the old
+  /// target, which is what the anchor exists for. It is wrong for a day that
+  /// never got one: the sweep can no longer reach it, so it stays pending
+  /// forever, with no way back short of re-entering the number by hand.
+  ///
+  /// The tempting fix — let the sweep fill empty days before the anchor — is a
+  /// trap, and is deliberately NOT what this does. Those days would be scored
+  /// against the NEW target, which was not in force when they happened: raise a
+  /// goal from 3 to 10 and a day that did 3 is written `missed`, having actually
+  /// been met. That fabricates a verdict, and a wrong verdict is worse than an
+  /// absent one — `null` writes no `goal_logs` row at all, so a pending day is
+  /// merely invisible, while a fabricated one poisons streaks and every rate
+  /// that counts it.
+  ///
+  /// So the days are scored HERE, while the old target is still in hand and
+  /// still correct. Every day ends up judged by the target that was actually in
+  /// force on it, nothing is invented, and nothing is stranded.
+  ///
+  /// Best-effort by contract: guarded and bounded by the caller, because failing
+  /// to materialise history must never cost the user the edit they asked for.
+  Future<void> materialiseDaysBeforeTargetChange(
+    Goal previous, {
+    DateTime? now,
+  }) async {
+    final target = previous.target;
+    // Nothing to strand: no target, a measured one (owned by the verification
+    // pipeline), or a habit whose verdicts that pipeline owns outright.
+    if (target == null ||
+        !target.isUserEnterable ||
+        previous.verificationRule != null) {
+      return;
+    }
+
+    // Same barriers, and the same order, as the ordinary sweep — this writes
+    // through the identical path, so it inherits the identical hazards. See
+    // [reconcileManualTargets] for why the progress barrier must be last.
+    // The BARRIERS are bounded, not the write loop. `Future.timeout` does not
+    // cancel the future it wraps, so bounding the whole operation would let the
+    // caller move on — stamping the new anchor and saving the goal — while this
+    // carried on writing days against a habit that had since changed shape.
+    // Bounding the load instead means this either declines promptly or runs to
+    // completion. Same pattern, and the same 10s, as `_runScreenTimeSync`.
+    const loadDeadline = Duration(seconds: 10);
+    final logsLoaded = await ref
+        .read(habitLogsProvider.notifier)
+        .ensureLoaded()
+        .timeout(loadDeadline, onTimeout: () => false);
+    if (!logsLoaded) {
+      AppLogger.warning(
+        '[Targets] the verdict map is not trustworthy — not materialising '
+        '${previous.id}\'s days before its target edit; they will stay pending',
+      );
+      return;
+    }
+    if (!ref.mounted) return;
+    final logs = ref.read(habitLogsProvider);
+    final today = now ?? DateTime.now();
+    if (!await _ensureLoaded().timeout(loadDeadline, onTimeout: () => false)) {
+      AppLogger.warning(
+        '[Targets] goal progress did not settle — not materialising '
+        '${previous.id}\'s days before its target edit; they will stay pending',
+      );
+      return;
+    }
+    if (!ref.mounted) return;
+
+    final changes = reconcileManualTargetDays(
+      goalId: previous.id,
+      target: target,
+      today: today,
+      start: previous.startDate,
+      effectiveFrom: previous.targetEffectiveFrom,
+      isScheduled: previous.isScheduledOn,
+      progressFor: (dateKey) => state[dateKey]?[previous.id],
+      statusFor: (dateKey) => logs[dateKey]?[previous.id],
+      // NO auto-fail here, deliberately.
+      //
+      // This pass exists to preserve what the old target already DECIDED — the
+      // days it can still score from a stored number. Auto-fail is the opposite
+      // kind of claim: it reads an ABSENT number as "the user did zero", which
+      // is only safe with a verdict map that includes the notification queue's
+      // decided-but-unwritten days. This path has no access to that queue, so
+      // an untouched day here could be one the user already tapped Done on from
+      // a reminder — and scoring it would write `missed` over their answer, at
+      // the exact moment they are editing the habit, as a wall of red.
+      //
+      // Nothing is lost by declining: untouched days are the ordinary sweep's
+      // job, it runs on the very next trigger, and this edit does not put them
+      // out of its reach (auto-fail has its own anchor, independent of the v11
+      // one this is racing).
+      autoFailUnmetFrom: null,
+    );
+    if (changes.isEmpty) return;
+    AppLogger.info(
+      '[Targets] materialising ${changes.length} outstanding day(s) for '
+      '${previous.id} under its previous target before the anchor moves',
+    );
+    // Keyed to the PREVIOUS goal, so every change is scored against the old
+    // target even though the caller is mid-edit.
+    await _applyTargetChanges(changes, {previous.id: previous}, today);
   }
 
   /// Reads the auto-fail anchor, stamping today the first time it is missing.

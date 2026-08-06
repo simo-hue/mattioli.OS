@@ -1346,7 +1346,10 @@
       "statusAuthorized": "Screen Time access is on",
       "statusNotAuthorized": "Screen Time access needs to be enabled",
       "openSettings": "Open Settings"
-    }
+    },
+    "manualSetByYou": "Set by you",
+    "manualReleaseToAuto": "Use {app}",
+    "manualOverrideHint": "Set by you — {app} will not change this day"
   },
   "health": {
     "appName": "Apple Health",

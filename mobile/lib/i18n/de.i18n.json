@@ -1346,7 +1346,10 @@
       "statusAuthorized": "Bildschirmzeit-Zugriff ist aktiv",
       "statusNotAuthorized": "Bildschirmzeit-Zugriff muss aktiviert werden",
       "openSettings": "Einstellungen öffnen"
-    }
+    },
+    "manualSetByYou": "Von dir gesetzt",
+    "manualReleaseToAuto": "{app} verwenden",
+    "manualOverrideHint": "Von dir gesetzt — {app} ändert diesen Tag nicht"
   },
   "health": {
     "appName": "Apple Health",

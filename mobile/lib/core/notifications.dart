@@ -18,6 +18,7 @@ import 'supabase_config.dart';
 import 'targets_config.dart';
 import 'verification_config.dart';
 import 'verification_state_store.dart';
+import 'verification_wiring.dart';
 import 'app_logger.dart';
 
 class NotificationService {
@@ -159,6 +160,14 @@ class NotificationService {
     final container = ProviderScope.containerOf(context, listen: false);
     container.invalidate(habitLogsProvider);
     container.invalidate(habitStatsProvider);
+    // A Done/Skip from a reminder also writes the D9 manual freeze
+    // (`_freezeManualForToday`), so the day's "set by you" marker has just
+    // become true. Without this the chip does not appear until something else
+    // happens to invalidate its provider — the freeze would be exactly as
+    // invisible as it was before the marker existed, for the one write path
+    // that creates it outside the UI.
+    container.invalidate(manuallyResolvedDaysProvider);
+    container.invalidate(couldNotVerifyDaysProvider);
   }
 
   Future<void> _markHabitAsDone(String habitId) async {
@@ -234,7 +243,7 @@ class NotificationService {
     // for an auto-verified habit (NOTIF/verification-provenance bug). Done first
     // and awaited so the freeze survives even a cold background isolate being
     // torn down right after the log write.
-    await _freezeManualForToday(habitId);
+    await _freezeManualForToday(habitId, status);
 
     if (await _isPrivateMode()) {
       try {
@@ -300,12 +309,21 @@ class NotificationService {
   /// goal (a Supabase round-trip) just to read `isVerified`. Gated on
   /// [VerificationConfig.enabled] so it is inert when the feature is dark, and
   /// fully try-caught so a store failure can never break the habit-log write.
-  Future<void> _freezeManualForToday(String habitId) async {
+  Future<void> _freezeManualForToday(String habitId, String status) async {
     if (!VerificationConfig.enabled) return;
     try {
       final store = await verificationStoreOpener();
       final now = DateTime.now();
-      await store.markManual(habitId, DateTime(now.year, now.month, now.day));
+      // Carry the status. This path is exactly the one that made a bare freeze
+      // dangerous: on success it upserts STRAIGHT TO THE SERVER and queues
+      // nothing, so a stale in-memory map presents identically to a write that
+      // never landed. With the verdict recorded, reconcile restores the user's
+      // answer instead of having to tell those two apart.
+      await store.markManual(
+        habitId,
+        DateTime(now.year, now.month, now.day),
+        status: status,
+      );
     } catch (e, stack) {
       AppLogger.error('[Notifications] manual-freeze write failed', e, stack);
     }
@@ -344,7 +362,8 @@ class NotificationService {
   /// (the upserts are idempotent) but doubled every network call, and a loser
   /// writing its own `remaining` could resurrect an entry the winner had already
   /// applied.
-  Future<({int written, bool drained})>? _replayInFlight;
+  Future<({int written, bool drained, Map<String, Map<String, String>>? pending})>?
+      _replayInFlight;
 
   /// Replay queued habit-log actions accumulated while the app was terminated
   /// or offline. Safe to call on every foreground: no-ops when the queue is
@@ -357,36 +376,84 @@ class NotificationService {
   ///    map is only worth its cost when this is > 0. (Returning void made the
   ///    only honest reaction "assume it wrote something", i.e. invalidate on
   ///    every single foreground.)
-  ///  * **drained** — whether the queue is now EMPTY. A queue that still holds
-  ///    entries is a set of habit-days whose verdict the user has decided and
-  ///    the server has not been told about, so the in-memory map does not show
-  ///    them. Auto-fail must not run against that map: it would read those days
-  ///    as untouched and write 'missed' over the user's own Done, with no
-  ///    goal_progress row for any later pass to re-derive it from.
+  ///  * **drained** — whether the queue is now EMPTY.
+  ///  * **pending** — the verdicts STILL queued, as `dateKey → goalId → status`,
+  ///    or **null** when the queue could not be read at all.
   ///
   /// The two differ exactly when every upsert fails — offline, or a 5xx — which
   /// is precisely when a naive `written > 0` check says "nothing happened, carry
   /// on".
-  Future<({int written, bool drained})> replayPendingHabitLogs() =>
-      _replayInFlight ??= _replayPendingHabitLogs()
+  ///
+  /// [pending] exists because [drained] alone was too blunt an instrument, in a
+  /// way that disabled a feature permanently. A queue that still holds entries
+  /// is a set of habit-days whose verdict the user has decided and the server
+  /// has not been told about, so the in-memory map does not show them, and
+  /// auto-fail must not read those days as untouched and write 'missed' over the
+  /// user's own Done. That reasoning is right — but the response was to switch
+  /// auto-fail off for EVERY habit and EVERY day for as long as the queue was
+  /// non-empty, and some entries never drain. `goal_logs.goal_id` is a foreign
+  /// key onto `goals`, so a queued Done for a habit the user later DELETED is
+  /// rejected on every replay, for the life of the install, with no retry cap
+  /// and no expiry. One such entry meant no untouched count day was ever
+  /// auto-failed again on that device.
+  ///
+  /// So the queue is now handed over as DATA rather than as a veto: it carries
+  /// the (goal, day, verdict) triples themselves, the sweep overlays them on its
+  /// verdict map, and its existing "auto-fail only ever FILLS an empty verdict"
+  /// rule then protects exactly the decided days and nothing else. Same
+  /// invariant, enforced per-day instead of globally — and no way for one stuck
+  /// entry to park the feature.
+  Future<({int written, bool drained, Map<String, Map<String, String>>? pending})>
+      replayPendingHabitLogs() => _replayInFlight ??= _replayPendingHabitLogs()
           .whenComplete(() => _replayInFlight = null);
 
-  Future<({int written, bool drained})> _replayPendingHabitLogs() async {
+  /// Parses queue entries (`goalId|date|status`) into the verdict map shape the
+  /// sweep reads. Malformed entries are skipped, exactly as the replay skips
+  /// them — a line that cannot be parsed is not a decided day.
+  static Map<String, Map<String, String>> _verdictsFrom(List<String> entries) {
+    final out = <String, Map<String, String>>{};
+    for (final entry in entries) {
+      final parts = entry.split('|');
+      if (parts.length < 3) continue;
+      (out[parts[1]] ??= <String, String>{})[parts[0]] = parts[2];
+    }
+    return out;
+  }
+
+  Future<({int written, bool drained, Map<String, Map<String, String>>? pending})>
+      _replayPendingHabitLogs() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final pending = prefs.getStringList(_pendingLogsKey);
       if (pending == null || pending.isEmpty) {
-        return (written: 0, drained: true);
+        return (written: 0, drained: true, pending: const <String, Map<String, String>>{});
+      }
+
+      // The queue is a CLOUD mechanism — `_writeHabitLogFromNotification`
+      // returns before enqueuing in Private mode. So in Private mode there is
+      // nothing here to replay, and reaching for `Supabase.instance.client`
+      // would THROW: a private-only install never calls `Supabase.initialize`.
+      // That throw landed in the catch below and reported the queue as
+      // unreadable, which (before this) disabled auto-fail permanently for
+      // anyone who queued something in cloud mode and then moved to Private.
+      // The entries are still surfaced, so the days they name stay protected.
+      if (await _isPrivateMode()) {
+        return (written: 0, drained: false, pending: _verdictsFrom(pending));
       }
 
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) {
         // No session yet; retry next foreground. The queue still holds decided
         // days, so it is NOT drained.
-        return (written: 0, drained: false);
+        return (written: 0, drained: false, pending: _verdictsFrom(pending));
       }
 
       final remaining = <String>[];
+      // Counted separately from `remaining`, because a dropped entry is neither
+      // written nor retryable. Folding it into `written` (as `pending.length -
+      // remaining.length` alone does) would report a server write that never
+      // happened and force a full `goal_logs` re-download for nothing.
+      var dropped = 0;
       for (final entry in pending) {
         final parts = entry.split('|');
         if (parts.length < 3) continue; // drop malformed entries
@@ -397,6 +464,23 @@ class NotificationService {
             'date': parts[1],
             'status': parts[2],
           }, onConflict: 'goal_id, date');
+        } on PostgrestException catch (e, stack) {
+          // 23503 = foreign_key_violation: `goal_logs.goal_id` references
+          // `goals(id)`, so this is a queued verdict for a habit that no longer
+          // exists. It can never land, on any future replay — keeping it would
+          // grow the queue without bound and protect a day for a goal nobody
+          // can see. Dropped rather than retried; nothing recoverable is lost,
+          // because the habit and its history are already gone.
+          if (e.code == '23503') {
+            AppLogger.warning(
+              '[Notifications] dropping a queued log for a deleted habit '
+              '(${parts[0]}/${parts[1]}): $e',
+            );
+            dropped++;
+            continue;
+          }
+          AppLogger.error('[Notifications] Replay failed, will retry', e, stack);
+          remaining.add(entry);
         } catch (e, stack) {
           AppLogger.error('[Notifications] Replay failed, will retry', e, stack);
           remaining.add(entry);
@@ -411,14 +495,17 @@ class NotificationService {
       // Only entries that actually landed count as written: a retry-kept entry
       // changed nothing on the server, so it must not make the caller reload.
       return (
-        written: pending.length - remaining.length,
+        written: pending.length - remaining.length - dropped,
         drained: remaining.isEmpty,
+        pending: _verdictsFrom(remaining),
       );
     } catch (e, stack) {
       AppLogger.error('[Notifications] replayPendingHabitLogs error', e, stack);
-      // Unknown queue state — assume undrained, the direction that withholds
-      // permission to write rather than granting it.
-      return (written: 0, drained: false);
+      // The queue could not be READ, so we cannot say which days are decided.
+      // `pending: null` is that admission, and the caller withholds auto-fail
+      // wholesale — the direction that refuses permission to write rather than
+      // granting it. This is now the ONLY path that still does so.
+      return (written: 0, drained: false, pending: null);
     }
   }
 

@@ -478,4 +478,234 @@ void main() {
       expect(prefs.getString(kAutoFailAnchorPrefKey), '2026-07-24');
     });
   });
+
+  // Editing a target re-anchors `target_effective_from` to today, and the sweep
+  // never looks before the anchor — so any day not yet materialised became
+  // permanently unreachable and sat at pending for good. The days are now scored
+  // BEFORE the anchor moves, while the OLD target is still in force. Scoring them
+  // afterwards would judge them against the NEW amount and invent verdicts.
+  // Desktop mirror of mobile's target_edit_materialisation_test.
+  group('a target edit scores what the old target still owed', () {
+    (ProviderContainer, _RecordingRepository) buildWithProgress(
+      DashboardHabit habit,
+      Map<String, Map<String, double>> progress,
+    ) {
+      final repo = _RecordingRepository(DashboardSnapshot(
+        habits: [habit],
+        goals: const [],
+        trend: const [],
+        checkIn: const DailyCheckIn(),
+        habitProgress: progress,
+      ));
+      final container = ProviderContainer(
+        overrides: [
+          dashboardRepositoryProvider.overrideWithValue(repo),
+          clockProvider.overrideWithValue(() => now),
+        ],
+      );
+      addTearDown(container.dispose);
+      return (container, repo);
+    }
+
+    // A backdated anchor so auto-fail is live, matching the group below.
+    setUp(() {
+      SharedPreferences.setMockInitialValues(
+          const {'target_auto_fail_from': '2026-07-01'});
+    });
+
+    test('THE REGRESSION: a day that MET the old target is scored done, not '
+        'missed against the new one', () async {
+      final habit = _habit(target: count).copyWith(
+        startDate: DateTime(2026, 7, 22),
+        targetEffectiveFrom: DateTime(2026, 7, 22),
+      );
+      final (container, _) = buildWithProgress(habit, const {
+        '2026-07-22': {'h1': 80}, // exactly the OLD amount
+      });
+      final controller = container.read(dashboardControllerProvider.notifier);
+      await _drainBackgroundSweep();
+
+      await controller.updateHabit(
+        id: 'h1',
+        title: 'Push-ups',
+        color: EvolveColors.primaryStrong,
+        target: TargetPresetCatalog.countDaily.targetWith(amount: 200, step: 20),
+      );
+
+      expect(
+        container
+            .read(dashboardControllerProvider)
+            .habitStatusFor('h1', DateTime(2026, 7, 22)),
+        'done',
+        reason: '80 of 80 met the target IN FORCE that day; scoring it against '
+            'the new 200 would write missed for a day the user completed',
+      );
+    });
+
+    test('the anchor still moves to today afterwards', () async {
+      final habit = _habit(target: count).copyWith(
+        startDate: DateTime(2026, 7, 22),
+        targetEffectiveFrom: DateTime(2026, 7, 22),
+      );
+      final (container, _) = buildWithProgress(habit, const {
+        '2026-07-22': {'h1': 80},
+      });
+      final controller = container.read(dashboardControllerProvider.notifier);
+      await _drainBackgroundSweep();
+
+      await controller.updateHabit(
+        id: 'h1',
+        title: 'Push-ups',
+        color: EvolveColors.primaryStrong,
+        target: TargetPresetCatalog.countDaily.targetWith(amount: 200, step: 20),
+      );
+
+      expect(
+        container.read(dashboardControllerProvider).habits.single
+            .targetEffectiveFrom,
+        now,
+        reason: 'the forward-only freeze is unchanged — only the stranding is '
+            'fixed',
+      );
+    });
+
+    test('a rename materialises nothing — the anchor is preserved, so those '
+        'days are still in the sweep\'s reach', () async {
+      final habit = _habit(target: count).copyWith(
+        startDate: DateTime(2026, 7, 22),
+        targetEffectiveFrom: DateTime(2026, 7, 22),
+      );
+      final (container, repo) = buildWithProgress(habit, const {
+        '2026-07-22': {'h1': 80},
+      });
+      final controller = container.read(dashboardControllerProvider.notifier);
+      await _drainBackgroundSweep();
+      repo.progressCalls.clear();
+
+      await controller.updateHabit(
+        id: 'h1',
+        title: 'Press-ups',
+        color: EvolveColors.primaryStrong,
+        target: count,
+      );
+
+      expect(repo.progressCalls, isEmpty);
+      expect(
+        container.read(dashboardControllerProvider).habits.single
+            .targetEffectiveFrom,
+        DateTime(2026, 7, 22),
+      );
+    });
+  });
+
+  // `_disposed` is latched by an `onDispose` registered in `build()`, and
+  // Riverpod runs onDispose on every REBUILD while reusing the notifier. A guard
+  // on the user-facing write path therefore latches permanently on the first
+  // data-mode switch or restored session, and every later edit is dropped in
+  // silence. The whole group above uses `overrideWithValue`, which can never
+  // rebuild — which is exactly why it could not see this.
+  group('updateHabit survives a controller rebuild', () {
+    test('an edit after a rebuild still reaches state and the repository',
+        () async {
+      SharedPreferences.setMockInitialValues(const {});
+      final habit = _habit(target: count).copyWith(
+        startDate: DateTime(2026, 7, 22),
+        targetEffectiveFrom: DateTime(2026, 7, 22),
+      );
+      final repo = _RecordingRepository(_snapshotWith(habit));
+      final container = ProviderContainer(
+        overrides: [
+          dashboardRepositoryProvider.overrideWithValue(repo),
+          clockProvider.overrideWithValue(() => now),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      container.read(dashboardControllerProvider.notifier);
+      await _drainBackgroundSweep();
+
+      // Exactly one rebuild. Riverpod runs the previous element's onDispose —
+      // latching `_disposed` — while REUSING the notifier instance, which is
+      // what a data-mode switch or a restored session does in the app.
+      //
+      // `invalidate` is LAZY: the element rebuilds on the next read, not here.
+      // So the read has to come first and the drain after it, or `build()`'s
+      // unawaited `refresh()` lands mid-edit and overwrites the state this test
+      // is asserting on.
+      container.invalidate(dashboardControllerProvider);
+      final controller = container.read(dashboardControllerProvider.notifier);
+      await _drainBackgroundSweep();
+      await controller.updateHabit(
+        id: 'h1',
+        title: 'Renamed after rebuild',
+        color: EvolveColors.primaryStrong,
+        target: TargetPresetCatalog.countDaily.targetWith(amount: 200, step: 20),
+      );
+
+      final saved = container.read(dashboardControllerProvider).habits.single;
+      expect(saved.title, 'Renamed after rebuild',
+          reason: 'a disposal guard must never sit between the user\'s edit '
+              'and its persistence — `_disposed` latches on rebuild, so this '
+              'edit was being dropped in silence');
+      expect(saved.target?.amount, 200);
+    });
+  });
+
+  // `_disposed` is latched by an `onDispose` registered in `build()`, and
+  // Riverpod runs onDispose on every REBUILD while reusing the notifier. Nothing
+  // reset it, so the flag was a one-way switch on a live object — and
+  // `dashboardRepositoryProvider` watches the auth user id, which flips
+  // null -> id the moment a cloud session restores. Every `_disposed` guard in
+  // the controller was therefore dead for the rest of the session, from before
+  // the first sweep had run: the manual-target sweep never resolved a single
+  // closed day on macOS for a signed-in user.
+  group('the sweep survives a controller rebuild', () {
+    test('reconcileManualTargets still writes after a rebuild', () async {
+      // The first sweep must be unable to do this work, or the assertion below
+      // passes whether or not the rebuilt notifier is alive. So: start with NO
+      // auto-fail anchor, which makes the first sweep stamp it at `now` and put
+      // every earlier untouched count day out of reach. Then backdate the anchor
+      // and sweep again on the REBUILT notifier — those days are reachable now,
+      // and only a live notifier can score them.
+      SharedPreferences.setMockInitialValues(const {});
+      final habit = _habit(target: count).copyWith(
+        startDate: DateTime(2026, 7, 22),
+        targetEffectiveFrom: DateTime(2026, 7, 22),
+      );
+      final repo = _RecordingRepository(_snapshotWith(habit));
+      final container = ProviderContainer(
+        overrides: [
+          dashboardRepositoryProvider.overrideWithValue(repo),
+          clockProvider.overrideWithValue(() => now),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      container.read(dashboardControllerProvider.notifier);
+      await _drainBackgroundSweep();
+      expect(repo.progressCalls, isEmpty,
+          reason: 'precondition: the first sweep must have had nothing in reach');
+
+      // One rebuild — what a restored session does when the auth user id flips
+      // null -> id. `invalidate` is lazy, so the read is what re-runs `build()`.
+      container.invalidate(dashboardControllerProvider);
+      final controller = container.read(dashboardControllerProvider.notifier);
+      await _drainBackgroundSweep();
+
+      SharedPreferences.setMockInitialValues(
+          const {'target_auto_fail_from': '2026-07-01'});
+      await controller.reconcileManualTargets(now: now);
+
+      expect(
+        container
+            .read(dashboardControllerProvider)
+            .habitStatusFor('h1', DateTime(2026, 7, 22)),
+        'missed',
+        reason: 'a rebuilt notifier is a LIVE notifier. `_disposed` latches on '
+            'REBUILD, and nothing reset it — so every guard in the controller '
+            'was dead for the rest of the session, and the sweep never resolved '
+            'another day',
+      );
+    });
+  });
 }

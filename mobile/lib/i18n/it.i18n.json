@@ -1346,7 +1346,10 @@
       "statusAuthorized": "Accesso a Tempo di utilizzo attivo",
       "statusNotAuthorized": "L'accesso a Tempo di utilizzo deve essere abilitato",
       "openSettings": "Apri Impostazioni"
-    }
+    },
+    "manualSetByYou": "Impostato da te",
+    "manualReleaseToAuto": "Usa {app}",
+    "manualOverrideHint": "Impostato da te: {app} non modificherà questo giorno"
   },
   "health": {
     "appName": "Salute",

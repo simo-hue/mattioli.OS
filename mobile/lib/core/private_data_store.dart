@@ -34,11 +34,21 @@ abstract interface class PrivateDataStore {
 
   Future<Map<String, Map<String, String>>> loadHabitLogs();
 
+  /// Writes a habit-day's verdict.
+  ///
+  /// [streak] is NULLABLE on purpose: null means "I do not know this day's
+  /// streak — leave whatever is stored alone" (0 for a brand-new row), NOT
+  /// "the streak is zero". The distinction is load-bearing. `goal_logs.streak`
+  /// is derived from a habit's start date and weekly schedule, so a caller that
+  /// cannot resolve the habit cannot compute it — and a fabricated value is
+  /// PERSISTED into a synced table, where nothing re-derives it. Absence is not
+  /// evidence: write the status, which is known, and leave the streak, which is
+  /// not. See `applyAutoVerdict` / `setDerivedStatus` in goal_provider.dart.
   Future<void> setHabitLog({
     required String goalId,
     required String date,
     required String status,
-    int streak = 0,
+    int? streak,
     double? value,
   });
 

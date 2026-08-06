@@ -71,7 +71,7 @@ class FakePrivateDataStore implements PrivateDataStore {
     required String goalId,
     required String date,
     required String status,
-    int streak = 0,
+    int? streak,
     double? value,
   }) async {
     calls.add('setHabitLog');

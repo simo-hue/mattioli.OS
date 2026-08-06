@@ -88,7 +88,7 @@ class _RecordingStore extends FakePrivateDataStore {
     required String goalId,
     required String date,
     required String status,
-    int streak = 0,
+    int? streak,
     double? value,
   }) async {
     logWrites.add({'goalId': goalId, 'date': date, 'status': status, 'value': value});

@@ -77,6 +77,55 @@ final privateLocalDatabaseProvider = Provider<PrivateDataStore>((ref) {
   return PrivateLocalDatabase();
 });
 
+/// Resolves the value written to `goal_logs.streak`.
+///
+/// [requested] null means "unknown — keep whatever is stored", NOT zero. The
+/// write it feeds is `INSERT OR REPLACE`, which rewrites the WHOLE row, so an
+/// unknown streak has to be resolved to the existing value rather than left out
+/// of the map — omitting it would silently store 0, which is precisely the
+/// fabrication the nullable parameter exists to prevent.
+///
+/// [storedStreak] is the raw column value of the existing row, or null when
+/// there is no existing row. A brand-new row has nothing to preserve and takes
+/// the column default of 0.
+int resolveHabitLogStreak(int? requested, Object? storedStreak) =>
+    requested ?? (storedStreak as num?)?.toInt() ?? 0;
+
+/// Reads the existing `goal_logs` row for [goalId]/[date] and resolves what the
+/// upcoming `INSERT OR REPLACE` should carry: the row's identity (so it is
+/// updated rather than duplicated), its original `created_at`, and the streak
+/// per [resolveHabitLogStreak].
+///
+/// Split out of [PrivateLocalDatabase.setHabitLog] so it can be exercised
+/// against the REAL schema. The database is opened through SQLCipher, whose
+/// native plugin does not exist in the Flutter test VM (`openDatabase` throws
+/// MissingPluginException), so `setHabitLog` as a whole cannot be driven from a
+/// test — while the `columns:` list below is load-bearing: drop `'streak'` from
+/// it and every preserved streak silently becomes 0, with the entire suite
+/// still green. Taking a [DatabaseExecutor] lets a plain sqflite-ffi database
+/// stand in, because `sqflite_sqlcipher` and `sqflite_common_ffi` both re-export
+/// `package:sqflite_common/sqlite_api.dart` — these are the same types.
+Future<({String? id, String? createdAt, int streak})> readExistingHabitLog(
+  DatabaseExecutor db, {
+  required String goalId,
+  required String date,
+  required int? requestedStreak,
+}) async {
+  final rows = await db.query(
+    'goal_logs',
+    columns: ['id', 'created_at', 'streak'],
+    where: 'goal_id = ? AND date = ?',
+    whereArgs: [goalId, date],
+    limit: 1,
+  );
+  final row = rows.isEmpty ? null : rows.first;
+  return (
+    id: row?['id'] as String?,
+    createdAt: row?['created_at'] as String?,
+    streak: resolveHabitLogStreak(requestedStreak, row?['streak']),
+  );
+}
+
 class PrivateLocalDatabase implements PrivateDataStore {
   PrivateLocalDatabase._();
 
@@ -658,21 +707,20 @@ class PrivateLocalDatabase implements PrivateDataStore {
     required String goalId,
     required String date,
     required String status,
-    int streak = 0,
+    int? streak,
     double? value,
   }) async {
     final db = await _database();
     final owner = await ownerId();
     final now = _now();
-    final existing = await db.query(
-      'goal_logs',
-      columns: ['id', 'created_at'],
-      where: 'goal_id = ? AND date = ?',
-      whereArgs: [goalId, date],
-      limit: 1,
+    final existing = await readExistingHabitLog(
+      db,
+      goalId: goalId,
+      date: date,
+      requestedStreak: streak,
     );
     await db.insert('goal_logs', {
-      'id': existing.isNotEmpty ? existing.first['id'] : _uuid.v4(),
+      'id': existing.id ?? _uuid.v4(),
       'user_id': owner,
       'goal_id': goalId,
       'date': date,
@@ -681,11 +729,9 @@ class PrivateLocalDatabase implements PrivateDataStore {
       // manual check-ins and Screen Time). REPLACE rewrites the whole row, so we
       // always set it — a manual toggle intentionally clears any prior value.
       'value': value,
-      'created_at': existing.isNotEmpty
-          ? existing.first['created_at'] as String
-          : now,
+      'created_at': existing.createdAt ?? now,
       'updated_at': now,
-      'streak': streak,
+      'streak': existing.streak,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
     _notifyWrite();
   }
@@ -713,13 +759,20 @@ class PrivateLocalDatabase implements PrivateDataStore {
     }
 
     final parsedDate = DateTime.tryParse(date) ?? DateTime.now();
-    final streak = computeStreak(
-      habitId: goalId,
-      date: parsedDate,
-      logs: logs,
-      startDate: goal?.startDate ?? parsedDate,
-      frequencyDays: goal?.frequencyDays,
-    );
+    // ABSENCE IS NOT EVIDENCE. Without the goal there is no start date and no
+    // schedule, so the streak cannot be computed — and substituting the written
+    // day for the start date collapses it to ±1 (computeStreak's backward walk
+    // breaks on its first step). Pass null so the stored value is preserved
+    // rather than overwritten with a fabrication.
+    final streak = goal == null
+        ? null
+        : computeStreak(
+            habitId: goalId,
+            date: parsedDate,
+            logs: logs,
+            startDate: goal.startDate,
+            frequencyDays: goal.frequencyDays,
+          );
 
     await setHabitLog(
       goalId: goalId,

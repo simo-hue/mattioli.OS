@@ -769,6 +769,73 @@ final goalsProvider = NotifierProvider<GoalsNotifier, List<Goal>>(
 
 typedef HabitLogsMap = Map<String, Map<String, String>>;
 
+/// The streak to record for a habit-day whose goal could not be resolved, so
+/// its true run length is unknowable.
+///
+/// Returns null — "keep whatever is stored" — ONLY when the verdict is
+/// UNCHANGED. The run that value belongs to has not moved, so the stored number
+/// remains both the best estimate available and sign-consistent with the row.
+///
+/// When the verdict FLIPS, the stored value is known to be WRONG.
+/// `goal_logs.streak` is SIGNED — positive is a consecutive 'done' run,
+/// negative a 'missed' run (see `computeStreak` in streak_utils.dart) — so
+/// preserving +40 onto a day that has just become 'missed' would assert a
+/// 40-day fire run on a day the user missed. That is not a stale number, it is
+/// a self-contradicting row, and it is read as evidence: `private_analytics`
+/// derives `current_streak` from the latest row's streak and `worst_streak`
+/// from `min(streak)` over 'missed' rows, and the cloud `habit_stats` view does
+/// the same.
+///
+/// ±1 is the sign-consistent MINIMUM: the day taken on its own. It is exactly
+/// what this code produced before the absent-goal guard existed, so this branch
+/// is never worse than what it replaced — and it keeps the ±1 signature the
+/// streak audit looks for, so the repair pass can restore the magnitude.
+/// The shared `goal_logs` upsert payload for all three cloud write paths.
+///
+/// Exists so the streak-omission rule lives in ONE place. These three payloads
+/// used to be written out separately and one of them drifted: it kept sending
+/// `'streak': newStreak` after that variable became nullable, so an unknown
+/// streak was POSTed as an explicit null. PostgREST puts every key present in
+/// the payload into the generated `ON CONFLICT (goal_id,date) DO UPDATE SET`,
+/// so that assigns SQL NULL and DESTROYS the stored value — worse than the
+/// fabricated integer the guard replaced, and invisible because `streak` is a
+/// nullable column with no constraint to trip.
+///
+/// A null [streak] therefore OMITS the key, leaving the stored value untouched
+/// on the conflict path and taking the column default (0) on a fresh insert.
+///
+/// Callers needing extra columns spread this and add their own (see
+/// `applyAutoVerdict`, which always writes `value` — including an explicit null
+/// to clear a measurement a previous build uploaded).
+Map<String, Object?> goalLogUpsertPayload({
+  required String userId,
+  required String goalId,
+  required String dateKey,
+  required String status,
+  required int? streak,
+}) =>
+    {
+      'user_id': userId,
+      'goal_id': goalId,
+      'date': dateKey,
+      'status': status,
+      'streak': ?streak,
+    };
+
+int? unknownStreakFor({
+  required String? previousStatus,
+  required String newStatus,
+}) {
+  if (previousStatus == newStatus) return null;
+  return switch (newStatus) {
+    'done' => 1,
+    'missed' => -1,
+    // 'skipped' is allowed by the schema's CHECK but belongs to neither a
+    // done-run nor a miss-run, so there is no sign to assert.
+    _ => 0,
+  };
+}
+
 /// Page size for the windowed `goal_logs` sync. A single unbounded PostgREST
 /// `select` is capped by the project's `db-max-rows`, which would silently
 /// truncate the heatmap/yearly views for users with long histories, so the full
@@ -1100,15 +1167,24 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
         .read(goalsProvider)
         .where((g) => g.id == habitId)
         .firstOrNull;
-    final newStreak = nextStatus == null
+    // ABSENCE IS NOT EVIDENCE: a habit missing from goalsProvider is not a
+    // habit with no start date. Substituting [date] for the start date makes
+    // computeStreak's backward walk break on its first step, persisting a real
+    // streak as ±1. See [unknownStreakFor] for what is written instead.
+    final int? newStreak = nextStatus == null
         ? 0
-        : computeStreak(
-            habitId: habitId,
-            date: date,
-            logs: newState,
-            startDate: goal?.startDate ?? date,
-            frequencyDays: goal?.frequencyDays,
-          );
+        : goal == null
+            ? unknownStreakFor(
+                previousStatus: previousState[dateKey]?[habitId],
+                newStatus: nextStatus,
+              )
+            : computeStreak(
+                habitId: habitId,
+                date: date,
+                logs: newState,
+                startDate: goal.startDate,
+                frequencyDays: goal.frequencyDays,
+              );
 
     if (isPrivateMode) {
       try {
@@ -1149,13 +1225,16 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
     // Sync con Supabase
     try {
       if (nextStatus != null) {
-        await supabase.from('goal_logs').upsert({
-          'user_id': user!.id,
-          'goal_id': habitId,
-          'date': dateKey,
-          'status': nextStatus,
-          'streak': newStreak,
-        }, onConflict: 'goal_id, date');
+        await supabase.from('goal_logs').upsert(
+              goalLogUpsertPayload(
+                userId: user!.id,
+                goalId: habitId,
+                dateKey: dateKey,
+                status: nextStatus,
+                streak: newStreak,
+              ),
+              onConflict: 'goal_id, date',
+            );
       } else {
         await supabase
             .from('goal_logs')
@@ -1241,13 +1320,26 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
     final goal =
         ref.read(goalsProvider).where((g) => g.id == goalId).firstOrNull;
     final parsedDate = DateTime.tryParse(dateKey) ?? DateTime.now();
-    final newStreak = computeStreak(
-      habitId: goalId,
-      date: parsedDate,
-      logs: newState,
-      startDate: goal?.startDate ?? parsedDate,
-      frequencyDays: goal?.frequencyDays,
-    );
+    // ABSENCE IS NOT EVIDENCE. This runs inside the reconcile's sequential
+    // write loop, long after that pass took its goals barrier, and it re-reads
+    // goalsProvider LIVE per write — so an applied sync landing mid-loop
+    // resolves `goal` to null for a habit that plainly exists. Substituting
+    // [parsedDate] for the start date makes computeStreak's backward walk break
+    // on its first step (`if (cursor.isBefore(start)) break;`), turning a
+    // 40-day streak into 1 and PERSISTING it to a table that syncs to every
+    // device, where nothing re-derives it. Null ⇒ keep the stored value.
+    final int? newStreak = goal == null
+        ? unknownStreakFor(
+            previousStatus: previousState[dateKey]?[goalId],
+            newStatus: status,
+          )
+        : computeStreak(
+            habitId: goalId,
+            date: parsedDate,
+            logs: newState,
+            startDate: goal.startDate,
+            frequencyDays: goal.frequencyDays,
+          );
 
     try {
       if (isPrivateMode) {
@@ -1269,11 +1361,13 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
         // cleared on the next verdict.
         final isHealthDerived = goal?.verificationRule?.isHealthKit ?? true;
         await supabase.from('goal_logs').upsert({
-          'user_id': user!.id,
-          'goal_id': goalId,
-          'date': dateKey,
-          'status': status,
-          'streak': newStreak,
+          ...goalLogUpsertPayload(
+            userId: user!.id,
+            goalId: goalId,
+            dateKey: dateKey,
+            status: status,
+            streak: newStreak,
+          ),
           'value': isHealthDerived ? null : value,
         }, onConflict: 'goal_id, date');
       }
@@ -1322,15 +1416,25 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
     final goal =
         ref.read(goalsProvider).where((g) => g.id == goalId).firstOrNull;
     final parsedDate = DateTime.tryParse(dateKey) ?? DateTime.now();
-    final newStreak = status == null
+    // ABSENCE IS NOT EVIDENCE — same hazard as applyAutoVerdict above, reached
+    // from the manual-target sweep's apply loop, which awaits one persistence
+    // round trip per change and so spans many event-loop turns. Null ⇒ keep the
+    // stored streak rather than persisting one computed from a fabricated start
+    // date. (The status == null branch is a genuine 0: the row is deleted.)
+    final int? newStreak = status == null
         ? 0
-        : computeStreak(
-            habitId: goalId,
-            date: parsedDate,
-            logs: newState,
-            startDate: goal?.startDate ?? parsedDate,
-            frequencyDays: goal?.frequencyDays,
-          );
+        : goal == null
+            ? unknownStreakFor(
+                previousStatus: previousState[dateKey]?[goalId],
+                newStatus: status,
+              )
+            : computeStreak(
+                habitId: goalId,
+                date: parsedDate,
+                logs: newState,
+                startDate: goal.startDate,
+                frequencyDays: goal.frequencyDays,
+              );
 
     try {
       if (isPrivateMode) {
@@ -1349,13 +1453,16 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
       } else {
         _saveToCache(newState);
         if (status != null) {
-          await supabase.from('goal_logs').upsert({
-            'user_id': user!.id,
-            'goal_id': goalId,
-            'date': dateKey,
-            'status': status,
-            'streak': newStreak,
-          }, onConflict: 'goal_id, date');
+          await supabase.from('goal_logs').upsert(
+                goalLogUpsertPayload(
+                  userId: user!.id,
+                  goalId: goalId,
+                  dateKey: dateKey,
+                  status: status,
+                  streak: newStreak,
+                ),
+                onConflict: 'goal_id, date',
+              );
         } else {
           await supabase
               .from('goal_logs')

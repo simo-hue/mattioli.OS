@@ -164,6 +164,106 @@ void main() {
       completes,
     );
   });
+
+  // ── trustworthiness ───────────────────────────────────────────────────────
+  //
+  // Completing is not the same as succeeding. `_loadFromPrivateStore` CATCHES
+  // its error and leaves `[]`, so the barrier settles cleanly over a failure —
+  // and `ensureLoaded` used to return true for it. Both Screen Time callers
+  // guard with `if (!loaded && goals.isEmpty)`, so `!loaded` never firing meant
+  // a failed load handed DeviceActivity `syncMonitoredGoals([])`: stop watching
+  // every habit that still exists, then cache that teardown as intended.
+  group('a settled load is not necessarily a trustworthy one', () {
+    test('THE REGRESSION: a FAILED load reports UNTRUSTWORTHY', () async {
+      final c = await container(_ThrowingStore());
+
+      final loaded = await c.read(goalsProvider.notifier).ensureLoaded();
+
+      expect(loaded, isFalse,
+          reason: 'the empty list is the FAILURE, not an empty account');
+    });
+
+    test('the destructive caller\'s guard actually fires on a failed load',
+        () async {
+      // The exact shape both call sites use (verification_wiring.dart and
+      // main.dart's _runScreenTimeSync).
+      final c = await container(_ThrowingStore());
+
+      final loaded = await c.read(goalsProvider.notifier).ensureLoaded();
+      final goals = c.read(goalsProvider);
+
+      expect(!loaded && goals.isEmpty, isTrue,
+          reason: 'this is the condition that skips the Screen Time teardown');
+    });
+
+    test('a genuinely empty account STAYS trustworthy', () async {
+      // Load succeeded and found nothing. This must NOT be reported as
+      // untrustworthy, or deleting your last Screen Time habit would never stop
+      // DeviceActivity monitoring — the opposite failure.
+      final c = await container(_SlowStore(const []));
+
+      final loaded = await c.read(goalsProvider.notifier).ensureLoaded();
+      final goals = c.read(goalsProvider);
+
+      expect(loaded, isTrue);
+      expect(!loaded && goals.isEmpty, isFalse,
+          reason: 'the teardown must still be reachable for a real empty list');
+    });
+
+    test('a successful load with habits is trustworthy', () async {
+      final c = await container(_SlowStore([_goal('a')]));
+
+      expect(await c.read(goalsProvider.notifier).ensureLoaded(), isTrue);
+    });
+
+    test('the flag re-arms: a rebuild after a failure can succeed', () async {
+      // `build()` re-runs on the SAME notifier instance across an invalidate, so
+      // a sticky failure flag would poison every later load for the session.
+      final store = _FlakyStore();
+      final c = await container(store);
+
+      expect(await c.read(goalsProvider.notifier).ensureLoaded(), isFalse,
+          reason: 'first load throws');
+
+      c.invalidate(goalsProvider);
+      c.read(goalsProvider);
+
+      expect(await c.read(goalsProvider.notifier).ensureLoaded(), isTrue,
+          reason: 'the second load succeeded — the flag must have re-armed');
+      expect(c.read(goalsProvider).map((g) => g.id), ['a']);
+    });
+
+    test('and re-arms the other way: a rebuild after success can fail',
+        () async {
+      final store = _FlakyStore(succeedFirst: true);
+      final c = await container(store);
+
+      expect(await c.read(goalsProvider.notifier).ensureLoaded(), isTrue);
+
+      c.invalidate(goalsProvider);
+      c.read(goalsProvider);
+
+      expect(await c.read(goalsProvider.notifier).ensureLoaded(), isFalse,
+          reason: 'a stale success must not vouch for a failed reload');
+    });
+  });
+}
+
+/// Fails its first load and succeeds afterwards (or the reverse), so a test can
+/// prove the trustworthiness flag is re-armed by `build()` rather than latched
+/// for the life of the notifier.
+class _FlakyStore extends FakePrivateDataStore {
+  _FlakyStore({this.succeedFirst = false});
+
+  final bool succeedFirst;
+  int loadCount = 0;
+
+  @override
+  Future<List<Goal>> loadGoals() async {
+    final first = loadCount++ == 0;
+    if (first == succeedFirst) return [_goal('a')];
+    throw StateError('disk failure');
+  }
 }
 
 /// A store whose goal load fails, to prove the barrier never rethrows.

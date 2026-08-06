@@ -178,9 +178,42 @@ class GoalsNotifier extends Notifier<List<Goal>> {
   /// which exists for the identical hazard on the progress sweep.
   Future<void>? _initialLoad;
 
+  /// The twin of [HabitLogsNotifier._syncFailed] and
+  /// [HabitProgressNotifier._syncFailed], needed here for exactly the same
+  /// reason — and its absence was a real defect, not a symmetry gap.
+  ///
+  /// [ensureLoaded]'s contract is "returns false if the load never settled, so a
+  /// caller that would act destructively on an empty list can decline to". But
+  /// [_loadFromPrivateStore] CATCHES its error and leaves `[]`, so the future
+  /// settles *successfully* on a failure and the barrier returned true over an
+  /// empty list. Both Screen Time callers guard with `if (!loaded &&
+  /// goals.isEmpty)` — and `!loaded` could never happen, so a failed load handed
+  /// DeviceActivity `syncMonitoredGoals([])`: the "you deleted your last
+  /// verifiable habit, stop watching" signal, for habits that plainly still
+  /// exist. The teardown was then cached as the desired state, and re-registering
+  /// re-zeroes each goal's accrued usage for the day, so a limit habit that had
+  /// already breached its threshold got a fresh clock.
+  bool _syncFailed = false;
+
+  /// Set when the offline mirror populated [state]. See [loadIsTrustworthy]: a
+  /// cache-seeded list is real data, so a failed server sync on top of it is
+  /// still trustworthy enough to act on.
+  bool _cacheSeeded = false;
+
   @override
   List<Goal> build() {
     final dataMode = ref.watch(activeDataModeProvider);
+    // Re-arm BOTH flags. The `_cacheSeeded` half is the load-bearing one and is
+    // easy to mistake for redundant: `_seedFromCache` only ever sets it TRUE, so
+    // this and the auth listener are its only clear sites — and `build()` re-runs
+    // on the `activeDataModeProvider` watch above, so a cloud→private switch
+    // carrying a stale `true` would let `loadIsTrustworthy` vouch for the `[]` a
+    // FAILED private load left behind, resurrecting the exact defect these flags
+    // exist to prevent. (`_syncFailed` is additionally reset by each loader's
+    // success path, so only this one is strictly required.) Pinned by
+    // goals_load_trustworthy_cloud_test.dart's mode-switch test.
+    _syncFailed = false;
+    _cacheSeeded = false;
     if (dataMode == AppDataMode.private) {
       _initialLoad = _loadFromPrivateStore();
       return [];
@@ -193,7 +226,11 @@ class GoalsNotifier extends Notifier<List<Goal>> {
         // Re-arm the barrier: a transient logout empties `state` (below) without
         // rebuilding the notifier, so without this `ensureLoaded` would be
         // satisfied by the PREVIOUS, already-completed load and a caller would
-        // read the empty list as "this user has no habits".
+        // read the empty list as "this user has no habits". The flags are
+        // re-armed with it — a fresh attempt is not yet a failure, and the
+        // previous account's seed says nothing about this one.
+        _syncFailed = false;
+        _cacheSeeded = false;
         _initialLoad = _syncFromSupabase();
       } else if (!next.isLoggedIn) {
         // Clear only the in-memory state for the /login redirect. Do NOT wipe the
@@ -219,10 +256,21 @@ class GoalsNotifier extends Notifier<List<Goal>> {
   }
 
   /// Awaits the in-flight initial load, if any, so a caller can tell "no habits"
-  /// apart from "not loaded yet". Returns false if the load never settled, so a
-  /// caller that would act destructively on an empty list can decline to.
-  /// Never rethrows — see [awaitStableBarrier].
-  Future<bool> ensureLoaded() => awaitStableBarrier(() => _initialLoad);
+  /// apart from "not loaded yet" AND from "the load failed". Returns false in
+  /// both of the latter cases, so a caller that would act destructively on an
+  /// empty list can decline to. Never rethrows — see [awaitStableBarrier].
+  ///
+  /// Settling is NOT sufficient on its own: both loaders swallow their error and
+  /// leave `[]` behind, so the barrier completes cleanly over a failure. See
+  /// [_syncFailed].
+  Future<bool> ensureLoaded() async {
+    final settled = await awaitStableBarrier(() => _initialLoad);
+    return loadIsTrustworthy(
+      settled: settled,
+      syncFailed: _syncFailed,
+      cacheSeeded: _cacheSeeded,
+    );
+  }
 
   /// Serves the offline mirror as initial state, but only once the cache is
   /// confirmed to belong to [userId] — the owner marker lives in the keychain,
@@ -240,14 +288,23 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     final cached = _loadFromCache();
     if (cached.isEmpty) return;
     state = cached;
+    // Real habits, from the offline mirror. A server sync that fails on top of
+    // this is still trustworthy to act on — see [loadIsTrustworthy].
+    _cacheSeeded = true;
   }
 
   Future<void> _loadFromPrivateStore() async {
     try {
       state = await ref.read(privateLocalDatabaseProvider).loadGoals();
+      _syncFailed = false;
     } catch (e, stack) {
       AppLogger.error('[Goals] Private load error', e, stack);
       state = [];
+      // The `[]` below is the FAILURE, not an empty habit list. Without this
+      // flag the barrier settles cleanly over it and every caller guarding on
+      // "did the load settle?" acts on an empty list — which, for the Screen
+      // Time sync, means tearing down monitoring for habits that still exist.
+      _syncFailed = true;
     }
   }
 
@@ -319,11 +376,17 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       final goals = (response as List).map((j) => Goal.fromJson(j)).toList();
       _serverStateApplied = true;
       state = goals;
+      _syncFailed = false;
       if (await cacheOverwriteAllowed(user.id, isEmptyResult: goals.isEmpty)) {
         _saveToCache(goals);
       }
     } catch (e, stack) {
       AppLogger.error('[Goals] Sync error', e, stack);
+      // Offline, a 5xx, an expired token: `state` keeps whatever it held, which
+      // on a cold launch is the empty list `build` returned. Absence is not
+      // evidence — say so, so `ensureLoaded` reports the list as untrustworthy
+      // unless the cache seeded it. See [loadIsTrustworthy].
+      _syncFailed = true;
     }
   }
 

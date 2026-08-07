@@ -341,9 +341,11 @@ class SyncLocalStore {
   /// A remote row with no stamp cannot prove it is newer, so it never wins. A
   /// LOCAL row with no stamp has never been positioned by this device (a
   /// pre-v12 row), so the remote position is taken.
-  /// Returns true when it kept the LOCAL position, i.e. the row about to be
-  /// written is a MERGE (remote fields + this device's position) that no peer
-  /// has seen.
+  /// Returns true when it kept a local position that DIFFERS from the incoming
+  /// one — i.e. the row about to be written is a genuine MERGE (remote fields +
+  /// this device's position) that no peer has seen, and therefore needs pushing
+  /// back. Equal positions return false: there is nothing to teach anyone, and
+  /// re-dirtying them would loop.
   Future<bool> _preserveNewerOrderKey(
     DatabaseExecutor txn,
     String table,
@@ -355,7 +357,7 @@ class SyncLocalStore {
 
     final localRows = await txn.query(
       'goals',
-      columns: ['order_key_updated_at'],
+      columns: ['order_key', 'order_key_updated_at'],
       where: 'id = ?',
       whereArgs: [id],
       limit: 1,
@@ -373,9 +375,22 @@ class SyncLocalStore {
       return false;
     }
 
+    final incomingOrderKey = data['order_key'];
     data.remove('order_key');
     data.remove('order_key_updated_at');
-    return true;
+
+    // Only report a MERGE when the position actually differs.
+    //
+    // The caller re-stamps and re-dirties a merged row so the peer learns this
+    // device's position. If we reported a merge whenever the stamps were EQUAL —
+    // which they are for every row after both devices ran the same backfill, and
+    // for every echo of our own push — the two devices would re-dirty and
+    // re-push the same unchanged row at each other forever: a permanent sync
+    // ping-pong burning battery and CloudKit quota, with no user-visible symptom
+    // to explain it. Identical keys need no correcting.
+    final localKey = (localRows.first['order_key'] as num?)?.toDouble();
+    final remoteKey = (incomingOrderKey as num?)?.toDouble();
+    return localKey != remoteKey;
   }
 
   Future<bool> applyUpsert(

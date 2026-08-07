@@ -722,6 +722,31 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
   Future<void> _repairStreaksOnce() async {
     if (!mounted) return;
     if (ref.read(activeDataModeProvider) != AppDataMode.private) return;
+
+    // Wait for the VERDICT MAP to be trustworthy before recomputing anything.
+    //
+    // The repair derives every streak from a habit's full log history and now
+    // stamps a fresh `updated_at` so the correction WINS last-write-wins on the
+    // other device. Those two facts together make running it over a partially
+    // pulled history actively dangerous: a launch-time sync is still arriving,
+    // so the history can be short, the recomputed streaks are wrong, and being
+    // newer they overwrite the CORRECT values on the Mac. That is worse than the
+    // corruption it exists to repair.
+    //
+    // The gate is the same one the sweeps use, and `loadIsTrustworthy` tells a
+    // failed load apart from a genuinely empty one. On failure the repair simply
+    // does not run and is retried next launch — it is never marked done.
+    final logsLoaded = await ref
+        .read(habitLogsProvider.notifier)
+        .ensureLoaded()
+        .timeout(const Duration(seconds: 10), onTimeout: () => false);
+    if (!mounted || !logsLoaded) {
+      AppLogger.warning(
+        '[Streaks] repair deferred — the verdict map did not settle; '
+        'recomputing from a partial history would push wrong streaks',
+      );
+      return;
+    }
     final corrected = await runStreakRepairOnce(
       store: ref.read(privateLocalDatabaseProvider),
       prefs: ref.read(sharedPrefsProvider),

@@ -993,8 +993,23 @@ Map<String, Object?> goalLogUpsertPayload({
 /// created after a reorder used to leap to the top) and a deterministic
 /// tie-break so two devices agree.
 List<Goal> _sortedByOrderKey(List<Goal> goals) {
-  final sorted = [...goals];
-  sorted.sort((a, b) {
+  // STABLE: the final tie-break is the item's position in the INCOMING list,
+  // never its id.
+  //
+  // Tie-breaking on `id` looked harmless and was not. In account mode both
+  // discriminators above are null for every habit — nothing backfills
+  // `order_key` in Postgres, and `display_order` is no longer written — so the
+  // sort fell straight through to comparing random `gen_random_uuid()` strings
+  // and permanently shuffled the habit list of every account user on upgrade,
+  // for no reason they could see or undo. The incoming order is already
+  // meaningful (the server sorts by `display_order, created_at`; the private
+  // store by `kGoalsOrderBy`), so preserving it is both correct and the least
+  // surprising thing to do.
+  final indexed = [
+    for (var i = 0; i < goals.length; i++) (index: i, goal: goals[i]),
+  ];
+  indexed.sort((x, y) {
+    final a = x.goal, b = y.goal;
     final ak = a.orderKey, bk = b.orderKey;
     if (ak != null && bk != null) {
       final byKey = ak.compareTo(bk);
@@ -1008,9 +1023,9 @@ List<Goal> _sortedByOrderKey(List<Goal> goals) {
     if (ad != null && bd != null && ad != bd) return ad.compareTo(bd);
     if (ad != null && bd == null) return -1;
     if (ad == null && bd != null) return 1;
-    return a.id.compareTo(b.id);
+    return x.index.compareTo(y.index);
   });
-  return sorted;
+  return [for (final e in indexed) e.goal];
 }
 
 int? unknownStreakFor({

@@ -421,12 +421,19 @@ fixed. These are what it could not settle without you:
 
 These cannot be done from code. Ordered by when they matter.
 
-1. **Apply the Supabase migration** — `migrations/20260806_add_goal_order_key.sql`.
-   Adds `goals.order_key` + `order_key_updated_at`. Additive and nullable, so
-   nothing breaks before you run it: the clients deliberately do NOT order by
-   `order_key` server-side precisely so a project without this migration still
-   returns the habit list. Only needed for account mode; Private mode migrates
-   itself (private schema v11 → v12).
+1. **Apply the Supabase migration FIRST — before anyone installs the new build.**
+   `migrations/20260806_add_goal_order_key.sql`. Additive and nullable.
+
+   CORRECTION to what I told you earlier: I said "nothing breaks before you run
+   it". That was wrong, and a review caught it. READING is safe — the clients
+   deliberately do not `ORDER BY order_key` server-side, so a project without
+   this migration still returns the whole habit list. But WRITING is not: in
+   account mode, creating the FIRST habit sends `order_key` in the insert
+   payload, and Postgres rejects an insert naming a column that does not exist.
+   So on an un-migrated project a brand-new account user cannot create their
+   first habit. Apply the migration first and the window never opens.
+
+   Only account mode needs this; Private mode migrates itself (v11 → v12).
 
 2. **Size the streak damage on your own data** (read-only, nothing is written):
    ```

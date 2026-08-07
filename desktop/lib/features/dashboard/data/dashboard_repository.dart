@@ -20,6 +20,42 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/calendar_days.dart';
 
+/// Applies the v12 fractional position to rows fetched from Supabase.
+///
+/// The server query deliberately does NOT `ORDER BY order_key` — a project that
+/// has not run migrations/20260806 would reject the whole SELECT and cost the
+/// user their entire habit list rather than just its order. So the ordering has
+/// to happen here, and for a while it simply did not: the comment claimed the
+/// client sorted by the key and nothing did, so a reorder made on the iPhone
+/// (which writes ONLY order_key) was invisible on macOS — and the next Mac
+/// reorder overwrote it.
+///
+/// STABLE: rows without a key keep their incoming relative order (the server
+/// sorted them by display_order then created_at), and keyed rows sort ahead of
+/// keyless ones — never the reverse, or a single keyed habit would leap to the
+/// top of an otherwise unkeyed list.
+List<Map<String, dynamic>> sortRemoteHabitRowsByOrderKey(
+  List<Map<String, dynamic>> rows,
+) {
+  final indexed = [
+    for (var i = 0; i < rows.length; i++) (index: i, row: rows[i]),
+  ];
+  indexed.sort((x, y) {
+    final a = (x.row['order_key'] as num?)?.toDouble();
+    final b = (y.row['order_key'] as num?)?.toDouble();
+    if (a != null && b != null) {
+      final byKey = a.compareTo(b);
+      if (byKey != 0) return byKey;
+    } else if (a != null) {
+      return -1;
+    } else if (b != null) {
+      return 1;
+    }
+    return x.index.compareTo(y.index);
+  });
+  return [for (final e in indexed) e.row];
+}
+
 abstract class DashboardRepository {
   bool get isCloudBacked => false;
 
@@ -357,7 +393,7 @@ class SupabaseDashboardRepository extends DashboardRepository {
       ]);
       final progressRows = await progressFuture;
       _snapshot = _fromRemote(
-        habitRows: _rows(responses[0]),
+        habitRows: sortRemoteHabitRowsByOrderKey(_rows(responses[0])),
         logRows: _rows(responses[1]),
         goalRows: _rows(responses[2]),
         moodRows: _rows(responses[3]),

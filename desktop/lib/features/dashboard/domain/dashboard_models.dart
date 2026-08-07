@@ -349,8 +349,12 @@ class DashboardHabit {
     'start_date': (startDate ?? DateTime.now()).toIso8601String(),
     if (endDate != null) 'end_date': endDate!.toIso8601String(),
     if (displayOrder != null) 'display_order': displayOrder,
-    if (orderKey != null) 'order_key': orderKey,
-    if (orderKeyUpdatedAt != null) 'order_key_updated_at': orderKeyUpdatedAt,
+    // order_key is DELIBERATELY absent. This payload is used by ordinary habit
+    // CREATE/UPDATE, and the in-memory habit carries whatever position it held
+    // when the editor opened — so including it lets a rename push a PRE-DRAG
+    // position and walk the habit back. Only `reorderHabits` writes the
+    // position, mirroring the private store and mobile. It must not be possible
+    // to move a habit by renaming it.
     if (reminderTime != null) 'reminder_time': reminderTime,
     // For a real rule OR to preserve an undecodable newer-client compound blob
     // (target-free); a plain manual habit stays column-free so its writes don't

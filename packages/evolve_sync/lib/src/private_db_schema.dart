@@ -400,17 +400,32 @@ CREATE TABLE user_settings (
     );
     for (final ownerRow in owners) {
       final owner = ownerRow['user_id'];
+      // ONLY the keyless rows. Selecting every goal — which this did — meant a
+      // single imported habit renumbered the WHOLE list from `display_order`,
+      // and `display_order` is frozen at migration time because nothing
+      // maintains it after v12. So importing a pre-v12 backup silently reverted
+      // every reorder the user had made since, and nulled every
+      // `order_key_updated_at` along with it, throwing away the field-level LWW
+      // clock that lets a real drag defend its position against a peer.
       final rows = await db.rawQuery(
-        'SELECT id FROM goals WHERE user_id = ? '
+        'SELECT id FROM goals WHERE user_id = ? AND order_key IS NULL '
         'ORDER BY display_order IS NULL, display_order ASC, created_at ASC, id ASC',
         [owner],
       );
+      if (rows.isEmpty) continue;
+      // Keyless rows go AFTER everything already positioned, rather than
+      // renumbering from 1: an import appends, it does not reshuffle.
+      final maxRow = await db.rawQuery(
+        'SELECT MAX(order_key) AS m FROM goals WHERE user_id = ?',
+        [owner],
+      );
+      final base = (maxRow.first['m'] as num?)?.toDouble() ?? 0.0;
       final stamp = DateTime.now().toUtc().toIso8601String();
       for (var i = 0; i < rows.length; i++) {
         await db.update(
           'goals',
           {
-            'order_key': kOrderKeyStep * (i + 1),
+            'order_key': base + kOrderKeyStep * (i + 1),
             // DELIBERATELY LEFT NULL. `order_key_updated_at` is the FIELD-level
             // LWW clock (SyncLocalStore._preserveNewerOrderKey), not a
             // propagation stamp — writing `now` here would be this migration

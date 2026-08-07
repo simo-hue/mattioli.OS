@@ -212,15 +212,41 @@ void main() {
       await db.close();
     });
 
-    test('leaves rows that already have a key alone', () async {
+    test('THE VACUOUS ONE, FIXED: a keyed row survives an import that brings '
+        'in a keyless one', () async {
+      // The previous version of this test seeded ONE already-keyed goal, so the
+      // guard query `WHERE order_key IS NULL` returned nothing and the function
+      // did nothing at all — the assertion was satisfied by a no-op. It passed
+      // while an import was renumbering every habit in the list.
+      //
+      // The shape below is the one an import actually produces: keyed rows the
+      // user has positioned, PLUS a keyless row the backup brought in.
       final db = await openV12();
-      await seedGoal(db, 'a', displayOrder: 0);
-      await db.update('goals', {'order_key': 555.0});
+      await seedGoal(db, 'kept', displayOrder: 9);
+      await db.update('goals', {
+        'order_key': 555.0,
+        'order_key_updated_at': '2026-08-06T12:00:00.000Z',
+      });
+      await seedGoal(db, 'imported', displayOrder: 0);
+      await db.update('goals',
+          {'order_key': null, 'order_key_updated_at': null},
+          where: "id = 'imported'");
 
       await PrivateDbSchema.backfillOrderKeys(db);
 
-      final row = (await db.query('goals', where: "id = 'a'")).single;
-      expect(row['order_key'], 555.0, reason: 'idempotent — no churn');
+      final kept = (await db.query('goals', where: "id = 'kept'")).single;
+      expect(kept['order_key'], 555.0,
+          reason: 'a positioned habit must NOT be renumbered by an import');
+      expect(kept['order_key_updated_at'], '2026-08-06T12:00:00.000Z',
+          reason: 'nor lose the LWW stamp that defends it against a peer');
+
+      final imported =
+          (await db.query('goals', where: "id = 'imported'")).single;
+      expect(imported['order_key'], isNotNull);
+      expect((imported['order_key'] as num).toDouble(), greaterThan(555.0),
+          reason: 'an import APPENDS; it does not reshuffle the list');
+      expect(await idsByOrderKey(db), ['kept', 'imported'],
+          reason: 'the stale display_order (9 vs 0) must not win');
       await db.close();
     });
   });
@@ -394,6 +420,41 @@ void main() {
       expect(row['updated_at'], '2031-01-01T00:00:00.000Z',
           reason: 'and it must be stamped LATER than the record it merged, or '
               'the peer rejects it on strict greater-than');
+      await db.close();
+    });
+
+    test('THE PING-PONG FIX: an IDENTICAL position is not re-dirtied', () async {
+      // Two devices that ran the same backfill hold the same key with the same
+      // (null) stamp, and every echo of our own push comes back identical. If
+      // "preserved" meant "re-push", the two devices would re-dirty and re-send
+      // the same unchanged row at each other forever — burning battery and
+      // CloudKit quota with no visible symptom.
+      final db = await openV12();
+      await seedGoal(db, 'a', displayOrder: 0);
+      await db.update('goals', {
+        'order_key': 1024.0,
+        'order_key_updated_at': '2026-08-06T12:00:00.000Z',
+      });
+      final store = SyncLocalStore(db);
+
+      await store.applyUpsert(
+        'goals',
+        'goals:a',
+        goalPayload(
+          id: 'a',
+          orderKey: 1024.0, // the SAME position
+          orderKeyStamp: '2026-08-06T12:00:00.000Z', // and the same stamp
+        ),
+        DateTime.parse('2030-01-01T00:00:00.000Z').millisecondsSinceEpoch,
+        '2031-01-01T00:00:00.000Z',
+      );
+
+      final sync = (await db.query(PrivateDbSchema.syncStateTable,
+              where: "record_name = 'goals:a'"))
+          .single;
+      expect(sync['dirty'], 0,
+          reason: 'identical positions need no correcting — re-dirtying them '
+              'is a permanent sync loop');
       await db.close();
     });
 

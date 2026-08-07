@@ -1,466 +1,172 @@
 # TO_SIMO_DO.md
-- [ ] Widget for iPhone & MacOS
-- [ ] statistiche per obiettivi stile counter come vengono gestite ( sono binarie: failed or succeded oppure si tiene conto anche di quanto vicino ci sono arrivato a raggiungerle? )
-- [ ] Ci deve essere anche da desktop nella pagina dei goals la specifica informazione delle date esatte dei periodi ad esempio per la settimana numero Z ( da giorno X a Y ), ma la stessa cosa anche per gli obiettivi trimestrali
-- [ ] Macro goals still need a numeric target + progress bar (status already cycles active/completed/failed). Habits are DONE — the Checkbox / Number / Automatic picker and quantitative targets are live; MacroTargetsConfig.enabled is still false on both apps.
 
----
-
-## Arabic device QA — auto-verified habit line (2026-07-29)
-
-Only a real Arabic-locale device can settle these two. Set the app to العربية, open a
-day with an auto-verified habit, and look at the line under the habit name.
-
-- [ ] **Does `≥` render mirrored (looking like `≤`)?** U+2264/U+2265 are
-  `Bidi_Mirrored=Yes`, and in an RTL run a conforming shaper (HarfBuzz, which Flutter
-  uses) may flip the glyph. It is Unicode-correct, but `≥` (goal) and `≤` (limit) mean
-  OPPOSITE things here, so a reader who scans math symbols Latin-first could read the
-  rule backwards. If it does mirror and you dislike it, the fix is a locale-owned
-  summary pattern using the words already in the file — `على الأقل` / `على الأكثر`,
-  which in Arabic follow the quantity: `التمرين: 30 دقيقة على الأقل`. That costs a new
-  pattern key per locale and is much longer, so decide from what you actually see.
-- [ ] **Does 11pt SF Arabic clip dots or diacritics** in that single-line row? Arabic
-  reads smaller than Latin at the same point size; may need +1pt or an explicit line
-  height for `ar`.
-
-## Arabic grammar defects found while reviewing (pre-existing, NOT from this change)
-
-These are shipped bugs an Arabic native-speaker review surfaced. Numbers do not agree
-with their unit words: Arabic needs the dual for 2 and the plural for 3–10, and the
-`units` tokens are all singular. Concrete, reachable cases:
-
-- [ ] `sleepHours` default **8** renders `≥ 8 ساعة` — must be `8 ساعات`. Typical sleep
-  goals (6–9) sit entirely inside the broken band, so this is the DEFAULT state of a
-  shipped template.
-- [ ] `mindfulMinutes` default **10** renders `≥ 10 دقيقة` — must be `10 دقائق`.
-- [ ] `activeEnergy` (`سعرة`) breaks the same way for 2–10.
-- [ ] `screenTime.selectionSummary` (`"{count} محدد"`) has both the agreement bug and a
-  gender bug — apps/categories are non-human plurals, so `محددة`.
-- [ ] Unit/label stutter, all locales, worst in Arabic: the summary appends a unit to a
-  label that already names it — `≥ 30 دقيقة دقائق التمرين`, `≥ 8 ساعة ساعات النوم`.
-  English has it too (`≥ 30 min Exercise minutes`); Arabic repeats the same root twice.
-- [ ] Three different verbs for "tap" across `ar.i18n.json` (`انقر` ×6, `اضغط` ×1,
-  `المس` ×0) and none is the Apple-iOS-Arabic `المس`. `a11y.toggleHint` currently tells
-  iPhone users to double-*click*. Wants one sweep, not per-string edits.
-- [ ] `CouldNotVerifyChip` hardcodes ASCII `'?'`; Arabic is `؟` (U+061F).
-
-Cheapest fix for the agreement family, if you want it: make the Arabic unit tokens
-invariant abbreviations (`د`, `س`) the way `كم` already is — abbreviations don't
-inflect. The thorough fix is slang plural categories for `ar`, which means
-`verificationUnitSuffix` has to take the count.
-
-## prompt to run 2
-/grill-me We are working on the flutter implementation, so both desktop and mobile. And as we have connected the screen time option for the auto-verifiable habits, I want you to ask this question as obviously I set a timer of 10 minutes for example on a specific app but what I was thinking about as it's obviously true at the beginning of the day. The problem is that how is handled the fact that the number obviously increases during the day? Is the habits checked every time? Or whenever it gets it first state then it's fixed and never checked again?
-
-
----
+Manual actions only — things code cannot do. Anything fixed is deleted from here;
+history lives in `DOCUMENTATION.md`.
 
 ```bash
 flutter run -d macos --dart-define-from-file=.env
 flutter build macos --release --dart-define-from-file=.env
-```
-
-```bash
 flutter build ipa --release
 ```
 
 ---
 
-## Cumulative numeric macro goals (feature #6) — foundation (2026-07-24)
+## 1. Blocking now — habit reorder rollout (2026-08-06), in this order
 
-### Deferred feature work (the macro-goal feature is NOT user-visible until these land)
-- [ ] **UI (the bulk of remaining work)**: create/edit a numeric macro-goal target
-      (amount + unit) + an optional "link a habit" picker + a progress bar, on both
-      apps, gated by the flags. Mobile: `macro_goals_screen.dart` + `ui/widgets/macro_goals/`.
-      Desktop: `create_goal_dialog.dart` + goals presentation. Will add the 5-locale
-      i18n keys (+ Arabic native review).
-- [ ] **Cloud-mode delete-snapshot**: in account mode, deleting a linked habit
-      un-links the macro goal (ON DELETE SET NULL) but does NOT snapshot the
-      accumulated derived value into progress_amount — implement a client
-      fetch-sum-before-delete in `goal_provider.dart` (mobile) / `dashboard_controller.dart`
-      (desktop) / cloud repo. (Private mode already snapshots.)
-- [ ] **When the UI ships**: force-write the numeric columns on the Supabase UPDATE
-      path (like the habit `target` column) so editing can actively CLEAR a target
-      or break a link (today's conditional emit can't clear an omitted column).
-- [ ] `get_macro_goals_stats` RPC + Dart twins unchanged (correct as-is — numeric
-      completion flows through `status`); reflecting numeric progress in stats is a
-      future enhancement, not a fix.
+1. [ ] **Apply `migrations/20260806_add_goal_order_key.sql` BEFORE anyone installs the
+   build.** Account mode only (Private migrates itself, v11→v12). Reading is safe without
+   it; *writing* is not — creating the first habit sends `order_key` and Postgres rejects
+   an insert naming a missing column.
+2. [ ] **Size the streak damage** (read-only, writes nothing):
+   `cd mobile && dart run tool/audit_streaks.dart <export.json> --all`
+   Export via Profile → Privacy → **Export Data** (iOS share sheet → save to Mac).
+   `[collapsed]` rows = the real corruption; the rest is ordinary staleness. The in-app
+   repair fixes both on next launch regardless.
+3. [ ] **After BOTH devices are updated**, open Manage habits once, check the order,
+   re-drag anything wrong. Expect one settling pass — the two devices' `display_order`
+   had already diverged.
+4. [ ] **Desktop needs a build** — it shares the v12 schema and reads/writes `order_key`,
+   but has never been run on a real machine.
+5. ⚠️ **v12 strands older builds** (`onDowngrade` throws, deliberately). You cannot roll a
+   device back by reinstalling an older TestFlight / `.app`.
 
-## Settings state hoist + pane split (2026-07-28)
+## 2. Blocking — macOS App Store resubmission (2026-07-30)
 
-- **Two timing nuances the widget suite cannot see.** The form state now lives in a keep-alive Riverpod controller rather than a per-mount `State`, which changes two things on a real machine: (1) the synced read-back applies one microtask after `initState` instead of inside it, so there is at most one frame of pre-hydration values when Settings opens; (2) the controller survives closing Settings, so re-opening re-arms the hydration latch and re-reads the appearance instead of rebuilding from SharedPreferences. Open Settings, change a preference on the iPhone, then close and re-open Settings on the Mac and confirm the Mac shows the iPhone's value.
-- **Pre-existing, not introduced:** `settings_page.dart` `_deletePrivateData` opens its loading dialog after an `await` with no `mounted` check. If the page is disposed while the confirm dialog is open, it uses a defunct context. Worth fixing, but it is not a regression from this work.
+Repo side is done. These are App Store Connect actions. Order matters. Ship **1.0.0 (27)**.
 
-## Screen Time on-device test checklist (2026-07-28)
+1. [ ] **Verify the demo account first — everything else is wasted if it fails.** Sign in
+   on the Mac with `wowtesting@gmail.com` / `TestForMePls1.` in **Account mode** (not
+   "Continue privately"). macOS auth is **Supabase**, not StoreKit sandbox. If it fails,
+   create a real Supabase user and update `desktop/macos/fastlane/metadata/review_information/`
+   (`demo_user.txt`, `demo_password.txt`, `notes.txt`).
+2. [ ] **While signed in, confirm the paywall shows real prices** (⌘, → Subscription).
+   Not "Price unavailable" — prices only resolve when signed in. This is also the screen
+   the 3.1.2(c) recording must show.
+3. [ ] **Push metadata**: `cd desktop/macos && fastlane mac metadata`. Then verify in ASC
+   that the **Italian** description carries the EULA link (Italian is what the reviewer reads).
+4. [ ] **Set App Review Information** — tick "Sign-in required", populate credentials. The
+   red badge on **App Review** must clear.
+5. [ ] **Reply in Resolution Center** with the recording: launch → Account sign-in → ⌘, →
+   Subscription, showing plan titles, 1 month / 1 year, live prices, both legal links opening.
+6. ⚠️ **Do NOT add the subscriptions to the version page.** Both products are Approved and
+   shared with iOS via Universal Purchase. 2.1(b) fired because the reviewer couldn't
+   *reach* the purchase screen.
+7. [ ] **`desktop/macos/Podfile.lock` needs regenerating on a Mac with Xcode + CocoaPods**
+   (this machine has neither). `desktop/pubspec.yaml` now pins `path_provider_foundation:
+   2.5.1`, which swaps macOS back to the Darwin plugin and adds a pod.
 
-Code audit of the Screen Time verification stack found 5 blockers to fix **before**
-installing a test build (see the session report). These are the tests only a real
-iPhone can settle, ordered by how much they change:
+## 3. Device QA — needs a real iPhone / Mac
 
-- **T1 — does re-registering reset the day's counter?** (Now also the acceptance test for the monitoring diff: with the diff in place an unchanged goal should NOT be re-registered at all, so its counter should survive a relaunch. Verify via `screen_time_monitor_specs` in the App Group — an unchanged goal must still have an entry after a sync that touched a different goal.)
-  Original steps: Register a 5-min limit, burn 6 min so the threshold fires, force-quit, relaunch, background→foreground (this forces `stopMonitoring()` + re-register), burn 6 more min. *If the counter restarts at zero*, every app launch forgives the day's accumulated usage and `atMost` habits become unreachable — the whole sync strategy has to change from "stop everything and re-add" to a diff against `DeviceActivityCenter().activities`. Highest-value test.
-- **T2 — does `stopMonitoring()` deliver `intervalDidEnd`?** With monitoring live mid-day, edit a threshold so the sync runs, then check the App Group buffer (`group.com.simo.evolve.verification`, key `pending_screen_time_signals`) for any `stayedUnder` row. **Assert on the row's `y`/`m`/`d` fields, not on "today"** — signals are now dated by the interval they describe, so a stop-induced row would carry neither today nor yesterday but be dropped entirely by the mid-day guard. Seeing *no* row is the pass. Seeing one means the guard's window needs widening.
-  Also test the **23:55–23:59 band specifically**: edit a threshold in that window. If `stopMonitoring()` raises `intervalDidEnd`, a sync there is classified as "today's interval closing" and banks a spurious *pass* for today — the one five-minute hole the mid-day drop guard cannot cover.
-- **T3 — what does the appex actually link?** After archiving: `otool -L …/PlugIns/DeviceActivityMonitorExtension.appex/DeviceActivityMonitorExtension`. Expect system frameworks only. Any `@rpath/Flutter.framework` or `@rpath/SQLCipher.framework` confirms the extension is inheriting the app's Pods xcconfig and will likely be jetsammed at its 6 MB cap.
-- **T4 — midnight attribution.** PRECONDITION: after the first sync, confirm the App Group key `screen_time_monitor_thresholds` actually holds `{goalId: minutes}`. Without it the extension takes the no-correction fallback and this test proves nothing. Then cross a limit at ~23:58 with the app closed and check which day the verdict lands on — it should be the day you crossed it, not the fresh one. A late `reachedThreshold` stamped on the fresh day is made *unflippable* by the permanence guard.
-- **T4b — DST fall-back.** Set the date to a DST fall-back Sunday, register a 150-minute limit and burn usage across the repeated 01:00–02:00 hour. The crossing must land on that day. This is the case where wall-clock arithmetic silently mis-dates and only elapsed-time arithmetic is correct.
-- **T5 — web-only picks.** In the picker select only websites and tap Done. Currently the app reports that as "empty" and refuses to save, even though native monitoring does handle web domains.
-- **T6 — concurrent appends.** With 2+ Screen Time habits, check the App Group buffer after 23:59: expect one entry per goal. Missing entries confirm the unsynchronised read-modify-write race.
-- **T7 — revoke and return.** Revoke Screen Time for Evolve in iOS Settings, reopen the app, and note where the FamilyControls toggle actually lives and what `authorizationStatus` reports. The in-app "Open Settings" button currently opens Settings › Evolve, not the Screen Time pane its own copy describes.
-- **T9 — power-off overnight replay.** Let the phone die before 23:59 (charge to ~5% in the evening) and boot it in the morning. Does DeviceActivity replay the missed `intervalDidEnd`? If it does, that delivery is hours late but is a *genuine* report of yesterday — and the extension currently DROPS anything more than four hours after midnight. A replayed row appearing in the buffer means `lateDeliveryWindowMinutes` is discarding real passes and must be widened.
-- **T10 — spring-forward.** Set the date to a spring-forward Sunday and let 23:59 pass. The App Group buffer must gain a `stayedUnder` row. This is the mirror of T4b: the day is 23 hours long, and any logic that measures the interval end in *elapsed* rather than *wall-clock* minutes silently drops every goal's pass that day.
-## macOS build: `objective_c1.framework` warning fix (2026-07-30)
+**Habit drag (2026-08-06)** — nothing below has run on a device.
+- [ ] 44pt grip, long-press-anywhere on a row, lift/settle haptics, lift shadow on dark card.
+- [ ] Tapping the pencil scrolls to the populated form (now targets the form key, not offset 0).
 
-`desktop/pubspec.yaml` now pins `path_provider_foundation: 2.5.1` (same override mobile
-has carried since 2026-05-19). That swaps path_provider back from the FFI implementation
-to the normal Darwin **plugin**, so the macOS Pods project gains a pod it does not have
-yet. `flutter pub get` already regenerated
-`desktop/macos/Flutter/GeneratedPluginRegistrant.swift` with `import path_provider_foundation`,
-but `desktop/macos/Podfile.lock` could not be regenerated here (this Mac has no CocoaPods
-and no Xcode).
-## macOS App Store resubmission — blocking manual steps (2026-07-30)
+**Screen Time (2026-07-28)** — ordered by how much they'd change.
+- [ ] **T1 (highest value)** Does re-registering reset the day's counter? Register a 5-min
+  limit, burn 6 min, force-quit, relaunch, background→foreground, burn 6 more. If it
+  restarts at zero, every launch forgives the day and `atMost` habits are unreachable.
+  Also: an *unchanged* goal must still have an entry in `screen_time_monitor_specs` after a
+  sync that touched a different goal.
+- [ ] **T2** Does `stopMonitoring()` deliver `intervalDidEnd`? Edit a threshold mid-day,
+  check the App Group buffer (`group.com.simo.evolve.verification`, `pending_screen_time_signals`)
+  for a `stayedUnder` row — assert on its `y/m/d`, not "today". **No row = pass.** Test the
+  **23:55–23:59** band specifically (the one hole the mid-day guard can't cover).
+- [ ] **T3** `otool -L …/PlugIns/DeviceActivityMonitorExtension.appex/…` — system frameworks
+  only. Any `@rpath/Flutter.framework` or `SQLCipher` means it'll be jetsammed at 6 MB.
+- [ ] **T4** Midnight attribution. Precondition: `screen_time_monitor_thresholds` must hold
+  `{goalId: minutes}`. Cross a limit at ~23:58 app-closed; the verdict must land on that day.
+- [ ] **T4b / T10** DST fall-back and spring-forward Sundays — crossing must land on the
+  right day; the 23-hour day must still produce a `stayedUnder` row.
+- [ ] **T5** Web-only picks are reported as "empty" and refused, though native handles domains.
+- [ ] **T6** 2+ Screen Time habits: one buffer entry per goal after 23:59 (unsynchronised
+  read-modify-write race).
+- [ ] **T7** Revoke Screen Time, reopen: where does the toggle live, what does
+  `authorizationStatus` report? The in-app button opens Settings › Evolve, not the Screen
+  Time pane its copy describes.
+- [ ] **T9** Power-off overnight, boot next morning — does DeviceActivity replay the missed
+  `intervalDidEnd`? If yes, `lateDeliveryWindowMinutes` is discarding real passes.
 
-The repo side of the 3.1.2(c) / 2.1(b) remediation is done (39 locales carry the
-EULA link, macOS review notes exist, the Fastfile no longer targets the wrong
-platform). These remain, and all of them are App Store Connect actions only you
-can take. Order matters.
+**Auto-verified habits (2026-08-04)**
+- [ ] **Re-grant Health access for the compound habit** — iOS only prompts for types never
+  asked about. Editor → *Grant Health access*, then verify **iOS Settings › Health › Data
+  Access & Devices › Evolve** shows EVERY metric on (the only place the truth is visible).
+- [ ] Force-quit → relaunch, check YESTERDAY resolves within a second or two.
+- [ ] Counter habits need one full day — auto-fail is anchored to the first day the rule
+  runs on your device.
 
-1. **VERIFY THE DEMO ACCOUNT FIRST — everything else is wasted if this fails.**
-   Launch Evolve on the Mac, sign in with `wowtesting@gmail.com` /
-   `TestForMePls1.` in **Account mode** (do NOT click "Continue privately on
-   this Mac"). macOS sign-in goes through **Supabase** email/password. If that
-   account is an Apple *StoreKit sandbox* tester rather than a real Supabase
-   user, it does not exist in the auth database, the reviewer cannot get in, and
-   the app gets rejected for the third time on the same root cause. If it fails,
-   create a real Supabase account and update
-   `desktop/macos/fastlane/metadata/review_information/demo_user.txt`,
-   `demo_password.txt` and `notes.txt`.
+**Arabic / accessibility**
+- [ ] Does `≥` render mirrored (like `≤`) in RTL? `≥`/`≤` mean opposite things here. If it
+  does and you dislike it, the fix is a locale-owned pattern (`على الأقل` / `على الأكثر`).
+- [ ] Does 11pt SF Arabic clip dots/diacritics on the habit line? May need +1pt.
+- [ ] Release chip at large Dynamic Type in **German and Arabic** — no overflow, "Use
+  Salute/Salud/صحتي" stays readable.
+- [ ] VoiceOver: the release is a **rotor action** (the card excludes descendant semantics).
+  Confirm it's reachable and reads well.
 
-2. **While signed in, confirm the paywall renders prices.** Settings (⌘,) →
-   Subscription. Both cards must show a real currency figure, NOT "Price
-   unavailable". Prices only resolve when signed in
-   (`desktop_subscription_controller.dart:514`), so this is also the screen your
-   3.1.2 screen recording has to show.
+**Other**
+- [ ] macOS: switch data mode in Settings, then edit a habit's target and Save (the
+  edit-after-rebuild fix). Before it, the dialog closed and the edit vanished.
+- [ ] Change a preference on iPhone, close/reopen Settings on Mac — Mac shows iPhone's value.
 
-3. ~~**Rename the macOS version in App Store Connect: 1.0.0 → 1.2.1.**~~
-   **RESOLVED 2026-07-30 (`0e8ac85`), the other way round:** `desktop/pubspec.yaml`
-   is now `1.0.0+27`, matching the ASC version page. Nothing to rename.
+## 4. Known bugs, verified real, NOT fixed — say the word
 
-4. **Push the metadata**, from `desktop/macos`:
-   `fastlane mac metadata`
-   This is the new metadata-only lane. Then check in App Store Connect that the
-   **Italian** description shows the EULA link — Italian is the locale ASC
-   actually serves for this app, and it is the one the reviewer read.
+- [ ] **macOS fetches `goal_logs` / `goal_progress` unpaginated** (`dashboard_repository.dart:386`,
+  no `.range()`). Mobile paginates *because* PostgREST's `db-max-rows` truncates silently.
+  On a large history the Mac reads real days as untouched and auto-fail writes `missed` over
+  a real `done` — and the two devices genuinely oscillate. **Highest priority here.**
+- [ ] **An AND compound with a data-less metric can never complete** (design limit). If one
+  condition is a metric your devices don't record, HealthKit returns nothing for "no data"
+  and "read denied" alike, and the app refuses to score silence as zero. Either switch that
+  habit to **Any of these (OR)** (works today, no code change), or ask me to build the
+  diagnostic — `HealthKitBridge.hasRecentData` exists and still has **zero callers**.
+- [ ] **Reinstall reaches Supabase + RevenueCat pre-consent.** The Keychain session survives
+  deletion; `has_completed_consent` doesn't. Same shape as the bug that got you rejected.
+- [ ] **Pro modal makes a false claim on the paywall.** `aiCoachDesc` ends "Prefer your own
+  OpenRouter account? That's free too" — BYOK is **Private-mode only**, and this renders on
+  the 3.1.2 screen itself.
+- [ ] **Life View shows a stranger's life by default** — `_LifeCalendar` falls back to
+  `DateTime(2003)` with no DOB set. Should be an empty state.
+- [ ] **`lifeWeeks` label vs months grid** — the app contradicts itself. Fix the string and
+  the 30 non-UI locales together, after approval.
+- [ ] **Arabic grammar family** (pre-existing): numbers don't agree with units — `≥ 8 ساعة`
+  must be `8 ساعات`, same for `mindfulMinutes`, `activeEnergy`; `selectionSummary` also has a
+  gender bug (`محددة`); unit/label stutter in all locales (`≥ 30 min Exercise minutes`);
+  three different verbs for "tap"; `CouldNotVerifyChip` hardcodes ASCII `?` (Arabic `؟`).
+  Cheapest fix: make Arabic unit tokens invariant abbreviations (`د`, `س`) like `كم`.
+- [ ] **`_saveLocal()` runs once per applied change** in the desktop sweep — ~225 keychain
+  writes returning from a 45-day absence. Perf only; hoisting adds an early-return path.
+- [ ] **Reminder scheduling DST seed** — deliberately unchanged. `_nextInstanceOfTime` steps
+  with `Duration(days: 1)` but on `tz.TZDateTime`, and `matchDateTimeComponents` re-matches
+  wall-clock each time, so only the *seed* could be an hour off. Worth a look with a device.
+- [ ] **iOS descriptions over Apple's 4000-char limit** for `ca / el / fr-CA / fr-FR`
+  (4011–4180). Note: `mobile/ios/fastlane/metadata/` is **not in the repo**, so this can only
+  be fixed wherever those files actually live.
 
-5. ~~**Upload build 1.2.1 (26)**~~ — superseded: build 26 was the one rejected.
-   Ship **1.0.0 (27)**; see the 2026-08-02 section at the end of this file.
+## 5. Test / CI gaps
 
-6. **Set the App Review Information fields** if fastlane did not: tick
-   "Sign-in required" and confirm the username/password fields are populated.
-   The red badge on **App Review** in the sidebar must clear.
+- [ ] **CI runs in UTC**, so the DST tests never exercise a real transition. A `TZ=Europe/Rome`
+  leg on one job would make them bite. Say the word.
+- [ ] **Nothing proves the two week calendars call `weekDaysFor`** — reverting a call site in
+  `habits_page.dart` / `weekly_view_widget.dart` to a `Duration` would be invisible to CI.
+  Both widgets are private, so this needs a widget test.
+- [ ] **Account mode is untested end-to-end on mobile** — no test runs `HabitLogsNotifier` /
+  `HabitProgressNotifier` against a Supabase session.
 
-7. **Reply in the Resolution Center** with the screen recording Apple asked for
-   (3.1.2(c)): launch → Account mode sign-in → ⌘, → Subscription, showing plan
-   titles, 1 month / 1 year, live prices, and both legal links opening.
+## 6. Backlog / product
 
-8. **Do NOT add the subscriptions to the version page** — there is no "In-App
-   Purchases and Subscriptions" section on it, because both products are already
-   **Approved** and shared with the live iOS app through Universal Purchase
-   (`com.simo.evolve`). 2.1(b) fired because the reviewer could not reach the
-   purchase screen, not because anything is unsubmitted.
-
-### Separately: a pre-existing iOS metadata bug found during this work
-
-`mobile/ios/fastlane/metadata/{ca,el,fr-CA,fr-FR}/description.txt` are **over
-Apple's 4000-character limit** (4011 / 4092 / 4180 / 4180). Those four locales
-cannot upload as they stand — a `deliver` run for iOS will fail or truncate on
-them. The macOS copies are already trimmed; the iOS originals are untouched
-because that is a separate submission. Worth fixing before the next iOS push.
-
-## macOS description accuracy audit — FIXED 2026-07-30 (residuals below)
-
-An adversarial audit of every description claim against `desktop/lib` found two
-claims with **no implementing code on macOS at all**, both inherited from the
-iOS description. Both are now **removed from all 39 locales**:
-
-- *"Apple-Style Customization: Configure your milestones visually"* — milestones
-  are a hardcoded `const List<int> kStreakMilestones`
-  (`desktop/lib/features/statistics/data/analytics_extra.dart:816`); there is no
-  editor to open.
-- *"Sub-Goal Breakdown"* — zero occurrences of subGoal / subtask / parentGoal /
-  checkpoint anywhere in `desktop/lib`. No model, no field, no UI.
-
-Seven further overstatements were corrected in the **nine locales the desktop UI
-actually speaks** (it, en-US/GB/AU/CA, es-ES/MX, de-DE, ar-SA): Life View no
-longer asserts a unit (the grid is months — `habits_page.dart:1982` —
-while the copy said weeks); "in real time" is dropped from cloud sync (there is
-no Supabase Realtime; account mode is pull-on-build + push-on-write); the
-command palette no longer claims habit jumps (`command_palette.dart:514`
-discards the habit identity and navigates to the section); arrow-key paging is
-scoped to Habits and Goals; "settings window" became "settings organized in
-panes" (it is an in-shell page, not an NSWindow); the per-habit calendar claim
-is scoped to yearly; and the correlation example no longer implies Apple Health
-data the Mac cannot author.
-
-### Residual, accepted for this submission
-
-The **30 locales the app's UI does not speak** keep the inherited iOS wording for
-those seven overstatements — they were not machine-edited in languages neither
-reviewer nor author can proofread, which is a worse risk than the overstatement.
-Note that "Life View ... weeks" actually matches what the app itself displays:
-the tab is labelled `lifeWeeks` = "Weeks of your journey"
-(`desktop/lib/i18n/en.i18n.json`) even though the grid is months. Fix the app
-string and the 30 locales together, after approval.
-
-### Real in-app bugs found during the audit — worth fixing before review
-
-1. **The Pro modal makes a false claim on the purchase surface.** `aiCoachDesc`
-   ends "Prefer your own OpenRouter account? That's free too." BYOK is
-   **Private-mode only** (`coach_config.dart:343-356`), and this string renders
-   on the paywall itself (`subscription_pane.dart:150-155`) — the exact screen
-   under appeal for Guideline 3.1.2. Highest priority of the three.
-2. **Life View shows a stranger's life by default.** `_LifeCalendar` falls back
-   to `DateTime(2003)` when no date of birth is set (`habits_page.dart:1980`), so
-   a reviewer who never opens Settings > Account sees a populated grid that is
-   not theirs. An empty state would be correct.
-3. **`lifeWeeks` label vs months grid** — see above; the app contradicts itself.
-
----
-- **Reinstall path can reach Supabase + RevenueCat pre-consent.** The Keychain
-  session survives app deletion; `has_completed_consent` (NSUserDefaults) does
-  not. So delete-and-reinstall = live session, consent unanswered, and the token
-  refresh / `profiles` read / `Purchases.configure` fire behind the gate. Sentry
-  is gated; these are not. Same shape as the bug that got you rejected.
-
-### Found while reviewing this work — NOT fixed, not in scope
-
-- **macOS fetches `goal_logs` and `goal_progress` unpaginated**
-  (`desktop/.../dashboard_repository.dart`, plain `.select().eq(user_id)` with no
-  `.range()`). Mobile paginates both *because* PostgREST's `db-max-rows` silently
-  truncates. On a large history the Mac now sees a truncated map, reads real days
-  as untouched, and auto-fail writes `missed` over a real `done` — and this is
-  the one configuration where the two devices genuinely oscillate, since the
-  iPhone re-derives `done` from the row it can see and writes it back. This
-  matters more now than it did last week.
-- ~~`progressStale` is not persisted to the desktop cache~~ **FIXED 2026-08-02**
-  — it now round-trips, and an absent key reads as `true` (a cache written before
-  the key existed cannot prove its progress map was healthy).
-
-### From the adversarial review round (2026-08-02)
-
-- ~~The same DST bug family is still live in the ANALYTICS layer.~~ **DONE
-  2026-08-02** — swept across both apps with before/after numbers; see the
-  DOCUMENTATION.md entry. 21 call sites converted, 0 divergences remaining
-  against a UTC oracle across 8 timezones.
-- **Reminder scheduling was examined and deliberately NOT changed.**
-  `_nextInstanceOfTime` / `_nextInstanceOnWeekday` in both apps step with
-  `Duration(days: 1)`, but on `tz.TZDateTime` (the `timezone` package), not Dart
-  `DateTime` — different semantics — and the schedules carry
-  `matchDateTimeComponents`, so the OS re-matches the wall-clock time on every
-  occurrence and only the SEED could be an hour off, on a transition day. It
-  changes when notifications fire, which I cannot verify without a device, so it
-  stays as-is. Worth a look when you next have a device in hand.
-- **`_saveLocal()` runs once per applied change inside the desktop sweep.**
-  Returning from a 45-day absence with 5 quantitative habits is ~225 full-snapshot
-  JSON encodes + keychain writes and 225 round trips in one foreground. Hoisting
-  it out of the loop cuts it by ~N×45 at no correctness cost, but it adds an
-  early-return path (the loop can bail on `_disposed` or a mid-sweep
-  `progressStale`), so I did not add it late in the session.
-- **Nothing proves the two week calendars actually call `weekDaysFor`.** The
-  helper is well tested; reverting a single call site inside
-  `habits_page.dart` / `weekly_view_widget.dart` back to a `Duration` would be
-  invisible to CI. Both widgets are private, so this needs a widget test that
-  pumps the page.
-- **CI cannot exercise the DST tests.** They assert zone-independent invariants,
-  so they pass in UTC no matter what. Add a `TZ=Europe/Rome` leg if you want the
-  guard to be automatic.
-- **Account mode is untested on mobile.** No test runs `HabitLogsNotifier` or
-  `HabitProgressNotifier` with a Supabase session, so the cache-seed / sync-fail
-  combinations that `loadIsTrustworthy` exists to distinguish are covered only as
-  a pure function, not end to end.
-
-## Auto-verified habits + count targets — on-device checks (2026-08-04)
-
-The two bugs you reported are fixed in code (cold-launch/rollover triggers, and
-HealthKit authorization for every compound condition). These need a device.
-
-- [ ] **Re-grant Health access for your compound habit.** The fix makes the app
-  *ask* for the 2nd/3rd condition's metric, but iOS only shows a permission sheet
-  for a type it has never asked about. Your device has already been asked about
-  the primary metric and never about the others, so open the habit in the editor
-  and tap **Grant Health access** (it will reappear now), or Settings › Apple
-  Health › Allow access. Then check **iOS Settings › Health › Data Access &
-  Devices › Evolve** and confirm EVERY metric your habit uses is on — that screen
-  is the only place the truth is visible, because HealthKit never reports a
-  denied read back to the app.
-- [ ] **Verify the fix**: with the app force-quit, relaunch it and look at
-  YESTERDAY for both habits. Before this change a force-quit → launch loop ran
-  neither pass, so nothing ever resolved. Yesterday should now settle within a
-  second or two of launch.
-- [ ] **Counter habits need one full day.** Auto-fail for an *untouched* count day
-  is anchored to the first day the rule runs on your device (deliberately, so
-  shipping it does not retroactively redden history). So the earliest untouched
-  day that can turn red is the first day that CLOSES after this build's first
-  launch. A day where you moved the counter but fell short is not gated on that —
-  it resolves to `missed` as soon as the day closes.
-
-### An AND compound with a data-less metric can never complete (design limit, NOT fixed)
-
-If your two conditions are joined by **All of these (AND)** and one of them is a
-metric your devices do not record — Exercise minutes or Stand hours without an
-Apple Watch, Workouts, Mindful minutes, Sleep — that habit will never turn green
-or red, no matter what permissions you grant. HealthKit returns nothing for "no
-data" and for "read denied" alike, and the app refuses to score silence as zero
-(scoring it as zero would mark you failed for merely denying a read). AND then
-folds an unreadable condition over the whole day.
-
-- [ ] Decide which you want:
-  - **Switch that habit to "Any of these (OR)"** — a habit passes as soon as the
-    readable condition is met. Works today, no code change.
-  - **Or ask me to build the diagnostic**: probe each condition at creation time
-    with `HealthKitBridge.hasRecentData` (already implemented, currently zero
-    callers) and warn "your devices have not recorded Exercise minutes in 30 days
-    — an All-of-these habit using it can never complete", plus name the
-    unreadable condition on the day row instead of the current bare "?".
-
-### Other defects found in the same sweep — verified real, not yet fixed
-
-Each was confirmed by an adversarial pass. None is the cause of what you
-reported; say the word and I will take them.
-
-- [x] ~~**A single tap freezes a verified day, invisibly.**~~ FIXED 2026-08-04.
-  The freeze stays (it must — it protects a deliberate correction from the next
-  reconcile), but a verified day the user took over now shows a "Set by you ·
-  Use Apple Health" chip that releases it in one tap, and VoiceOver gets the
-  same release as a rotor action. **Device QA:** check the chip does not
-  overflow in German and Arabic, and that the rotor action reads correctly.
-  *(Original report below for context.)*
-
-- [ ] **A single tap freezes a verified day, invisibly.** Tapping a habit row in
-  day-details calls `cycleStatus`, which records manual provenance — and
-  reconcile then skips that day forever. One or two exploratory taps ("let me see
-  if it changes") pin the day at done/missed and immune to HealthKit. A full
-  3-tap cycle back to no-status does release it. **If you tapped your compound
-  habit while testing, that day is frozen and will not move — test on a fresh
-  day.**
-- [x] ~~**A reminder "Done" tapped with no session freezes the day but writes no
-  verdict.**~~ FIXED 2026-08-04. The freeze still runs first (it must — that is
-  what makes it survive a background isolate torn down mid-write), but reconcile
-  now treats a freeze with NO verdict behind it as the failed write it is: the
-  day is scored normally and the dangling marker is cleared. Nothing for you to
-  do. *(Original report below for context.)*
-
-- [ ] **A reminder "Done" tapped with no session freezes the day but writes no
-  verdict.** `_freezeManualForToday` runs before the write, and the cloud branch
-  then queues the write instead of committing it. If that queue entry is ever
-  dropped, the day is frozen at *pending* permanently.
-- [x] ~~**A stuck notification-queue entry disables auto-fail forever.**~~ FIXED
-  2026-08-04. The queue is now handed to the sweep as DATA (the decided
-  (goal, day, verdict) triples) instead of as a global veto, so it protects the
-  days it names and nothing else. A queued verdict for a DELETED habit is
-  dropped on its foreign-key error rather than retried forever, and Private mode
-  no longer reaches for an uninitialised Supabase client. Nothing for you to do.
-  *(Original report below for context.)*
-
-- [ ] **A stuck notification-queue entry disables auto-fail forever.** A queued
-  "Done" for a habit you later DELETED fails its foreign key on every replay, so
-  `drained` stays false, so `allowAutoFail` stays false, so no untouched count
-  day is ever auto-failed again on that device. There is no retry cap and no
-  expiry.
-- [x] ~~**Editing a count habit's amount re-anchors `target_effective_from` to
-  today**~~ FIXED 2026-08-04, on BOTH apps. The days the old target still owed
-  are now scored at edit time, while that target is still in force, before the
-  anchor moves past them. Deliberately NOT the "fill empty pre-anchor days"
-  approach — that would score them against the NEW amount and write `missed`
-  over a day that actually met the old one. Nothing for you to do.
-  *(Original report below for context.)*
-
-- [ ] **Editing a count habit's amount re-anchors `target_effective_from` to
-  today**, and the sweep never looks before the anchor — so any earlier day that
-  had not already been materialised stays pending for good. Correct for days that
-  already carry a verdict (that is what the anchor is for), wrong for days that
-  never got one. Fix is to fill-if-empty before the anchor rather than skip.
-- [x] ~~**Sleep is attributed to the day the sample STARTED**~~ FIXED 2026-08-04,
-  entirely in Dart. The sleep window is now `[previous 18:00, today 18:00)` — a
-  full 24 hours, cycle-aligned — so a pre-midnight onset falls in the window of
-  the day you wake. The native query was NOT changed (an overlap+clipping version
-  was written and reverted: clipping reported a truncated union as a
-  measurement, so a real 05:00→14:00 sleep read 7h and scored a false `missed`).
-  **No uncompiled Swift ships from this.** Accepted limit: a sleep beginning
-  before 18:00 counts toward the previous day — in full, and once.
-  *(Original report below for context.)*
-
-- [ ] **Sleep is attributed to the day the sample STARTED** (`.strictStartDate` on
-  a calendar-day window), so a night that begins before midnight lands on the
-  previous day. An AND compound containing Sleep is affected daily.
-
-## After the 2026-08-04 quality review — what still needs YOU
-
-All five latent defects are fixed and the whole session was put through a
-15-agent adversarial review. Two data-loss bugs in my own fixes were found and
-fixed. These are what it could not settle without you:
-
-- [ ] **Nothing this session touches iOS Swift any more.** The sleep fix ended up
-  pure Dart and `AppDelegate.swift` is back to its committed state — so there is
-  no uncompiled native code to worry about. Verify with `git diff --stat
-  mobile/ios/` (expect: nothing).
-- [ ] **macOS: confirm the edit-after-rebuild fix on device.** Launch signed in,
-  switch data mode in Settings, then edit a habit's target amount and Save.
-  Before the fix the dialog closed and the edit vanished silently.
-- [ ] **The release chip at large Dynamic Type, in German and Arabic.** It is a
-  44pt target now with the actionable label given the width, but I cannot render
-  it here. Check it does not overflow and that the "Use Salute/Salud/صحتي" half
-  stays readable.
-- [ ] **VoiceOver: the release is a rotor action**, not a focusable button (the
-  card excludes descendant semantics). Confirm it is reachable and reads well.
-- [ ] **Optional, low priority:** CI runs in UTC, so the DST-sensitive date tests
-  never exercise a real transition. Pinning `TZ: Europe/Rome` on one CI job would
-  make them bite. Say the word and I will add it.
-
-## Habit reorder + streak corruption (2026-08-06) — manual steps
-
-These cannot be done from code. Ordered by when they matter.
-
-1. **Apply the Supabase migration FIRST — before anyone installs the new build.**
-   `migrations/20260806_add_goal_order_key.sql`. Additive and nullable.
-
-   CORRECTION to what I told you earlier: I said "nothing breaks before you run
-   it". That was wrong, and a review caught it. READING is safe — the clients
-   deliberately do not `ORDER BY order_key` server-side, so a project without
-   this migration still returns the whole habit list. But WRITING is not: in
-   account mode, creating the FIRST habit sends `order_key` in the insert
-   payload, and Postgres rejects an insert naming a column that does not exist.
-   So on an un-migrated project a brand-new account user cannot create their
-   first habit. Apply the migration first and the window never opens.
-
-   Only account mode needs this; Private mode migrates itself (v11 → v12).
-
-2. **Size the streak damage on your own data** (read-only, nothing is written):
-   ```
-   cd mobile && dart run tool/audit_streaks.dart ~/Downloads/evolve_private_export.json --all
-   ```
-   Export from Settings → Privacy → Export data. The file is plain JSON and the
-   tool is local-only. `[collapsed]` rows are the empty-goals-window corruption
-   (a real run stored as ±1); anything else is ordinary staleness. The in-app
-   repair fixes both on next launch regardless — this just tells you how much
-   there was.
-
-3. **After BOTH iPhone and Mac are on this build**, open Manage habits once and
-   check the order. The v12 migration backfills `order_key` from each device's
-   own `display_order`, and those had already diverged on a two-device setup —
-   that is the bug. Expect at most one settling pass. Re-drag anything that is
-   wrong; from then on it holds.
-
-4. **A v12 schema bump strands older builds** — `PrivateDbSchema.onDowngrade`
-   throws by design. A kept TestFlight build or an older macOS `.app` will show
-   the "database is too new" state until you update it. This is deliberate (the
-   alternative silently corrupts migration bookkeeping) but it means you cannot
-   roll back a device by reinstalling an older build.
-
-5. **On-device QA of the drag** — the parts no test can judge: the 44pt grip,
-   long-press-anywhere on a row, the lift/settle haptics, and the lift shadow
-   against the dark card. Also confirm tapping the pencil scrolls you to the
-   populated form (it now targets the form's key rather than offset 0).
-
-6. **Desktop needs a build** to pick up the shared v12 schema. It reads and
-   writes `order_key`, but it has not been run on a real machine in this work.
+- [ ] Widget for iPhone & macOS
+- [ ] Statistiche per obiettivi stile counter: sono binarie (failed/succeeded) o si tiene
+  conto di quanto vicino ci sono arrivato?
+- [ ] Desktop, pagina goals: mostrare le date esatte dei periodi (settimana Z = da X a Y),
+  idem per i trimestrali
+- [ ] **Macro goals need a numeric target + progress bar.** `MacroTargetsConfig.enabled` is
+  still `false` on **both** apps — the feature is not user-visible until:
+  - UI: create/edit numeric target (amount + unit) + optional "link a habit" picker +
+    progress bar, both apps, behind the flags (+ 5-locale i18n, Arabic native review)
+  - Cloud-mode delete-snapshot: fetch-sum-before-delete so deleting a linked habit keeps the
+    accumulated value (Private mode already snapshots)
+  - Force-write the numeric columns on the Supabase UPDATE path so editing can *clear* a
+    target or break a link
+- [ ] **Screen Time question worth grilling:** a 10-minute app limit is obviously true at the
+  start of the day. How is the number increasing *during* the day handled — is the habit
+  re-checked, or is its first state fixed forever?

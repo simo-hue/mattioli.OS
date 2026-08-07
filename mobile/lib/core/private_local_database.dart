@@ -141,6 +141,65 @@ Future<({String? id, String? createdAt, int streak})> readExistingHabitLog(
   );
 }
 
+
+String _colorToHex(Color c) =>
+    '#${c.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
+
+/// Builds the `goals` row for a write.
+///
+/// PUBLIC and top-level so it can be exercised against the REAL schema. It used
+/// to be a private method on the SQLCipher singleton, whose native plugin does
+/// not exist in the test VM — so nothing pinned it, and DELETING the two
+/// `order_key` lines below left all 904 mobile tests green while, on a device,
+/// every drag was discarded the moment the app relaunched. The reorder tests all
+/// assert against a fake store, which cannot see a column that never reaches
+/// SQLite.
+///
+/// [freshId] is used when the goal carries no id yet (the caller supplies a
+/// uuid, keeping this function pure and therefore testable).
+Map<String, Object?> goalToRow(Goal goal, String freshId) {
+  return {
+    'id': goal.id.isEmpty ? freshId : goal.id,
+    'title': goal.title,
+    'description': goal.description,
+    'icon': goal.icon,
+    'color': _colorToHex(goal.color),
+    'frequency_days': goal.frequencyDays == null
+        ? null
+        : jsonEncode(goal.frequencyDays),
+    'start_date': goal.startDate.toIso8601String(),
+    'end_date': goal.endDate?.toIso8601String(),
+    'display_order': goal.displayOrder,
+    'order_key': goal.orderKey,
+    'order_key_updated_at': goal.orderKeyUpdatedAt,
+    'reminder_time': goal.reminderTime,
+    // Always write ALL verification columns (null when absent): upsertGoal uses
+    // ConflictAlgorithm.replace, so an omitted column would be wiped to NULL on
+    // every edit. Single rule → flat verify_*, compound → verify_conditions
+    // with the flat columns nulled (Q4); an undecodable newer-client compound
+    // is written back verbatim (verifyColumnValues) so replace can't strip it.
+    // Columns exist after the evolve_sync v4/v8 migrations (run on open).
+    ...goal.verifyColumnValues,
+    // Same reasoning: written explicitly (date-only) so replace can't wipe it.
+    // The anchor rides with a live rule OR a preserved compound blob (so a
+    // preserved compound keeps its D10 freeze), else null. Matches the cloud
+    // path, which retains it via omission + the preservesCompound guard.
+    'verify_effective_from': goal.verifyEffectiveFromColumnValue,
+    // Written explicitly (like the verify_* columns) so ConflictAlgorithm
+    // .replace can't wipe it on an unrelated edit. Live target encoded, an
+    // unreadable newer-client blob preserved verbatim, else null. Column
+    // exists after the evolve_sync v9 migration (run automatically on open).
+    'target': goal.targetColumnValue,
+    // Same reasoning: written explicitly (date-only) so replace can't wipe it.
+    // The forward-only target anchor rides with a written target (readable or
+    // preserved blob); null otherwise. Column exists after the v11 migration.
+    'target_effective_from':
+        goal.targetColumnValue != null && goal.targetEffectiveFrom != null
+            ? goal.targetEffectiveFrom!.toIso8601String().substring(0, 10)
+            : null,
+    };
+  }
+
 class PrivateLocalDatabase implements PrivateDataStore {
   PrivateLocalDatabase._();
 
@@ -2572,48 +2631,7 @@ class PrivateLocalDatabase implements PrivateDataStore {
     return Goal.fromJson(json);
   }
 
-  Map<String, Object?> _goalToRow(Goal goal) {
-    return {
-      'id': goal.id.isEmpty ? _uuid.v4() : goal.id,
-      'title': goal.title,
-      'description': goal.description,
-      'icon': goal.icon,
-      'color': _colorToHex(goal.color),
-      'frequency_days': goal.frequencyDays == null
-          ? null
-          : jsonEncode(goal.frequencyDays),
-      'start_date': goal.startDate.toIso8601String(),
-      'end_date': goal.endDate?.toIso8601String(),
-      'display_order': goal.displayOrder,
-      'order_key': goal.orderKey,
-      'order_key_updated_at': goal.orderKeyUpdatedAt,
-      'reminder_time': goal.reminderTime,
-      // Always write ALL verification columns (null when absent): upsertGoal uses
-      // ConflictAlgorithm.replace, so an omitted column would be wiped to NULL on
-      // every edit. Single rule → flat verify_*, compound → verify_conditions
-      // with the flat columns nulled (Q4); an undecodable newer-client compound
-      // is written back verbatim (verifyColumnValues) so replace can't strip it.
-      // Columns exist after the evolve_sync v4/v8 migrations (run on open).
-      ...goal.verifyColumnValues,
-      // Same reasoning: written explicitly (date-only) so replace can't wipe it.
-      // The anchor rides with a live rule OR a preserved compound blob (so a
-      // preserved compound keeps its D10 freeze), else null. Matches the cloud
-      // path, which retains it via omission + the preservesCompound guard.
-      'verify_effective_from': goal.verifyEffectiveFromColumnValue,
-      // Written explicitly (like the verify_* columns) so ConflictAlgorithm
-      // .replace can't wipe it on an unrelated edit. Live target encoded, an
-      // unreadable newer-client blob preserved verbatim, else null. Column
-      // exists after the evolve_sync v9 migration (run automatically on open).
-      'target': goal.targetColumnValue,
-      // Same reasoning: written explicitly (date-only) so replace can't wipe it.
-      // The forward-only target anchor rides with a written target (readable or
-      // preserved blob); null otherwise. Column exists after the v11 migration.
-      'target_effective_from':
-          goal.targetColumnValue != null && goal.targetEffectiveFrom != null
-              ? goal.targetEffectiveFrom!.toIso8601String().substring(0, 10)
-              : null,
-    };
-  }
+  Map<String, Object?> _goalToRow(Goal goal) => goalToRow(goal, _uuid.v4());
 
   MacroGoal _macroGoalFromRow(Map<String, Object?> row) {
     return MacroGoal.fromJson({
@@ -2652,6 +2670,4 @@ class PrivateLocalDatabase implements PrivateDataStore {
   String _dateKey(DateTime date) =>
       '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
-  String _colorToHex(Color c) =>
-      '#${c.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
 }

@@ -480,9 +480,24 @@ class SyncLocalStore {
           //
           // Re-stamp and re-dirty so the merge propagates and actually WINS:
           // the peer's clock is whatever it just sent, and `at` is later.
+          // Stamped to strictly BEAT the record we merged with, not merely to
+          // "now".
+          //
+          // The peer applies on `rec.updatedAtMs <= localMs -> skipped`, and the
+          // engine deliberately tolerates records up to 5 minutes in the FUTURE.
+          // So on a peer whose clock runs ahead, our local `at` can be EARLIER
+          // than the row we just merged with — the peer discards the merge, the
+          // push still succeeds (CloudKit saves with `.allKeys`, an
+          // unconditional overwrite), `dirty` is cleared, and nothing ever
+          // retries. Both devices then report a fully-synced state while showing
+          // different habit orders, forever.
+          final beat = DateTime.fromMillisecondsSinceEpoch(
+            remoteUpdatedAtMs + 1,
+            isUtc: true,
+          ).toIso8601String();
           await txn.update(
             table,
-            {'updated_at': at},
+            {'updated_at': beat.compareTo(at) > 0 ? beat : at},
             where: 'id = ?',
             whereArgs: [id],
           );

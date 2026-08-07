@@ -2124,8 +2124,13 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
       'start_date': g['start_date'] ?? g['created_at'] ?? updatedAt,
       'end_date': g['end_date'],
       'display_order': g['display_order'],
-      'order_key': g['order_key'],
-      'order_key_updated_at': g['order_key_updated_at'],
+      // order_key is DELIBERATELY absent, matching mobile's import row builder.
+      // The LWW-win branch feeds this whole map to `txn.update`, so carrying the
+      // file's value writes it over the local position — and a web export or a
+      // pre-v12 backup has none, so it writes NULL over both the key AND the
+      // field-level LWW stamp that defends a real drag. `backfillOrderKeys`
+      // then re-keys those rows from the file's frozen `display_order`. Leaving
+      // the columns out means an import never moves a habit the user placed.
       'reminder_time': g['reminder_time'],
       'verify_provider': g['verify_provider'],
       'verify_metric': g['verify_metric'],

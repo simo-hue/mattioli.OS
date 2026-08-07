@@ -221,12 +221,24 @@ void main() {
       //
       // The shape below is the one an import actually produces: keyed rows the
       // user has positioned, PLUS a keyless row the backup brought in.
+      // The kept habits carry the keys the system REALLY produces (1024, 2048,
+      // 3072). An earlier version used 555.0, which is BELOW kOrderKeyStep — so
+      // a broken `base = 0` still produced 1024 > 555 and the append assertion
+      // held either way, while the real code would have minted a DUPLICATE key.
       final db = await openV12();
-      await seedGoal(db, 'kept', displayOrder: 9);
-      await db.update('goals', {
-        'order_key': 555.0,
-        'order_key_updated_at': '2026-08-06T12:00:00.000Z',
-      });
+      final keys = renumberedOrderKeys(3);
+      for (final (i, id) in ['kept', 'kept2', 'kept3'].indexed) {
+        await seedGoal(db, id, displayOrder: 9 - i);
+        await db.update(
+          'goals',
+          {
+            'order_key': keys[i],
+            'order_key_updated_at': '2026-08-06T12:00:00.000Z',
+          },
+          where: 'id = ?',
+          whereArgs: [id],
+        );
+      }
       await seedGoal(db, 'imported', displayOrder: 0);
       await db.update('goals',
           {'order_key': null, 'order_key_updated_at': null},
@@ -235,18 +247,28 @@ void main() {
       await PrivateDbSchema.backfillOrderKeys(db);
 
       final kept = (await db.query('goals', where: "id = 'kept'")).single;
-      expect(kept['order_key'], 555.0,
+      expect(kept['order_key'], keys[0],
           reason: 'a positioned habit must NOT be renumbered by an import');
       expect(kept['order_key_updated_at'], '2026-08-06T12:00:00.000Z',
           reason: 'nor lose the LWW stamp that defends it against a peer');
 
       final imported =
           (await db.query('goals', where: "id = 'imported'")).single;
-      expect(imported['order_key'], isNotNull);
-      expect((imported['order_key'] as num).toDouble(), greaterThan(555.0),
-          reason: 'an import APPENDS; it does not reshuffle the list');
-      expect(await idsByOrderKey(db), ['kept', 'imported'],
-          reason: 'the stale display_order (9 vs 0) must not win');
+      expect((imported['order_key'] as num).toDouble(), greaterThan(keys.last),
+          reason: 'an import APPENDS after the LAST key; a base of 0 would '
+              'collide with the first kept habit');
+      expect(await idsByOrderKey(db), ['kept', 'kept2', 'kept3', 'imported'],
+          reason: 'the stale display_order must not win');
+
+      final all = [
+        for (final r in await db.query('goals', orderBy: 'order_key ASC'))
+          (r['order_key'] as num).toDouble(),
+      ];
+      for (var i = 1; i < all.length; i++) {
+        expect(all[i], greaterThan(all[i - 1]),
+            reason: 'strictly increasing — a duplicate key is what per-row LWW '
+                'cannot survive');
+      }
       await db.close();
     });
   });
@@ -455,6 +477,48 @@ void main() {
       expect(sync['dirty'], 0,
           reason: 'identical positions need no correcting — re-dirtying them '
               'is a permanent sync loop');
+      await db.close();
+    });
+
+    test('THE CLOCK-SKEW FIX: the merged row outranks the record it merged with',
+        () async {
+      // The peer applies on `rec.updatedAtMs <= localMs -> skipped`, and the
+      // engine tolerates records up to 5 minutes in the FUTURE. So on a peer
+      // whose clock runs ahead, stamping the merge with OUR local time makes it
+      // older than the row we just merged with — the peer discards it, the push
+      // still succeeds (CloudKit saves with .allKeys), dirty is cleared and
+      // nothing retries. Both devices then report "synced" while showing
+      // different habit orders forever.
+      final db = await openV12();
+      await seedGoal(db, 'a', displayOrder: 0);
+      await db.update('goals', {
+        'order_key': 9999.0,
+        'order_key_updated_at': '2026-08-06T12:00:00.000Z',
+      });
+      final store = SyncLocalStore(db);
+
+      // The peer's row is stamped 3 minutes AHEAD of our clock.
+      final remoteMs =
+          DateTime.parse('2026-08-06T12:03:00.000Z').millisecondsSinceEpoch;
+      await store.applyUpsert(
+        'goals',
+        'goals:a',
+        goalPayload(
+          id: 'a',
+          orderKey: 1.0,
+          orderKeyStamp: '2026-08-06T09:00:00.000Z',
+        ),
+        remoteMs,
+        '2026-08-06T12:00:20.000Z', // our clock, BEHIND the peer's
+      );
+
+      final row = (await db.query('goals', where: "id = 'a'")).single;
+      final stamped =
+          DateTime.parse(row['updated_at'] as String).millisecondsSinceEpoch;
+      expect(stamped, greaterThan(remoteMs),
+          reason: 'the merge must strictly beat the record it merged with, or '
+              'the peer skips it and the two devices diverge permanently');
+      expect(row['order_key'], 9999.0, reason: 'our position was kept');
       await db.close();
     });
 

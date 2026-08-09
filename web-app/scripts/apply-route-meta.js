@@ -1,30 +1,22 @@
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 /**
- * Generates a real static HTML file per public route.
+ * Post-processes the HTML that vite-react-ssg has already prerendered.
  *
- * This used to copy dist/index.html byte-for-byte to each route directory. The
- * consequence was that all seven routes served an identical 2,304-byte shell:
- * the same <title>, the same description, the homepage canonical on every page
- * (which asks Google to drop /creator/, /faq/ and the rest as duplicates), and
- * an empty <div id="root"> with no structured data at all.
+ * SSG gives every route the real React output. What it does not give us is the
+ * per-route head: without this pass every page still carries the title,
+ * description and canonical baked into index.html, so /creator/ and /faq/ would
+ * once again declare themselves duplicates of the homepage.
  *
- * That matters more than usual here. GPTBot, ClaudeBot, CCBot and PerplexityBot
- * do not execute JavaScript, so to every AI crawler this site was a blank page —
- * the audience the content is written for could not read any of it.
+ * This only ever rewrites <head>. The body is whatever React rendered — this
+ * script must never invent page content, or the static HTML starts disagreeing
+ * with what a browser shows.
  *
- * Each route now gets its own title, description, canonical, Open Graph tags, a
- * JSON-LD graph, and a block of real content inside #root. React mounts with
- * createRoot().render(), which REPLACES the container's children, so the fallback
- * is shown to non-JS clients and cleanly discarded when the app boots. (This
- * would be unsafe with hydrateRoot, which requires the markup to match.)
- *
- * The FAQ entries are parsed out of src/pages/FAQ.tsx at build time rather than
- * duplicated here, so the structured data cannot drift from what the page shows.
+ * FAQ entries are parsed from src/pages/FAQ.tsx at build time rather than copied
+ * here, so the structured data cannot drift from the rendered page.
  */
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -220,28 +212,6 @@ function buildGraph(route, faqPairs) {
   return { '@context': 'https://schema.org', '@graph': graph };
 }
 
-function fallbackBody(route, faqPairs) {
-  const parts = [`<h1>${escapeHtml(route.h1)}</h1>`, `<p>${escapeHtml(route.intro)}</p>`];
-  if (route.points) {
-    parts.push('<ul>' + route.points.map((p) => `<li>${escapeHtml(p)}</li>`).join('') + '</ul>');
-  }
-  if (route.faq && faqPairs.length) {
-    parts.push(
-      faqPairs.map((p) => `<h2>${escapeHtml(p.q)}</h2><p>${escapeHtml(p.a)}</p>`).join('\n      ')
-    );
-  }
-  parts.push(
-    '<p>Mattioli.OS is built by <a href="https://simo-hue.github.io/">Simone Mattioli</a>. ' +
-      'Source on <a href="https://github.com/simo-hue/mattioli.OS">GitHub</a>.</p>'
-  );
-  parts.push(
-    '<nav><a href="' + BASE + '">Home</a> · ' +
-      ROUTES.filter((r) => r.path).map((r) => `<a href="${BASE}${r.path}/">${escapeHtml(r.h1)}</a>`).join(' · ') +
-      '</nav>'
-  );
-  return parts.join('\n      ');
-}
-
 function renderRoute(shell, route, faqPairs) {
   const url = route.path ? `${BASE}${route.path}/` : BASE;
   let html = shell;
@@ -280,45 +250,40 @@ function renderRoute(shell, route, faqPairs) {
   const ld = `  <script type="application/ld+json">\n${JSON.stringify(buildGraph(route, faqPairs), null, 2)}\n  </script>\n`;
   html = html.replace('</head>', `${ld}</head>`);
 
-  // Inside #root: visible to crawlers that do not run JS, discarded by React on mount.
-  html = html.replace(
-    '<div id="root"></div>',
-    `<div id="root">\n    <main>\n      ${fallbackBody(route, faqPairs)}\n    </main>\n  </div>`
-  );
-
   return html;
 }
 
-function generateStaticRoutes() {
-  console.log('🚀 Generating static routes with per-route metadata...\n');
+function applyRouteMeta() {
+  console.log('\n🔎 Applying per-route metadata to the prerendered HTML...\n');
 
-  if (!existsSync(INDEX_HTML)) {
-    console.error('❌ dist/index.html not found. Run "vite build" first.');
-    process.exit(1);
-  }
-
-  const shell = readFileSync(INDEX_HTML, 'utf-8');
   const faqPairs = readFaqPairs();
   console.log(`   Parsed ${faqPairs.length} FAQ entries from src/pages/FAQ.tsx`);
-  if (!faqPairs.length) {
-    console.warn('   ⚠️  No FAQ entries parsed — the FAQPage graph will be omitted.');
-  }
 
   let ok = 0;
+  let missing = 0;
+
   for (const route of ROUTES) {
-    const html = renderRoute(shell, route, faqPairs);
-    if (route.path) {
-      const dir = join(DIST_DIR, route.path);
-      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-      writeFileSync(join(dir, 'index.html'), html);
-    } else {
-      writeFileSync(INDEX_HTML, html);
+    const file = route.path ? join(DIST_DIR, route.path, 'index.html') : INDEX_HTML;
+    if (!existsSync(file)) {
+      console.warn(`   ⚠️  ${route.path || '(home)'} — not prerendered; skipped`);
+      missing++;
+      continue;
     }
-    console.log(`✅ ${route.path || '(home)'} — ${html.length.toLocaleString()} bytes`);
+    const rendered = readFileSync(file, 'utf-8');
+    const out = renderRoute(rendered, route, faqPairs);
+    writeFileSync(file, out);
+
+    // A prerendered page should carry real markup, not an empty mount point.
+    const rootEmpty = /<div id="root">\s*<\/div>/.test(out);
+    console.log(
+      `✅ ${(route.path || '(home)').padEnd(12)} ${String(out.length).padStart(7)} bytes` +
+        (rootEmpty ? '   ⚠️  #root is EMPTY — not actually prerendered' : '')
+    );
     ok++;
   }
 
-  console.log(`\n🎉 ${ok} routes generated, each with its own canonical, metadata and JSON-LD.`);
+  console.log(`\n🎉 ${ok} routes decorated${missing ? `, ${missing} missing` : ''}.`);
+  if (missing) process.exit(1);
 }
 
-generateStaticRoutes();
+applyRouteMeta();

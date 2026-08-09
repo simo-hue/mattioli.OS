@@ -6,6 +6,7 @@ import {
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import PublicHeader from "@/components/PublicHeader";
+import RouteHead from "@/components/RouteHead";
 
 const CreatorPage = () => {
     const fadeInUp = {
@@ -16,6 +17,7 @@ const CreatorPage = () => {
 
     return (
         <div className="min-h-screen bg-black text-white selection:bg-emerald-900 selection:text-white overflow-x-hidden">
+            <RouteHead route="creator" />
 
             {/* Navigation */}
             {/* Navigation */}

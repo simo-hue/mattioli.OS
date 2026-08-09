@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite-react-ssg dev",
-    "build": "vite-react-ssg build && node scripts/apply-route-meta.js",
+    "build": "vite-react-ssg build && node scripts/verify-prerender.js",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",

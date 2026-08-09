@@ -2,71 +2,323 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-// Get __dirname equivalent in ES modules
+/**
+ * Generates a real static HTML file per public route.
+ *
+ * This used to copy dist/index.html byte-for-byte to each route directory. The
+ * consequence was that all seven routes served an identical 2,304-byte shell:
+ * the same <title>, the same description, the homepage canonical on every page
+ * (which asks Google to drop /creator/, /faq/ and the rest as duplicates), and
+ * an empty <div id="root"> with no structured data at all.
+ *
+ * That matters more than usual here. GPTBot, ClaudeBot, CCBot and PerplexityBot
+ * do not execute JavaScript, so to every AI crawler this site was a blank page —
+ * the audience the content is written for could not read any of it.
+ *
+ * Each route now gets its own title, description, canonical, Open Graph tags, a
+ * JSON-LD graph, and a block of real content inside #root. React mounts with
+ * createRoot().render(), which REPLACES the container's children, so the fallback
+ * is shown to non-JS clients and cleanly discarded when the app boots. (This
+ * would be unsafe with hydrateRoot, which requires the markup to match.)
+ *
+ * The FAQ entries are parsed out of src/pages/FAQ.tsx at build time rather than
+ * duplicated here, so the structured data cannot drift from what the page shows.
+ */
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Configuration
 const DIST_DIR = join(__dirname, '..', 'dist');
+const SRC_DIR = join(__dirname, '..', 'src');
 const INDEX_HTML = join(DIST_DIR, 'index.html');
 
-// Define all public routes that need static HTML files
-const PUBLIC_ROUTES = [
-    'features',
-    'faq',
-    'tech',
-    'philosophy',
-    'get-started',
-    'creator'
-];
+const BASE = 'https://simo-hue.github.io/mattioli.OS/';
 
-function generateStaticRoutes() {
-    console.log('🚀 Starting static routes generation...\n');
+/**
+ * The one canonical Person node for Simone Mattioli, defined on his portfolio.
+ * Every property he owns references this exact string so that crawlers resolve
+ * them to a single entity rather than one thin node per site. Keep it
+ * byte-identical; do not rebuild it from BASE.
+ */
+const PERSON_ID = 'https://simo-hue.github.io/#person';
+const WEBSITE_ID = `${BASE}#website`;
+const APP_ID = `${BASE}#app`;
 
-    // Check if dist/index.html exists
-    if (!existsSync(INDEX_HTML)) {
-        console.error('❌ Error: dist/index.html not found. Make sure to run "vite build" first.');
-        process.exit(1);
-    }
+const escapeHtml = (s) =>
+  String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-    // Read the index.html content
-    const indexContent = readFileSync(INDEX_HTML, 'utf-8');
-
-    let successCount = 0;
-    let errorCount = 0;
-
-    // Generate static HTML for each route
-    PUBLIC_ROUTES.forEach(route => {
-        try {
-            const routeDir = join(DIST_DIR, route);
-            const routeIndexPath = join(routeDir, 'index.html');
-
-            // Create directory if it doesn't exist
-            if (!existsSync(routeDir)) {
-                mkdirSync(routeDir, { recursive: true });
-            }
-
-            // Copy index.html to route directory
-            writeFileSync(routeIndexPath, indexContent);
-
-            console.log(`✅ Created: ${route}/index.html`);
-            successCount++;
-        } catch (error) {
-            console.error(`❌ Failed to create ${route}/index.html:`, error.message);
-            errorCount++;
-        }
-    });
-
-    // Summary
-    console.log(`\n📊 Summary:`);
-    console.log(`   ✅ Successfully created: ${successCount} route(s)`);
-    if (errorCount > 0) {
-        console.log(`   ❌ Failed: ${errorCount} route(s)`);
-        process.exit(1);
-    }
-
-    console.log('\n🎉 Static routes generation completed successfully!');
+/** Pull the { q, a } pairs straight out of the FAQ component. */
+function readFaqPairs() {
+  const src = join(SRC_DIR, 'pages', 'FAQ.tsx');
+  if (!existsSync(src)) return [];
+  const text = readFileSync(src, 'utf-8');
+  const pairs = [];
+  const re = /\{\s*q:\s*"((?:[^"\\]|\\.)*)"\s*,\s*a:\s*"((?:[^"\\]|\\.)*)"\s*\}/g;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    pairs.push({ q: m[1].replace(/\\"/g, '"'), a: m[2].replace(/\\"/g, '"') });
+  }
+  return pairs;
 }
 
-// Run the script
+/**
+ * Copy is taken from what the pages actually say. Nothing here describes a
+ * feature the app does not have — if a route's real content changes, update it
+ * here too, or the static version starts lying about the rendered one.
+ */
+const ROUTES = [
+  {
+    path: '',
+    title: 'Mattioli.OS — Open Source Personal Operating System for Habits & Goals',
+    description:
+      'An open source personal operating system for daily habits, long-term goals and performance analysis. Free, MIT-licensed, and built around reducing friction rather than adding features.',
+    h1: 'Mattioli.OS',
+    intro:
+      'A complete operating system for personal growth — not just a habit tracker, but an integrated suite for managing daily habits, long-term goals and performance analysis. Open source under the MIT licence, and free.',
+    points: [
+      'Daily Protocol — the list of non-negotiable daily habits at the heart of the system.',
+      'Macro goals with quantitative progress tracking.',
+      'Native mobile and desktop clients alongside the web app.',
+      'Your own Supabase backend, so the data stays yours.',
+    ],
+  },
+  {
+    path: 'features',
+    title: 'Features — Mattioli.OS',
+    description:
+      'What Mattioli.OS does: daily habit protocols, macro goals, performance statistics, and native mobile and desktop clients backed by your own Supabase instance.',
+    h1: 'Features',
+    intro: 'Mobile and desktop native, with the same data behind every client.',
+  },
+  {
+    path: 'faq',
+    title: 'FAQ — Mattioli.OS',
+    description:
+      'Answers about Mattioli.OS: what it is, why it is called an operating system, how it differs from Notion and Todoist, whether it is really free, and who builds it.',
+    h1: 'Frequently Asked Questions',
+    intro: 'Common questions about what Mattioli.OS is, how it works, and who makes it.',
+    faq: true,
+  },
+  {
+    path: 'tech',
+    title: 'Technology — Mattioli.OS',
+    description:
+      'The stack behind Mattioli.OS: the core technologies, how the clients stay in sync, and how the Supabase backend is put together.',
+    h1: 'Technology',
+    intro: 'Core technologies, and how the clients stay connected to your own backend.',
+  },
+  {
+    path: 'philosophy',
+    title: 'Philosophy — Mattioli.OS',
+    description:
+      'The methodology Mattioli.OS is founded on, built around the three pillars and the idea from Atomic Habits that we fall to the level of our systems rather than rising to our goals.',
+    h1: 'Philosophy',
+    intro:
+      'The methodology on which Mattioli.OS is founded: the Three Pillars, and the principle from Atomic Habits that we do not rise to the level of our goals, we fall to the level of our systems.',
+  },
+  {
+    path: 'get-started',
+    title: 'Get Started — Mattioli.OS',
+    description:
+      'Set up Mattioli.OS: install the prerequisites, create your free Supabase backend, download the engine, and run the setup commands.',
+    h1: 'Get Started',
+    intro:
+      'Install the prerequisites, create your free Supabase backend, then download and run the engine on your own machine.',
+  },
+  {
+    path: 'creator',
+    title: 'Simone Mattioli — Creator of Mattioli.OS',
+    description:
+      'Mattioli.OS is built by Simone Mattioli, an Italian computer science engineer and AI researcher who develops iOS applications and open-source tools.',
+    h1: 'Simone Mattioli',
+    intro:
+      'I am Simone Mattioli, a developer interested in productivity and data visualisation. I built this tool for myself first.',
+    profile: true,
+  },
+  {
+    path: 'privacy',
+    title: 'Privacy Policy — Mattioli.OS',
+    description: 'How Mattioli.OS handles your data. The system runs on your own Supabase instance, so the data stays yours.',
+    h1: 'Privacy Policy',
+    intro: 'How Mattioli.OS handles your data.',
+  },
+  {
+    path: 'terms',
+    title: 'Terms of Service — Mattioli.OS',
+    description: 'The terms covering use of Mattioli.OS, an open source project released under the MIT licence.',
+    h1: 'Terms of Service',
+    intro: 'Terms covering use of Mattioli.OS.',
+  },
+];
+
+function buildGraph(route, faqPairs) {
+  const url = route.path ? `${BASE}${route.path}/` : BASE;
+  const graph = [
+    {
+      '@type': 'WebSite',
+      '@id': WEBSITE_ID,
+      url: BASE,
+      name: 'Mattioli.OS',
+      inLanguage: 'en',
+      publisher: { '@id': PERSON_ID },
+    },
+    {
+      '@type': 'WebPage',
+      '@id': `${url}#webpage`,
+      url,
+      name: route.title,
+      description: route.description,
+      isPartOf: { '@id': WEBSITE_ID },
+      about: { '@id': PERSON_ID },
+      inLanguage: 'en',
+    },
+    // Reference only. The full Person is defined once, on the portfolio.
+    { '@type': 'Person', '@id': PERSON_ID, name: 'Simone Mattioli', url: 'https://simo-hue.github.io/' },
+  ];
+
+  if (!route.path) {
+    graph.push({
+      '@type': 'SoftwareApplication',
+      '@id': APP_ID,
+      name: 'Mattioli.OS',
+      applicationCategory: 'ProductivityApplication',
+      operatingSystem: 'Web, iOS, macOS',
+      url: BASE,
+      description: route.description,
+      author: { '@id': PERSON_ID },
+      publisher: { '@id': PERSON_ID },
+      isAccessibleForFree: true,
+      license: 'https://opensource.org/licenses/MIT',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+      sameAs: 'https://github.com/simo-hue/mattioli.OS',
+    });
+  }
+
+  if (route.faq && faqPairs.length) {
+    graph.push({
+      '@type': 'FAQPage',
+      '@id': `${url}#faq`,
+      isPartOf: { '@id': WEBSITE_ID },
+      mainEntity: faqPairs.map((p) => ({
+        '@type': 'Question',
+        name: p.q,
+        acceptedAnswer: { '@type': 'Answer', text: p.a },
+      })),
+    });
+  }
+
+  if (route.profile) {
+    graph.push({
+      '@type': 'ProfilePage',
+      '@id': `${url}#profilepage`,
+      url,
+      mainEntity: { '@id': PERSON_ID },
+      isPartOf: { '@id': WEBSITE_ID },
+    });
+  }
+
+  return { '@context': 'https://schema.org', '@graph': graph };
+}
+
+function fallbackBody(route, faqPairs) {
+  const parts = [`<h1>${escapeHtml(route.h1)}</h1>`, `<p>${escapeHtml(route.intro)}</p>`];
+  if (route.points) {
+    parts.push('<ul>' + route.points.map((p) => `<li>${escapeHtml(p)}</li>`).join('') + '</ul>');
+  }
+  if (route.faq && faqPairs.length) {
+    parts.push(
+      faqPairs.map((p) => `<h2>${escapeHtml(p.q)}</h2><p>${escapeHtml(p.a)}</p>`).join('\n      ')
+    );
+  }
+  parts.push(
+    '<p>Mattioli.OS is built by <a href="https://simo-hue.github.io/">Simone Mattioli</a>. ' +
+      'Source on <a href="https://github.com/simo-hue/mattioli.OS">GitHub</a>.</p>'
+  );
+  parts.push(
+    '<nav><a href="' + BASE + '">Home</a> · ' +
+      ROUTES.filter((r) => r.path).map((r) => `<a href="${BASE}${r.path}/">${escapeHtml(r.h1)}</a>`).join(' · ') +
+      '</nav>'
+  );
+  return parts.join('\n      ');
+}
+
+function renderRoute(shell, route, faqPairs) {
+  const url = route.path ? `${BASE}${route.path}/` : BASE;
+  let html = shell;
+
+  html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${escapeHtml(route.title)}</title>`);
+  html = html.replace(
+    /<meta name="description"[\s\S]*?\/>/,
+    `<meta name="description" content="${escapeHtml(route.description)}" />`
+  );
+  html = html.replace(
+    /<link rel="canonical"[^>]*>/,
+    `<link rel="canonical" href="${url}" />`
+  );
+  html = html.replace(/<meta property="og:url"[^>]*>/, `<meta property="og:url" content="${url}" />`);
+  html = html.replace(
+    /<meta property="og:title"[^>]*>/,
+    `<meta property="og:title" content="${escapeHtml(route.title)}" />`
+  );
+  html = html.replace(
+    /<meta property="og:description"[\s\S]*?\/>/,
+    `<meta property="og:description" content="${escapeHtml(route.description)}" />`
+  );
+  html = html.replace(
+    /<meta property="twitter:url"[^>]*>/,
+    `<meta property="twitter:url" content="${url}" />`
+  );
+  html = html.replace(
+    /<meta property="twitter:title"[^>]*>/,
+    `<meta property="twitter:title" content="${escapeHtml(route.title)}" />`
+  );
+  html = html.replace(
+    /<meta property="twitter:description"[^>]*>/,
+    `<meta property="twitter:description" content="${escapeHtml(route.description)}" />`
+  );
+
+  const ld = `  <script type="application/ld+json">\n${JSON.stringify(buildGraph(route, faqPairs), null, 2)}\n  </script>\n`;
+  html = html.replace('</head>', `${ld}</head>`);
+
+  // Inside #root: visible to crawlers that do not run JS, discarded by React on mount.
+  html = html.replace(
+    '<div id="root"></div>',
+    `<div id="root">\n    <main>\n      ${fallbackBody(route, faqPairs)}\n    </main>\n  </div>`
+  );
+
+  return html;
+}
+
+function generateStaticRoutes() {
+  console.log('🚀 Generating static routes with per-route metadata...\n');
+
+  if (!existsSync(INDEX_HTML)) {
+    console.error('❌ dist/index.html not found. Run "vite build" first.');
+    process.exit(1);
+  }
+
+  const shell = readFileSync(INDEX_HTML, 'utf-8');
+  const faqPairs = readFaqPairs();
+  console.log(`   Parsed ${faqPairs.length} FAQ entries from src/pages/FAQ.tsx`);
+  if (!faqPairs.length) {
+    console.warn('   ⚠️  No FAQ entries parsed — the FAQPage graph will be omitted.');
+  }
+
+  let ok = 0;
+  for (const route of ROUTES) {
+    const html = renderRoute(shell, route, faqPairs);
+    if (route.path) {
+      const dir = join(DIST_DIR, route.path);
+      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, 'index.html'), html);
+    } else {
+      writeFileSync(INDEX_HTML, html);
+    }
+    console.log(`✅ ${route.path || '(home)'} — ${html.length.toLocaleString()} bytes`);
+    ok++;
+  }
+
+  console.log(`\n🎉 ${ok} routes generated, each with its own canonical, metadata and JSON-LD.`);
+}
+
 generateStaticRoutes();

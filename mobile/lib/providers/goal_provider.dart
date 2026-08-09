@@ -628,21 +628,25 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     // it must never fail the save, and it must never hang it behind a barrier
     // that is waiting on a stalled network.
     final previousTarget = previous?.target;
-    if (previousTarget != null &&
-        !(updatedHabit.target?.hasSameScoringMeaningAs(previousTarget) ??
-            false)) {
+    final scoringMeaningChanged = previousTarget != null &&
+        !(updatedHabit.target?.hasSameScoringMeaningAs(previousTarget) ?? false);
+    // Whether the old target's days are settled and the anchor may safely move
+    // past them. Only ever false when a materialise pass DECLINED.
+    var settledOldTarget = true;
+    if (scoringMeaningChanged) {
       try {
         // Awaited without an outer deadline: its own barriers are bounded, and
         // `Future.timeout` would not stop it anyway — it would only let this
         // method race ahead and stamp the anchor while the sweep was still
         // writing days against a habit whose shape had changed underneath it.
-        await ref
+        settledOldTarget = await ref
             .read(habitProgressProvider.notifier)
             .materialiseDaysBeforeTargetChange(previous!, now: editedAt);
       } catch (e, stack) {
+        settledOldTarget = false;
         AppLogger.error(
           '[Targets] could not materialise ${updatedHabit.id}\'s days before '
-          'its target edit — earlier unscored days will stay pending',
+          'its target edit',
           e,
           stack,
         );
@@ -652,6 +656,30 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     // Forward-only target edits (v11): if the target's content changed (or was
     // just set), it takes effect today; otherwise the prior anchor is preserved
     // so a non-target edit never re-derives past days against the new target.
+    //
+    // ALWAYS stamped, including when the materialise above declined — and that
+    // is deliberate, because the obvious alternative is worse.
+    //
+    // Holding the anchor back so the declined days stay reachable also leaves
+    // every ALREADY-MATERIALISED day before it reachable, and the sweep re-derives
+    // those against the NEW target (`reconcileManualTargetDays` evaluates each
+    // day it walks and emits a change whenever the derived status differs from
+    // the stored one). A day that scored 3 of 3 under the old target would be
+    // rewritten `missed` against a new target of 10 — correct history actively
+    // corrupted, which is the exact thing the v11 anchor exists to prevent, and
+    // nothing corrects it afterwards because the new target is now authoritative.
+    //
+    // So a declined pass costs the days it could not score: they stay pending,
+    // invisible, out of every rate denominator. That is the recoverable
+    // direction, and the narrow one — the pass only declines when a barrier
+    // fails, and the days at risk are only those never materialised, which the
+    // cold-launch trigger already made rare.
+    if (!settledOldTarget) {
+      AppLogger.warning(
+        '[Targets] ${updatedHabit.id}: the days its previous target still owed '
+        'could not be scored before the anchor moved; they will stay pending',
+      );
+    }
     updatedHabit = stampTargetEffectiveFrom(
       updatedHabit,
       previous: previous,
@@ -1475,9 +1503,24 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
     required bool set,
     String? status,
   }) {
+    // An UNRESOLVABLE goal freezes anyway; only a goal that resolves and is
+    // demonstrably manual is skipped.
+    //
+    // `goalsProvider` returns `[]` synchronously from `build()` and fills in
+    // asynchronously, and the auth listener empties it on a logout — so
+    // "not found" here routinely means "not loaded yet", not "not verified".
+    // Reading it as the latter skipped the freeze while the check-in row was
+    // still written, leaving a verdict with nothing protecting it: the next
+    // reconcile then scored the day from the sensor and overwrote the user's
+    // own answer. Absence is not evidence, applied to the goal list.
+    //
+    // A spurious freeze on a genuinely manual habit is harmless — reconcile only
+    // ever queries manual days for the CURRENT verifiable goals, so it is dead
+    // data. `notifications._freezeManualForToday` already takes exactly this
+    // position, and documents it.
     final goal =
         ref.read(goalsProvider).where((g) => g.id == goalId).firstOrNull;
-    if (!(goal?.isVerified ?? false)) return;
+    if (goal != null && !goal.isVerified) return;
     final day = DateTime(date.year, date.month, date.day);
     () async {
       try {
@@ -2263,7 +2306,20 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
   ///
   /// Best-effort by contract: guarded and bounded by the caller, because failing
   /// to materialise history must never cost the user the edit they asked for.
-  Future<void> materialiseDaysBeforeTargetChange(
+  /// Returns TRUE when the pass settled — i.e. the old target's days are now
+  /// materialised (or there were none to materialise). FALSE when it DECLINED.
+  ///
+  /// The caller LOGS a decline and stamps the anchor anyway. That is deliberate,
+  /// and the opposite was tried first: holding the anchor back keeps the
+  /// unscored days reachable, but it keeps every ALREADY-MATERIALISED earlier
+  /// day reachable too, and the sweep re-derives those against the NEW target —
+  /// rewriting a day that scored 3 of 3 as `missed` against a new target of 10.
+  /// That is invariant 5, and unrecoverable, because the new target is then
+  /// authoritative. Days a declined pass could not score stay pending instead:
+  /// invisible, and recoverable.
+  ///
+  /// So this return is diagnostic, not a veto. Do not turn it into one.
+  Future<bool> materialiseDaysBeforeTargetChange(
     Goal previous, {
     DateTime? now,
   }) async {
@@ -2273,7 +2329,8 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
     if (target == null ||
         !target.isUserEnterable ||
         previous.verificationRule != null) {
-      return;
+      // Nothing this pass owns — settled by definition, so the anchor may move.
+      return true;
     }
 
     // Same barriers, and the same order, as the ordinary sweep — this writes
@@ -2295,9 +2352,9 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
         '[Targets] the verdict map is not trustworthy — not materialising '
         '${previous.id}\'s days before its target edit; they will stay pending',
       );
-      return;
+      return false;
     }
-    if (!ref.mounted) return;
+    if (!ref.mounted) return false;
     final logs = ref.read(habitLogsProvider);
     final today = now ?? DateTime.now();
     if (!await _ensureLoaded().timeout(loadDeadline, onTimeout: () => false)) {
@@ -2305,9 +2362,9 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
         '[Targets] goal progress did not settle — not materialising '
         '${previous.id}\'s days before its target edit; they will stay pending',
       );
-      return;
+      return false;
     }
-    if (!ref.mounted) return;
+    if (!ref.mounted) return false;
 
     final changes = reconcileManualTargetDays(
       goalId: previous.id,
@@ -2335,7 +2392,7 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
       // one this is racing).
       autoFailUnmetFrom: null,
     );
-    if (changes.isEmpty) return;
+    if (changes.isEmpty) return true;
     AppLogger.info(
       '[Targets] materialising ${changes.length} outstanding day(s) for '
       '${previous.id} under its previous target before the anchor moves',
@@ -2343,6 +2400,7 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
     // Keyed to the PREVIOUS goal, so every change is scored against the old
     // target even though the caller is mid-edit.
     await _applyTargetChanges(changes, {previous.id: previous}, today);
+    return true;
   }
 
   /// Reads the auto-fail anchor, stamping today the first time it is missing.

@@ -20,8 +20,11 @@ class MethodChannelHealthKitBridge implements HealthKitBridge {
   const MethodChannelHealthKitBridge();
 
   /// The Apple identifier whose measurement window is a NIGHT, not a calendar
-  /// day. Kept as a constant so the two halves of the rule — the window here and
-  /// the overlap/clip handling natively — key off the same string.
+  /// day.
+  ///
+  /// The whole rule lives on THIS side: native does nothing sleep-specific, and
+  /// its predicate is an unchanged `.strictStartDate`. Only [windowFor] knows
+  /// sleep is different.
   static const String sleepTypeId = 'sleepAnalysis';
 
   /// The hour a "sleep day" begins, on the PREVIOUS calendar day.

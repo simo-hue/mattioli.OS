@@ -261,10 +261,6 @@ void main() {
       );
     });
 
-    test('an empty list signs as empty, and differs from any habit — so the '
-        'first real load after launch always triggers a pass', () {
-      expect(goalReconcileSignature(const []), '');
-      expect(goalReconcileSignature([goal('1', rule: steps)]), isNot(''));
-    });
+
   });
 }

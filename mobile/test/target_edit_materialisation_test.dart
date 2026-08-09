@@ -84,6 +84,40 @@ class _Store extends FakePrivateDataStore {
   }
 }
 
+/// A store whose VERDICT load fails while everything else works — offline, a
+/// 5xx, or a disk error. The materialise pass declines on it, and the anchor
+/// must then stay put.
+/// Fails the FIRST verdict load, then succeeds. That sequence — an edit made
+/// while the map could not be read, followed by a healthy sweep — is the only
+/// one in which holding the anchor back actually corrupts anything, so it is the
+/// only one that can discriminate the two designs.
+class _FlakyLogsStore extends _Store {
+  _FlakyLogsStore({
+    super.seededGoals,
+    super.seededProgress,
+    super.seededLogs,
+  });
+
+  bool failNext = true;
+
+  @override
+  Future<Map<String, Map<String, String>>> loadHabitLogs() async {
+    if (failNext) {
+      failNext = false;
+      throw StateError('disk failure');
+    }
+    return super.loadHabitLogs();
+  }
+}
+
+class _ThrowingLogsStore extends _Store {
+  _ThrowingLogsStore({super.seededGoals, super.seededProgress});
+
+  @override
+  Future<Map<String, Map<String, String>>> loadHabitLogs() async =>
+      throw StateError('disk failure');
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -297,6 +331,113 @@ void main() {
       today,
       reason: 'the forward-only freeze is unchanged — only the stranding is '
           'fixed',
+    );
+  });
+
+  // The anchor is a ONE-WAY DOOR. `reconcileManualTargetDays` never looks before
+  // `target_effective_from`, so moving it past days the materialise could not
+  // score strands them at pending permanently — and the pass declines exactly
+  // when the maps are untrustworthy, which is when it matters most. Leaving the
+  // old anchor keeps those days inside the ordinary sweep's reach.
+  // A DECLINED pass still moves the anchor, and that is the deliberate choice —
+  // holding it back would leave already-materialised days reachable, and the
+  // sweep re-derives those against the NEW target, rewriting correct history.
+  // The cost is that days the pass could not score stay pending.
+  test('a declined materialise still moves the anchor, because holding it '
+      'would let the sweep rewrite correct history', () async {
+    final store = _ThrowingLogsStore(
+      seededGoals: [countGoal(count(3))],
+      seededProgress: {
+        key(metDay): {'g1': 3},
+      },
+    );
+    final c = await container(store);
+
+    await c
+        .read(goalsProvider.notifier)
+        .updateHabit(countGoal(count(3)).copyWith(target: count(10)));
+    await settle();
+
+    expect(
+      c.read(goalsProvider).single.targetEffectiveFrom,
+      today,
+      reason: 'the anchor must move even on a decline: leaving it would expose '
+          'every already-materialised earlier day to re-derivation against the '
+          'NEW target, which is corruption rather than a stranding',
+    );
+    expect(c.read(goalsProvider).single.target?.amount, 10,
+        reason: "the user's edit itself must still be saved");
+  });
+
+  test('a SETTLED materialise does move the anchor', () async {
+    final store = _Store(
+      seededGoals: [countGoal(count(3))],
+      seededProgress: {
+        key(metDay): {'g1': 3},
+      },
+    );
+    final c = await container(store);
+
+    await c
+        .read(goalsProvider.notifier)
+        .updateHabit(countGoal(count(3)).copyWith(target: count(10)));
+    await settle();
+
+    expect(c.read(goalsProvider).single.targetEffectiveFrom, today);
+  });
+
+  // Invariant 5, driven through the ONLY sequence that can violate it.
+  //
+  // Two earlier attempts at this test were worthless and it is worth recording
+  // why. The first used a store whose logs always fail, so the materialise
+  // declined and wrote nothing — green under both designs. The second let the
+  // materialise SETTLE, in which case the anchor moves either way — also green
+  // under both. The corruption needs BOTH halves: a pass that declines (so the
+  // hold-back design would keep the old anchor) AND a later sweep that can read
+  // the map (so it actually re-derives). A test that does not reproduce the
+  // sequence cannot defend against it, and would have shipped the bug.
+  test('an already-materialised day survives a target edit that declined, once '
+      'the sweep runs again', () async {
+    final store = _FlakyLogsStore(
+      seededGoals: [countGoal(count(3))],
+      seededProgress: {
+        key(metDay): {'g1': 3}, // met the OLD target of 3
+      },
+      seededLogs: {
+        key(metDay): {'g1': 'done'}, // and was scored for it
+      },
+    );
+    final c = await container(store);
+
+    // The edit lands while the verdict map cannot be read: the materialise
+    // declines, and the anchor moves anyway (that is the whole argument).
+    await c
+        .read(goalsProvider.notifier)
+        .updateHabit(countGoal(count(3)).copyWith(target: count(10)));
+    await settle();
+
+    // A healthy foreground: the map loads, and the ordinary sweep runs with the
+    // habit now carrying 10.
+    c.invalidate(habitLogsProvider);
+    c.read(habitLogsProvider.notifier);
+    await settle();
+    store.logWrites.clear();
+    await c.read(habitProgressProvider.notifier).reconcileManualTargets();
+    await settle();
+
+    expect(
+      c.read(habitLogsProvider)[key(metDay)]?['g1'],
+      'done',
+      reason: '3 of 3 was a pass under the target in force that day. Re-scored '
+          'against the new 10 it becomes `missed` — correct history turned '
+          'wrong, with nothing to correct it because the new target is now '
+          'authoritative',
+    );
+    expect(
+      store.logWrites.where((w) => w['date'] == key(metDay)),
+      isEmpty,
+      reason: 'and it must not be rewritten at all, not merely rewritten to the '
+          'same value',
     );
   });
 }

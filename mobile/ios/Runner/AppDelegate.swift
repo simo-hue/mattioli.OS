@@ -1016,8 +1016,21 @@ enum HealthKitBridge {
     guard let samples = samples else { return nil }
     switch id {
     case "sleepAnalysis":
-      // "Asleep" wall-clock time, in hours. (Night-window attribution is a known
-      // follow-up; for now we sum asleep samples overlapping the day window.)
+      // "Asleep" wall-clock time, in hours, summed over whatever window Dart
+      // asked for.
+      //
+      // Night attribution is NOT a follow-up and is NOT done here: it lives
+      // entirely in `MethodChannelHealthKitBridge.windowFor`, which sends a
+      // 24-hour [previous 18:00, today 18:00) window for sleep so a pre-midnight
+      // onset falls on the day the sleeper wakes. The predicate above stays
+      // `.strictStartDate` on purpose — every sample then belongs to exactly one
+      // window, so nothing is double-counted and, critically, nothing is
+      // truncated.
+      //
+      // Overlap semantics (`options: []`) plus per-sample clipping was written
+      // and REVERTED. Do not reintroduce it: a clipped union is a truncated
+      // number reported as a measurement, so a real 05:00→14:00 sleep read 7h
+      // and scored a false `missed` against "sleep ≥ 8h".
       let asleep = samples.compactMap { $0 as? HKCategorySample }.filter { isAsleep($0.value) }
       if asleep.isEmpty { return nil }
       return mergedSeconds(asleep) / 3600.0

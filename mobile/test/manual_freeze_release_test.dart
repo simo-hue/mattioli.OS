@@ -278,4 +278,29 @@ void main() {
     expect(c.read(habitLogsProvider)[dateKey]?['g1'], isNull);
     expect(verificationStore.manual, isEmpty);
   });
+
+  // An UNRESOLVABLE goal must still freeze. `goalsProvider` returns `[]`
+  // synchronously from `build()` and the auth listener empties it, so "not
+  // found" routinely means "not loaded yet" — reading that as "not verified"
+  // skipped the freeze while the check-in row was still written, leaving a
+  // verdict with nothing protecting it for the next reconcile to overwrite.
+  test('a check-in on a goal that cannot be resolved still freezes the day',
+      () async {
+    // No habits added at all: the lookup finds nothing, exactly as it would
+    // mid-load.
+    final c = await container(_RecordingStore(), goals: const []);
+    await settle();
+
+    await c.read(habitLogsProvider.notifier).cycleStatus(day, 'g1');
+    await settle();
+
+    expect(c.read(habitLogsProvider)[dateKey]?['g1'], 'done');
+    expect(
+      verificationStore.manual,
+      contains('g1@2026-8-3'),
+      reason: 'the row was written, so something must protect it. A spurious '
+          'freeze on a habit that turns out to be manual is inert — reconcile '
+          'only queries manual days for the CURRENT verifiable goals',
+    );
+  });
 }

@@ -200,19 +200,27 @@ class DashboardController extends Notifier<DashboardSnapshot> {
   /// weekly grid, the local save — runs exactly as it would for a live edit, so
   /// there is no second code path to keep in step. See
   /// `TargetReconcileChange.verdictOnly`.
+  /// [scoringTarget] overrides the target the verdict is derived from.
+  ///
+  /// Callers that computed a batch of changes against a SNAPSHOT must pass the
+  /// target from that snapshot: this method re-reads `state` on every call, and
+  /// a `refresh()` landing between two awaited writes would otherwise score the
+  /// remaining days against a target they were never evaluated under. Null (the
+  /// default) keeps the live behaviour, which is right for a single live edit.
   Future<void> setHabitProgressForDay(
     String id,
     DateTime date,
     double amount, {
     DateTime? now,
     bool verdictOnly = false,
+    HabitTarget? scoringTarget,
   }) async {
     // orElse rather than a throwing firstWhere: the sweep applies its changes one
     // awaited write at a time, and a pull that removes a habit mid-pass would
     // otherwise abandon every remaining change with a StateError.
     final habit = state.habits.where((habit) => habit.id == id).firstOrNull;
     if (habit == null) return;
-    final target = habit.displayTarget;
+    final target = scoringTarget ?? habit.displayTarget;
     // A verified habit's goal_logs verdict is owned by the verification pipeline
     // (one owner per habit-day) — never let a manual increment derive/overwrite
     // it. A purely-verified habit already returns here (its displayTarget is the
@@ -399,6 +407,13 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     // Sequential so each day's streak builds on the last (setHabitProgressForDay
     // recomputes from the running state). Bail if the notifier was torn down
     // between awaits — this runs as a fire-and-forget tail of refresh().
+    // Captured BEFORE the loop, for the same reason the materialise passes its
+    // own: `refresh()` replaces `state` wholesale mid-loop, and these changes
+    // were evaluated against the targets as they stand now.
+    final scoringTargets = {
+      for (final h in state.habits)
+        if (h.target != null) h.id: h.target!,
+    };
     for (final change in changes) {
       if (_disposed) return;
       // Re-check the guard every iteration, not just once before the loop. This
@@ -421,6 +436,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
         change.amount,
         now: today,
         verdictOnly: change.verdictOnly,
+        scoringTarget: scoringTargets[change.goalId],
       );
     }
   }
@@ -447,7 +463,15 @@ class DashboardController extends Notifier<DashboardSnapshot> {
   ///
   /// Best-effort: guarded by the caller, because failing to materialise history
   /// must never cost the user the edit they asked for.
-  Future<void> _materialiseDaysBeforeTargetChange(
+  /// Returns TRUE when the pass settled — the old target's days are now
+  /// materialised, or there were none. FALSE when it DECLINED.
+  ///
+  /// The caller LOGS a decline and stamps the anchor anyway, matching mobile.
+  /// Holding it back was tried and reverted: it keeps every ALREADY-MATERIALISED
+  /// earlier day reachable too, and the sweep re-derives those against the NEW
+  /// target, rewriting correct history (invariant 5). This return is diagnostic,
+  /// not a veto.
+  Future<bool> _materialiseDaysBeforeTargetChange(
     DashboardHabit previous, {
     DateTime? now,
   }) async {
@@ -455,7 +479,8 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     if (target == null ||
         !target.isUserEnterable ||
         previous.verificationRule != null) {
-      return;
+      // Nothing this pass owns — settled by definition.
+      return true;
     }
     final today = now ?? _now();
     // Same veto as the ordinary sweep: absence may only be read as "no
@@ -464,9 +489,9 @@ class DashboardController extends Notifier<DashboardSnapshot> {
       AppLogger.info(
         'Not materialising ${previous.id} before its target edit: '
         'goal_progress is stale, so absence cannot be read as "no progress". '
-        'Days left unscored before the anchor will stay pending.',
+        'Those days will stay pending.',
       );
-      return;
+      return false;
     }
     final changes = reconcileManualTargetDays(
       goalId: previous.id,
@@ -487,15 +512,25 @@ class DashboardController extends Notifier<DashboardSnapshot> {
       autoFailUnmetFrom: null,
     );
     for (final change in changes) {
-      if (_disposed || state.progressStale) return;
+      if (_disposed || state.progressStale) return false;
       await setHabitProgressForDay(
         change.goalId,
         DateTime.parse(change.dateKey),
         change.amount,
         now: today,
         verdictOnly: change.verdictOnly,
+        // Score against the target the changes were COMPUTED from, not whatever
+        // is in `state` by the time this iteration runs. Each iteration awaits a
+        // local save and a remote sync, and `refresh()` replaces `state`
+        // wholesale from the 60s poll, a refocus or a CloudKit push — so a
+        // target edit synced from the iPhone can land mid-loop and this applier
+        // would score the OLD target's days against the NEW amount, fabricating
+        // a `missed` for a day the user completed. Mobile threads the old goal
+        // through `_applyTargetChanges` for exactly this reason.
+        scoringTarget: target,
       );
     }
+    return true;
   }
 
   /// Reads the auto-fail anchor, stamping today the first time it is missing.
@@ -586,6 +621,12 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     final canonicalDays = _canonicalFrequencyDays(frequencyDays);
     final priorMatches = state.habits.where((h) => h.id == id);
     final previous = priorMatches.isEmpty ? null : priorMatches.first;
+    // ONE clock for the whole edit, matching mobile. Read separately, the
+    // materialise window and the anchor stamp straddle an awaited write loop
+    // (a local save plus a remote sync PER changed day) — so a save crossing
+    // midnight would settle up to day D while the anchor landed on D+1, leaving
+    // D covered by neither and stranded at pending.
+    final editedAt = _now();
 
     // Score whatever the OLD target still owes before the anchor moves past it.
     // Once the stamp below sets it to today the sweep can never reach an earlier
@@ -595,11 +636,16 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     // unreachable. Guarded: history bookkeeping must never fail the user's edit.
     // See [_materialiseDaysBeforeTargetChange].
     final previousTarget = previous?.target;
+    // Whether the old target's days are settled and the anchor may move past
+    // them. Only ever false when a materialise pass DECLINED.
+    var settledOldTarget = true;
     if (previousTarget != null &&
         !(target?.hasSameScoringMeaningAs(previousTarget) ?? false)) {
       try {
-        await _materialiseDaysBeforeTargetChange(previous!);
+        settledOldTarget =
+            await _materialiseDaysBeforeTargetChange(previous!, now: editedAt);
       } catch (error, stack) {
+        settledOldTarget = false;
         AppLogger.error(
           'Could not materialise $id\'s days before its target edit — earlier '
           'unscored days will stay pending',
@@ -644,11 +690,24 @@ class DashboardController extends Notifier<DashboardSnapshot> {
                       hasUnreadableTarget(habit.rawTargetBlob)),
             ),
             previous: previous,
-            today: _now(),
+            today: editedAt,
           )
         else
           habit,
     ];
+    // The anchor moves even when the materialise declined, matching mobile.
+    // Holding it back would leave every ALREADY-MATERIALISED day before it
+    // reachable too, and the sweep re-derives those against the NEW target —
+    // rewriting a day that scored 3 of 3 as `missed` against a new target of 10.
+    // That corrupts correct history, which is precisely what the v11 anchor
+    // exists to prevent; a declined pass instead costs the days it could not
+    // score, which stay pending and are merely invisible.
+    if (!settledOldTarget) {
+      AppLogger.info(
+        '$id: the days its previous target still owed could not be scored '
+        'before the anchor moved; they will stay pending.',
+      );
+    }
     state = state.copyWith(habits: habits);
     await _saveLocal();
     _rescheduleNotifications();

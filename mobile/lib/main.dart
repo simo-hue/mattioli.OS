@@ -772,6 +772,9 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
     try {
       do {
         _reconcileQueued = false;
+        final startedAt = DateTime.now();
+        final startedOn =
+            DateTime(startedAt.year, startedAt.month, startedAt.day);
         AppLogger.info(
           '[Reconcile] running both passes ($reason)',
           category: 'lifecycle',
@@ -797,9 +800,11 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
         // since. Failing here must not skip either pass, so the replay is
         // guarded separately.
         //
-        // `pendingVerdicts == null` means the queue could not be READ — the only
-        // state in which either pass withholds judgement wholesale, because it is
-        // the only one where we cannot say which days the user has decided.
+        // `pendingVerdicts == null` means the queue could not be READ. The
+        // target sweep withholds auto-fail on it; the verification pass no
+        // longer needs to react at all, because a frozen day is now RESTORED
+        // from the status the freeze carries rather than judged, so nothing it
+        // does depends on being able to enumerate the queue.
         Map<String, Map<String, String>>? pendingVerdicts;
         try {
           final replay = await NotificationService().replayPendingHabitLogs();
@@ -821,11 +826,11 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
         // they share a trigger, not a fate.
         if (VerificationConfig.enabled) {
           try {
-            // Passed through UNCHANGED, null included: null means "the queue
-            // could not be read", and the pass stands down on it. `?? const {}`
-            // here would tell it the queue is empty — a confident claim made out
-            // of ignorance, in the one state where it would clear a freeze
-            // protecting a check-in the user cannot get back.
+            // Passed through as a plain map: the queued verdicts are merged
+            // under the stored ones so a queued Done reads as the verdict it
+            // is. Null degrades to empty here without harm — a frozen day is
+            // restored from its own recorded status, so the pass never needs
+            // the queue to tell it what the user decided.
             await runVerificationReconcile(
               ref,
               pendingVerdicts: pendingVerdicts,
@@ -863,19 +868,19 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
           AppLogger.error('[Targets] sweep failed ($reason)', e, stack);
         }
 
-        // Stamped AFTER the passes, not before.
+        // The rollover trigger's "we have looked at this day" marker.
         //
-        // This is the rollover trigger's "we have looked at this day" marker,
-        // and stamping it up front marked days as looked-at that a declined pass
-        // never reached — a barrier that did not settle, or an unreadable queue,
-        // and the day then went unresolved until the next resume because the
-        // rollover would not fire again. Stamping late cannot cause the churn it
-        // was moved early to avoid: a tick arriving mid-pass only sets
-        // `_reconcileQueued`, and a date that genuinely changed mid-pass DESERVES
-        // the extra run.
-        final finishedAt = DateTime.now();
-        _lastReconciledDay =
-            DateTime(finishedAt.year, finishedAt.month, finishedAt.day);
+        // Stamped with the day the pass EVALUATED, not the wall clock when it
+        // finished: a pass that starts at 23:59:59 and takes two seconds judged
+        // yesterday, and stamping tomorrow's date would consume the rollover
+        // that is supposed to bring it back for today.
+        //
+        // Late rather than early, because stamping up front marked days as
+        // looked-at that a declined pass never reached. Late cannot cause the
+        // churn early avoided: a tick arriving mid-pass only sets
+        // `_reconcileQueued`, and a date that genuinely changed mid-pass
+        // DESERVES the extra run.
+        _lastReconciledDay = startedOn;
       } while (_reconcileQueued && mounted);
     } finally {
       _reconcileRunning = false;

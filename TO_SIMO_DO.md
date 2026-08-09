@@ -7,6 +7,12 @@ history lives in `DOCUMENTATION.md`.
 flutter run -d macos --dart-define-from-file=.env
 flutter build macos --release --dart-define-from-file=.env
 flutter build ipa --release
+
+# Desktop tests NEED the defines — `desktop_supabase_config_security_test` is
+# designed to fail without them, so a bare `flutter test` shows a false failure.
+cd desktop && flutter test \
+  --dart-define=EVOLVE_SUPABASE_URL=https://dummy.supabase.co \
+  --dart-define=EVOLVE_SUPABASE_PUBLISHABLE_KEY=dummy_key
 ```
 
 ---
@@ -144,8 +150,10 @@ Repo side is done. These are App Store Connect actions. Order matters. Ship **1.
 
 ## 5. Test / CI gaps
 
-- [ ] **CI runs in UTC**, so the DST tests never exercise a real transition. A `TZ=Europe/Rome`
-  leg on one job would make them bite. Say the word.
+- [ ] **Watch the first CI run on `TZ: Europe/Rome`.** The workflow now pins it at top level,
+  so the DST-sensitive tests finally execute against a real transition — they never have.
+  All four suites pass locally under Rome.
+
 - [ ] **Nothing proves the two week calendars call `weekDaysFor`** — reverting a call site in
   `habits_page.dart` / `weekly_view_widget.dart` to a `Duration` would be invisible to CI.
   Both widgets are private, so this needs a widget test.

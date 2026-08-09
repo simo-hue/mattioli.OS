@@ -680,49 +680,72 @@ class _ManualOverrideChip extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 44),
         child: Align(
           alignment: AlignmentDirectional.centerStart,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+          // WRAP, not Row, and that is the fix rather than a tidy-up.
+          //
+          // A Row here cannot degrade safely. With both halves `Flexible` the
+          // ACTIONABLE label ellipsized as readily as the inert one; with
+          // `flex: 0` on the inert half it was worse — `flex: 0` is INFLEXIBLE,
+          // so "Set by you" took its full intrinsic width and the action
+          // collapsed to ZERO, leaving a 44pt tap target that still worked and
+          // no longer said anything. At accessibility text sizes neither half
+          // fits alone, so no pair of flex values rescues it.
+          //
+          // Wrapping lets the action move to a second line instead of vanishing.
+          // Vertical growth is safe: the sheet scrolls, and the 44pt constraint
+          // above is a floor, not a height.
+          child: Wrap(
+            spacing: 6,
+            runSpacing: 2,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Icon(LucideIcons.userPen, size: 12, color: colors.mutedForeground),
-              const SizedBox(width: 4),
-              // The inert label yields first. Both halves were Flexible with
-              // equal weight, so at narrow widths / large Dynamic Type the
-              // ACTIONABLE half ellipsized just as readily as the explanatory
-              // one — the user could be left reading "Set by yo… Use App…".
-              // `flex: 0` lets "Set by you" shrink to nothing before the action
-              // loses a character.
-              Flexible(
-                flex: 0,
-                child: Text(
-                  context.t.verification.manualSetByYou,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 12,
-                    color: colors.mutedForeground,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(LucideIcons.userPen,
+                      size: 12, color: colors.mutedForeground),
+                  const SizedBox(width: 4),
+                  // Flexible INSIDE each group, Wrap BETWEEN them. The Wrap
+                  // moves the action to its own line; this keeps a single line
+                  // from overflowing once it has one to itself. Ellipsis is the
+                  // last resort rather than the first, which is the whole
+                  // difference from the Row this replaced.
+                  Flexible(
+                    child: Text(
+                      context.t.verification.manualSetByYou,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        color: colors.mutedForeground,
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
-              const SizedBox(width: 6),
-              Icon(
-                LucideIcons.rotateCcw,
-                size: 12,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(width: 3),
-              Flexible(
-                child: Text(
-                  context.t.verification.manualReleaseToAuto(app: app),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    LucideIcons.rotateCcw,
+                    size: 12,
                     color: Theme.of(context).colorScheme.primary,
                   ),
-                ),
+                  const SizedBox(width: 3),
+                  Flexible(
+                    child: Text(
+                      context.t.verification.manualReleaseToAuto(app: app),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

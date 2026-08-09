@@ -28,6 +28,21 @@ on:
       - 'schema.sql'
       - '.github/workflows/mobile-ci.yml'
 
+# Run every job in a zone that HAS daylight saving.
+#
+# GitHub runners default to UTC, which has no DST transition — so every
+# DST-sensitive test in this repo is inert on CI. That is not hypothetical: five
+# test-file headers across both apps already say so in prose, and the sleep-window
+# group in mobile/test/method_channel_bridges_test.dart passes under UTC even if
+# the window is rebuilt with `Duration(days:)`, which is exactly the construction
+# the codebase forbids for calendar arithmetic (a Duration day is a fixed 24h and
+# drifts off the intended wall-clock hour across a transition).
+#
+# Europe/Rome is the app's home zone and transitions on the EU dates the tests
+# name. Set at workflow level so a new job cannot silently opt out.
+env:
+  TZ: Europe/Rome
+
 jobs:
   analyze-and-test:
     runs-on: ubuntu-latest

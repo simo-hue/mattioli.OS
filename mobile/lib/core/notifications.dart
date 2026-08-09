@@ -329,6 +329,40 @@ class NotificationService {
     }
   }
 
+  /// Test seam for the queue replay's server write, mirroring
+  /// [verificationStoreOpener].
+  ///
+  /// Without it the cloud branch of `_replayPendingHabitLogs` is unreachable
+  /// from any test — every case stops at the Private-mode short-circuit or the
+  /// null-session return. That mattered: the 23503 drop decides whether a
+  /// user's tapped Done is retried or discarded forever, and inverting the
+  /// branch (dropping the RETRYABLE errors instead) would have shipped green.
+  @visibleForTesting
+  static Future<void> Function(Map<String, Object?> row) logUpserter =
+      _defaultLogUpsert;
+
+  static Future<void> _defaultLogUpsert(Map<String, Object?> row) =>
+      Supabase.instance.client
+          .from('goal_logs')
+          .upsert(row, onConflict: 'goal_id, date');
+
+  /// Test seam for the session check that gates the replay's cloud branch.
+  /// Paired with [logUpserter]: without both, the branch cannot be entered at
+  /// all from a test, because reaching for `Supabase.instance` throws when the
+  /// SDK was never initialised.
+  @visibleForTesting
+  static String? Function() currentUserId = _defaultCurrentUserId;
+
+  static String? _defaultCurrentUserId() =>
+      Supabase.instance.client.auth.currentUser?.id;
+
+  /// Restores both replay seams to their production implementations.
+  @visibleForTesting
+  static void resetTestSeams() {
+    logUpserter = _defaultLogUpsert;
+    currentUserId = _defaultCurrentUserId;
+  }
+
   static const String _pendingLogsKey = 'pending_habit_logs';
 
   /// Queue a cloud habit-log action that couldn't be written, encoded as
@@ -441,8 +475,8 @@ class NotificationService {
         return (written: 0, drained: false, pending: _verdictsFrom(pending));
       }
 
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) {
+      final userId = currentUserId();
+      if (userId == null) {
         // No session yet; retry next foreground. The queue still holds decided
         // days, so it is NOT drained.
         return (written: 0, drained: false, pending: _verdictsFrom(pending));
@@ -456,14 +490,20 @@ class NotificationService {
       var dropped = 0;
       for (final entry in pending) {
         final parts = entry.split('|');
-        if (parts.length < 3) continue; // drop malformed entries
+        if (parts.length < 3) {
+          // Dropped, and COUNTED as dropped — it is not in `remaining` either,
+          // so without this it would inflate `written` and trigger a full
+          // `goal_logs` re-download for a server write that never happened.
+          dropped++;
+          continue;
+        }
         try {
-          await Supabase.instance.client.from('goal_logs').upsert({
-            'user_id': user.id,
+          await logUpserter({
+            'user_id': userId,
             'goal_id': parts[0],
             'date': parts[1],
             'status': parts[2],
-          }, onConflict: 'goal_id, date');
+          });
         } on PostgrestException catch (e, stack) {
           // 23503 = foreign_key_violation: `goal_logs.goal_id` references
           // `goals(id)`, so this is a queued verdict for a habit that no longer

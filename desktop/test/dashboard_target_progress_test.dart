@@ -486,6 +486,16 @@ void main() {
   // afterwards would judge them against the NEW amount and invent verdicts.
   // Desktop mirror of mobile's target_edit_materialisation_test.
   group('a target edit scores what the old target still owed', () {
+    // A MUTABLE clock, and that is what makes this group mean anything.
+    //
+    // With the clock pinned at `now`, the launch sweep that `build()` fires had
+    // already scored every closed day before `updateHabit` ran — so the
+    // assertions passed with the materialise call site DELETED. Starting the
+    // clock on the day itself leaves it OPEN (`reconcileManualTargetDays` only
+    // walks days strictly before today), so the launch sweep finds nothing, and
+    // only the materialise can produce the verdict asserted below.
+    late DateTime clock;
+
     (ProviderContainer, _RecordingRepository) buildWithProgress(
       DashboardHabit habit,
       Map<String, Map<String, double>> progress,
@@ -500,7 +510,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           dashboardRepositoryProvider.overrideWithValue(repo),
-          clockProvider.overrideWithValue(() => now),
+          clockProvider.overrideWithValue(() => clock),
         ],
       );
       addTearDown(container.dispose);
@@ -511,6 +521,9 @@ void main() {
     setUp(() {
       SharedPreferences.setMockInitialValues(
           const {'target_auto_fail_from': '2026-07-01'});
+      // The day the progress belongs to is still OPEN when the controller is
+      // built, so the launch sweep cannot reach it.
+      clock = DateTime(2026, 7, 22);
     });
 
     test('THE REGRESSION: a day that MET the old target is scored done, not '
@@ -519,11 +532,16 @@ void main() {
         startDate: DateTime(2026, 7, 22),
         targetEffectiveFrom: DateTime(2026, 7, 22),
       );
-      final (container, _) = buildWithProgress(habit, const {
+      final (container, repo) = buildWithProgress(habit, const {
         '2026-07-22': {'h1': 80}, // exactly the OLD amount
       });
       final controller = container.read(dashboardControllerProvider.notifier);
       await _drainBackgroundSweep();
+      expect(repo.progressCalls, isEmpty,
+          reason: 'precondition: the launch sweep must have had nothing in '
+              'reach, or this group proves nothing about the materialise');
+      // The day closes. Now only the edit can settle it.
+      clock = now;
 
       await controller.updateHabit(
         id: 'h1',
@@ -547,11 +565,16 @@ void main() {
         startDate: DateTime(2026, 7, 22),
         targetEffectiveFrom: DateTime(2026, 7, 22),
       );
-      final (container, _) = buildWithProgress(habit, const {
+      final (container, repo) = buildWithProgress(habit, const {
         '2026-07-22': {'h1': 80},
       });
       final controller = container.read(dashboardControllerProvider.notifier);
       await _drainBackgroundSweep();
+      expect(repo.progressCalls, isEmpty,
+          reason: 'precondition: the launch sweep must have had nothing in '
+              'reach, or this group proves nothing about the materialise');
+      // The day closes. Now only the edit can settle it.
+      clock = now;
 
       await controller.updateHabit(
         id: 'h1',
@@ -580,6 +603,11 @@ void main() {
       });
       final controller = container.read(dashboardControllerProvider.notifier);
       await _drainBackgroundSweep();
+      // The day closes here too, or the assertion below is inert: with the day
+      // still open there is nothing for ANY pass to write, so `progressCalls`
+      // would be empty whether or not the rename correctly skipped the
+      // materialise.
+      clock = now;
       repo.progressCalls.clear();
 
       await controller.updateHabit(

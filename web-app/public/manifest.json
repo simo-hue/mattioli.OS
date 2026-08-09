@@ -1,22 +1,22 @@
 {
-    "name": "Mattioli.OS",
-    "short_name": "Mattioli.OS",
-    "start_url": "/mattioli.OS/sw/dashboard",
-    "display": "standalone",
-    "background_color": "#000000",
-    "theme_color": "#000000",
-    "orientation": "portrait",
-    "scope": "/mattioli.OS/",
-    "icons": [
-        {
-            "src": "pwa-icon-v5.png",
-            "sizes": "192x192",
-            "type": "image/png"
-        },
-        {
-            "src": "pwa-icon-v5.png",
-            "sizes": "512x512",
-            "type": "image/png"
-        }
-    ]
+  "name": "Mattioli.OS",
+  "short_name": "Mattioli.OS",
+  "start_url": "/mattioli.OS/sw/dashboard",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait",
+  "scope": "/mattioli.OS/",
+  "icons": [
+    {
+      "src": "pwa-icon-v5.png",
+      "sizes": "512x500",
+      "type": "image/png"
+    },
+    {
+      "src": "pwa-icon-v5.png",
+      "sizes": "512x500",
+      "type": "image/png"
+    }
+  ]
 }

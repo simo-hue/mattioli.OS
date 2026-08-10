@@ -7,6 +7,12 @@ import { Button } from "@/components/ui/button";
 
 const LandingMobileNav = () => {
     const [isOpen, setIsOpen] = useState(false);
+    // The overlay is portalled into document.body, which does not exist while the
+    // page is prerendered in Node. Render it only after mount so the static build
+    // succeeds and hydration has nothing to reconcile — a portal contributes no
+    // markup to this component's own output either way.
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
     const location = useLocation();
 
     // Close menu when route changes
@@ -45,7 +51,7 @@ const LandingMobileNav = () => {
                 {isOpen ? <X /> : <Menu />}
             </Button>
 
-            {createPortal(
+            {mounted && createPortal(
                 <AnimatePresence>
                     {isOpen && (
                         <motion.div

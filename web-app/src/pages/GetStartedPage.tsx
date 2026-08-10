@@ -10,6 +10,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import PublicHeader from "@/components/PublicHeader";
+import RouteHead from "@/components/RouteHead";
 
 const GetStartedPage = () => {
     const [copiedStep, setCopiedStep] = useState<string | null>(null);
@@ -36,6 +37,7 @@ const GetStartedPage = () => {
 
     return (
         <div className="min-h-screen bg-black text-white selection:bg-green-900 selection:text-white overflow-x-hidden">
+            <RouteHead route="get-started" />
             {/* Navigation */}
             {/* Navigation */}
             <PublicHeader />

@@ -3,6 +3,7 @@ import { Shield, Lock, EyeOff, Database, Bot, FileDown, Mail } from "lucide-reac
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
 import { Button } from "@/components/ui/button";
+import RouteHead from "@/components/RouteHead";
 
 const PrivacyPolicy = () => {
     const lastUpdated = "May 18, 2026";
@@ -40,6 +41,7 @@ const PrivacyPolicy = () => {
 
     return (
         <div className="min-h-screen bg-black text-white selection:bg-purple-900 selection:text-white font-body relative overflow-x-hidden">
+            <RouteHead route="privacy" />
             {/* Header */}
             <PublicHeader />
 

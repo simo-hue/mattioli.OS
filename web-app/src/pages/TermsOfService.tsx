@@ -3,6 +3,7 @@ import { FileText, Scale, UserCheck, ShieldAlert, Cpu, HeartPulse, ShieldMinus }
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
 import { Button } from "@/components/ui/button";
+import RouteHead from "@/components/RouteHead";
 
 const TermsOfService = () => {
     const lastUpdated = "May 18, 2026";
@@ -40,6 +41,7 @@ const TermsOfService = () => {
 
     return (
         <div className="min-h-screen bg-black text-white selection:bg-purple-900 selection:text-white font-body relative overflow-x-hidden font-sans">
+            <RouteHead route="terms" />
             {/* Header */}
             <PublicHeader />
 

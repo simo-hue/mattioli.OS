@@ -6,6 +6,7 @@ import LandingMobileNav from "@/components/LandingMobileNav";
 import PublicHeader from "@/components/PublicHeader";
 import { LandingDemo } from "@/components/demo/LandingDemo";
 import PublicFooter from "@/components/PublicFooter";
+import RouteHead from "@/components/RouteHead";
 
 const LandingPage = () => {
     const fadeInUp = {
@@ -24,6 +25,7 @@ const LandingPage = () => {
 
     return (
         <div className="min-h-screen bg-black text-white selection:bg-purple-900 selection:text-white overflow-x-hidden">
+            <RouteHead route="home" />
             {/* Navigation */}
             {/* Navigation */}
             <PublicHeader />

@@ -128,6 +128,15 @@ class SyncSettingsController extends Notifier<SyncSettingsState> {
   /// gated on it.
   bool _attached = false;
 
+  /// Identifies WHICH page visit owns [_attached].
+  ///
+  /// The shell cross-fades sections, so a re-entered SettingsPage mounts and
+  /// hydrates BEFORE the outgoing one disposes; without an identity the
+  /// outgoing [detach] would clear the flag out from under the live page, and
+  /// the very next sync action would leave [busy] true forever — the "toggle
+  /// permanently dead" state [hydrate] exists to prevent.
+  int _attachToken = 0;
+
   @override
   SyncSettingsState build() => const SyncSettingsState();
 
@@ -140,17 +149,27 @@ class SyncSettingsController extends Notifier<SyncSettingsState> {
   ///
   /// One microtask late because `initState` runs inside the build phase, and
   /// Riverpod refuses to let a provider be modified there.
-  void hydrate() {
+  ///
+  /// Returns the token identifying this visit; the page hands it straight back
+  /// to [detach] when it leaves.
+  int hydrate() {
     _attached = true;
     scheduleMicrotask(() {
       if (!_attached) return;
       state = const SyncSettingsState();
       unawaited(refreshStatus());
     });
+    return ++_attachToken;
   }
 
   /// The page has left the screen. Mirrors what `!mounted` used to shut off.
-  void detach() => _attached = false;
+  ///
+  /// Ignored unless [token] is the visit that is actually on screen: an
+  /// outgoing page disposes AFTER its replacement has hydrated, and a blind
+  /// clear here would detach the live one.
+  void detach(int token) {
+    if (token == _attachToken) _attached = false;
+  }
 
   Future<void> refreshStatus() async {
     if (!Platform.isMacOS) return;

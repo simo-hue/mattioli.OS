@@ -212,6 +212,15 @@ class SettingsFormController extends Notifier<SettingsFormState> {
   /// the notification schedule after the page is gone.
   bool _attached = false;
 
+  /// Identifies WHICH page visit owns [_attached].
+  ///
+  /// The shell cross-fades sections, so a re-entered SettingsPage mounts and
+  /// hydrates BEFORE the outgoing one disposes; without an identity the
+  /// outgoing [detach] would clear the flag out from under the live page, and
+  /// that visit would silently stop applying pulls and stop rolling failed
+  /// writes back.
+  int _attachToken = 0;
+
   /// Whether the synced store has answered at least once this session.
   ///
   /// The read is kicked off UNAWAITED from [hydrate], and in Private mode it
@@ -318,7 +327,10 @@ class SettingsFormController extends Notifier<SettingsFormState> {
   /// [applySyncedSettings] can resolve synchronously — the store is often
   /// already cached — and a notifier may not assign `state` while its own build
   /// is still running.
-  void hydrate() {
+  ///
+  /// Returns the token identifying this visit; the page hands it straight back
+  /// to [detach] when it leaves.
+  int hydrate() {
     _attached = true;
     // Reset per-visit, exactly as a fresh `State` did: an edit made before this
     // visit's first read lands must win over what that read delivers.
@@ -342,10 +354,17 @@ class SettingsFormController extends Notifier<SettingsFormState> {
       );
       unawaited(loadProfilePreferences());
     });
+    return ++_attachToken;
   }
 
   /// The page has left the screen. Mirrors what `!mounted` used to shut off.
-  void detach() => _attached = false;
+  ///
+  /// Ignored unless [token] is the visit that is actually on screen: an
+  /// outgoing page disposes AFTER its replacement has hydrated, and a blind
+  /// clear here would detach the live one.
+  void detach(int token) {
+    if (token == _attachToken) _attached = false;
+  }
 
   // ---------------------------------------------------------------------------
   // Writes

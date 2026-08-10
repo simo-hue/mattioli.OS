@@ -107,10 +107,13 @@ LifetimeSummary computeLifetimeSummary({
     if (firstLog == null || l.date.isBefore(firstLog)) firstLog = l.date;
   }
 
-  // Active-day count uses the same local-midnight `difference().inDays + 1` as
-  // the mobile-mirrored `computeHabitStatsRow`, so the Consistency % here stays
-  // consistent with the per-habit rates. (Shared caveat: a span crossing a
-  // spring-forward DST boundary can under-count by a day — accepted for parity.)
+  // Active-day count goes through the DST-safe [_calDays] (UTC midnights), the
+  // same arithmetic as the `_daysBetween`-based `total_active_days` in the
+  // mobile-mirrored `computeHabitStatsRow`, so Consistency % stays consistent
+  // with the per-habit rates rendered on the same screen. With a local
+  // `difference().inDays` a habit whose start predates a spring-forward loses a
+  // day off this denominator, so the figure reads high — >100% for a habit done
+  // every day — while the per-habit row beside it reads correctly.
   var sumDone = 0;
   var sumActive = 0;
   DateTime? earliestStart;
@@ -123,13 +126,13 @@ LifetimeSummary computeLifetimeSummary({
     if (earliestStart == null || start.isBefore(earliestStart)) {
       earliestStart = start;
     }
-    sumActive += math.max(t.difference(start).inDays + 1, 1);
+    sumActive += math.max(_calDays(start, t) + 1, 1);
     sumDone += doneByGoal[g.id] ?? 0;
   }
   final consistency = sumActive > 0 ? sumDone * 100.0 / sumActive : 0.0;
   final trackedDays = earliestStart == null
       ? 0
-      : math.max(t.difference(earliestStart).inDays + 1, 1);
+      : math.max(_calDays(earliestStart, t) + 1, 1);
 
   var perfectDays = 0;
   logsByDate.forEach((dk, habits) {

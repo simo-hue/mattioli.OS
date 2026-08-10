@@ -148,13 +148,24 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     syncSettingsControllerProvider.notifier,
   );
 
+  /// This visit's identity in the two controllers, handed back on dispose.
+  ///
+  /// The shell cross-fades sections, so leaving Settings and coming straight
+  /// back mounts a SECOND page before this one disposes; detaching by token
+  /// means an outgoing page can only ever shut off its own visit.
+  ///
+  /// `late final` is safe: both `hydrate` calls in `initState` are
+  /// unconditional and run before any early return.
+  late final int _formToken;
+  late final int _syncToken;
+
   @override
   void dispose() {
     // The controllers outlive this page; tell them the page is gone so they
     // stop applying pulls and rolling writes back into a UI nobody is looking
     // at. This is what `!mounted` used to do for the same code.
-    _formController.detach();
-    _syncController.detach();
+    _formController.detach(_formToken);
+    _syncController.detach(_syncToken);
     _highlightTimer?.cancel();
     _searchController.dispose();
     _searchFocus.dispose();
@@ -184,14 +195,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
     // Forgets the previous visit's status and re-reads it. This used to be an
     // `unawaited(_refreshSyncStatus())` straight into `setState`.
-    _syncController.hydrate();
+    _syncToken = _syncController.hydrate();
     // Reads SharedPreferences and the appearance controller into the form's
     // initial state, then kicks the synced read-back off UNAWAITED — even when
     // there are no preferences to read, otherwise a fresh install never
     // hydrates. `hydrate` is deliberately a step after the controller's own
     // build: the store is often already cached, in which case the read-back
     // resolves synchronously and a notifier may not assign `state` mid-build.
-    _formController.hydrate();
+    _formToken = _formController.hydrate();
   }
 
   @override

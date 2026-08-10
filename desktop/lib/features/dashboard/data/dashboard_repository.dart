@@ -8,6 +8,7 @@ import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/core/desktop_private_db.dart';
 import 'package:evolve_desktop/core/secure_storage_utils.dart';
+import 'package:evolve_desktop/core/streak_utils.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/core/macro_targets_config.dart';
 import 'package:evolve_desktop/core/targets_config.dart';
@@ -603,7 +604,7 @@ class SupabaseDashboardRepository extends DashboardRepository {
       'goal_id': habitId,
       'date': dateKey,
       'status': nextStatus,
-      'streak': _nextStreak(habitId, date, nextStatus),
+      'streak': _streakFor(habitId, date, nextStatus),
     };
     await _runOrQueue(
       _PendingMutation.upsert('goal_logs', payload, onConflict: 'goal_id,date'),
@@ -801,6 +802,35 @@ class SupabaseDashboardRepository extends DashboardRepository {
       final mutation = pending[index];
       try {
         await _applyPending(mutation);
+      } on PostgrestException catch (error, stack) {
+        // 23503 = foreign_key_violation. `goal_logs.goal_id` and
+        // `goal_progress.goal_id` reference `goals(id)`, so this is a queued
+        // write for a habit that no longer exists — deleted on another device
+        // while this Mac was offline. It can never land, on any future replay
+        // (uuid ids are never reused), and keeping it wedges EVERY later
+        // refresh(): the flush is the first statement in refresh()'s try, so
+        // the dashboard would stay frozen on its cache forever. Dropped rather
+        // than retried — the same rule mobile's notification replay already
+        // applies (mobile/lib/core/notifications.dart). Nothing recoverable is
+        // lost: the habit and its history are already gone.
+        if (error.code == '23503') {
+          AppLogger.warning(
+            'Dropping an unappliable ${mutation.operation} on '
+            '${mutation.table} (foreign key violation)',
+            error,
+            stack,
+          );
+          continue;
+        }
+        AppLogger.error(
+          'Unable to replay ${mutation.operation} on ${mutation.table}',
+          error,
+          stack,
+        );
+        remaining.addAll(pending.skip(index));
+        replayError = error;
+        replayStack = stack;
+        break;
       } catch (error, stack) {
         AppLogger.error(
           'Unable to replay ${mutation.operation} on ${mutation.table}',
@@ -983,18 +1013,38 @@ class SupabaseDashboardRepository extends DashboardRepository {
     return matches.isEmpty ? 0 : (matches.first['streak'] as int? ?? 0);
   }
 
-  int _nextStreak(String habitId, DateTime date, String nextStatus) {
-    final previousDate =
-        dashboardDateKey(shiftDays(DateTime(date.year, date.month, date.day), -1));
-    final previousStatus = _snapshot.habitLogs[previousDate]?[habitId];
-    final previous = _snapshot.habits
+  /// Signed streak for [habitId] as of [date] with [nextStatus] applied,
+  /// computed with the shared [computeStreak] over the snapshot's log history —
+  /// the same algorithm the controller, the private repository
+  /// (`PrivateDashboardRepository._streakFor`), the macOS notification action
+  /// and mobile all persist, so the stored `streak` column can't disagree with
+  /// the number the tile is already showing.
+  ///
+  /// This used to carry the snapshot's `habit.streak` forward by one, which was
+  /// wrong twice over: the controller has ALREADY stored the NEW streak in the
+  /// snapshot before this runs (`_saveLocal()` → `save()` → `_snapshot =`), so
+  /// the increment landed on an incremented value; and it only looked at
+  /// calendar-yesterday, so a Mon/Wed/Fri habit lost its streak on every
+  /// unscheduled gap that `computeStreak` steps over.
+  int _streakFor(String habitId, DateTime date, String nextStatus) {
+    // Copy the logs and apply [nextStatus] here rather than trusting the caller
+    // to have applied it: idempotent when it has (today's controller does), and
+    // still correct if a future caller does not.
+    final logs = <String, Map<String, String>>{
+      for (final entry in _snapshot.habitLogs.entries)
+        entry.key: Map<String, String>.from(entry.value),
+    };
+    (logs[dashboardDateKey(date)] ??= <String, String>{})[habitId] = nextStatus;
+    final habit = _snapshot.habits
         .where((habit) => habit.id == habitId)
-        .map((habit) => habit.streak)
         .firstOrNull;
-    if (nextStatus == 'done') {
-      return previousStatus == 'done' ? (previous ?? 0) + 1 : 1;
-    }
-    return previous != null && previous > 0 ? -1 : (previous ?? 0) - 1;
+    return computeStreak(
+      habitId: habitId,
+      date: date,
+      logs: logs,
+      startDate: habit?.startDate ?? date,
+      frequencyDays: habit?.frequencyDays,
+    );
   }
 
   List<Map<String, dynamic>> _rows(dynamic response) {

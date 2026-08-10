@@ -45,6 +45,38 @@ void main() {
       expect(window.labelInterval, 1);
     });
 
+    test('counts a window that straddles a DST transition in whole days', () {
+      // Regression: `dayCount` used to be measured with
+      // `today.difference(startDate).inDays`, on two LOCAL midnights. A span
+      // containing a 23-hour spring-forward day is 24h*n - 1h, which `inDays`
+      // truncates, so the window came out one day short and the plot loop
+      // (`i < dayCount`) dropped its last point — today — from the chart.
+      //
+      // The assertion below is a pure calendar invariant: with no mood entries
+      // the window is always exactly `selectedDays` long, in every zone. It can
+      // only FAIL where the local zone actually observes DST (e.g.
+      // Europe/Rome, where 58 of these 730 days regressed); under TZ=UTC it
+      // passes either way rather than flaking.
+      for (final selectedDays in const [14, 30, 90]) {
+        for (var offset = 0; offset < 730; offset++) {
+          final now = DateTime(2026, 1, 1 + offset, 10);
+          final window = MoodChartWindow.resolve(
+            now: now,
+            selectedDays: selectedDays,
+            moodDateKeys: const [],
+          );
+
+          expect(
+            window.dayCount,
+            selectedDays,
+            reason:
+                'now=$now selectedDays=$selectedDays '
+                'startDate=${window.startDate}',
+          );
+        }
+      }
+    });
+
     test('anchors a single mood point to the right edge', () {
       final window = MoodChartWindow.resolve(
         now: DateTime(2026, 5, 26, 10),

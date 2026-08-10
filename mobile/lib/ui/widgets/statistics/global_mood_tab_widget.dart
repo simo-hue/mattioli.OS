@@ -52,7 +52,17 @@ class MoodChartWindow {
     final startDate = moodDatesInRange.isEmpty
         ? defaultStartDate
         : moodDatesInRange.first;
-    final dayCount = today.difference(startDate).inDays + 1;
+    // Measured on UTC midnights: a local span containing a 23-hour
+    // spring-forward day is 24h*n - 1h, which `inDays` truncates, so the window
+    // came out a day short and the plot loop (`i < dayCount`) dropped its last
+    // point — today — from the chart. UTC has no DST.
+    final dayCount =
+        DateTime.utc(today.year, today.month, today.day)
+            .difference(
+              DateTime.utc(startDate.year, startDate.month, startDate.day),
+            )
+            .inDays +
+        1;
 
     return MoodChartWindow(
       startDate: startDate,

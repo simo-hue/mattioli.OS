@@ -192,7 +192,27 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
 
     // 2. Invio al server
     final user = supabase.auth.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      // No session (token expiry/rotation race between opening the composer and
+      // saving): undo the optimistic insert instead of stranding a ghost goal in
+      // state + the cache written just above, and surface the failure — matching
+      // the catch block below and GoalsNotifier.addHabit. Left in place the goal
+      // is shown as saved, is never uploaded, and the next successful
+      // _syncFromSupabase replaces state.goals wholesale and drops it silently.
+      AppLogger.error(
+        '[MacroGoals] Insert skipped: no authenticated user',
+        StateError('no authenticated user'),
+        StackTrace.current,
+      );
+      state = previousState;
+      _saveToCache(previousState.goals);
+      _showMacroGoalError(
+        t.common.errorDuringSaving,
+        t.common.macroGoalSaveFailed,
+        StateError('no authenticated user'),
+      );
+      return;
+    }
 
     try {
       final payload = goal.toJson();
@@ -214,6 +234,16 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       _saveToCache(updatedGoals);
     } catch (e, stack) {
       AppLogger.error('[MacroGoals] Insert error', e, stack);
+      // Remove the optimistic (temp-id) ghost row on failure: the id the add-bar
+      // mints is not a uuid — only the success path above swaps in the one
+      // Supabase assigns — so a row left behind here can never be updated or
+      // deleted server-side (22P02 on `long_term_goals.id uuid`), and the cache
+      // write above would carry it across a restart. Filtered by id rather than
+      // restored from `previousState`, so a mutation that landed during the
+      // insert await is not reverted along with it.
+      final rolledBack = state.goals.where((g) => g.id != goal.id).toList();
+      state = state.copyWith(goals: rolledBack);
+      _saveToCache(rolledBack);
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {
         ErrorModal.show(

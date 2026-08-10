@@ -753,6 +753,15 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       // next sync. Write it explicitly (null clears the column) — same reasoning
       // as the verify_* columns above.
       payload['frequency_days'] = updatedHabit.frequencyDays;
+      // Same omitted-column hazard for the reminder: Goal.toJson emits
+      // reminder_time only when non-null, and an UPDATE leaves omitted columns
+      // untouched — so REMOVING a reminder would leave the old time on the
+      // server to resurrect on the next sync and re-schedule the notification
+      // the user just deleted (settings_provider's syncNotifications schedules
+      // every goal whose reminderTime is non-null). Ungated: reminder_time is a
+      // base column of public.goals (schema.sql), not migration-gated like
+      // `target` / `verify_conditions`.
+      payload['reminder_time'] = updatedHabit.reminderTime;
       // Same omitted-column hazard for the quantitative target: Goal.toJson emits
       // `target` only when non-null, and a Supabase UPDATE leaves an omitted
       // column untouched — so REMOVING a habit's target would leave the stale one

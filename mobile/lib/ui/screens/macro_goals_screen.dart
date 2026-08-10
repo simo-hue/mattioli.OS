@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/macro_goal_calendar.dart';
+import '../../core/macro_goal_range_label.dart';
 import '../../core/theme.dart';
 import '../../core/rtl.dart';
 import '../../models/macro_goal.dart';
@@ -850,17 +851,16 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         highlightColor = const Color(0xFF60A5FA); // blue
         break;
       case GoalType.weekly:
-        periodTitle = _formatWeeklyRange(
-          context,
-          vs.selectedYear,
-          vs.selectedMonth,
-          vs.selectedWeek,
-        );
+        // "Week 2" — the week's exact days are spelled out on the line below,
+        // by [_periodRangeLabel], instead of standing in for the title.
+        periodTitle = '${context.t.common.calendarView.week} ${vs.selectedWeek}';
         highlightColor = const Color(0xFFA78BFA); // purple
         break;
       case GoalType.lifetime:
         break;
     }
+
+    final rangeLabel = _periodRangeLabel(vs);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -888,19 +888,41 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
             ),
           ),
 
-          // Central Title representing the context
+          // Central title representing the context, over the exact days the
+          // period covers. Two sizes rather than one: at equal weight the pair
+          // shouts and crowds the chevrons on a small iPhone, and the range is
+          // supporting detail for the title, not a second headline.
           Expanded(
-            child: Text(
-              periodTitle,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontFamily: 'Inter', 
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: highlightColor,
-                letterSpacing: -0.2,
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  periodTitle,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontFamily: 'Inter',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: highlightColor,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                if (rangeLabel != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    rangeLabel,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontFamily: 'Inter',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: context.appColors.mutedForeground,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
 
@@ -944,41 +966,36 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
     }
   }
 
-  String _formatWeeklyRange(
-    BuildContext context,
-    int year,
-    int month,
-    int week,
-  ) {
-    final range = logicalWeekRange(year, month, week);
-    final locale = LocaleSettings.currentLocale.languageCode;
-    final monthFormat = DateFormat.MMMM(locale);
-    final startMonth = monthFormat.format(range.start);
-    final endMonth = monthFormat.format(range.end);
-    final isEnglish = locale.toLowerCase().startsWith('en');
-
-    final sameMonth =
-        range.start.year == range.end.year &&
-        range.start.month == range.end.month;
-    if (sameMonth) {
-      if (isEnglish) {
-        return '$endMonth ${range.start.day} - ${range.end.day}, ${range.end.year}';
-      }
-      return '${range.start.day} - ${range.end.day} $endMonth ${range.end.year}';
+  /// The selected period's exact day span — "8 – 14 August 2026" — shown under
+  /// the period title for the three plans whose title is opaque on its own
+  /// (Week 2 / Q3 / August). Annual is its own range and Lifetime is unbounded,
+  /// so both return null and keep a single-line header.
+  ///
+  /// Sourced from [macroGoalPeriodRange], the same window a linked habit's
+  /// progress is summed over, so this line can never describe a different
+  /// period than the one being scored. That is also why the last logical week
+  /// of a month prints its true cross-month span (29 August – 4 September):
+  /// those days do count toward the goal.
+  String? _periodRangeLabel(MacroGoalsViewState vs) {
+    if (vs.selectedType == GoalType.lifetime ||
+        vs.selectedType == GoalType.annual) {
+      return null;
     }
-
-    final sameYear = range.start.year == range.end.year;
-    if (sameYear) {
-      if (isEnglish) {
-        return '$startMonth ${range.start.day} - $endMonth ${range.end.day}, ${range.end.year}';
-      }
-      return '${range.start.day} $startMonth - ${range.end.day} $endMonth ${range.end.year}';
-    }
-
-    if (isEnglish) {
-      return '$startMonth ${range.start.day}, ${range.start.year} - $endMonth ${range.end.day}, ${range.end.year}';
-    }
-    return '${range.start.day} $startMonth ${range.start.year} - ${range.end.day} $endMonth ${range.end.year}';
+    final range = macroGoalPeriodRange(
+      type: vs.selectedType.name,
+      year: vs.selectedYear,
+      quarter: vs.selectedQuarter,
+      month: vs.selectedMonth,
+      week: vs.selectedWeek,
+    );
+    if (range == null) return null;
+    return macroGoalRangeLabel(
+      range,
+      monthNames: t.common.months,
+      sameMonth: t.macroGoals.rangeSameMonth,
+      sameYear: t.macroGoals.rangeSameYear,
+      crossYear: t.macroGoals.rangeCrossYear,
+    );
   }
 
   String _capitalizeFirst(String value) {

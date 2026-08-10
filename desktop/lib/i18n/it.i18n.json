@@ -695,7 +695,10 @@
     "nameLabel": "Nome",
     "weekPeriodLabel": "Settimana {week}, {month} {year}",
     "currentQuarter": "Trimestre corrente",
-    "currentMonth": "Mese corrente"
+    "currentMonth": "Mese corrente",
+    "rangeSameMonth": "{startDay} – {endDay} {month} {year}",
+    "rangeSameYear": "{startDay} {startMonth} – {endDay} {endMonth} {year}",
+    "rangeCrossYear": "{startDay} {startMonth} {startYear} – {endDay} {endMonth} {endYear}"
   },
   "goalsStats": {
     "proRequired": "Funzione Pro richiesta",

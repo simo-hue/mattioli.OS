@@ -695,7 +695,10 @@
     "nameLabel": "الاسم",
     "weekPeriodLabel": "الأسبوع {week}، {month} {year}",
     "currentQuarter": "الربع الحالي",
-    "currentMonth": "الشهر الحالي"
+    "currentMonth": "الشهر الحالي",
+    "rangeSameMonth": "{startDay} – {endDay} {month} {year}",
+    "rangeSameYear": "{startDay} {startMonth} – {endDay} {endMonth} {year}",
+    "rangeCrossYear": "{startDay} {startMonth} {startYear} – {endDay} {endMonth} {endYear}"
   },
   "goalsStats": {
     "proRequired": "ميزة Pro مطلوبة",

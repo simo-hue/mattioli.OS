@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/macro_goal_calendar.dart';
+import 'package:evolve_desktop/core/macro_goal_range_label.dart';
 import 'package:evolve_desktop/core/macro_targets_config.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
@@ -495,14 +496,44 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     };
   }
 
+  /// Second line of the board header. For the three plans whose title is opaque
+  /// on its own — "Week 2", "Quarter 3", "August" — this is the exact span of
+  /// days the period covers ("8 – 14 August 2026"); the plan name it used to
+  /// repeat is already stated twice above, by the highlighted toolbar tab and
+  /// by the title itself. Annual ("2026") and Lifetime are self-describing, so
+  /// they keep their prose subtitle.
   String get _periodSubtitle {
     return switch (_selectedType) {
       GoalType.lifetime => t.goalsPage.subtitleLifetime,
       GoalType.annual => t.goalsPage.subtitleAnnual,
-      GoalType.quarterly => t.goalsPage.subtitleQuarterly,
-      GoalType.monthly => t.goalsPage.subtitleMonthly,
-      GoalType.weekly => t.goalsPage.subtitleWeekly,
+      GoalType.quarterly => _periodRangeLabel() ?? t.goalsPage.subtitleQuarterly,
+      GoalType.monthly => _periodRangeLabel() ?? t.goalsPage.subtitleMonthly,
+      GoalType.weekly => _periodRangeLabel() ?? t.goalsPage.subtitleWeekly,
     };
+  }
+
+  /// The selected period's day span, or null if it has no bounded range (only
+  /// reachable for lifetime, which never asks). Sourced from
+  /// [macroGoalPeriodRange] — the same window a linked habit's progress is
+  /// summed over — so this line and the completion ring beside it can never
+  /// describe different periods. Callers fall back to the prose subtitle, so a
+  /// null can soften the header but never blank it.
+  String? _periodRangeLabel() {
+    final range = macroGoalPeriodRange(
+      type: _selectedType.name,
+      year: _selectedYear,
+      quarter: _selectedQuarter,
+      month: _selectedMonth,
+      week: _selectedWeek,
+    );
+    if (range == null) return null;
+    return macroGoalRangeLabel(
+      range,
+      monthNames: t.common.months,
+      sameMonth: t.goalsPage.rangeSameMonth,
+      sameYear: t.goalsPage.rangeSameYear,
+      crossYear: t.goalsPage.rangeCrossYear,
+    );
   }
 
   String get _quickGoalHint {

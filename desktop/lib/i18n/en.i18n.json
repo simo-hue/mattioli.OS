@@ -695,7 +695,10 @@
     "nameLabel": "Name",
     "weekPeriodLabel": "Week {week}, {month} {year}",
     "currentQuarter": "Current quarter",
-    "currentMonth": "Current month"
+    "currentMonth": "Current month",
+    "rangeSameMonth": "{startDay} – {endDay} {month} {year}",
+    "rangeSameYear": "{startDay} {startMonth} – {endDay} {endMonth} {year}",
+    "rangeCrossYear": "{startDay} {startMonth} {startYear} – {endDay} {endMonth} {endYear}"
   },
   "goalsStats": {
     "proRequired": "Pro feature required",

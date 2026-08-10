@@ -963,7 +963,10 @@
     "quarterNumber": "Quarter {quarter}",
     "selectYearHeader": "SELECT YEAR",
     "categoryUnavailableLinked": "The category \"label\" will no longer be available for new goals, but it will remain linked to count historical goals and statistics.",
-    "categoryUnavailableArchived": "The category \"label\" will no longer be available for new goals, but it will remain in history."
+    "categoryUnavailableArchived": "The category \"label\" will no longer be available for new goals, but it will remain in history.",
+    "rangeSameMonth": "{startDay} – {endDay} {month} {year}",
+    "rangeSameYear": "{startDay} {startMonth} – {endDay} {endMonth} {year}",
+    "rangeCrossYear": "{startDay} {startMonth} {startYear} – {endDay} {endMonth} {endYear}"
   },
   "statistics": {
     "keyHabits": "Key Habits",

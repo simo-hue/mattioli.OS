@@ -963,7 +963,10 @@
     "quarterNumber": "Trimestre {quarter}",
     "selectYearHeader": "Seleccionar año",
     "categoryUnavailableLinked": "La categoría \"etiqueta\" ya no estará disponible para nuevos goles, pero permanecerá vinculada para contar goles históricos y estadísticas.",
-    "categoryUnavailableArchived": "La categoría \"etiqueta\" ya no estará disponible para nuevos goles, pero quedará en la historia."
+    "categoryUnavailableArchived": "La categoría \"etiqueta\" ya no estará disponible para nuevos goles, pero quedará en la historia.",
+    "rangeSameMonth": "{startDay} – {endDay} de {month} de {year}",
+    "rangeSameYear": "{startDay} de {startMonth} – {endDay} de {endMonth} de {year}",
+    "rangeCrossYear": "{startDay} de {startMonth} de {startYear} – {endDay} de {endMonth} de {endYear}"
   },
   "statistics": {
     "keyHabits": "Hábitos clave",

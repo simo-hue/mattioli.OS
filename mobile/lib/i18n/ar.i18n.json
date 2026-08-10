@@ -963,7 +963,10 @@
     "quarterNumber": "الربع {quarter}",
     "selectYearHeader": "اختر السنة",
     "categoryUnavailableLinked": "لن تعود الفئة \"label\" متاحة للأهداف الجديدة، لكنها ستبقى مرتبطة بـ count من الأهداف التاريخية والإحصاءات.",
-    "categoryUnavailableArchived": "لن تعود الفئة \"label\" متاحة للأهداف الجديدة، لكنها ستبقى في السجل التاريخي."
+    "categoryUnavailableArchived": "لن تعود الفئة \"label\" متاحة للأهداف الجديدة، لكنها ستبقى في السجل التاريخي.",
+    "rangeSameMonth": "{startDay} – {endDay} {month} {year}",
+    "rangeSameYear": "{startDay} {startMonth} – {endDay} {endMonth} {year}",
+    "rangeCrossYear": "{startDay} {startMonth} {startYear} – {endDay} {endMonth} {endYear}"
   },
   "statistics": {
     "keyHabits": "العادات المحورية",

@@ -963,7 +963,10 @@
     "quarterNumber": "Quartal {quarter}",
     "selectYearHeader": "Jahr auswählen",
     "categoryUnavailableLinked": "Die Kategorie „Label“ wird für neue Ziele nicht mehr verfügbar sein, sie bleibt jedoch weiterhin mit der Zählung historischer Ziele und Statistiken verknüpft.",
-    "categoryUnavailableArchived": "Die Kategorie „Label“ wird für neue Ziele nicht mehr verfügbar sein, sie bleibt jedoch in der Geschichte."
+    "categoryUnavailableArchived": "Die Kategorie „Label“ wird für neue Ziele nicht mehr verfügbar sein, sie bleibt jedoch in der Geschichte.",
+    "rangeSameMonth": "{startDay}. – {endDay}. {month} {year}",
+    "rangeSameYear": "{startDay}. {startMonth} – {endDay}. {endMonth} {year}",
+    "rangeCrossYear": "{startDay}. {startMonth} {startYear} – {endDay}. {endMonth} {endYear}"
   },
   "statistics": {
     "keyHabits": "Schlüsselgewohnheiten",

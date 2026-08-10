@@ -885,6 +885,9 @@ class _Translations$goalsPage$ar extends Translations$goalsPage$en {
 	@override String weekPeriodLabel({required Object week, required Object month, required Object year}) => 'الأسبوع ${week}، ${month} ${year}';
 	@override String get currentQuarter => 'الربع الحالي';
 	@override String get currentMonth => 'الشهر الحالي';
+	@override String rangeSameMonth({required Object startDay, required Object endDay, required Object month, required Object year}) => '${startDay} – ${endDay} ${month} ${year}';
+	@override String rangeSameYear({required Object startDay, required Object startMonth, required Object endDay, required Object endMonth, required Object year}) => '${startDay} ${startMonth} – ${endDay} ${endMonth} ${year}';
+	@override String rangeCrossYear({required Object startDay, required Object startMonth, required Object startYear, required Object endDay, required Object endMonth, required Object endYear}) => '${startDay} ${startMonth} ${startYear} – ${endDay} ${endMonth} ${endYear}';
 }
 
 // Path: goalsStats
@@ -2754,6 +2757,9 @@ extension on TranslationsAr {
 			'goalsPage.weekPeriodLabel' => ({required Object week, required Object month, required Object year}) => 'الأسبوع ${week}، ${month} ${year}',
 			'goalsPage.currentQuarter' => 'الربع الحالي',
 			'goalsPage.currentMonth' => 'الشهر الحالي',
+			'goalsPage.rangeSameMonth' => ({required Object startDay, required Object endDay, required Object month, required Object year}) => '${startDay} – ${endDay} ${month} ${year}',
+			'goalsPage.rangeSameYear' => ({required Object startDay, required Object startMonth, required Object endDay, required Object endMonth, required Object year}) => '${startDay} ${startMonth} – ${endDay} ${endMonth} ${year}',
+			'goalsPage.rangeCrossYear' => ({required Object startDay, required Object startMonth, required Object startYear, required Object endDay, required Object endMonth, required Object endYear}) => '${startDay} ${startMonth} ${startYear} – ${endDay} ${endMonth} ${endYear}',
 			'goalsStats.proRequired' => 'ميزة Pro مطلوبة',
 			'goalsStats.active' => 'نشطة',
 			'goalsStats.failed' => 'فاشلة',
@@ -3141,11 +3147,11 @@ extension on TranslationsAr {
 			'settingsPage.tutorialResetTitle' => 'تمت إعادة تعيين البرامج التعليمية',
 			'settingsPage.updateAvatar' => 'تحديث الصورة الرمزية',
 			'settingsPage.updateAvatarDetail' => 'اختر صورة محلية للملف الشخصي على سطح المكتب.',
+			_ => null,
+		} ?? switch (path) {
 			'settingsPage.updatePassword' => 'تحديث كلمة المرور',
 			'settingsPage.useAccent' => ({required Object hex}) => 'استخدم التمييز ${hex}',
 			'settingsPage.verified' => 'موثّق',
-			_ => null,
-		} ?? switch (path) {
 			'settingsPage.weeklyReports' => 'تقارير أسبوعية',
 			'settingsPage.weeklyReportsDetail' => 'ملخص أسبوعي لتقدمك.',
 			'settingsPage.youArePro' => 'أنت مستخدم Pro!',

@@ -885,6 +885,9 @@ class _Translations$goalsPage$it extends Translations$goalsPage$en {
 	@override String weekPeriodLabel({required Object week, required Object month, required Object year}) => 'Settimana ${week}, ${month} ${year}';
 	@override String get currentQuarter => 'Trimestre corrente';
 	@override String get currentMonth => 'Mese corrente';
+	@override String rangeSameMonth({required Object startDay, required Object endDay, required Object month, required Object year}) => '${startDay} – ${endDay} ${month} ${year}';
+	@override String rangeSameYear({required Object startDay, required Object startMonth, required Object endDay, required Object endMonth, required Object year}) => '${startDay} ${startMonth} – ${endDay} ${endMonth} ${year}';
+	@override String rangeCrossYear({required Object startDay, required Object startMonth, required Object startYear, required Object endDay, required Object endMonth, required Object endYear}) => '${startDay} ${startMonth} ${startYear} – ${endDay} ${endMonth} ${endYear}';
 }
 
 // Path: goalsStats
@@ -2754,6 +2757,9 @@ extension on TranslationsIt {
 			'goalsPage.weekPeriodLabel' => ({required Object week, required Object month, required Object year}) => 'Settimana ${week}, ${month} ${year}',
 			'goalsPage.currentQuarter' => 'Trimestre corrente',
 			'goalsPage.currentMonth' => 'Mese corrente',
+			'goalsPage.rangeSameMonth' => ({required Object startDay, required Object endDay, required Object month, required Object year}) => '${startDay} – ${endDay} ${month} ${year}',
+			'goalsPage.rangeSameYear' => ({required Object startDay, required Object startMonth, required Object endDay, required Object endMonth, required Object year}) => '${startDay} ${startMonth} – ${endDay} ${endMonth} ${year}',
+			'goalsPage.rangeCrossYear' => ({required Object startDay, required Object startMonth, required Object startYear, required Object endDay, required Object endMonth, required Object endYear}) => '${startDay} ${startMonth} ${startYear} – ${endDay} ${endMonth} ${endYear}',
 			'goalsStats.proRequired' => 'Funzione Pro richiesta',
 			'goalsStats.active' => 'Attivi',
 			'goalsStats.failed' => 'Falliti',
@@ -3141,11 +3147,11 @@ extension on TranslationsIt {
 			'settingsPage.tutorialResetTitle' => 'Tutorial ripristinati',
 			'settingsPage.updateAvatar' => 'Aggiorna avatar',
 			'settingsPage.updateAvatarDetail' => 'Scegli un immagine locale per il profilo desktop.',
+			_ => null,
+		} ?? switch (path) {
 			'settingsPage.updatePassword' => 'Aggiorna password',
 			'settingsPage.useAccent' => ({required Object hex}) => 'Usa accento ${hex}',
 			'settingsPage.verified' => 'Verificato',
-			_ => null,
-		} ?? switch (path) {
 			'settingsPage.weeklyReports' => 'Resoconti Settimanali',
 			'settingsPage.weeklyReportsDetail' => 'Un riepilogo settimanale dei tuoi progressi.',
 			'settingsPage.youArePro' => 'Sei un utente Pro!',

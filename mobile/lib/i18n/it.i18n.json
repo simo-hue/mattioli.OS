@@ -963,7 +963,10 @@
     "quarterNumber": "Trimestre {quarter}",
     "selectYearHeader": "SELEZIONA ANNO",
     "categoryUnavailableLinked": "La categoria \"label\" non sarà più disponibile per nuovi obiettivi, ma resterà collegata a count obiettivi storici e alle statistiche.",
-    "categoryUnavailableArchived": "La categoria \"label\" non sarà più disponibile per nuovi obiettivi, ma resterà nello storico."
+    "categoryUnavailableArchived": "La categoria \"label\" non sarà più disponibile per nuovi obiettivi, ma resterà nello storico.",
+    "rangeSameMonth": "{startDay} – {endDay} {month} {year}",
+    "rangeSameYear": "{startDay} {startMonth} – {endDay} {endMonth} {year}",
+    "rangeCrossYear": "{startDay} {startMonth} {startYear} – {endDay} {endMonth} {endYear}"
   },
   "statistics": {
     "keyHabits": "Abitudini Chiave",

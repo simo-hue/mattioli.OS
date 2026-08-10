@@ -1086,40 +1086,56 @@ class _GoalsList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (goals.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 40),
-          child: Container(
-            key: emptyStateKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  LucideIcons.target,
-                  color: context.appColors.border,
-                  size: 40,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  context.t.macroGoals.emptyGoalsTitle,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontFamily: 'Inter', 
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: context.appColors.foreground,
+      // Scrollable, not a bare Center: the period navigator above this page is
+      // an inflexible sibling of the Expanded that feeds it, so whatever height
+      // that header takes is subtracted from here — and it grew by a line when
+      // the period's date range moved under the title. At iOS accessibility
+      // text sizes the icon + two wrapped paragraphs no longer fit what is
+      // left, and a Column that cannot scroll answers that with a RenderFlex
+      // overflow. minHeight keeps it vertically centred whenever it DOES fit,
+      // so nothing changes at ordinary text sizes.
+      return LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: Container(
+                  key: emptyStateKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        LucideIcons.target,
+                        color: context.appColors.border,
+                        size: 40,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        context.t.macroGoals.emptyGoalsTitle,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontFamily: 'Inter',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: context.appColors.foreground,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        context.t.macroGoals.emptyGoalsSubtitle,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontFamily: 'Inter',
+                          fontSize: 13,
+                          color: context.appColors.mutedForeground,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  context.t.macroGoals.emptyGoalsSubtitle,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontFamily: 'Inter', 
-                    fontSize: 13,
-                    color: context.appColors.mutedForeground,
-                    height: 1.4,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),

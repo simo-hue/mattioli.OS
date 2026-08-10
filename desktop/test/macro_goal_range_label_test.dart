@@ -176,31 +176,65 @@ void main() {
 
     test('honours the Arabic templates and month names', () async {
       final ar = await AppLocale.ar.build();
-      final result = label(
-        type: 'weekly',
-        tr: ar,
-        year: 2026,
-        month: 8,
-        week: 2,
+      // Spelled out rather than built from ar.common.months[7]: an expectation
+      // assembled out of the same bundle it is checking also passes when that
+      // month name is blank or wrong.
+      expect(
+        label(type: 'weekly', tr: ar, year: 2026, month: 8, week: 2),
+        '8 – 14 أغسطس 2026',
       );
-      // Built from the ar bundle, not transliterated Latin month names.
-      expect(result, contains(ar.common.months[7]));
-      expect(result, '8 – 14 ${ar.common.months[7]} 2026');
     });
 
-    test('renders every locale non-empty for a cross-year week', () async {
-      for (final locale in AppLocale.values) {
-        final result = label(
-          type: 'weekly',
-          tr: await locale.build(),
-          year: 2025,
-          month: 12,
-          week: 5,
-        );
-        expect(result.trim(), isNotEmpty, reason: locale.languageCode);
-        expect(result, contains('2025'), reason: locale.languageCode);
-        expect(result, contains('2026'), reason: locale.languageCode);
-      }
+    // rangeSameYear is the template EVERY quarterly header uses (a quarter always
+    // spans three months of one year), so leaving it pinned in English only left
+    // the most-seen string in four shipping locales unverified. A translator's
+    // realistic mistake is reordering placeholders, not dropping one: dropping
+    // changes the slang-generated signature and `flutter analyze` catches it,
+    // whereas a reorder compiles clean and ships.
+    test('pins rangeSameYear in every locale (a quarter)', () async {
+      Future<String> quarter(AppLocale locale) async => label(
+        type: 'quarterly',
+        tr: await locale.build(),
+        year: 2026,
+        quarter: 3,
+      );
+
+      expect(await quarter(AppLocale.en), '1 July – 30 September 2026');
+      expect(await quarter(AppLocale.it), '1 Luglio – 30 Settembre 2026');
+      expect(
+        await quarter(AppLocale.es),
+        '1 de Julio – 30 de Septiembre de 2026',
+      );
+      expect(await quarter(AppLocale.de), '1. Juli – 30. September 2026');
+      expect(await quarter(AppLocale.ar), '1 يوليو – 30 سبتمبر 2026');
+    });
+
+    test('pins rangeCrossYear in every locale (December week 5)', () async {
+      Future<String> crossYear(AppLocale locale) async => label(
+        type: 'weekly',
+        tr: await locale.build(),
+        year: 2025,
+        month: 12,
+        week: 5,
+      );
+
+      expect(
+        await crossYear(AppLocale.en),
+        '29 December 2025 – 4 January 2026',
+      );
+      expect(
+        await crossYear(AppLocale.it),
+        '29 Dicembre 2025 – 4 Gennaio 2026',
+      );
+      expect(
+        await crossYear(AppLocale.es),
+        '29 de Diciembre de 2025 – 4 de Enero de 2026',
+      );
+      expect(
+        await crossYear(AppLocale.de),
+        '29. Dezember 2025 – 4. Januar 2026',
+      );
+      expect(await crossYear(AppLocale.ar), '29 ديسمبر 2025 – 4 يناير 2026');
     });
   });
 
@@ -289,15 +323,33 @@ void main() {
       },
     );
 
-    test('reads the UTC fields directly, without a local-time shift', () {
-      // macroGoalPeriodRange hands back UTC midnights. Converting them with
-      // toLocal() would move the date back a day in every negative-offset zone,
-      // printing a window one day short of the one progress is summed over.
+    // macroGoalPeriodRange hands back UTC midnights, and this formatter must
+    // read their fields as-is. A stray toLocal() would move the printed date a
+    // day off the window progress is actually summed over.
+    //
+    // Both cases are needed, and neither alone is worth anything. A UTC-midnight
+    // endpoint only shifts in NEGATIVE-offset zones, so the obvious version of
+    // this test cannot fail under CI (TZ=Europe/Rome, .github/workflows) or
+    // under UTC — it was in fact green against a deliberately toLocal()'d build.
+    // The 23:30 case shifts in POSITIVE-offset zones instead. Together they kill
+    // the mutation in every zone except exactly UTC, where no conversion can
+    // change anything and there is nothing to catch.
+    test('a UTC midnight endpoint is not shifted (bites at negative offsets)', () {
       final range = MacroGoalDateRange(
         start: DateTime.utc(2026, 8, 8),
         end: DateTime.utc(2026, 8, 14),
       );
       expect(run(range), 'SAME_MONTH sd=8 ed=14 m=M8 y=2026');
+    });
+
+    test('a late-evening UTC endpoint is not shifted (bites at positive offsets)', () {
+      // 23:30 UTC on the 7th is already the 8th in Rome (UTC+2 in August) and in
+      // every other positive-offset zone, so a toLocal() here prints day 8.
+      final range = MacroGoalDateRange(
+        start: DateTime.utc(2026, 8, 7, 23, 30),
+        end: DateTime.utc(2026, 8, 14, 23, 30),
+      );
+      expect(run(range), 'SAME_MONTH sd=7 ed=14 m=M8 y=2026');
     });
   });
 }

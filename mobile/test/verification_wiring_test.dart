@@ -170,11 +170,12 @@ void main() {
     group('compound habits (Q1–Q5)', () {
       final stepsRule = VerificationCatalog.steps.ruleWith(10000);
       final exRule = VerificationCatalog.exerciseMinutes.ruleWith(30);
-      Goal compoundGoal(VerificationJoin op) => Goal(
+      Goal compoundGoal(VerificationJoin op, {DateTime? endDate}) => Goal(
             id: 'gc',
             title: 'gc',
             color: const Color(0xFF3B82F6),
             startDate: DateTime(2026, 1, 1),
+            endDate: endDate,
             verificationRule: stepsRule,
             additionalConditions: [exRule],
             verificationJoin: op,
@@ -202,6 +203,20 @@ void main() {
         expect(
             build(compoundGoal(VerificationJoin.or), compound: true, hk: false),
             isEmpty);
+      });
+
+      test('a compound habit carries its endDate too — BOTH branches stamp it',
+          () {
+        // There are two `VerifiableGoal` construction sites in
+        // `verifiableGoalsFrom`, and the compound one is the easy half to
+        // forget: an archived compound habit would go on writing verdicts for
+        // days it no longer exists on, with every other test still green
+        // because they all exercise the single-rule branch.
+        final v = build(
+          compoundGoal(VerificationJoin.and, endDate: DateTime(2026, 7, 1)),
+          compound: true,
+        ).single;
+        expect(v.effectiveTo, DateTime(2026, 7, 1));
       });
     });
 
@@ -290,7 +305,7 @@ void main() {
         screenTimeAppsEnabled: true,
         screenTimeTotalEnabled: true,
       );
-      final specs = screenTimeSpecsFrom(goals);
+      final specs = screenTimeSpecsFrom(goals, today: DateTime.now());
       expect(specs, hasLength(1));
       expect(specs.single.goalId, 'screen');
       expect(specs.single.thresholdMinutes, 90);

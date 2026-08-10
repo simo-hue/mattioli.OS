@@ -1,3 +1,4 @@
+import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mattioli_os/core/verification_state_store.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -243,5 +244,148 @@ CREATE TABLE ${SqfliteVerificationStateStore.table} (
     final res =
         await store.manualDays(goalIds: ['g'], from: day(1), to: day(31));
     expect(res['g'], {day(10): 'done'});
+  });
+
+  // ── v4: the durable Screen Time signal buffer ─────────────────────────────
+  //
+  // The native drain destroys the App Group buffer as it reads it, so once a
+  // signal reaches Dart this table is the only copy in existence.
+
+  ScreenTimeSignal signal(String goalId, DateTime d, ScreenTimeSignalKind k) =>
+      ScreenTimeSignal(goalId: goalId, day: d, kind: k);
+
+  test('signals round-trip, filtered by goal and date range', () async {
+    await store.recordScreenTimeSignals([
+      signal('g', day(5), ScreenTimeSignalKind.stayedUnder),
+      signal('g', day(20), ScreenTimeSignalKind.reachedThreshold),
+      signal('other', day(5), ScreenTimeSignalKind.stayedUnder),
+    ]);
+
+    final res = await store
+        .screenTimeSignals(goalIds: ['g'], from: day(1), to: day(10));
+
+    expect(res, hasLength(1));
+    expect(res.single.goalId, 'g');
+    expect(res.single.day, day(5));
+    expect(res.single.kind, ScreenTimeSignalKind.stayedUnder);
+  });
+
+  test('reachedThreshold is sticky — a later stayedUnder cannot overwrite it',
+      () async {
+    await store.recordScreenTimeSignals(
+        [signal('g', day(5), ScreenTimeSignalKind.reachedThreshold)]);
+    await store.recordScreenTimeSignals(
+        [signal('g', day(5), ScreenTimeSignalKind.stayedUnder)]);
+
+    final res = await store
+        .screenTimeSignals(goalIds: ['g'], from: day(1), to: day(31));
+    expect(res.single.kind, ScreenTimeSignalKind.reachedThreshold,
+        reason: 'a duplicate/late interval-end must never forgive a crossing');
+  });
+
+  test('a stayedUnder IS upgraded by a later reachedThreshold', () async {
+    await store.recordScreenTimeSignals(
+        [signal('g', day(5), ScreenTimeSignalKind.stayedUnder)]);
+    await store.recordScreenTimeSignals(
+        [signal('g', day(5), ScreenTimeSignalKind.reachedThreshold)]);
+
+    final res = await store
+        .screenTimeSignals(goalIds: ['g'], from: day(1), to: day(31));
+    expect(res.single.kind, ScreenTimeSignalKind.reachedThreshold);
+  });
+
+  test('one row per goal-day, however many deliveries arrive', () async {
+    await store.recordScreenTimeSignals([
+      signal('g', day(5), ScreenTimeSignalKind.stayedUnder),
+      signal('g', day(5), ScreenTimeSignalKind.stayedUnder),
+      signal('g', day(5), ScreenTimeSignalKind.stayedUnder),
+    ]);
+    final rows =
+        await db.query(SqfliteVerificationStateStore.signalsTable);
+    expect(rows, hasLength(1));
+  });
+
+  test('pruneScreenTimeSignalsBefore drops aged-out rows for every goal',
+      () async {
+    await store.recordScreenTimeSignals([
+      signal('g', day(1), ScreenTimeSignalKind.stayedUnder),
+      signal('other', day(2), ScreenTimeSignalKind.stayedUnder),
+      signal('g', day(9), ScreenTimeSignalKind.stayedUnder),
+    ]);
+
+    await store.pruneScreenTimeSignalsBefore(day(5));
+
+    final rows = await db.query(SqfliteVerificationStateStore.signalsTable);
+    expect(rows, hasLength(1),
+        reason: 'a signal whose goal is gone is never named by a later pass, '
+            'so the prune has to be global');
+    expect(rows.single['goal_id'], 'g');
+    expect(rows.single['date'], '2026-07-09');
+  });
+
+  test('deleteGoal drops the goal\'s buffered signals as well as its markers',
+      () async {
+    await store.markManual('g', day(10));
+    await store.recordScreenTimeSignals(
+        [signal('g', day(10), ScreenTimeSignalKind.stayedUnder)]);
+
+    await store.deleteGoal('g');
+
+    expect(
+        await store.screenTimeSignals(
+            goalIds: ['g'], from: day(1), to: day(31)),
+        isEmpty);
+    expect(await store.manualDays(goalIds: ['g'], from: day(1), to: day(31)),
+        isEmpty);
+  });
+
+  test('an unrecognised stored kind reads as no signal, never as a guess',
+      () async {
+    await db.execute('DROP TABLE IF EXISTS '
+        '${SqfliteVerificationStateStore.signalsTable}');
+    // Same shape minus the CHECK, so a future build's kind can be planted.
+    await db.execute('''
+CREATE TABLE ${SqfliteVerificationStateStore.signalsTable} (
+  goal_id TEXT NOT NULL,
+  date TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  recorded_at TEXT NOT NULL,
+  PRIMARY KEY (goal_id, date)
+)
+''');
+    await db.insert(SqfliteVerificationStateStore.signalsTable, {
+      'goal_id': 'g',
+      'date': '2026-07-05',
+      'kind': 'someFutureKind',
+      'recorded_at': '2026-07-05T00:00:00Z',
+    });
+
+    final res = await store
+        .screenTimeSignals(goalIds: ['g'], from: day(1), to: day(31));
+    expect(res, isEmpty);
+  });
+
+  test('a v3 database gains the signal table without touching its freezes',
+      () async {
+    // A v3 database is one with `verification_state` and NO signals table —
+    // exactly what an installed build has before this version.
+    await db.execute('DROP TABLE IF EXISTS '
+        '${SqfliteVerificationStateStore.signalsTable}');
+    await store.markManual('g', day(10), status: 'done');
+
+    // What every open runs, unconditionally.
+    await SqfliteVerificationStateStore.createTable(db);
+
+    await store.recordScreenTimeSignals(
+        [signal('g', day(10), ScreenTimeSignalKind.stayedUnder)]);
+    expect(
+        await store.screenTimeSignals(
+            goalIds: ['g'], from: day(1), to: day(31)),
+        hasLength(1));
+    final res =
+        await store.manualDays(goalIds: ['g'], from: day(1), to: day(31));
+    expect(res['g'], {day(10): 'done'},
+        reason: 'the migration is additive — it must not rebuild the table '
+            'whose rows are the user\'s own check-ins');
   });
 }

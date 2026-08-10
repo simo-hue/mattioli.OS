@@ -171,6 +171,72 @@ void main() {
       expect(plan.isEmpty, isTrue);
     });
 
+    test('days AFTER effectiveTo are not evaluated (an archived habit)',
+        () async {
+      // The habit was archived two days ago. Everything from the day after that
+      // belongs to a habit the app no longer shows anywhere, so a verdict on it
+      // is one the user cannot see, argue with, or undo.
+      health.setQuantity('stepCount', daysAgo(3), 12000); // in range → pass
+      health.setQuantity('stepCount', daysAgo(2), 12000); // its last day → pass
+      health.setQuantity('stepCount', daysAgo(1), 5000); // after the end
+      health.setQuantity('stepCount', today, 12000); // after the end
+
+      final plan = await service(backfill: 7).reconcile(
+        goals: [
+          VerifiableGoal(
+            goalId: 'g_steps',
+            rule: VerificationCatalog.steps.ruleWith(10000),
+            effectiveFrom: daysAgo(30),
+            effectiveTo: daysAgo(2),
+          )
+        ],
+        today: today,
+      );
+
+      expect(plan.writes.map((w) => w.day),
+          containsAll([daysAgo(3), daysAgo(2)]),
+          reason: 'days inside the lifetime still settle — archiving is not '
+              'retroactive');
+      expect(plan.writes.any((w) => w.day == daysAgo(1)), isFalse);
+      expect(plan.writes.any((w) => w.day == today), isFalse);
+      expect(plan.couldNotVerify.any((e) => e.day.isAfter(daysAgo(2))), isFalse,
+          reason: 'nor may an ended habit accumulate "?" days');
+    });
+
+    test('a habit ending TODAY still has today evaluated (inclusive bound)',
+        () async {
+      health.setQuantity('stepCount', today, 12000);
+      final plan = await service().reconcile(
+        goals: [
+          VerifiableGoal(
+            goalId: 'g_steps',
+            rule: VerificationCatalog.steps.ruleWith(10000),
+            effectiveFrom: daysAgo(30),
+            effectiveTo: today,
+          )
+        ],
+        today: today,
+      );
+      expect(plan.writes.any((w) => w.day == today), isTrue);
+    });
+
+    test('a habit that ended before the window produces nothing at all',
+        () async {
+      health.setQuantity('stepCount', daysAgo(1), 12000);
+      final plan = await service().reconcile(
+        goals: [
+          VerifiableGoal(
+            goalId: 'g_steps',
+            rule: VerificationCatalog.steps.ruleWith(10000),
+            effectiveFrom: daysAgo(30),
+            effectiveTo: daysAgo(20),
+          )
+        ],
+        today: today,
+      );
+      expect(plan.isEmpty, isTrue);
+    });
+
     test('days before effectiveFrom are not evaluated (forward-only, D10)',
         () async {
       health.setQuantity('stepCount', daysAgo(1), 5000); // pre-effective fail

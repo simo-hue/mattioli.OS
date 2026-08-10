@@ -97,13 +97,16 @@ void main() {
     await settle();
     await c.read(goalsProvider.notifier).addHabit(_verifiedGoal());
 
-    await logs.applyAutoVerdict(
+    final ok = await logs.applyAutoVerdict(
       goalId: 'g1',
       dateKey: '2026-06-24',
       status: 'done',
       value: 12043,
     );
 
+    // The answer is what the reconcile acts on: it clears the day's "?" and
+    // announces the verdict only on a true, so a write that landed must say so.
+    expect(ok, isTrue);
     // In-memory state reflects the verdict...
     expect(c.read(habitLogsProvider)['2026-06-24']?['g1'], 'done');
     // ...and it was persisted locally with the measured value + status.
@@ -121,13 +124,14 @@ void main() {
     final logs = c.read(habitLogsProvider.notifier);
     await settle();
 
-    await logs.applyAutoVerdict(
+    final ok = await logs.applyAutoVerdict(
       goalId: 'g1',
       dateKey: '2026-06-24',
       status: 'missed',
       value: 4210,
     );
 
+    expect(ok, isTrue);
     expect(c.read(habitLogsProvider)['2026-06-24']?['g1'], 'missed');
     final write = store.logWrites.single;
     expect(write['status'], 'missed');
@@ -140,14 +144,27 @@ void main() {
     final logs = c.read(habitLogsProvider.notifier);
     await settle();
 
-    await logs.applyAutoVerdict(
+    final ok = await logs.applyAutoVerdict(
       goalId: 'g1',
       dateKey: '2026-06-24',
       status: 'done',
       value: 12043,
     );
 
-    // The write threw → the optimistic state must have been rolled back.
+    // The write threw → the optimistic state must have been rolled back...
     expect(c.read(habitLogsProvider)['2026-06-24']?['g1'], isNull);
+    // ...and the caller must be TOLD. Answering true here is the original bug:
+    // the reconcile would clear the day's couldn't-verify marker, drop the "?"
+    // the user could have tapped, and fire a celebration for a verdict that
+    // reached nothing — and for Screen Time, whose signal is drained
+    // destructively, the outcome would simply be gone.
+    expect(ok, isFalse);
   });
+
+  // NOT tested here: the `!isPrivateMode && user == null` early return (which
+  // also answers false). Reaching it means evaluating `supabase.auth`, and that
+  // getter is touched BEFORE applyAutoVerdict's try block — in a suite where
+  // Supabase is deliberately never initialised, such a test would fail on the
+  // harness rather than on the branch. The branch is one line and returns the
+  // same `false` as the catch below, which IS pinned.
 }

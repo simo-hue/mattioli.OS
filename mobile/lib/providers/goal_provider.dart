@@ -1548,7 +1548,18 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
   /// A HealthKit-measured [value] is persisted only by the private (SQLCipher +
   /// end-to-end-encrypted iCloud) backend, never by the Supabase one — see the
   /// cloud branch below.
-  Future<void> applyAutoVerdict({
+  ///
+  /// Returns whether the verdict actually reached storage. False for a write
+  /// that threw (an account-mode device that is offline fails EVERY write) and
+  /// for a call that could not write at all (cloud mode with no session). The
+  /// caller uses that answer to decide whether the day's couldn't-verify marker
+  /// may be cleared and whether the verdict may be announced — see
+  /// [VerificationLogWriter.writeVerdict]. Answering true unconditionally, as
+  /// this used to, made a failed write indistinguishable from a successful one:
+  /// the "?" the user could have tapped to fix the day disappeared, and — for
+  /// Screen Time, whose signal is drained destructively and cannot be
+  /// re-queried the way a HealthKit day can — the outcome was simply gone.
+  Future<bool> applyAutoVerdict({
     required String goalId,
     required String dateKey,
     required String status,
@@ -1557,7 +1568,7 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
     final isPrivateMode =
         ref.read(activeDataModeProvider) == AppDataMode.private;
     final user = isPrivateMode ? null : supabase.auth.currentUser;
-    if (!isPrivateMode && user == null) return;
+    if (!isPrivateMode && user == null) return false;
 
     final previousState = state;
     final newState = Map<String, Map<String, String>>.from(state);
@@ -1621,10 +1632,12 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
         }, onConflict: 'goal_id, date');
       }
       ref.invalidate(habitStatsProvider);
+      return true;
     } catch (e, stack) {
       AppLogger.error('[HabitLogs] applyAutoVerdict error', e, stack);
       state = previousState; // roll back the optimistic in-memory update
       if (!isPrivateMode) _saveToCache(previousState);
+      return false;
     }
   }
 

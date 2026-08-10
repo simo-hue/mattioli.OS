@@ -1,7 +1,10 @@
+import '../screen_time_bridge.dart';
 import '../verification_state_store.dart';
 
 /// In-memory [VerificationStateStore] for tests.
 class FakeVerificationStateStore implements VerificationStateStore {
+  /// goalId -> day (date-only) -> the buffered signal kind for that day.
+  final Map<String, Map<DateTime, ScreenTimeSignalKind>> signals = {};
   /// goalId -> frozen day (date-only) -> the status the user chose, or null for
   /// a freeze recorded without one.
   final Map<String, Map<DateTime, String?>> manual = {};
@@ -81,9 +84,47 @@ class FakeVerificationStateStore implements VerificationStateStore {
   }
 
   @override
+  Future<void> recordScreenTimeSignals(
+      Iterable<ScreenTimeSignal> incoming) async {
+    for (final s in incoming) {
+      final byDay = signals[s.goalId] ??= {};
+      final day = _d(s.day);
+      // reachedThreshold is sticky, across passes as well as within one.
+      if (byDay[day] == ScreenTimeSignalKind.reachedThreshold) continue;
+      byDay[day] = s.kind;
+    }
+  }
+
+  @override
+  Future<List<ScreenTimeSignal>> screenTimeSignals({
+    required Iterable<String> goalIds,
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    final lo = _d(from);
+    final hi = _d(to);
+    return [
+      for (final id in goalIds)
+        for (final e in (signals[id] ?? const {}).entries)
+          if (!e.key.isBefore(lo) && !e.key.isAfter(hi))
+            ScreenTimeSignal(goalId: id, day: e.key, kind: e.value),
+    ];
+  }
+
+  @override
+  Future<void> pruneScreenTimeSignalsBefore(DateTime day) async {
+    final cut = _d(day);
+    for (final byDay in signals.values) {
+      byDay.removeWhere((d, _) => d.isBefore(cut));
+    }
+    signals.removeWhere((_, byDay) => byDay.isEmpty);
+  }
+
+  @override
   Future<void> deleteGoal(String goalId) async {
     manual.remove(goalId);
     cnv.remove(goalId);
     nudged.remove(goalId);
+    signals.remove(goalId);
   }
 }

@@ -17,6 +17,23 @@ class VerifiableGoal {
   /// this is how a threshold change takes effect without rewriting history.
   final DateTime effectiveFrom;
 
+  /// LAST day verification applies — the habit's own `endDate`, INCLUSIVE (the
+  /// same bound `Goal.isActiveOn` enforces). Null for a habit with no end.
+  ///
+  /// This exists because the engine was lifetime-blind: it walked the backfill
+  /// window up to today for every goal it was handed, so an ARCHIVED habit went
+  /// on collecting `done`/`missed` verdicts — and, for Screen Time, went on
+  /// being monitored and pushing "limit reached" banners — for days it was not
+  /// supposed to exist on. Every day-scoped surface in the app had already
+  /// hidden it, so the verdicts landed where the user could not see, argue with,
+  /// or undo them.
+  ///
+  /// Clamping rather than dropping the goal outright is deliberate: a habit
+  /// archived yesterday still has real, unresolved days INSIDE the window, and
+  /// those must settle exactly as they would have. The bound stops the walk; it
+  /// does not erase what came before it.
+  final DateTime? effectiveTo;
+
   /// ISO weekdays (1 = Mon … 7 = Sun) the goal is scheduled; empty = every day
   /// (D6). Off-days are never evaluated, nudged, or written.
   final Set<int> activeWeekdays;
@@ -43,6 +60,7 @@ class VerifiableGoal {
     required this.goalId,
     required this.rule,
     required this.effectiveFrom,
+    this.effectiveTo,
     this.activeWeekdays = const {},
     this.screenTimeSelectionMissing = false,
     this.additionalConditions = const [],
@@ -347,14 +365,34 @@ class VerificationService {
     required List<VerifiableGoal> goals,
     required DateTime today,
     Map<String, Map<DateTime, ExistingDay>> existing = const {},
+    Map<String, Map<DateTime, ScreenTimeSignalKind>>? signals,
   }) async {
     final todayDate = _dateOnly(today);
     final writes = <LogWrite>[];
     final couldNotVerify = <CouldNotVerifyEntry>[];
 
-    // Drain the extension's buffer once, only if any goal needs it (D3).
+    // Where the Screen Time signals for this pass come from.
+    //
+    // [signals] SUPPLIED (the production path): the caller — normally
+    // [VerificationController] — has already drained the extension's buffer,
+    // written it to durable storage and merged it with what earlier passes
+    // buffered, so the map it hands over survives a failed verdict write. It is
+    // taken as-is, including an EMPTY map, which asserts "no signal for any
+    // day"; this engine must not go behind the caller's back and drain again,
+    // since the native drain is destructive and a second call would return
+    // nothing while destroying anything that arrived in between.
+    //
+    // [signals] NULL (the legacy/unit-test path): drain the bridge directly,
+    // exactly as this engine always did. Kept so the pure engine stays testable
+    // against a fake bridge with no store in sight.
     final signalIndex = <String, Map<DateTime, ScreenTimeSignalKind>>{};
-    if (goals.any((g) => g.rule.isScreenTime)) {
+    if (signals != null) {
+      for (final e in signals.entries) {
+        signalIndex[e.key] = {
+          for (final d in e.value.entries) _dateOnly(d.key): d.value,
+        };
+      }
+    } else if (goals.any((g) => g.rule.isScreenTime)) {
       for (final s in await screenTime.drainSignals()) {
         final byDay = signalIndex[s.goalId] ??= {};
         final day = _dateOnly(s.day);
@@ -372,8 +410,17 @@ class VerificationService {
     for (final goal in goals) {
       final from = _dateOnly(goal.effectiveFrom);
       var day = windowStart.isBefore(from) ? from : windowStart;
+      // The walk stops at the habit's own end, never past it. A goal that ended
+      // before the window opens yields no iterations at all — the loop simply
+      // does not run — which is the honest answer for a habit that was already
+      // archived throughout the period being settled.
+      final until = goal.effectiveTo == null
+          ? todayDate
+          : (_dateOnly(goal.effectiveTo!).isBefore(todayDate)
+              ? _dateOnly(goal.effectiveTo!)
+              : todayDate);
 
-      while (!day.isAfter(todayDate)) {
+      while (!day.isAfter(until)) {
         if (!_isScheduled(goal, day)) {
           day = _nextDay(day);
           continue;

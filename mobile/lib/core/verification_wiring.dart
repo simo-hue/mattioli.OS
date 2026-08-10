@@ -61,6 +61,7 @@ List<VerifiableGoal> verifiableGoalsFrom(
         additionalConditions: g.additionalConditions ?? const [],
         join: g.verificationJoin ?? VerificationJoin.or,
         effectiveFrom: _ruleEffectiveFrom(g.startDate, g.verifyEffectiveFrom),
+        effectiveTo: g.endDate,
         activeWeekdays: g.frequencyDays?.toSet() ?? const {},
       ));
       continue;
@@ -90,6 +91,7 @@ List<VerifiableGoal> verifiableGoalsFrom(
       goalId: g.id,
       rule: rule,
       effectiveFrom: _ruleEffectiveFrom(g.startDate, g.verifyEffectiveFrom),
+      effectiveTo: g.endDate,
       activeWeekdays: g.frequencyDays?.toSet() ?? const {},
       screenTimeSelectionMissing: selectionMissing,
     ));
@@ -291,13 +293,30 @@ final manuallyResolvedDaysProvider =
 /// native never registers it, so it stays couldn't-verify rather than being
 /// silently monitored as "everything". Mode B (`screen_time_total`) carries a
 /// null blob (empty selection = total usage).
+///
+/// A habit whose lifetime has ENDED emits no spec either, so the next sync
+/// deregisters it. This is the source-level half of the archived-habit fix: the
+/// engine clamping its verdict walk to `effectiveTo` stops the phantom
+/// done/missed rows, but only dropping the spec stops DeviceActivity from going
+/// on watching a habit that no longer exists — and with it the real-time "limit
+/// reached" banner, which the app cannot suppress after the fact because the
+/// extension raises it without asking.
 List<ScreenTimeGoalSpec> screenTimeSpecsFrom(
   List<VerifiableGoal> goals, {
+  required DateTime today,
   String? Function(String goalId)? selectionFor,
 }) {
+  final todayDate = DateTime(today.year, today.month, today.day);
   final out = <ScreenTimeGoalSpec>[];
   for (final g in goals) {
     if (!g.rule.isScreenTime) continue;
+    final until = g.effectiveTo;
+    // Inclusive, matching `Goal.isActiveOn`: a habit ending TODAY is still live
+    // today and must keep its monitoring until the day is over.
+    if (until != null &&
+        DateTime(until.year, until.month, until.day).isBefore(todayDate)) {
+      continue;
+    }
     final isApps = g.rule.metricKey == screenTimeAppsKey;
     String? blob;
     if (isApps) {
@@ -392,8 +411,15 @@ Future<void> syncScreenTimeMonitoring({
   required List<VerifiableGoal> goals,
   String? Function(String goalId)? selectionFor,
   void Function(ScreenTimeMonitorLimitException)? onMonitorLimit,
+  DateTime? today,
 }) async {
-  final specs = screenTimeSpecsFrom(goals, selectionFor: selectionFor);
+  // Injectable so the lifetime bound below is testable without waiting for a
+  // habit to expire in real time; production always passes the wall clock.
+  final specs = screenTimeSpecsFrom(
+    goals,
+    today: today ?? DateTime.now(),
+    selectionFor: selectionFor,
+  );
   if (!screenTimeSpecsChanged(cache.last, specs)) return;
 
   try {
@@ -600,14 +626,17 @@ class GoalLogVerificationWriter implements VerificationLogWriter {
   final WidgetRef _ref;
 
   @override
-  Future<void> writeVerdict({
+  Future<bool> writeVerdict({
     required String goalId,
     required DateTime day,
     required VerificationOutcome outcome,
     double? value,
   }) async {
     final status = outcome == VerificationOutcome.pass ? 'done' : 'missed';
-    await _ref.read(habitLogsProvider.notifier).applyAutoVerdict(
+    // Passed straight through, never coerced to true: the controller withholds
+    // the couldn't-verify clear and the notification on a false, and the
+    // buffered Screen Time signal behind the verdict survives for the next pass.
+    return _ref.read(habitLogsProvider.notifier).applyAutoVerdict(
           goalId: goalId,
           dateKey: dateKeyOf(day),
           status: status,
@@ -691,28 +720,29 @@ Future<ReconcileReport> runVerificationReconcile(
   // DeviceActivity most needs telling: it is the "you deleted your last Screen
   // Time habit, stop watching" case, and the native side only stops when it is
   // called. Returning first left monitoring running forever — see
-  // [_syncScreenTimeMonitoring].
+  // [syncScreenTimeMonitoring].
   //
-  // Gated on the flag so a HealthKit-only build never calls into
-  // FamilyControls/DeviceActivity at all.
-  if (VerificationConfig.screenTimeEnabled) {
-    final bridge = ref.read(screenTimeBridgeProvider);
-    // Hand the extension the current-locale copy for its "limit reached" local
-    // notification — the DeviceActivityMonitor extension can't read Flutter's
-    // translations, so the app writes them into the shared App Group.
-    await bridge.setLocalizedNotificationCopy(
-      title: t.verification.screenTime.limitReachedTitle,
-      body: t.verification.screenTime.limitReachedBody,
-    );
-    await syncScreenTimeMonitoring(
-      bridge: bridge,
-      cache: ref.read(screenTimeSyncCacheProvider),
-      goals: goals,
-      selectionFor: (id) => ref.read(screenTimeSelectionsProvider)[id]?.blob,
-      onMonitorLimit: (e) =>
-          ref.read(screenTimeMonitorLimitProvider.notifier).report(e),
-    );
-  }
+  // Delegated to [syncScreenTimeMonitoringFor] rather than re-doing its two
+  // steps by hand. This path used to hand-roll them, and the hand-rolled copy
+  // drifted in the way duplicated code does: its
+  // `setLocalizedNotificationCopy` was awaited UNPROTECTED, while the shared
+  // function wraps the identical call in a try/catch precisely because the copy
+  // is cosmetic (the extension has an English fallback). A channel error there
+  // therefore aborted the whole pass before a single HealthKit verdict was
+  // computed — the least important call in the function silencing the most
+  // important one. One path now, so a future fix to either step cannot reach
+  // only one caller.
+  //
+  // The flag gate lives inside that function, so a HealthKit-only build still
+  // never calls into FamilyControls/DeviceActivity.
+  await syncScreenTimeMonitoringFor(
+    goals: currentGoals,
+    bridge: ref.read(screenTimeBridgeProvider),
+    cache: ref.read(screenTimeSyncCacheProvider),
+    selectionFor: (id) => ref.read(screenTimeSelectionsProvider)[id]?.blob,
+    onMonitorLimit: (e) =>
+        ref.read(screenTimeMonitorLimitProvider.notifier).report(e),
+  );
 
   if (goals.isEmpty) return const ReconcileReport();
 

@@ -259,7 +259,7 @@ void main() {
 
     test('non-Screen-Time goals produce no specs', () {
       // A HealthKit-only user must never reach DeviceActivity.
-      expect(screenTimeSpecsFrom(const []), isEmpty);
+      expect(screenTimeSpecsFrom(const [], today: DateTime.now()), isEmpty);
       expect(screenRule.isScreenTime, isTrue);
     });
 
@@ -301,7 +301,7 @@ void main() {
 
   group('screenTimeSpecsFrom — modes & selection', () {
     test('Mode B (total) goal → one spec, mode=total, null blob', () {
-      final specs = screenTimeSpecsFrom(verifiable([goal('a')]));
+      final specs = screenTimeSpecsFrom(verifiable([goal('a')]), today: DateTime.now());
       expect(specs.single.mode, ScreenTimeMode.totalUsage);
       expect(specs.single.selectionBlob, isNull);
     });
@@ -310,6 +310,7 @@ void main() {
         () {
       final specs = screenTimeSpecsFrom(
         verifiable([appsGoal('a')]),
+        today: DateTime.now(),
         selectionFor: (id) => id == 'a' ? 'BLOB' : null,
       );
       expect(specs.single.mode, ScreenTimeMode.appsAndCategories);
@@ -320,6 +321,7 @@ void main() {
       // Never registered ⇒ stays couldn't-verify, never a silent pass.
       final specs = screenTimeSpecsFrom(
         verifiable([appsGoal('a')]),
+        today: DateTime.now(),
         selectionFor: (_) => null,
       );
       expect(specs, isEmpty);
@@ -464,7 +466,112 @@ void main() {
       expect(bridge.syncCallCount, 2);
       expect(bridge.lastSyncedSpecs, isEmpty);
     });
+
+    test('a FAILING notification-copy write must not stop the registration',
+        () async {
+      // The copy is cosmetic — the extension falls back to English — while the
+      // registration is the feature. The reconcile entry point used to await an
+      // unprotected copy write of its own, so a channel error there took the
+      // whole pass down with it, HealthKit verdicts included.
+      final bridge = _CopyThrowingBridge();
+
+      await syncScreenTimeMonitoringFor(
+        goals: [appsGoal('a')],
+        bridge: bridge,
+        cache: ScreenTimeSyncCache(),
+        selectionFor: (_) => 'BLOB',
+      );
+
+      expect(bridge.syncCallCount, 1);
+      expect(bridge.lastSyncedSpecs.single.goalId, 'a');
+    });
   });
+
+  // ── Lifetime bound: an ARCHIVED habit must stop being monitored ────────────
+  //
+  // The pipeline was `endDate`-blind: it carried `frequencyDays` into the
+  // verifiable goal but never the habit's own end, so an archived Screen Time
+  // habit stayed registered with DeviceActivity — still counting, still able to
+  // raise a real "limit reached" banner — while every day-scoped surface in the
+  // app had hidden it.
+  group('endDate', () {
+    Goal endedGoal(String id, DateTime? endDate) => Goal(
+          id: id,
+          title: id,
+          color: const Color(0xFF3B82F6),
+          startDate: DateTime(2026, 1, 1),
+          endDate: endDate,
+          verificationRule: VerificationCatalog.screenTimeTotal.ruleWith(120),
+        );
+
+    final today = DateTime(2026, 7, 13);
+
+    test('verifiableGoalsFrom carries endDate through as effectiveTo', () {
+      final goals = verifiable([endedGoal('a', DateTime(2026, 7, 1))]);
+      expect(goals.single.effectiveTo, DateTime(2026, 7, 1));
+    });
+
+    test('a habit that ended yesterday produces NO spec', () {
+      final specs = screenTimeSpecsFrom(
+        verifiable([endedGoal('a', DateTime(2026, 7, 12))]),
+        today: today,
+      );
+      expect(specs, isEmpty);
+    });
+
+    test('a habit ending TODAY is still monitored — the bound is inclusive',
+        () {
+      final specs = screenTimeSpecsFrom(
+        verifiable([endedGoal('a', today)]),
+        today: today,
+      );
+      expect(specs.single.goalId, 'a');
+    });
+
+    test('a habit with no endDate is unaffected', () {
+      final specs = screenTimeSpecsFrom(
+        verifiable([endedGoal('a', null)]),
+        today: today,
+      );
+      expect(specs.single.goalId, 'a');
+    });
+
+    test('archiving the last habit tells DeviceActivity to stop', () async {
+      final bridge = FakeScreenTimeBridge();
+      final cache = ScreenTimeSyncCache();
+
+      await syncScreenTimeMonitoring(
+        bridge: bridge,
+        cache: cache,
+        goals: verifiable([endedGoal('a', null)]),
+        today: today,
+      );
+      expect(bridge.lastSyncedSpecs, hasLength(1));
+
+      await syncScreenTimeMonitoring(
+        bridge: bridge,
+        cache: cache,
+        goals: verifiable([endedGoal('a', DateTime(2026, 7, 12))]),
+        today: today,
+      );
+
+      expect(bridge.syncCallCount, 2,
+          reason: 'the deregistration has to reach native — it is the only '
+              'thing that can stop the monitor');
+      expect(bridge.lastSyncedSpecs, isEmpty);
+    });
+  });
+}
+
+/// A bridge whose notification-copy write throws, to prove the cosmetic call
+/// cannot cost the registration.
+class _CopyThrowingBridge extends FakeScreenTimeBridge {
+  @override
+  Future<void> setLocalizedNotificationCopy({
+    required String title,
+    required String body,
+  }) async =>
+      throw StateError('channel unavailable');
 }
 
 /// A bridge whose sync throws a NON-limit error, to prove the generic failure

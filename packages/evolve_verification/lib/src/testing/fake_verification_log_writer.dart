@@ -17,13 +17,19 @@ class RecordedVerdict {
 class FakeVerificationLogWriter implements VerificationLogWriter {
   final List<RecordedVerdict> writes = [];
 
+  /// When false, every write is rejected — the shape of an account-mode device
+  /// that is offline, where the upsert throws and nothing is persisted. Attempts
+  /// are still recorded in [writes] so a test can assert what was TRIED.
+  bool succeeds = true;
+
   @override
-  Future<void> writeVerdict({
+  Future<bool> writeVerdict({
     required String goalId,
     required DateTime day,
     required VerificationOutcome outcome,
     double? value,
   }) async {
     writes.add(RecordedVerdict(goalId, day, outcome, value));
+    return succeeds;
   }
 }

@@ -82,6 +82,21 @@ class _FakeVerificationStateStore implements VerificationStateStore {
   Future<void> markNudged(String goalId, DateTime day) async {}
 
   @override
+  Future<void> recordScreenTimeSignals(
+      Iterable<ScreenTimeSignal> signals) async {}
+
+  @override
+  Future<List<ScreenTimeSignal>> screenTimeSignals({
+    required Iterable<String> goalIds,
+    required DateTime from,
+    required DateTime to,
+  }) async =>
+      const [];
+
+  @override
+  Future<void> pruneScreenTimeSignalsBefore(DateTime day) async {}
+
+  @override
   Future<void> deleteGoal(String goalId) async {}
 }
 

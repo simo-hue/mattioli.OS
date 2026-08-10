@@ -18,8 +18,23 @@ class SqfliteVerificationStateStore implements VerificationStateStore {
 
   static const String table = 'verification_state';
 
+  /// The durable buffer for what the DeviceActivityMonitor extension reported.
+  ///
+  /// A SEPARATE table rather than a third `kind` in [table]: that column carries
+  /// a `CHECK (kind IN (…))` constraint, and SQLite cannot alter a CHECK without
+  /// rebuilding the table — a migration that rewrites the very rows (manual
+  /// freezes) whose loss this feature spends most of its design budget
+  /// preventing. A new table is additive and cannot touch them.
+  static const String signalsTable = 'screen_time_signals';
+
   static const String _manual = 'manual';
   static const String _cnv = 'could_not_verify';
+
+  /// Wire names of [ScreenTimeSignalKind], stored verbatim. An unrecognised
+  /// value (a newer build's kind, read by an older one) is dropped on read
+  /// rather than guessed at — a wrong Screen Time verdict is permanent.
+  static const String _reached = 'reachedThreshold';
+  static const String _stayedUnder = 'stayedUnder';
 
   /// The on-disk filename for the dedicated verification-state database.
   static const String dbFileName = 'verification_state.db';
@@ -38,13 +53,17 @@ class SqfliteVerificationStateStore implements VerificationStateStore {
     final path = p.join(await getDatabasesPath(), dbFileName);
     final db = await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: (db, _) => createTable(db),
       onUpgrade: (db, oldVersion, _) async {
         // v1 → v2 added the `nudged_at` column (couldn't-verify nudge de-dup).
         if (oldVersion < 2) await migrateToV2(db);
         // v2 → v3 added `status` — the verdict a manual freeze protects.
         if (oldVersion < 3) await migrateToV3(db);
+        // v3 → v4 added the durable Screen Time signal buffer. Nothing to do
+        // here: it is a brand-new table, which the unconditional [createTable]
+        // below builds on every open. Named for the record, and so a future
+        // migration that DOES need work has an obvious place to go.
       },
     );
     // Idempotent — also creates the table for a DB opened at an existing version.
@@ -52,7 +71,9 @@ class SqfliteVerificationStateStore implements VerificationStateStore {
     return SqfliteVerificationStateStore(db);
   }
 
-  /// Creates the table + index. Idempotent, so it is safe to call on every open.
+  /// Creates the tables + indexes. Idempotent, so it is safe to call on every
+  /// open — which is what carries the v4 signal table onto a database that was
+  /// created at an earlier version.
   static Future<void> createTable(DatabaseExecutor db) async {
     await db.execute('''
 CREATE TABLE IF NOT EXISTS $table (
@@ -67,6 +88,21 @@ CREATE TABLE IF NOT EXISTS $table (
 ''');
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_vstate_goal_kind ON $table (goal_id, kind)',
+    );
+    // One row per goal-day: the sticky rule collapses whatever the extension
+    // reported for a day into a single answer, so the natural key IS the
+    // primary key and a duplicate delivery can never grow this table.
+    await db.execute('''
+CREATE TABLE IF NOT EXISTS $signalsTable (
+  goal_id TEXT NOT NULL,
+  date TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('$_reached', '$_stayedUnder')),
+  recorded_at TEXT NOT NULL,
+  PRIMARY KEY (goal_id, date)
+)
+''');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_vsignals_date ON $signalsTable (date)',
     );
   }
 
@@ -250,7 +286,90 @@ CREATE TABLE IF NOT EXISTS $table (
   }
 
   @override
+  Future<void> recordScreenTimeSignals(
+      Iterable<ScreenTimeSignal> signals) async {
+    for (final s in signals) {
+      final key = _key(s.day);
+      // Read-then-write rather than an upsert, so the sticky rule is expressed
+      // once, in Dart, in the same words as everywhere else it appears. A day
+      // that already recorded a crossing keeps it: the extension can deliver a
+      // duplicated, late or out-of-order `stayedUnder` for a day the user
+      // demonstrably blew past their limit, and that must never become a pass.
+      final existing = await _db.query(
+        signalsTable,
+        columns: ['kind'],
+        where: 'goal_id = ? AND date = ?',
+        whereArgs: [s.goalId, key],
+        limit: 1,
+      );
+      if (existing.isNotEmpty && existing.first['kind'] == _reached) continue;
+      await _db.insert(
+        signalsTable,
+        {
+          'goal_id': s.goalId,
+          'date': key,
+          'kind': _wireKind(s.kind),
+          'recorded_at': _now(),
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+  }
+
+  @override
+  Future<List<ScreenTimeSignal>> screenTimeSignals({
+    required Iterable<String> goalIds,
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    final ids = goalIds.toList();
+    if (ids.isEmpty) return const [];
+    final placeholders = List.filled(ids.length, '?').join(', ');
+    final rows = await _db.query(
+      signalsTable,
+      columns: ['goal_id', 'date', 'kind'],
+      where: 'goal_id IN ($placeholders) AND date BETWEEN ? AND ?',
+      whereArgs: [...ids, _key(from), _key(to)],
+    );
+    final out = <ScreenTimeSignal>[];
+    for (final r in rows) {
+      final kind = _kindFromWire(r['kind'] as String?);
+      if (kind == null) continue; // unrecognised ⇒ no signal, never a guess
+      out.add(ScreenTimeSignal(
+        goalId: r['goal_id'] as String,
+        day: _parse(r['date'] as String),
+        kind: kind,
+      ));
+    }
+    return out;
+  }
+
+  @override
+  Future<void> pruneScreenTimeSignalsBefore(DateTime day) async {
+    // `date` is zero-padded `yyyy-MM-dd`, so lexicographic `<` is chronological
+    // — same reasoning as [pruneCouldNotVerifyBefore].
+    await _db.delete(
+      signalsTable,
+      where: 'date < ?',
+      whereArgs: [_key(day)],
+    );
+  }
+
+  @override
   Future<void> deleteGoal(String goalId) async {
     await _db.delete(table, where: 'goal_id = ?', whereArgs: [goalId]);
+    await _db.delete(signalsTable, where: 'goal_id = ?', whereArgs: [goalId]);
   }
+
+  static String _wireKind(ScreenTimeSignalKind kind) =>
+      switch (kind) {
+        ScreenTimeSignalKind.reachedThreshold => _reached,
+        ScreenTimeSignalKind.stayedUnder => _stayedUnder,
+      };
+
+  static ScreenTimeSignalKind? _kindFromWire(String? wire) => switch (wire) {
+        _reached => ScreenTimeSignalKind.reachedThreshold,
+        _stayedUnder => ScreenTimeSignalKind.stayedUnder,
+        _ => null,
+      };
 }

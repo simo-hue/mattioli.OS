@@ -66,8 +66,14 @@ class FakeScreenTimeBridge implements ScreenTimeBridge {
     lastNotificationCopy = (title: title, body: body);
   }
 
+  /// How many times [drainSignals] has been called. The drain is DESTRUCTIVE,
+  /// so "was it called at all, and exactly once" is a correctness property, not
+  /// a statistic.
+  int drainCallCount = 0;
+
   @override
   Future<List<ScreenTimeSignal>> drainSignals() async {
+    drainCallCount++;
     final drained = List<ScreenTimeSignal>.from(_buffer);
     _buffer.clear();
     return drained;

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import 'day_verdict.dart';
+import 'screen_time_bridge.dart';
 import 'verification_log_writer.dart';
 import 'verification_service.dart';
 import 'verification_state_store.dart';
@@ -113,15 +114,23 @@ class VerificationController {
       goals: goals,
       today: today,
       existing: existing,
+      signals: await _screenTimeSignals(goals, windowStart, todayDate),
     );
 
+    // Only the writes that actually LANDED. A write that failed has changed
+    // nothing, so it must not clear the day's "?" affordance and must not reach
+    // the notification layer as a celebration — and the buffered signal behind
+    // it stays put, so the next pass can derive the day again.
+    final applied = <LogWrite>[];
     for (final w in plan.writes) {
-      await logWriter.writeVerdict(
+      final ok = await logWriter.writeVerdict(
         goalId: w.goalId,
         day: w.day,
         outcome: w.outcome,
         value: w.value,
       );
+      if (!ok) continue;
+      applied.add(w);
       // A day that used to be couldn't-verify has now resolved.
       await store.resolveCouldNotVerify(w.goalId, w.day);
     }
@@ -136,11 +145,87 @@ class VerificationController {
     for (final goal in goals) {
       await store.pruneCouldNotVerifyBefore(goal.goalId, windowStart);
     }
+    // Same for the buffered signals, and for the same reason. Global rather than
+    // per-goal: a signal whose goal has since been deleted is never named by any
+    // later pass, so a per-goal prune would leave it behind forever.
+    await store.pruneScreenTimeSignalsBefore(windowStart);
 
     return ReconcileReport(
-      writes: plan.writes,
+      writes: applied,
       couldNotVerify: plan.couldNotVerify.length,
       nudges: plan.couldNotVerify.where((c) => c.shouldNudge).toList(),
     );
+  }
+
+  /// The Screen Time signals this pass should reason about: whatever the
+  /// extension has buffered since the last drain, UNIONED with whatever earlier
+  /// passes drained and stored, resolved by the sticky `reachedThreshold` rule.
+  ///
+  /// Returns null when no goal is a Screen Time goal, which tells
+  /// [VerificationService] to skip signals entirely (and, on the legacy path,
+  /// not to drain). Draining for a HealthKit-only goal list would destroy the
+  /// buffer of a Screen Time habit whose feature flag is currently off.
+  ///
+  /// Every store call is individually guarded. Persistence is a robustness
+  /// mechanism, so a store that cannot be written or read must degrade to the
+  /// old one-shot behaviour — this pass still holds the freshly drained rows in
+  /// memory — rather than take the whole reconcile down with it.
+  Future<Map<String, Map<DateTime, ScreenTimeSignalKind>>?> _screenTimeSignals(
+    List<VerifiableGoal> goals,
+    DateTime windowStart,
+    DateTime todayDate,
+  ) async {
+    if (!goals.any((g) => g.rule.isScreenTime)) return null;
+
+    final drained = await service.screenTime.drainSignals();
+    // Written BEFORE anything can throw further down, because from the moment
+    // the drain returned, this process holds the only copy in existence.
+    if (drained.isNotEmpty) {
+      try {
+        await store.recordScreenTimeSignals(drained);
+      } catch (_) {
+        // Degrades to the pre-durability behaviour for this pass only: the rows
+        // are still in `drained` below, so nothing is lost NOW — only the
+        // ability to re-derive the day later.
+      }
+    }
+
+    var stored = const <ScreenTimeSignal>[];
+    try {
+      stored = await store.screenTimeSignals(
+        // A Mode-A goal whose device-local selection cannot be resolved is NOT
+        // being monitored, so nothing may pass it off — the engine forces its
+        // per-day lookup to "no signal" for exactly that reason. Excluding it
+        // from the read-back keeps that suppression true of the BUFFER too:
+        // before signals were durable the destructive drain made it permanent
+        // by accident, and a replay would have handed a limit habit a `pass`
+        // for a day nothing was watching.
+        //
+        // The rows are deliberately still WRITTEN (see above) and merely not
+        // read: an unresolvable blob is often transient — a re-pick, a restored
+        // prefs file — and destroying the evidence on a flag that may be a false
+        // positive is the failure this whole buffer exists to prevent. Suppress
+        // the read, keep the record.
+        goalIds: goals
+            .where((g) => !g.screenTimeSelectionMissing)
+            .map((g) => g.goalId),
+        from: windowStart,
+        to: todayDate,
+      );
+    } catch (_) {
+      // Fall through with `drained` alone.
+    }
+
+    final index = <String, Map<DateTime, ScreenTimeSignalKind>>{};
+    // Order-independent by construction: `reachedThreshold` wins over
+    // `stayedUnder` whichever arrives first, so merging the stored rows and the
+    // freshly drained ones in either order gives the same answer.
+    for (final s in [...stored, ...drained]) {
+      final byDay = index[s.goalId] ??= {};
+      final day = _dateOnly(s.day);
+      if (byDay[day] == ScreenTimeSignalKind.reachedThreshold) continue;
+      byDay[day] = s.kind;
+    }
+    return index;
   }
 }

@@ -100,6 +100,39 @@ Repo side is done. These are App Store Connect actions. Order matters. Ship **1.
 - [ ] Counter habits need one full day — auto-fail is anchored to the first day the rule
   runs on your device.
 
+**Auto-verified fixes (2026-08-10)** — the four defects fixed today. Nothing below has
+run on a device, and none of it can be checked on the dev machine: no iOS SDK there, and
+FamilyControls/DeviceActivity do not run in the Simulator. **Build BOTH targets** — a typo
+in the extension only surfaces when `DeviceActivityMonitorExtension` compiles, not `Runner`.
+Precondition, or every negative test below is a false pass: confirm notification permission
+is granted and that a "limit reached" banner fires *at all* on this build.
+- [ ] **Positive control FIRST** (catches an inverted weekday conversion). Mon–Fri Screen
+  Time habit, threshold 1 min, on a weekday → banner **must** fire. If not, the rest lies.
+- [ ] **The off-day fix.** Same habit, device date set to a Saturday, cross the limit →
+  **no banner**, habit hidden in-app, no `missed` written.
+- [ ] **Daily habit** (`frequency_days` null or `[1..7]`) on a Saturday → banner **does** fire.
+- [ ] **Counter preservation** (the load-bearing constraint). Accrue ~10 min against a 15-min
+  habit, edit ONLY its weekdays, keep using. The banner must fire at 15 min *total*, not 25.
+  If it fires late, the weekday map leaked into `screen_time_monitor_specs`.
+- [ ] **Update day.** Install over the previous build with live monitoring and accrued usage:
+  the first foreground must not reset counters, and a crossing *before* it should still
+  banner (map absent ⇒ fail-open).
+- [ ] **Archived habit.** Archive a Screen Time habit, keep using the apps it watched → no
+  banner, no new verdicts, monitoring actually deregistered. Days *before* the archive date
+  must still settle normally.
+- [ ] **Offline Screen Time verdict** (the durable buffer, account mode — the headline case).
+  Airplane mode, cross a Mode-A limit, foreground the app (this drains). No verdict, no
+  celebration, day shows "?". Go online, foreground again → the day must settle as `missed`
+  **from the buffered signal**. Before this fix that outcome was destroyed. Repeat over two
+  offline days, and once with a late `stayedUnder` for the same day (must still be `missed`).
+- [ ] **v3 → v4 migration.** Upgrade over a build that already has manual freezes ("set by
+  you" days): freezes survive with their status, new signals persist. ⚠️ **Do not roll back**
+  afterwards — `verification_state.db` passes no `onDowngrade`, so an older binary opening a
+  v4 file is untested.
+- [ ] **Delete a Screen Time habit** while a signal for it is buffered — nothing replays.
+- [ ] **Midnight edge.** Cross a limit at ~23:5x on a Friday for a Mon–Fri habit: the banner
+  and the day the verdict lands on must agree.
+
 **Arabic / accessibility**
 - [ ] Does `≥` render mirrored (like `≤`) in RTL? `≥`/`≤` mean opposite things here. If it
   does and you dislike it, the fix is a locale-owned pattern (`على الأقل` / `على الأكثر`).

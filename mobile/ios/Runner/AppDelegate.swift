@@ -911,6 +911,35 @@ enum VerificationAppGroup {
   /// falls back to English if absent.
   static let notificationCopyKey = "screen_time_notification_copy"
 
+  /// Key holding each monitored goal's SCHEDULED weekdays, as
+  /// `["<goalId>": [Int]]` with ISO numbering (1 = Mon … 7 = Sun). An absent
+  /// entry — or an empty array — means "every day", matching the Dart side where
+  /// an empty `activeWeekdays` set is a daily habit.
+  ///
+  /// Read only by the extension, and only to suppress the real-time "limit
+  /// reached" banner on a day the habit is not scheduled. The verdict engine
+  /// already ignores off-days (`VerificationService._isScheduled`), so the signal
+  /// itself is still appended and still harmless; the banner was the one part of
+  /// the feature that reached the user on a Saturday for a Mon–Fri habit.
+  ///
+  /// ⚠️ DELIBERATELY a separate key rather than a field inside
+  /// [monitorSpecsKey]. That dictionary is the DIFF KEY — `syncMonitoredGoals`
+  /// compares it with `NSDictionary.isEqual:` to decide what needs
+  /// re-registering — so adding a field to it would make every existing goal
+  /// compare unequal on update day, stopping and restarting each one and
+  /// resetting its accrued usage for that day. DeviceActivity has no
+  /// day-of-week schedule (a weekday-scoped `DeviceActivitySchedule` would cost
+  /// one activity per weekday per goal against Apple's 20-activity cap), so the
+  /// filter belongs at the notification, not at the registration.
+  ///
+  /// SCOPE: this answers the WEEKDAY question only. The habit's LIFETIME is
+  /// handled on the Dart side — `screenTimeSpecsFrom`
+  /// (mobile/lib/core/verification_wiring.dart) emits no spec past a habit's
+  /// `endDate`, so an archived habit is deregistered on the next sync and drops
+  /// out of this map with it. A goal present here is live; it may still be
+  /// off-schedule today, which is exactly what the weekday list decides.
+  static let weekdaysKey = "screen_time_weekdays"
+
   static var defaults: UserDefaults? { UserDefaults(suiteName: suiteName) }
 }
 
@@ -1225,6 +1254,11 @@ enum ScreenTimeBridge {
       // Clear the record too, so "it describes exactly what is monitored" is an
       // unconditional invariant rather than one that happens to hold.
       defaults?.set([String: Any](), forKey: VerificationAppGroup.monitorSpecsKey)
+      // Same invariant for the weekday map: nothing is monitored, so nothing is
+      // scheduled. Left behind, it would answer for goal ids that no longer
+      // exist — and a re-created habit reusing an id would inherit a schedule the
+      // user never gave it.
+      defaults?.set([String: [Int]](), forKey: VerificationAppGroup.weekdaysKey)
       result(nil)
       return
     }
@@ -1296,12 +1330,28 @@ enum ScreenTimeBridge {
     // arbitrary and different on every launch (Swift seeds its hash per process).
     var order: [String] = []
     var desired: [String: (spec: [String: Any], event: DeviceActivityEvent)] = [:]
+    // The scheduled weekdays of each goal we end up wanting, for the extension's
+    // banner filter. Built alongside `desired` — never folded INTO it — so the
+    // registration diff below is untouched by a schedule edit. See
+    // `VerificationAppGroup.weekdaysKey`.
+    var weekdays: [String: [Int]] = [:]
     for goal in goals {
       guard
         let goalId = goal["goalId"] as? String,
         let minutes = (goal["thresholdMinutes"] as? NSNumber)?.intValue
       else { continue }
       let mode = (goal["mode"] as? String) ?? "total"
+      // ISO weekdays (1 = Mon … 7 = Sun). Read as `[Any]` and filtered, like
+      // `goals` above: a malformed entry costs only itself. Out-of-range values
+      // are dropped rather than trusted — the filter's fallback is "notify", so
+      // a nonsense day can only ever cost an extra banner, never silence a real
+      // one. An empty or missing list means daily, which is the Dart contract
+      // (`activeWeekdays` empty ⇒ every day) and also what an OLDER app build
+      // leaves behind, so the extension's absent-entry fallback and this one
+      // agree.
+      let days = ((goal["weekdays"] as? [Any]) ?? [])
+        .compactMap { ($0 as? NSNumber)?.intValue }
+        .filter { (1...7).contains($0) }
 
       let event: DeviceActivityEvent
       var selectionDigest = ""
@@ -1344,7 +1394,16 @@ enum ScreenTimeBridge {
         ],
         event: event
       )
+      weekdays[goalId] = days
     }
+
+    // Published for every goal we WANT, before any registration is attempted —
+    // not just the ones this call registers. A goal left alone because it was
+    // unchanged is still monitored and can still cross its threshold, and a goal
+    // whose registration fails below simply never fires, so an entry it does not
+    // need costs nothing. Writing it early also means the extension is never
+    // reading yesterday's schedule while today's registration is in flight.
+    defaults?.set(weekdays, forKey: VerificationAppGroup.weekdaysKey)
 
     // Stop only what is no longer wanted. Anything else keeps running — and keeps
     // its accumulated usage for the day, which is the entire point of this

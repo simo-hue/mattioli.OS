@@ -41,6 +41,10 @@ private enum AppGroup {
   /// `minutes`. MUST match `VerificationAppGroup.monitorSpecsKey` in
   /// Runner/AppDelegate.swift.
   static let monitorSpecsKey = "screen_time_monitor_specs"
+  /// `["<goalId>": [Int]]` — each monitored goal's scheduled ISO weekdays
+  /// (1 = Mon … 7 = Sun). Absent entry or empty array ⇒ every day. MUST match
+  /// `VerificationAppGroup.weekdaysKey` in Runner/AppDelegate.swift.
+  static let weekdaysKey = "screen_time_weekdays"
 }
 
 class DeviceActivityMonitorExtension: DeviceActivityMonitor {
@@ -65,9 +69,51 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     // Only when the crossing is TODAY'S. The copy says "your screen time limit
     // for today", and a wake we have just concluded is reporting yesterday's
     // crossing would be telling the user something both wrong and stale.
-    if let day = day, let today = Self.components(of: now), day == today {
+    //
+    // …and only on a day the habit is actually SCHEDULED. DeviceActivity has no
+    // day-of-week schedule, so a Mon–Fri habit is monitored on Saturday too and
+    // this callback fires on it. The verdict engine already drops off-day signals
+    // (`VerificationService._isScheduled`), which is why the signal above is still
+    // appended unconditionally — but nothing filtered the BANNER, so the one part
+    // of the feature that reaches the user was also the only part that ignored
+    // the schedule.
+    if let day = day, let today = Self.components(of: now), day == today,
+       Self.isScheduled(goalId: activity.rawValue, on: now, defaults: defaults) {
       postLimitReachedNotification(defaults)
     }
+  }
+
+  /// Whether [goalId] is scheduled on the local weekday of [now].
+  ///
+  /// Defaults to TRUE in every uncertain case — no App Group, no map (an older
+  /// app build that never wrote one), no entry for this goal, an empty list, or
+  /// a weekday the calendar cannot resolve. The two failure directions are not
+  /// symmetric: a banner on an off-day is a small annoyance the user can dismiss,
+  /// while a suppressed banner on a scheduled day silently removes the feature's
+  /// only real-time signal — and this map is written by a different process on a
+  /// different schedule, so "I could not read it" must never mean "not today".
+  ///
+  /// Explicitly Gregorian and local, for the same reason [calendar] is: the day
+  /// the schedule speaks about is bounded by the user's own midnight, and
+  /// `Calendar.current` may not be Gregorian at all. `.weekday` is
+  /// 1 = Sunday … 7 = Saturday, so it is converted to the ISO numbering the Dart
+  /// side stores (1 = Mon … 7 = Sun).
+  private static func isScheduled(
+    goalId: String,
+    on now: Date,
+    defaults: UserDefaults?,
+    cal: Calendar = calendar()
+  ) -> Bool {
+    guard
+      let map = defaults?.dictionary(forKey: AppGroup.weekdaysKey),
+      let raw = map[goalId] as? [Any]
+    else { return true }
+    let days = raw.compactMap { ($0 as? NSNumber)?.intValue }
+    if days.isEmpty { return true } // daily habit, or an unreadable list
+    guard let weekday = cal.dateComponents([.weekday], from: now).weekday else {
+      return true
+    }
+    return days.contains(((weekday + 5) % 7) + 1)
   }
 
   override func intervalDidEnd(for activity: DeviceActivityName) {

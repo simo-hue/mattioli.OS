@@ -125,7 +125,7 @@ class _EvolveSwitchState extends State<EvolveSwitch> {
 /// (so outside-tap dismissal, positioning and focus behave natively) but kills
 /// all Material menu chrome: the surface is a raised panel with the kit's
 /// border, radius and shadow, and items are [EvolveMenuItem]s.
-class EvolveMenu extends StatelessWidget {
+class EvolveMenu extends StatefulWidget {
   const EvolveMenu({
     required this.triggerBuilder,
     required this.children,
@@ -157,12 +157,41 @@ class EvolveMenu extends StatelessWidget {
   final VoidCallback? onClose;
 
   @override
+  State<EvolveMenu> createState() => _EvolveMenuState();
+}
+
+class _EvolveMenuState extends State<EvolveMenu> {
+  // MenuAnchor deliberately skips onClose when the anchor is torn down while
+  // open (RawMenuAnchor.close(inDispose: true) guards the callback), so a
+  // rebuild that removes an open menu would otherwise leave hosts believing a
+  // popup is still up — the Goals page then suspends ←/→ paging forever.
+  // Disposal *is* a close: the popup is off-screen either way.
+  bool _isOpen = false;
+
+  @override
+  void dispose() {
+    if (_isOpen) {
+      _isOpen = false;
+      widget.onClose?.call();
+    }
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.evolveColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return MenuAnchor(
-      onOpen: onOpen,
-      onClose: onClose,
+      // No setState in either callback — _isOpen is only read synchronously
+      // in dispose.
+      onOpen: () {
+        _isOpen = true;
+        widget.onOpen?.call();
+      },
+      onClose: () {
+        _isOpen = false;
+        widget.onClose?.call();
+      },
       style: MenuStyle(
         backgroundColor: WidgetStatePropertyAll(colors.panelRaised),
         surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
@@ -186,20 +215,20 @@ class EvolveMenu extends StatelessWidget {
       consumeOutsideTap: true,
       menuChildren: [
         ConstrainedBox(
-          constraints: BoxConstraints(minWidth: minWidth ?? 0),
+          constraints: BoxConstraints(minWidth: widget.minWidth ?? 0),
           child: IntrinsicWidth(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: children,
+              children: widget.children,
             ),
           ),
         ),
       ],
       builder: (context, controller, _) {
-        final trigger = triggerBuilder(context, controller);
-        if (tooltip == null) return trigger;
-        return Tooltip(message: tooltip!, child: trigger);
+        final trigger = widget.triggerBuilder(context, controller);
+        if (widget.tooltip == null) return trigger;
+        return Tooltip(message: widget.tooltip!, child: trigger);
       },
     );
   }

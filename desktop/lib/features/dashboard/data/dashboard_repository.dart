@@ -780,7 +780,21 @@ class SupabaseDashboardRepository extends DashboardRepository {
       return await action();
     } catch (error, stack) {
       if (_isRetryable(error)) {
-        await _enqueue(mutation);
+        // Queueing is best-effort: `_enqueue` reads the stored queue back
+        // (jsonDecode) and rewrites it through the Keychain, so a corrupt or
+        // unwritable queue throws. Letting that escape from inside this catch
+        // would replace the REAL failure with a storage error and skip the log
+        // below — the user would be told about JSON while the network was the
+        // problem. The offline write is lost either way; the diagnostic is not.
+        try {
+          await _enqueue(mutation);
+        } catch (queueError, queueStack) {
+          AppLogger.error(
+            'Unable to queue ${mutation.operation} on ${mutation.table}',
+            queueError,
+            queueStack,
+          );
+        }
       }
       AppLogger.error(
         'Unable to sync ${mutation.operation} on ${mutation.table}',

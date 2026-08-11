@@ -65,6 +65,78 @@ void main() {
     });
   });
 
+  group('EvolveMenu', () {
+    // Hosts an EvolveMenu that a rebuild can remove from the tree, so the
+    // "open menu torn down" case can be reproduced exactly as the Goals
+    // command bar hits it (its period pickers appear/disappear per plan).
+    Widget host({
+      required bool showMenu,
+      required VoidCallback onOpen,
+      required VoidCallback onClose,
+    }) {
+      return _host(
+        showMenu
+            ? EvolveMenu(
+                onOpen: onOpen,
+                onClose: onClose,
+                triggerBuilder: (context, controller) => TextButton(
+                  onPressed: controller.open,
+                  child: const Text('trigger'),
+                ),
+                children: const [Text('item')],
+              )
+            : const SizedBox.shrink(),
+      );
+    }
+
+    testWidgets('disposing the menu while it is open fires onClose',
+        (tester) async {
+      var opens = 0;
+      var closes = 0;
+      Widget page({required bool showMenu}) => host(
+        showMenu: showMenu,
+        onOpen: () => opens++,
+        onClose: () => closes++,
+      );
+
+      await tester.pumpWidget(page(showMenu: true));
+      await tester.tap(find.text('trigger'));
+      await tester.pumpAndSettle();
+      expect(opens, 1);
+      expect(closes, 0);
+
+      // Rebuild the tree without the menu: the popup goes off-screen, so
+      // hosts counting open popups must see the matching close.
+      await tester.pumpWidget(page(showMenu: false));
+      await tester.pumpAndSettle();
+
+      expect(closes, 1);
+    });
+
+    testWidgets('a normal close then disposal fires onClose exactly once',
+        (tester) async {
+      var closes = 0;
+      Widget page({required bool showMenu}) => host(
+        showMenu: showMenu,
+        onOpen: () {},
+        onClose: () => closes++,
+      );
+
+      await tester.pumpWidget(page(showMenu: true));
+      await tester.tap(find.text('trigger'));
+      await tester.pumpAndSettle();
+      // Outside tap dismisses the popup — the ordinary close path.
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pumpAndSettle();
+      expect(closes, 1);
+
+      await tester.pumpWidget(page(showMenu: false));
+      await tester.pumpAndSettle();
+
+      expect(closes, 1, reason: 'disposal must not double-count the close');
+    });
+  });
+
   group('EvolveSelect', () {
     Widget select({ValueChanged<String>? onChanged}) {
       return EvolveSelect<String>(

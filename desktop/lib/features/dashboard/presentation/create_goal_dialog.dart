@@ -193,6 +193,13 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
   }
 
   Future<void> _save() async {
+    // Synchronous in-flight guard, armed before the addGoal await (mirrors
+    // `_submitQuickGoal` in goals_page). The Save button is disabled while
+    // `_isLoading`, but the category field's `onSubmitted` is not — the field
+    // stays live for the whole round-trip, so without this a second Enter reads
+    // the same still-populated title and files a duplicate: `addGoal` mints a
+    // fresh id per call and does not dedupe.
+    if (_isLoading) return;
     final title = _titleController.text.trim();
     if (title.isEmpty) return;
 

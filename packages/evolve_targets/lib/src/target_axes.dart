@@ -133,9 +133,16 @@ List<DateTime> daysInPeriod(
     case TargetPeriod.week:
       // DateTime.weekday is 1=Mon..7=Sun. Offset back to the configured first
       // day, then take seven consecutive days.
+      //
+      // The start is CONSTRUCTED rather than subtracted, for the reason spelled
+      // out at `_shiftDays` in target_reconcile.dart: a `Duration` is a fixed 24
+      // hours and a calendar day is not. Under `TZ=Europe/Rome` with Sunday-start
+      // weeks, `subtract` walking back over the 23-hour 2026-03-29 undershoots to
+      // `03-28 23:00` — a Saturday — and the whole week slides one date early,
+      // far enough that Saturday 04-04 is not in its own week at all.
       final offset =
           weekStartsOnMonday ? day.weekday - 1 : day.weekday % DateTime.daysPerWeek;
-      final start = day.subtract(Duration(days: offset));
+      final start = DateTime(day.year, day.month, day.day - offset);
       return [
         for (var i = 0; i < DateTime.daysPerWeek; i++)
           DateTime(start.year, start.month, start.day + i),

@@ -544,7 +544,16 @@ class VerificationService {
             // Time signals are ephemeral (drained), so a resolved day re-reads as
             // "no signal" on later passes — that must not re-nudge (D3/D6).
             if (existingOutcome == null) {
-              final ageDays = todayDate.difference(day).inDays;
+              // Counted in calendar days via UTC midnights, not with a
+              // `Duration`: a `Duration` day is a fixed 24h, so across a
+              // spring-forward day an age-2 day measures 47h → 1 and would
+              // nudge outside the resolvable window (see [nagWindowDays] and
+              // the same reasoning in [_nextDay]). Both operands are already
+              // local midnights, so re-reading their y/m/d in UTC is exact.
+              final ageDays = DateTime.utc(
+                      todayDate.year, todayDate.month, todayDate.day)
+                  .difference(DateTime.utc(day.year, day.month, day.day))
+                  .inDays;
               couldNotVerify.add(CouldNotVerifyEntry(
                 goalId: goal.goalId,
                 day: day,

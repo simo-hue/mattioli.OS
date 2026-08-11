@@ -148,10 +148,13 @@ String targetDateKey(DateTime day) =>
 /// first run of the build that carries this rule, so history is left exactly as
 /// the user last saw it and only days that close from then on are scored.
 ///
-/// Auto-fail applies to DAILY targets only. A weekly or monthly target's
-/// individual day is not a period — scoring each one as a miss would invent six
-/// failures a week for a "run 3× a week" habit. (No shipped preset builds a
-/// non-daily target; the decoder accepts one, so legacy or synced data can.)
+/// Auto-fail applies to DAILY targets only — as, since this sweep scores each
+/// day as a closed period, does the sweep as a whole: it returns nothing at all
+/// for a weekly or monthly target. Such a target's individual day is not a
+/// period, so scoring each one would invent six failures a week for a "run 3× a
+/// week" habit and six successes a week for a weekly limit. (No shipped preset
+/// builds a non-daily target; the decoder accepts one, so legacy or synced data
+/// can.)
 ///
 /// And it only ever fills an EMPTY verdict. A day whose `goal_logs` row already
 /// says something, with no number behind it, was decided by a human — the habit
@@ -170,6 +173,17 @@ List<TargetReconcileChange> reconcileManualTargetDays({
   int backfillDays = kManualTargetBackfillDays,
 }) {
   if (!target.isUserEnterable) return const [];
+  // The sweep walks CALENDAR DAYS and scores each one as a period that has
+  // closed. That equivalence holds for a daily target and nothing else: an
+  // individual day of a weekly or monthly target is not a period, so scoring it
+  // here would hand a limit habit six free successes a week and mark a
+  // partially-progressed day of a count target `missed` while the week it
+  // belongs to is still running. Same reasoning the auto-fail gate below already
+  // applies, extended to the whole sweep. No shipped preset builds a non-daily
+  // target (the decoder accepts one, so legacy or synced data can), so this
+  // changes nothing any habit a user can create does; it only declines to write
+  // verdicts for a period shape a day-by-day sweep cannot evaluate.
+  if (target.period != TargetPeriod.day) return const [];
 
   final todayD = DateTime(today.year, today.month, today.day);
   // The sweep never looks before the target's forward-only anchor (v11): editing

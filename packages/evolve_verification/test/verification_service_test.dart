@@ -108,6 +108,52 @@ void main() {
       expect(byDay[daysAgo(3)]!.shouldNudge, isFalse);
       expect(byDay[daysAgo(4)]!.shouldNudge, isFalse);
     });
+
+    // The nag window is a count of CALENDAR days, and a spring-forward day is
+    // only 23h long: measured as a `Duration`, an age-2 day comes out at 47h →
+    // 1, sneaking inside the default window and nudging the user to a day the
+    // "?" affordance won't show and the day-details editor refuses. Skipped
+    // (not failed) where the runner's zone never springs forward — e.g. a UTC
+    // CI box — since Dart reads the process timezone and a test cannot set it.
+    final springForward = _springForwardDay(2026);
+    test(
+      'the age of a day is counted in calendar days, not 24h blocks, across a '
+      'spring-forward DST transition',
+      () async {
+        // `transition` is the 23h day; walking two calendar days from its start
+        // spans 23h + 24h = 47h.
+        final ageTwo = springForward!;
+        final ageOne = DateTime(ageTwo.year, ageTwo.month, ageTwo.day + 1);
+        final dstToday = DateTime(ageTwo.year, ageTwo.month, ageTwo.day + 2);
+        expect(dstToday.difference(ageTwo).inHours, 47,
+            reason: 'the two-day span must straddle the lost hour');
+
+        // Production default nagWindowDays (no override) → only today and
+        // yesterday may nudge. No health data → every past day is
+        // couldn't-verify.
+        final plan = await VerificationService(
+          health: health,
+          screenTime: screen,
+          backfillDays: 5,
+        ).reconcile(
+          goals: [
+            VerifiableGoal(
+              goalId: 'g_steps',
+              rule: VerificationCatalog.steps.ruleWith(10000),
+              effectiveFrom: DateTime(ageTwo.year, ageTwo.month, ageTwo.day - 30),
+            ),
+          ],
+          today: dstToday,
+        );
+
+        final byDay = {for (final e in plan.couldNotVerify) e.day: e};
+        expect(byDay[ageOne]!.shouldNudge, isTrue); // yesterday — resolvable
+        expect(byDay[ageTwo]!.shouldNudge, isFalse); // age 2 — dead-ended
+      },
+      skip: springForward == null
+          ? 'the runner timezone has no spring-forward transition'
+          : null,
+    );
   });
 
   group('reconcile — freezing and idempotency', () {
@@ -455,4 +501,17 @@ void main() {
       expect(plan.writes.any((w) => w.day == daysAgo(1)), isFalse);
     });
   });
+}
+
+/// The first local calendar day in [year] that is only 23 hours long (a
+/// spring-forward DST transition), or null if the runner's timezone has none.
+/// Found rather than hardcoded: the test must not assume a particular zone.
+DateTime? _springForwardDay(int year) {
+  var day = DateTime(year, 1, 1);
+  while (day.year == year) {
+    final next = DateTime(day.year, day.month, day.day + 1);
+    if (next.difference(day).inHours == 23) return day;
+    day = next;
+  }
+  return null;
 }

@@ -281,4 +281,45 @@ void main() {
       await db.close();
     });
   });
+
+  group('malformed avatar record', () {
+    // A record CLAIMING tableName "avatar" whose NAME lacks the "avatar:"
+    // prefix is structurally invalid, exactly like the row case the engine's
+    // malformed-name guard already covers — and the avatar path is the one that
+    // cannot survive it: both the state write and its own catch block chop a
+    // fixed "avatar:".length off the name, so a shorter name raises a
+    // RangeError from inside the catch, where nothing catches it. It escapes
+    // `syncNow`, the change token is never stored, and every later sync
+    // re-fetches the same record and dies again — a permanently wedged pull.
+    test('a malformed avatar record name is skipped and lets the token advance',
+        () async {
+      final cloud = FakeCloudKitBridge();
+      final transport = <String, Uint8List>{};
+      final db = await openFreshV3();
+      await seedOwner(db);
+      final avatars = FakeSyncAvatarStore(name: 'B', assetTransport: transport);
+      avatars.avatar = img('L'); // this device's own avatar
+
+      await cloud.saveRecords([
+        CloudRecord(
+          recordName: 'x', // no "avatar:" prefix, shorter than one
+          tableName: PrivateDbSchema.avatarRecordTable,
+          updatedAtMs: DateTime.parse(t(10)).millisecondsSinceEpoch,
+          deleted: false,
+          payload: Uint8List(0),
+          assetPath: await avatars
+              .stageEncryptedUpload(crypto.encryptBytes(img('R'), key)),
+        ),
+      ]);
+
+      final res = await engine(db, cloud, avatars: avatars).syncNow(key);
+
+      expect(res.applied, 0);
+      expect(avatars.avatar, img('L'), reason: 'local avatar left alone');
+      // The token advanced past the malformed record: it will not be re-fetched
+      // and re-crash the pull on every sync from here on.
+      expect(await SyncLocalStore(db).changeToken(), isNotNull);
+      await db.close();
+    });
+  });
 }

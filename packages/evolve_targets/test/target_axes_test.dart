@@ -85,6 +85,42 @@ void main() {
       expect(days.first, DateTime(2026, 12, 28));
       expect(days.last, DateTime(2027, 1, 3));
     });
+
+    test('every day of a year lands in a week that starts on the right day',
+        () {
+      // The DST guard, written as an invariant rather than a fixed date so it
+      // needs no timezone harness: whatever zone the process runs in, a week
+      // must be seven consecutive dates, must begin on the configured first
+      // day, and must CONTAIN its own anchor.
+      //
+      // Walking back with `subtract(Duration(days: n))` breaks all three at
+      // once, because a `Duration` is a fixed 24 hours and a calendar day is
+      // not. Under `TZ=Europe/Rome` with Sunday-start weeks, 2026-03-29 is 23
+      // hours long, so stepping back from Saturday 2026-04-04 00:00 by 6×24h
+      // undershoots to `03-28 23:00` — a SATURDAY — and the week returned is
+      // 03-28…04-03, which does not contain 04-04 at all. In a zone without
+      // DST (CI runs UTC) every anchor below already passed, so this is a
+      // regression guard, not a probe.
+      for (final mondayStart in [true, false]) {
+        var anchor = DateTime(2026);
+        while (anchor.year == 2026) {
+          final days = daysInPeriod(TargetPeriod.week, anchor,
+              weekStartsOnMonday: mondayStart);
+          final where = 'anchor $anchor, mondayStart=$mondayStart';
+          expect(days.length, DateTime.daysPerWeek, reason: where);
+          expect(days.first.weekday,
+              mondayStart ? DateTime.monday : DateTime.sunday,
+              reason: where);
+          expect(days, contains(anchor), reason: where);
+          for (var i = 1; i < days.length; i++) {
+            final prev = days[i - 1];
+            expect(days[i], DateTime(prev.year, prev.month, prev.day + 1),
+                reason: where);
+          }
+          anchor = DateTime(anchor.year, anchor.month, anchor.day + 1);
+        }
+      }
+    });
   });
 
   group('periodIsOver', () {

@@ -285,6 +285,21 @@ void main() {
       expect(changes, isEmpty);
     });
 
+    test('a NON-daily LIMIT target invents no quiet-day successes', () {
+      // The same reasoning as the auto-fail rule above, from the other
+      // direction: a day of a "at most 1 per week" target is not the period, so
+      // scoring it closed would hand out a `done` for six days the week has not
+      // finished paying for. The sweep can only judge whole periods and it walks
+      // days, so it must decline.
+      final weekly = _limit().copyWith(period: TargetPeriod.week);
+      final changes = run(
+        target: weekly,
+        today: today,
+        start: DateTime(2026, 7, 21), // 3 closed, untouched days: 21, 22, 23
+      );
+      expect(changes, isEmpty);
+    });
+
     test('a LIMIT habit is unaffected by the anchor — quiet days still resolve',
         () {
       // Auto-fail must not clamp the limit sweep: its 45-day reach is shipped

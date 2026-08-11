@@ -873,14 +873,18 @@ class SyncEngine {
     // conflicts on the same record are vanishingly rare for a single user.
     if (rec.updatedAtMs <= localMs) return _ApplyOutcome.skipped;
 
-    if (rec.tableName == PrivateDbSchema.avatarRecordTable) {
-      return _applyRemoteAvatar(rec, key);
-    }
-
     // A well-formed record name is always "<tableName>:<id>". A name lacking
     // that prefix is structurally invalid (a foreign/corrupt record) — it can
     // never apply, so skip-with-error and let the token advance PAST it rather
     // than letting an unguarded substring RangeError escape and wedge the pull.
+    //
+    // This runs BEFORE the avatar dispatch, and that order is load-bearing: the
+    // avatar path chops a fixed "avatar:".length off the name in its state
+    // write AND again in its own catch block, so a malformed avatar name throws
+    // from inside that catch, where nothing catches it — the error escapes
+    // syncNow before the change token is stored and every later sync re-fetches
+    // the same record and dies again. Guarding first makes both substrings
+    // total.
     final prefix = '${rec.tableName}:';
     if (!rec.recordName.startsWith(prefix)) {
       await store.markError(rec.recordName, 'malformed recordName');
@@ -891,6 +895,10 @@ class SyncEngine {
         {'recordName': rec.recordName, 'tableName': rec.tableName},
       );
       return _ApplyOutcome.skipped;
+    }
+
+    if (rec.tableName == PrivateDbSchema.avatarRecordTable) {
+      return _applyRemoteAvatar(rec, key);
     }
 
     final rowId = rec.recordName.substring(prefix.length);

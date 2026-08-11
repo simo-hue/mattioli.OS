@@ -147,6 +147,44 @@ is granted and that a "limit reached" banner fires *at all* on this build.
   edit-after-rebuild fix). Before it, the dialog closed and the edit vanished.
 - [ ] Change a preference on iPhone, close/reopen Settings on Mac — Mac shows iPhone's value.
 
+## Goals period dates (2026-08-10) — on-device QA only, no config needed
+
+No env vars, keys or migrations. Nothing to set up; these are look-at-it checks on the
+Mac mini / iPhone, since neither app can be run from this machine.
+
+- [ ] **macOS Goals header.** Weekly should read "Week 2" over "8 – 14 August 2026";
+  Quarterly "Quarter 3" over "1 July – 30 September 2026"; Monthly "August" over
+  "1 – 31 August 2026". Annual and Lifetime keep their old grey subtitle — that is
+  intended, their titles already ARE their range. Check the second line does not
+  ellipsise on a narrow window (Quarterly is the longest string).
+- [ ] **iPhone Goals header.** Same information, as a smaller grey line under the centred
+  title, between the ‹ › chevrons. Note the weekly title CHANGED: it used to be
+  "August 3 - 9, 2026" and is now "Week 2" with the dates underneath. Check the pair
+  does not crowd the chevrons on the smallest device you have.
+- [ ] **The one thing that will look wrong but is not.** Page to the LAST week of a month:
+  August week 5 shows "29 August – 4 September 2026", and September week 1 shows
+  "1 – 7 September 2026" — the same four days appear in both. That is how the app has
+  always summed weekly progress (logical weeks are days 1-7 / 8-14 / … / 29-35, not ISO
+  weeks); the dates just make it visible for the first time. If you would rather the last
+  week stopped at the month end, say so — but that is a change to progress totals on both
+  apps, not to this label.
+- [ ] **Arabic.** Switch to ar and open Goals: the range should read right-to-left with
+  Arabic month names, not Latin ones. The three templates are translator-editable in
+  `lib/i18n/ar.i18n.json` (`goalsPage.range*` on desktop, `macroGoals.range*` on mobile)
+  if the word order needs adjusting on a real device.
+
+### Update after the review (2026-08-10)
+- [ ] **One extra thing to look at on the iPhone: the Goals EMPTY state at large text.**
+  The review found the date range's second line pushed the empty state ("no goals yet")
+  into a RenderFlex overflow at iOS accessibility text sizes — the header grew, and that
+  height comes straight out of the page below it. Fixed by making that empty state
+  scrollable, and pinned by 8 tests. Worth eyeballing once at Settings › Accessibility ›
+  Display & Text Size › Larger Text at maximum, on Weekly and Quarterly with no goals in
+  the period: the icon and copy should scroll rather than clip, and look unchanged at
+  normal text size. NOTE: that same screen has a SEPARATE, pre-existing horizontal
+  overflow at those sizes (the "Goals" title + plan-picker row) that this change did not
+  cause and did not fix — ignore it, or ask me to do a proper Dynamic Type pass on Goals.
+
 ## 4. Known bugs, verified real, NOT fixed — say the word
 
 - [ ] **macOS fetches `goal_logs` / `goal_progress` unpaginated** (`dashboard_repository.dart:386`,

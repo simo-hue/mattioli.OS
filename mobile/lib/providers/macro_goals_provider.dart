@@ -290,6 +290,23 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
           .eq('id', id);
     } catch (e, stack) {
       AppLogger.error('[MacroGoals] Update status error', e, stack);
+      // Undo the optimistic write, like the Private branch above and addGoal:
+      // the UPDATE never landed, so leaving it in state — and in the cache
+      // written just above, which is what build() seeds from — shows a status
+      // the server does not have across restarts, until some later
+      // _syncFromSupabase replaces state.goals wholesale and drops it silently.
+      // Only THIS goal's status is restored rather than `state = previousState`
+      // (which the Private branch can afford, having written no cache): a
+      // whole-state restore would also revert a mutation that landed on another
+      // goal during this await — the hazard addGoal's catch documents.
+      final previousStatus = previousState.goals
+          .firstWhere((g) => g.id == id)
+          .status;
+      final rolledBack = state.goals
+          .map((g) => g.id == id ? g.copyWith(status: previousStatus) : g)
+          .toList();
+      state = state.copyWith(goals: rolledBack);
+      _saveToCache(rolledBack);
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {
         ErrorModal.show(
@@ -336,6 +353,16 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
           .eq('id', id);
     } catch (e, stack) {
       AppLogger.error('[MacroGoals] Update title error', e, stack);
+      // Undo the optimistic write (state + the cache above), restoring only this
+      // goal's title — see updateStatus's catch for why not `previousState`.
+      final previousTitle = previousState.goals
+          .firstWhere((g) => g.id == id)
+          .title;
+      final rolledBack = state.goals
+          .map((g) => g.id == id ? g.copyWith(title: previousTitle) : g)
+          .toList();
+      state = state.copyWith(goals: rolledBack);
+      _saveToCache(rolledBack);
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {
         ErrorModal.show(
@@ -385,6 +412,24 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
           .eq('id', id);
     } catch (e, stack) {
       AppLogger.error('[MacroGoals] Update category error', e, stack);
+      // Undo the optimistic write (state + the cache above), restoring only this
+      // goal's category — see updateStatus's catch for why not `previousState`.
+      // Both columns are re-applied together because the clearing direction
+      // above (`clearCategory`) nulls the KEY as well as the id, and copyWith
+      // cannot set either back to null on its own.
+      final previousGoal = previousState.goals.firstWhere((g) => g.id == id);
+      final rolledBack = state.goals
+          .map(
+            (g) => g.id == id
+                ? g.copyWith(clearCategory: true).copyWith(
+                    categoryKey: previousGoal.categoryKey,
+                    categoryId: previousGoal.categoryId,
+                  )
+                : g,
+          )
+          .toList();
+      state = state.copyWith(goals: rolledBack);
+      _saveToCache(rolledBack);
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {
         ErrorModal.show(
@@ -507,6 +552,25 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       await supabase.from('long_term_goals').delete().eq('id', id);
     } catch (e, stack) {
       AppLogger.error('[MacroGoals] Delete error', e, stack);
+      // Put the row back: the DELETE never landed, so state and the cache above
+      // hide a goal the server still has — and the cache is what build() seeds
+      // from, so it stays hidden across restarts until some later
+      // _syncFromSupabase brings it back unannounced. Re-inserted at its old
+      // index into the CURRENT list rather than via `state = previousState`, so
+      // a mutation that landed on another goal during this await survives (see
+      // updateStatus's catch). Nothing can have edited THIS goal meanwhile: it
+      // was absent from state, and _shouldIgnoreMissingGoalMutation drops
+      // mutations for goals that are not there.
+      if (!state.goals.any((g) => g.id == id)) {
+        final previousIndex = previousState.goals.indexWhere((g) => g.id == id);
+        final rolledBack = [...state.goals];
+        rolledBack.insert(
+          previousIndex.clamp(0, rolledBack.length),
+          previousState.goals[previousIndex],
+        );
+        state = state.copyWith(goals: rolledBack);
+        _saveToCache(rolledBack);
+      }
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {
         ErrorModal.show(

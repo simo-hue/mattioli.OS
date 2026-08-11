@@ -21,6 +21,13 @@ double sumProgressRows(Iterable<Map<String, dynamic>> rows) {
   return total;
 }
 
+/// Page size for the windowed read below. A single unbounded PostgREST select
+/// is capped by the project's `db-max-rows` (1000 by default) and truncates
+/// SILENTLY — which would undercount a long-history linked goal, and the
+/// delete-time snapshot would then freeze that undercount permanently. Mirrors
+/// `kGoalLogsSyncPageSize` / `kImportPageSize`.
+const int kMacroGoalProgressPageSize = 1000;
+
 /// Sum of habit [habitId]'s `goal_progress.amount` over [range] (null ⇒ all
 /// history) from Supabase — the ACCOUNT-mode counterpart of the local
 /// `sumLinkedHabitProgress`. This is the per-goal DB read a LINKED cumulative
@@ -31,18 +38,32 @@ Future<double> sumCloudLinkedHabitProgress(
   String habitId,
   MacroGoalDateRange? range,
 ) async {
-  var query = client
-      .from('goal_progress')
-      .select('amount')
-      .eq('user_id', userId)
-      .eq('goal_id', habitId);
-  if (range != null) {
-    query = query
-        .gte('date', macroGoalProgressDateKey(range.start))
-        .lte('date', macroGoalProgressDateKey(range.end));
+  final rows = <Map<String, dynamic>>[];
+  var offset = 0;
+  while (true) {
+    // The filter is rebuilt each pass on purpose: `.order()`/`.range()` return a
+    // transform builder, so the windowing cannot be re-applied to a hoisted
+    // filter builder. The (date, id) sort makes the order total across pages —
+    // `id` is the text PK — so no row is served twice or skipped.
+    var query = client
+        .from('goal_progress')
+        .select('amount')
+        .eq('user_id', userId)
+        .eq('goal_id', habitId);
+    if (range != null) {
+      query = query
+          .gte('date', macroGoalProgressDateKey(range.start))
+          .lte('date', macroGoalProgressDateKey(range.end));
+    }
+    final page = await query
+        .order('date', ascending: true)
+        .order('id', ascending: true)
+        .range(offset, offset + kMacroGoalProgressPageSize - 1);
+    rows.addAll(page.cast<Map<String, dynamic>>());
+    if (page.length < kMacroGoalProgressPageSize) break;
+    offset += kMacroGoalProgressPageSize;
   }
-  final rows = await query;
-  return sumProgressRows(rows.cast<Map<String, dynamic>>());
+  return sumProgressRows(rows);
 }
 
 /// Snapshots the derived total into every macro goal LINKED to [habitId]

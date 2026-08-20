@@ -1,14 +1,10 @@
-import 'dart:math' as math;
 import 'package:fl_chart/fl_chart.dart';
 
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/auth/application/desktop_profile_controller.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
-import 'dart:async';
 
-import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
-import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
 import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/core/targets_config.dart';
@@ -24,7 +20,6 @@ import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/verified_habit_line.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
-import 'package:evolve_desktop/features/dashboard/presentation/create_goal_dialog.dart';
 import 'package:evolve_desktop/features/habits/presentation/habits_page.dart';
 import 'package:evolve_desktop/features/dashboard/presentation/sync_off_banner.dart';
 import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
@@ -51,7 +46,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   int _tourIndex = 0;
   final _checkInKey = GlobalKey();
   final _habitsKey = GlobalKey();
-  final _focusGoalsKey = GlobalKey();
 
   @override
   void initState() {
@@ -209,54 +203,14 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           const SizedBox(height: 22),
           _MetricGrid(snapshot: snapshot),
           const SizedBox(height: 18),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final useColumns = constraints.maxWidth >= 1120;
-              final primary = Column(
-                children: [
-                  _TrendPanel(
-                    points: snapshot.trend,
-                    weeklyMomentum: snapshot.weeklyMomentum,
-                  ),
-                  const SizedBox(height: 18),
-                  KeyedSubtree(
-                    key: _habitsKey,
-                    child: _HabitPanel(snapshot: snapshot),
-                  ),
-                ],
-              );
-              final secondary = Column(
-                children: [
-                  KeyedSubtree(
-                    key: _focusGoalsKey,
-                    child: _FocusGoalsPanel(goals: snapshot.goals),
-                  ),
-                  const SizedBox(height: 18),
-                  _WeeklyReviewPanel(snapshot: snapshot),
-                ],
-              );
-
-              if (!useColumns) {
-                return Column(
-                  children: [primary, const SizedBox(height: 18), secondary],
-                );
-              }
-
-              // Rail scales with the window instead of staying a fixed 350,
-              // so ultra-wide screens don't leave it looking skinny.
-              final railWidth = (constraints.maxWidth * 0.26).clamp(
-                350.0,
-                440.0,
-              );
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(flex: 7, child: primary),
-                  const SizedBox(width: 18),
-                  SizedBox(width: railWidth, child: secondary),
-                ],
-              );
-            },
+          _TrendPanel(
+            points: snapshot.trend,
+            weeklyMomentum: snapshot.weeklyMomentum,
+          ),
+          const SizedBox(height: 18),
+          KeyedSubtree(
+            key: _habitsKey,
+            child: _HabitPanel(snapshot: snapshot),
           ),
         ],
       ),
@@ -299,11 +253,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       targetKey: _habitsKey,
       title: t.tour.overviewHabitsTitle,
       description: t.tour.overviewHabitsDesc,
-    ),
-    CoachStep(
-      targetKey: _focusGoalsKey,
-      title: t.tour.overviewGoalsTitle,
-      description: t.tour.overviewGoalsDesc,
     ),
   ];
 }
@@ -1283,225 +1232,6 @@ class _CheckInSlider extends StatelessWidget {
   }
 }
 
-class _FocusGoalsPanel extends ConsumerWidget {
-  const _FocusGoalsPanel({required this.goals});
-
-  final List<DashboardGoal> goals;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return EvolvePanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SectionHeading(
-            title: t.dashboard.focusGoals,
-            subtitle: t.dashboard.currentPriorities,
-            trailing: Builder(
-              builder: (context) => EvolveSquareIconButton(
-                icon: LucideIcons.plus,
-                tooltip: t.createGoal.title,
-                onTap: () {
-                  final isPro = ref.read(desktopIsProProvider);
-                  if (!isPro && goals.length >= 100) {
-                    unawaited(showProFeaturesDialog(context, ref));
-                    return;
-                  }
-                  showEvolveDialog<void>(
-                    context: context,
-                    builder: (context) => const CreateGoalDialog(),
-                  );
-                },
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          if (goals.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Center(
-                child: Text(
-                  t.dashboard.emptyFocusGoals,
-                  style: TextStyle(
-                    color: context.evolveColors.foreground.withValues(
-                      alpha: 0.5,
-                    ),
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-            )
-          else
-            for (final goal in goals.take(3)) ...[
-              _GoalProgressRow(goal: goal),
-              if (goal != goals.take(3).last) const SizedBox(height: 15),
-            ],
-        ],
-      ),
-    );
-  }
-}
-
-class _GoalProgressRow extends StatelessWidget {
-  const _GoalProgressRow({required this.goal});
-
-  final DashboardGoal goal;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                goal.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '${(goal.progress * 100).round()}%',
-              style: TextStyle(
-                color: goal.color,
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: LinearProgressIndicator(
-            value: goal.progress,
-            minHeight: 5,
-            color: goal.color,
-            backgroundColor: context.evolveColors.panelSoft,
-          ),
-        ),
-        const SizedBox(height: 5),
-        Text(goal.dueLabel, style: Theme.of(context).textTheme.bodySmall),
-      ],
-    );
-  }
-}
-
-class _WeeklyReviewPanel extends StatelessWidget {
-  const _WeeklyReviewPanel({required this.snapshot});
-
-  final DashboardSnapshot snapshot;
-
-  @override
-  Widget build(BuildContext context) {
-    final momentum = snapshot.weeklyMomentum;
-    final completion = snapshot.currentWeekCompletionRate;
-    return EvolvePanel(
-      child: Row(
-        children: [
-          _ProgressRing(value: completion),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  completion == 0
-                      ? t.dashboard.weekToStart
-                      : momentum >= 0
-                      ? t.dashboard.weekGrowing
-                      : t.dashboard.weekToRecover,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  t.dashboard.vsPreviousWeek(
-                    value: _signedPercentage(momentum),
-                  ),
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProgressRing extends StatelessWidget {
-  const _ProgressRing({required this.value});
-
-  final double value;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 58,
-      height: 58,
-      child: CustomPaint(
-        painter: _RingPainter(
-          value,
-          accent: context.evolveAccent,
-          track: context.evolveColors.panelSoft,
-        ),
-        child: Center(
-          child: Text(
-            '${(value * 100).round()}%',
-            style: TextStyle(
-              color: context.evolveAccent,
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RingPainter extends CustomPainter {
-  const _RingPainter(this.value, {required this.accent, required this.track});
-
-  final double value;
-  final Color accent;
-  final Color track;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero);
-    final radius = math.min(size.width, size.height) / 2 - 4;
-    final bounds = Rect.fromCircle(center: center, radius: radius);
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()
-        ..color = track
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 5,
-    );
-    canvas.drawArc(
-      bounds,
-      -math.pi / 2,
-      value * math.pi * 2,
-      false,
-      Paint()
-        ..color = accent
-        ..style = PaintingStyle.stroke
-        ..strokeCap = StrokeCap.round
-        ..strokeWidth = 5,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _RingPainter oldDelegate) =>
-      oldDelegate.value != value ||
-      oldDelegate.accent != accent ||
-      oldDelegate.track != track;
-}
 
 String _signedPercentage(double value) {
   final percentage = (value * 100).round();

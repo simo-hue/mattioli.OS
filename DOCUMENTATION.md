@@ -2,6 +2,14 @@
 
 ## Recent Changes
 
+- [2026-08-20]: **Desktop: Removed "Goals in focus" and "Week to recover" sidebar panels from Overview**
+  - *Details*: The two right-rail info boxes on the Overview/dashboard page have been removed so the "Weekly trend" chart and "Today's protocol" habit list expand to full width. The data they displayed is still accessible from the Goals page and Statistics page respectively.
+  - *Tech Notes*:
+    - Removed `_FocusGoalsPanel`, `_GoalProgressRow`, `_WeeklyReviewPanel`, `_ProgressRing`, and `_RingPainter` widget classes from `dashboard_page.dart`.
+    - Removed the `LayoutBuilder` two-column/single-column responsive layout; the primary content (trend chart + habits) now renders directly in the main `Column`.
+    - Removed the goals tour step from the onboarding coach overlay.
+    - Cleaned up unused imports: `dart:math`, `dart:async`, `create_goal_dialog.dart`, `pro_features_modal.dart`, `desktop_subscription_controller.dart`.
+
 - [2026-08-11]: **Both apps — round 2 of the bug hunt: the remaining 9 defects, all fixed**
   - *Details*: The 9 defects round 1 confirmed real and safely fixable but left outside its 8-fix cap. Same discipline — fixes applied one at a time, each followed by an independent reviewer with revert authority — plus two additions: every fixer had to write its test, watch it FAIL, then fix; and every reviewer had to re-prove that independently (comment the fix out, watch the new test fail, restore byte-for-byte). The `evolve_sync` item got a SECOND gate at max effort, briefed as a sync specialist and asked whether any record could be skipped, dropped, applied twice, reordered or given a different tombstone, and whether a transient failure could become permanent or a permanent one an infinite retry. All 9 passed; nothing was reverted.
   - *Context established before the run, which is why the "change no feature" rule survived intact*: all four shipping target presets are `TargetPeriod.day`, so weekly/monthly target defects are LATENT; `MacroTargetsConfig.enabled` is false on both apps, so macro-goal defects are in DARK code. Seven of the nine therefore cannot move anything a user sees today — they stop the defect being inherited the day those flags flip.

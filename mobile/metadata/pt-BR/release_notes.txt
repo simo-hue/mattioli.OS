@@ -1,3 +1,1 @@
-O Evolve agora diz com clareza o que sai do seu iPhone antes de você aceitar qualquer coisa: o que sincroniza com uma conta, o que fica aqui sem conta e o que o app nunca toca — seus contatos, calendário, microfone e localização. Os dados de Saúde e Tempo de Uso também ficam no seu iPhone; só é sincronizado se você cumpriu ou não um hábito.
-
-Os relatórios de falhas agora ficam desativados até você ativá-los. Também corrigimos o botão “Enable” das notificações nessa tela e a deixamos totalmente utilizável com o VoiceOver e com os maiores tamanhos de texto.
+We've added dates to the Goals header, improved the Overview page, squashed sync and timezone bugs, and made several other stability enhancements.

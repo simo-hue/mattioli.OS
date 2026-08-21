@@ -1,3 +1,1 @@
-Evolve sagt jetzt klar, was dein iPhone verlässt, bevor du irgendetwas akzeptierst: was mit einem Konto synchronisiert wird, was ohne Konto hier bleibt und was die App überhaupt nie anfasst — Kontakte, Kalender, Mikrofon und Standort. Auch Health- und Bildschirmzeit-Werte bleiben auf deinem iPhone; synchronisiert wird nur, ob du eine Gewohnheit erfüllt hast.
-
-Absturzberichte sind jetzt aus, bis du sie einschaltest. Außerdem haben wir die Schaltfläche „Aktivieren“ für Benachrichtigungen auf diesem Bildschirm repariert und ihn für VoiceOver und die größten Textgrößen nutzbar gemacht.
+We've added dates to the Goals header, improved the Overview page, squashed sync and timezone bugs, and made several other stability enhancements.

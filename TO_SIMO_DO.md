@@ -28,19 +28,11 @@ flutter build ipa --release
   `DateTime(2003)` with no DOB set. Should be an empty state.
 - [ ] **`lifeWeeks` label vs months grid** — the app contradicts itself. Fix the string and
   the 30 non-UI locales together, after approval.
-- [ ] **Arabic grammar family** (pre-existing): numbers don't agree with units — `≥ 8 ساعة`
-  must be `8 ساعات`, same for `mindfulMinutes`, `activeEnergy`; `selectionSummary` also has a
-  gender bug (`محددة`); unit/label stutter in all locales (`≥ 30 min Exercise minutes`);
-  three different verbs for "tap"; `CouldNotVerifyChip` hardcodes ASCII `?` (Arabic `؟`).
-  Cheapest fix: make Arabic unit tokens invariant abbreviations (`د`, `س`) like `كم`.
 - [ ] **`_saveLocal()` runs once per applied change** in the desktop sweep — ~225 keychain
   writes returning from a 45-day absence. Perf only; hoisting adds an early-return path.
 - [ ] **Reminder scheduling DST seed** — deliberately unchanged. `_nextInstanceOfTime` steps
   with `Duration(days: 1)` but on `tz.TZDateTime`, and `matchDateTimeComponents` re-matches
   wall-clock each time, so only the *seed* could be an hour off. Worth a look with a device.
-- [ ] **iOS descriptions over Apple's 4000-char limit** for `ca / el / fr-CA / fr-FR`
-  (4011–4180). Note: `mobile/ios/fastlane/metadata/` is **not in the repo**, so this can only
-  be fixed wherever those files actually live.
 
 ## 6. Backlog / product
 

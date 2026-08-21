@@ -1,3 +1,1 @@
-Evolve laat nu duidelijk zien wat je iPhone verlaat voordat je ergens mee instemt: wat er synchroniseert met een account, wat hier blijft zonder account, en waar de app nooit aan komt — je contacten, agenda, microfoon en locatie. Ook gegevens uit Gezondheid en Schermtijd blijven op je iPhone; alleen of je een gewoonte hebt gehaald wordt gesynchroniseerd.
-
-Crashrapporten staan nu uit tot je ze zelf aanzet. We hebben ook de knop “Enable” voor meldingen op dat scherm gerepareerd en het scherm volledig bruikbaar gemaakt met VoiceOver en de grootste tekstgroottes.
+We've added dates to the Goals header, improved the Overview page, squashed sync and timezone bugs, and made several other stability enhancements.

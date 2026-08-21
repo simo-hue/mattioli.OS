@@ -1,92 +1,29 @@
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
-import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/goals/application/goal_categories_controller.dart';
-import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
-import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
 import 'package:evolve_desktop/features/statistics/data/statistics_rpc_providers.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
-import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_spinner.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+
 class GoalsStatsView extends ConsumerStatefulWidget {
-  const GoalsStatsView({super.key});
+  const GoalsStatsView({super.key, required this.selectedYear});
+
+  /// Year filter driven by the parent page's command bar.
+  /// `'all'` shows the global/all-years view.
+  final String selectedYear;
 
   @override
   ConsumerState<GoalsStatsView> createState() => _GoalsStatsViewState();
 }
 
 class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
-  String _selectedYear = 'all';
-  double _horizontalScrollDelta = 0.0;
-  DateTime _lastSwipeTime = DateTime.fromMillisecondsSinceEpoch(0);
-
-  List<String> _getAvailablePeriods() {
-    final allGoals = ref.read(dashboardControllerProvider).goals;
-    final years = allGoals.map((g) => g.year).whereType<int>().toSet().toList()
-      ..sort((a, b) => b.compareTo(a));
-
-    if (!years.contains(DateTime.now().year)) {
-      years.insert(0, DateTime.now().year);
-    }
-    
-    return ['all', ...years.map((y) => '$y')];
-  }
-
-  void _movePeriod(int direction) {
-    final isPro = ref.read(desktopIsProProvider);
-    final periods = _getAvailablePeriods();
-    final currentIndex = periods.indexOf(_selectedYear);
-    if (currentIndex == -1) return;
-    
-    final newIndex = currentIndex - direction;
-    
-    if (newIndex >= 0 && newIndex < periods.length) {
-      final newPeriod = periods[newIndex];
-      
-      if (!isPro && newPeriod != 'all') {
-        unawaited(showProFeaturesDialog(context, ref));
-        return;
-      }
-      
-      setState(() => _selectedYear = newPeriod);
-    }
-  }
-
-  void _processScrollDelta(double dx, double dy) {
-    final now = DateTime.now();
-
-    if (now.difference(_lastSwipeTime).inMilliseconds < 300) {
-      _horizontalScrollDelta = 0.0;
-      return;
-    }
-
-    if (dy.abs() > dx.abs()) {
-      _horizontalScrollDelta = 0.0;
-      return;
-    }
-
-    _horizontalScrollDelta += dx;
-
-    if (_horizontalScrollDelta.abs() > 40.0) {
-      if (_horizontalScrollDelta > 0) {
-        _movePeriod(-1);
-      } else {
-        _movePeriod(1);
-      }
-      _horizontalScrollDelta = 0.0;
-      _lastSwipeTime = now;
-    }
-  }
-
   String _goalTypeLabel(String type) {
     switch (type) {
       case 'lifetime':
@@ -116,26 +53,8 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
 
   @override
   Widget build(BuildContext context) {
-    final allGoals = ref.watch(dashboardControllerProvider).goals;
-
-    final isPro = ref.watch(desktopIsProProvider);
-    if (!isPro && _selectedYear != 'all') {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          setState(() => _selectedYear = 'all');
-        }
-      });
-    }
-
-    // Distinct years for dropdown
-    final years = allGoals.map((g) => g.year).whereType<int>().toSet().toList()
-      ..sort((a, b) => b.compareTo(a));
-
-    if (!years.contains(DateTime.now().year)) {
-      years.insert(0, DateTime.now().year);
-    }
-
-    final statsAsync = ref.watch(macroGoalsStatsRpcProvider(_selectedYear));
+    final selectedYear = widget.selectedYear;
+    final statsAsync = ref.watch(macroGoalsStatsRpcProvider(selectedYear));
 
     return statsAsync.when(
       data: (stats) {
@@ -159,29 +78,19 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
               320.0,
             );
 
-            return Listener(
-              onPointerSignal: (event) {
-                if (event is PointerScrollEvent) {
-                  _processScrollDelta(event.scrollDelta.dx, event.scrollDelta.dy);
-                }
-              },
-              onPointerPanZoomUpdate: (event) {
-                _processScrollDelta(event.panDelta.dx, event.panDelta.dy);
-              },
-              child: SingleChildScrollView(
+            return SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                  // Header & Year Selector
+                  // Header
                   SectionHeading(
                     title: t.stats.tabPerformance,
-                    trailing: _buildYearSelector(years),
                   ),
                   const SizedBox(height: 20),
 
-                  if (_selectedYear == 'all')
+                  if (selectedYear == 'all')
                     ..._buildGlobalContent(
                       stats,
                       wide: wide,
@@ -198,7 +107,6 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                     ),
                   ],
                 ),
-              ),
             );
           },
         );
@@ -519,120 +427,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
 
   // ─── Component Builders ───────────────────────────────────────────────────
 
-  Widget _buildYearSelector(List<int> years) {
-    final String displayLabel = _selectedYear == 'all'
-        ? t.macroGoals.allYears
-        : _selectedYear;
 
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () => _showYearPicker(years),
-        child: Container(
-          height: 34,
-          padding: const EdgeInsetsDirectional.only(start: 12, end: 8),
-          decoration: BoxDecoration(
-            color: context.evolveColors.panel.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: context.evolveColors.border.withValues(alpha: 0.9),
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                LucideIcons.calendar,
-                size: 14,
-                color: context.evolveColors.muted,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                displayLabel,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -0.1,
-                  color: context.evolveColors.foreground,
-                ),
-              ),
-              const SizedBox(width: 7),
-              Icon(
-                LucideIcons.chevronsUpDown,
-                size: 13,
-                color: context.evolveColors.muted,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showYearPicker(List<int> years) {
-    final isPro = ref.read(desktopIsProProvider);
-    // Captured before the dialog builder shadows `context`; the locked-year tap
-    // pops the dialog, so its own context is deactivated and can't host the
-    // follow-up Pro dialog.
-    final pageContext = context;
-
-    showEvolveDialog<void>(
-      context: context,
-      builder: (dialogContext) => EvolveDialog(
-        maxWidth: 340,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            EvolveDialogHeader(
-              title: Text(t.macroGoals.selectYearHeader),
-              icon: LucideIcons.calendarRange,
-            ),
-            Flexible(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(10, 0, 10, 12),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _YearOption(
-                      label: t.macroGoals.allYears,
-                      icon: LucideIcons.calendarRange,
-                      selected: _selectedYear == 'all',
-                      onTap: () {
-                        setState(() => _selectedYear = 'all');
-                        Navigator.pop(dialogContext);
-                      },
-                    ),
-                    for (final y in years)
-                      _YearOption(
-                        label: '$y',
-                        icon: isPro ? LucideIcons.calendar : LucideIcons.lock,
-                        selected: _selectedYear == '$y',
-                        locked: !isPro,
-                        onTap: () {
-                          if (!isPro) {
-                            Navigator.pop(dialogContext);
-                            if (mounted) {
-                              setState(() => _selectedYear = 'all');
-                              unawaited(
-                                showProFeaturesDialog(pageContext, ref),
-                              );
-                            }
-                          } else {
-                            setState(() => _selectedYear = '$y');
-                            Navigator.pop(dialogContext);
-                          }
-                        },
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildHighlightCard({
     required String title,
@@ -2460,83 +2255,3 @@ class _LegendItem {
   _LegendItem(this.label, this.color);
 }
 
-/// One selectable row of the desktop year-picker dialog: hover highlight, a
-/// leading icon, the year label, and a trailing check (selected) or lock
-/// (Pro-gated). Mirrors the kit's menu-item density.
-class _YearOption extends StatefulWidget {
-  const _YearOption({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-    this.locked = false,
-  });
-
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final bool locked;
-  final VoidCallback onTap;
-
-  @override
-  State<_YearOption> createState() => _YearOptionState();
-}
-
-class _YearOptionState extends State<_YearOption> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.evolveColors;
-    final accent = context.evolveAccent;
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          height: 42,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: _hovered
-                ? colors.foreground.withValues(alpha: 0.06)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                widget.icon,
-                size: 18,
-                color: widget.selected
-                    ? accent
-                    : colors.muted.withValues(alpha: 0.7),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  widget.label,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: widget.selected
-                        ? FontWeight.w700
-                        : FontWeight.w500,
-                    letterSpacing: -0.1,
-                    color: widget.selected ? colors.foreground : colors.muted,
-                  ),
-                ),
-              ),
-              if (widget.locked)
-                Icon(LucideIcons.lock, size: 14, color: colors.muted)
-              else if (widget.selected)
-                Icon(LucideIcons.check, size: 18, color: accent),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

@@ -1,3 +1,1 @@
-Evolve indique désormais clairement ce qui quitte votre iPhone avant que vous n'acceptiez quoi que ce soit : ce qui se synchronise avec un compte, ce qui reste ici sans compte, et ce que l'app ne touche jamais — vos contacts, votre calendrier, votre microphone et votre position. Les données Santé et Temps d'écran restent elles aussi sur votre iPhone ; seul le fait d'avoir tenu ou non une habitude est synchronisé.
-
-Les rapports de plantage sont maintenant désactivés tant que vous ne les activez pas. Nous avons aussi corrigé le bouton « Enable » des notifications sur cet écran et l'avons rendu pleinement utilisable avec VoiceOver et avec les plus grandes tailles de texte.
+We've added dates to the Goals header, improved the Overview page, squashed sync and timezone bugs, and made several other stability enhancements.

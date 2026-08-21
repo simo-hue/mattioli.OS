@@ -5,22 +5,7 @@
     
     
       
-      <testcase classname="fastlane.lanes" name="0: default_platform" time="0.000183">
-        
-      </testcase>
-    
-      
-      <testcase classname="fastlane.lanes" name="1: Switch to ios validate_metadata lane" time="6.7e-05">
-        
-      </testcase>
-    
-      
-      <testcase classname="fastlane.lanes" name="2: python3 /Users/simo/Developer/mattioli.OS/mobile/tool/appstore/validate_metadata.py" time="0.041308">
-        
-      </testcase>
-    
-      
-      <testcase classname="fastlane.lanes" name="3: deliver" time="33.842332">
+      <testcase classname="fastlane.lanes" name="0: default_platform" time="0.000225">
         
       </testcase>
     

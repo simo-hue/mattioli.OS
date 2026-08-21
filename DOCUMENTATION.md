@@ -2,6 +2,15 @@
 
 ## Recent Changes
 
+- [2026-08-21]: **Desktop Goals: Moved Stats year selector into the top command bar**
+  - *Details*: The Stats tab on the Goals page now uses the main top command bar for year selection (including "All Years") instead of a small inline year selector inside the Performance section. The ❮ ❯ arrows and trackpad swipe cycle through available years. Individual year selection remains Pro-gated.
+  - *Tech Notes*:
+    - Lifted `_selectedYear` state from `GoalsStatsView` into `_GoalsPageState` (new field: `_statsSelectedYear`).
+    - Added `_statsAvailableYears` getter, `_onStatsYearChanged` handler, and `_moveStatsPeriod` method to `_GoalsPageState`.
+    - Extended `_GoalCommandBar` with `showStats`, `statsSelectedYear`, `statsAvailableYears`, `onStatsYearChanged` props. When `showStats` is true, renders an `EvolveSelect<String>` year dropdown instead of the plan period selectors.
+    - `GoalsStatsView` now accepts `selectedYear` as a required prop instead of owning the state internally. Removed `_buildYearSelector`, `_showYearPicker`, `_YearOption`, `_movePeriod`, `_processScrollDelta`, and the internal swipe `Listener`.
+    - Arrow-key handler updated to allow navigation when Stats is active even if the last plan type was Lifetime.
+
 - [2026-08-20]: **Desktop: Removed "Goals in focus" and "Week to recover" sidebar panels from Overview**
   - *Details*: The two right-rail info boxes on the Overview/dashboard page have been removed so the "Weekly trend" chart and "Today's protocol" habit list expand to full width. The data they displayed is still accessible from the Goals page and Statistics page respectively.
   - *Tech Notes*:
@@ -3040,3 +3049,8 @@ All owner actions are itemized in **TO_SIMO_DO.md**.
   - *A process note worth keeping*: reverting the mobile screen to its pre-fix state to prove the overflow test bites **wedged `flutter test` for the full 10-minute harness timeout instead of failing** — twice, and `--timeout 25s` did not help. Do not burn time mutation-testing an overflow via the error stream; assert the mechanism geometrically instead (`maxScrollExtent`), which is both deterministic and a stronger kill.
   - *Six findings were refuted*, most usefully the recurring false positive that the week-5 cross-month overlap is a bug — it is the agreed design, and a verifier confirmed the shipped code matches it.
   - *Verification after the follow-up*: analyze clean on both apps under `--fatal-infos --fatal-warnings`.
+
+
+- [2026-08-20 21:50]: Version Bump to 1.3.0
+  - *Details*: Updated the marketing version to 1.3.0 and incremented build numbers for both platforms (iOS to 46, macOS to 29).
+  - *Tech Notes*: Modified `mobile/pubspec.yaml`, `desktop/pubspec.yaml`, `mobile/ios/Runner.xcodeproj/project.pbxproj`, and `desktop/macos/Runner.xcodeproj/project.pbxproj`.

@@ -1,5 +1,5 @@
 release_notes({
-  "default" => "Smarter data import & fixes"
+  "default" => "We've added dates to the Goals header, improved the Overview page, squashed sync and timezone bugs, and made several other stability enhancements."
 })
 
 privacy_url({

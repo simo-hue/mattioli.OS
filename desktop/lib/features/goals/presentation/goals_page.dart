@@ -47,6 +47,9 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   late int _selectedMonth;
   late int _selectedWeek;
   bool _showStats = false;
+  /// Year filter for the Stats tab. `'all'` = global view; otherwise a year
+  /// string like `'2026'`. Kept as a [String] to match the RPC provider's key.
+  String _statsSelectedYear = 'all';
   bool _isHoveringBoard = false;
   bool _isHoveringStats = false;
   final _quickGoalController = TextEditingController();
@@ -350,6 +353,10 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                         onPrevious: () => _movePeriod(-1),
                         onNext: () => _movePeriod(1),
                         onManageCategories: _openCategoryManager,
+                        showStats: _showStats,
+                        statsSelectedYear: _statsSelectedYear,
+                        statsAvailableYears: _statsAvailableYears,
+                        onStatsYearChanged: _onStatsYearChanged,
                         showQuickAdd: !_showStats,
                         quickGoalController: _quickGoalController,
                         quickGoalCategory: _quickGoalCategory,
@@ -366,7 +373,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                     MouseRegion(
                       onEnter: (_) => _isHoveringStats = true,
                       onExit: (_) => _isHoveringStats = false,
-                      child: const GoalsStatsView(),
+                    child: GoalsStatsView(selectedYear: _statsSelectedYear),
                     )
                   else
                     // Slide+fade the board on every period change so arrow-key /
@@ -439,7 +446,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     final isLeft = key == LogicalKeyboardKey.arrowLeft;
     final isRight = key == LogicalKeyboardKey.arrowRight;
     if (!isLeft && !isRight) return KeyEventResult.ignored;
-    if (_selectedType == GoalType.lifetime) return KeyEventResult.ignored;
+    if (_selectedType == GoalType.lifetime && !_showStats) return KeyEventResult.ignored;
     if (_openMenus > 0) return KeyEventResult.ignored;
     if (_isTextFieldFocused()) return KeyEventResult.ignored;
     if (ref.read(tourControllerProvider).active) return KeyEventResult.ignored;
@@ -560,7 +567,65 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     };
   }
 
+  /// Distinct years present in the user's goal data, newest first, guaranteed
+  /// to include the current calendar year. Used both by the command bar's
+  /// year dropdown and by the arrow / swipe navigation while Stats is active.
+  List<String> get _statsAvailableYears {
+    final allGoals = ref.read(dashboardControllerProvider).goals;
+    final years = allGoals
+        .map((g) => g.year)
+        .whereType<int>()
+        .toSet()
+        .toList()
+      ..sort((a, b) => b.compareTo(a));
+    if (!years.contains(DateTime.now().year)) {
+      years.insert(0, DateTime.now().year);
+    }
+    return ['all', ...years.map((y) => '$y')];
+  }
+
+  /// Dropdown callback for the stats year selector. Pro-gates individual year
+  /// selection — non-Pro users can only stay on "all".
+  void _onStatsYearChanged(String year) {
+    if (year != 'all') {
+      final isPro = ref.read(desktopIsProProvider);
+      if (!isPro) {
+        unawaited(showProFeaturesDialog(context, ref));
+        return;
+      }
+    }
+    setState(() => _statsSelectedYear = year);
+  }
+
+  /// Cycles the stats year selection when ❮ ❯ arrows or trackpad swipe fires
+  /// while the Stats tab is active. Direction: +1 = next (newer / towards
+  /// "all"), -1 = previous (older).
+  void _moveStatsPeriod(int direction) {
+    final periods = _statsAvailableYears;
+    final idx = periods.indexOf(_statsSelectedYear);
+    if (idx == -1) return;
+
+    final newIdx = idx - direction;
+    if (newIdx < 0 || newIdx >= periods.length) return;
+
+    final target = periods[newIdx];
+    if (target != 'all') {
+      final isPro = ref.read(desktopIsProProvider);
+      if (!isPro) {
+        unawaited(showProFeaturesDialog(context, ref));
+        return;
+      }
+    }
+    setState(() => _statsSelectedYear = target);
+  }
+
   void _movePeriod(int direction) {
+    // When the Stats tab is active, arrow / swipe navigation cycles through the
+    // available stats years (including "all") instead of the plan period.
+    if (_showStats) {
+      _moveStatsPeriod(direction);
+      return;
+    }
     setState(() {
       _lastDirection = direction;
       switch (_selectedType) {
@@ -1119,6 +1184,10 @@ class _GoalCommandBar extends StatelessWidget {
     required this.onPrevious,
     required this.onNext,
     required this.onManageCategories,
+    required this.showStats,
+    required this.statsSelectedYear,
+    required this.statsAvailableYears,
+    required this.onStatsYearChanged,
     required this.showQuickAdd,
     required this.quickGoalController,
     this.quickGoalCategory,
@@ -1148,6 +1217,14 @@ class _GoalCommandBar extends StatelessWidget {
   final VoidCallback onPrevious;
   final VoidCallback onNext;
   final VoidCallback onManageCategories;
+
+  /// When true the command bar shows the stats year selector instead of the
+  /// plan period selectors and the quick-add bar.
+  final bool showStats;
+  final String statsSelectedYear;
+  final List<String> statsAvailableYears;
+  final ValueChanged<String> onStatsYearChanged;
+
   final bool showQuickAdd;
   final TextEditingController quickGoalController;
   final _GoalCategory? quickGoalCategory;
@@ -1161,6 +1238,31 @@ class _GoalCommandBar extends StatelessWidget {
   final String quickGoalHint;
 
   List<Widget> _periodSelectors(BuildContext context) {
+    // Stats tab: single year-only dropdown with "All Years" option.
+    if (showStats) {
+      return [
+        EvolveSelect<String>(
+          value: statsSelectedYear,
+          height: 44,
+          textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.2,
+          ),
+          options: [
+            for (final period in statsAvailableYears)
+              EvolveSelectOption(
+                value: period,
+                label: period == 'all'
+                    ? t.macroGoals.allYears
+                    : period,
+              ),
+          ],
+          onChanged: onStatsYearChanged,
+          onOpen: () => onMenuOpenChanged(true),
+          onClose: () => onMenuOpenChanged(false),
+        ),
+      ];
+    }
     if (selectedType == GoalType.lifetime) {
       return [
         Padding(
@@ -1244,8 +1346,10 @@ class _GoalCommandBar extends StatelessWidget {
   }
 
   List<Widget> _navButtons(BuildContext context) {
+    // Show arrows for stats (cycle years) and for all plan types except lifetime.
+    final showArrows = showStats || selectedType != GoalType.lifetime;
     return [
-      if (selectedType != GoalType.lifetime) ...[
+      if (showArrows) ...[
         EvolveSquareIconButton(
           tooltip: t.habitsPage.prevPeriod,
           icon: directionalIcon(

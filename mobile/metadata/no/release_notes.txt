@@ -1,3 +1,1 @@
-Evolve now spells out what leaves your iPhone before you agree to anything: what syncs when you use an account, what stays here when you don't, and what the app never touches at all — your contacts, calendar, microphone and location. Health and Screen Time readings stay on your iPhone too; only whether you met a habit is ever synced.
-
-Crash reports are now off unless you turn them on. We also fixed the notifications “Enable” button on that screen, and made it work properly with VoiceOver and at the largest text sizes.
+We've added dates to the Goals header, improved the Overview page, squashed sync and timezone bugs, and made several other stability enhancements.

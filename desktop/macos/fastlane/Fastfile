@@ -74,7 +74,7 @@ platform :mac do
     
     translations = {
       "it" => "Miglioramenti alla sicurezza e correzione di bug.",
-      "en" => "Security enhancements and bug fixes.",
+      "en" => "We've added dates to the Goals header, improved the Overview page, squashed sync and timezone bugs, and made several other stability enhancements.",
       "fr" => "Améliorations de la sécurité et corrections de bugs.",
       "vi" => "Cải tiến bảo mật và sửa lỗi.",
       "ko" => "보안 강화 및 버그 수정.",

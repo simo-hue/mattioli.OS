@@ -773,33 +773,32 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
 
   @override
   Widget build(BuildContext context) {
-    // EVERY habit, deliberately unfiltered.
-    //
-    // This used to be `.where((g) => g.isActiveOn(now))`, and the drop handler
-    // passed those FILTERED indices to `GoalsNotifier.reorder`, which indexes
-    // the UNFILTERED list — so the moment any habit was inactive, a drag moved a
-    // different habit than the one under the finger. Since habit order is now
-    // persisted per-row and survives sync, that mistake became durable rather
-    // than transient.
-    //
-    // Removing the filter rather than remapping the indices is the deliberate
-    // choice. This is the MANAGE surface: it is where a habit is renamed,
-    // recoloured, rescheduled and DELETED, so hiding a habit here would make it
-    // unreachable — you cannot delete what you cannot see. Filtering belongs on
-    // the day card and the stats views, which ask "what is due today?"; this one
-    // asks "what do I have?". Desktop's Protocol tab keeps its own active-only
-    // filter for exactly that reason: it is a daily view, not this.
-    //
-    // Today the filter is also inert — nothing in either app ever WRITES
-    // `end_date` — so this changes nothing on screen while removing a whole
-    // class of index bug.
-    final habits = ref.watch(goalsProvider);
+    // The full, unfiltered list — used for free-tier counting and as the
+    // backing store for reorder index mapping.
+    final allHabits = ref.watch(goalsProvider);
+
+    // Only habits whose active range covers today are shown. Ended habits
+    // (endDate in the past) are hidden — the user can manage them from desktop.
+    // The old filter was removed because it passed filtered indices straight to
+    // `GoalsNotifier.reorder`, which indexes the full list, silently moving the
+    // wrong habit. The fix is to KEEP the filter but remap indices below.
+    final now = DateTime.now();
+    final habits = allHabits.where((g) => g.isActiveOn(now)).toList();
+
+    // Positions of each visible habit within the full `allHabits` list, so
+    // reorder indices reported by the drag gesture (which address `habits`) can
+    // be mapped back to the positions `GoalsNotifier.reorder` expects.
+    final activePositions = <int>[
+      for (var i = 0; i < allHabits.length; i++)
+        if (allHabits[i].isActiveOn(now)) i,
+    ];
+
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
     final settings = ref.watch(settingsProvider);
     final isPro = settings.isPro;
-    // The free-tier gate counts habits you OWN, which is what `_onSave` has
-    // always counted (`ref.read(goalsProvider).length`); the two now agree.
-    final currentHabitsCount = habits.length;
+    // The free-tier gate counts ALL habits you own (active + ended) to prevent
+    // gaming the system by ending habits and re-creating them.
+    final currentHabitsCount = allHabits.length;
     // A habit's true class isn't offered here when it was authored on a device
     // where that class's flag is on but is off on this build (a mixed-version
     // fleet). Show it as a LOCKED read-only row rather than a mislabelled picker,
@@ -963,7 +962,15 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                 );
                 return;
               }
-              ref.read(goalsProvider.notifier).reorder(oldIndex, newIndex);
+              // Map filtered-list indices to positions in the full
+              // `allHabits` list that `GoalsNotifier.reorder` expects.
+              if (oldIndex < 0 || oldIndex >= activePositions.length ||
+                  newIndex < 0 || newIndex >= activePositions.length) {
+                return;
+              }
+              final fullOld = activePositions[oldIndex];
+              final fullNew = activePositions[newIndex];
+              ref.read(goalsProvider.notifier).reorder(fullOld, fullNew);
               // The SETTLE cue — iOS selection feedback, and only on a drop
               // that actually moved something. The refusal branch above returns
               // without buzzing: a haptic that fires when nothing happened

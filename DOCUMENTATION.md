@@ -2,6 +2,13 @@
 
 ## Recent Changes
 
+- [2026-08-21]: **Mobile: Hide ended habits from Manage Habits panel**
+  - *Details*: The Manage Habits bottom sheet now shows only habits whose active range covers today (`Goal.isActiveOn(DateTime.now())`), hiding habits with an `endDate` in the past. This matches the desktop Protocol panel's behavior. Drag-to-reorder indices are remapped from the filtered list to the full list via position mapping, preventing the index mismatch bug that originally caused the filter to be removed. The free-tier habit count still counts ALL habits (active + ended).
+  - *Tech Notes*:
+    - Filtered `habits` list using `allHabits.where((g) => g.isActiveOn(now))` in `habit_management_modal.dart`.
+    - Built `activePositions` mapping (filtered index → full list index) and used it in `onReorderItem` to remap `oldIndex`/`newIndex` before calling `GoalsNotifier.reorder`.
+    - Free-tier count references `allHabits.length` (unfiltered) to prevent gaming.
+
 - [2026-08-21]: **Desktop Goals: Moved Stats year selector into the top command bar**
   - *Details*: The Stats tab on the Goals page now uses the main top command bar for year selection (including "All Years") instead of a small inline year selector inside the Performance section. The ❮ ❯ arrows and trackpad swipe cycle through available years. Individual year selection remains Pro-gated.
   - *Tech Notes*:

@@ -2,6 +2,15 @@
 
 ## Recent Changes
 
+- [2026-08-25]: **Release: 1.3.1 (build 50), with release notes localized for the first time**
+  - *Details*: Version bump and App Store metadata for the release carrying the ten audit fixes. 1.3.0 never reached users — the live listing is **1.1.3** (released 2026-08-03, verified across us/it/gb/de) — so the notes cover 1.3.0's unshipped work as well as this release's.
+  - *Tech Notes*:
+    - `pubspec.yaml` `1.3.0+48` -> `1.3.1+50`. That is the ONLY file needing the version: both `Runner` and `DeviceActivityMonitorExtension` derive `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` from `$(FLUTTER_BUILD_NAME)`/`$(FLUTTER_BUILD_NUMBER)`. (`RunnerTests` hardcodes `1.3.0`/`46` — stale, never shipped, left alone.) Build 50 rather than 49 deliberately: the build number is the one value not verifiable from the repo, ASC rejects a `CFBundleVersion` it has already seen, and the cost of guessing high is nothing.
+    - Release notes were the same ENGLISH string in all 39 locales — an Italian user read English notes about their own app. Now localized in the five languages the app itself speaks (`lib/i18n`), covering 9 locale codes: en-US/GB/AU/CA, it, es-ES/MX, de-DE, ar-SA. The other 30 stay English deliberately — inventing 34 translations nobody here can check, on a listing App Review has rejected twice over metadata, is a worse risk than an English note.
+    - The notes lead with the delete change, because it is the one behaviour a returning user could otherwise find alarming: someone who removes a habit and later sees it in their statistics needs that sentence. The consent-ordering fix is folded into "syncing, privacy and overall stability" rather than itemized — the detail belongs in a Resolution Center reply if asked, not a public listing.
+    - **`update_notes` no longer carries its own translations.** That lane held a hardcoded 18-language table that had already drifted from `locales.json`, so whichever of `upload_metadata` and `update_notes` ran last silently won — the exact two-sources failure the Fastfile's own header documents for descriptions. It now reads `locales.json`, resolving exact locale -> same language -> en-US.
+    - It reads with `encoding: 'UTF-8'` explicitly. Running the lookup standalone before shipping it raised `Encoding::InvalidByteSequenceError` on the Arabic notes under a non-UTF-8 shell locale — a failure that would only ever have appeared at release time.
+
 - [2026-08-25]: **Mobile: the AI Coach setup button led nowhere, and 17 more places leaked exception text**
   - *Details*: Two findings the audit's own review passes turned up. Both were reported rather than fixed at the time; this closes them.
   - *Tech Notes*:

@@ -1,1 +1,5 @@
-We've added dates to the Goals header, improved the Overview page, squashed sync and timezone bugs, and made several other stability enhancements.
+عند إزالة عادة يبقى سجلّها الآن محفوظًا. تختفي من قوائمك، لكن أيامها السابقة وإحصاءاتها تبقى كما هي تمامًا.
+
+تحتفظ التذكيرات بالوقت الذي حدّدته عند تغيير التوقيت.
+
+كذلك في هذا التحديث: التواريخ في ترويسة الأهداف، وصفحة نظرة عامة أوضح، وإصلاحات في المزامنة والخصوصية والاستقرار العام.

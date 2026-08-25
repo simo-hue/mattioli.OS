@@ -1,1 +1,5 @@
-We've added dates to the Goals header, improved the Overview page, squashed sync and timezone bugs, and made several other stability enhancements.
+Al eliminar un hábito ahora se conserva su historial. Desaparece de tus listas, pero sus días pasados y sus estadísticas se quedan exactamente donde estaban.
+
+Los recordatorios mantienen la hora que fijaste cuando cambia la hora.
+
+Además: fechas en la cabecera de Objetivos, una página de Resumen más clara y correcciones de sincronización, privacidad y estabilidad general.

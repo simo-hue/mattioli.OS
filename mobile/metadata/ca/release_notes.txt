@@ -1,1 +1,5 @@
-We've added dates to the Goals header, improved the Overview page, squashed sync and timezone bugs, and made several other stability enhancements.
+Removing a habit now keeps its history. It disappears from your lists, but its past days and statistics stay exactly where they were.
+
+Reminders keep the time you set them when the clocks change.
+
+Also in this update: dates on the Goals header, a clearer Overview page, and fixes to syncing, privacy and overall stability.

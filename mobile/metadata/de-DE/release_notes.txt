@@ -1,1 +1,5 @@
-We've added dates to the Goals header, improved the Overview page, squashed sync and timezone bugs, and made several other stability enhancements.
+Wenn du eine Gewohnheit entfernst, bleibt ihr Verlauf jetzt erhalten. Sie verschwindet aus deinen Listen, aber ihre vergangenen Tage und Statistiken bleiben genau dort, wo sie waren.
+
+Erinnerungen behalten die eingestellte Uhrzeit, auch wenn die Uhr umgestellt wird.
+
+Außerdem: Datumsangaben in der Ziele-Kopfzeile, eine übersichtlichere Übersichtsseite und Korrekturen bei Synchronisierung, Datenschutz und Stabilität.

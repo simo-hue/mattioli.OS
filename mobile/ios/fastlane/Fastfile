@@ -1,3 +1,4 @@
+require 'json'
 require 'spaceship'
 
 default_platform(:ios)
@@ -59,30 +60,28 @@ platform :ios do
     all_locales = (required_locales + existing_locales).uniq
     UI.message("Lingue da aggiornare: #{all_locales.join(', ')}")
     
-    translations = {
-      "it" => "Miglioramenti alla sicurezza e correzione di bug.",
-      "en" => "We've added dates to the Goals header, improved the Overview page, squashed sync and timezone bugs, and made several other stability enhancements.",
-      "fr" => "Améliorations de la sécurité et corrections de bugs.",
-      "vi" => "Cải tiến bảo mật và sửa lỗi.",
-      "ko" => "보안 강화 및 버그 수정.",
-      "es" => "Mejoras de seguridad y corrección de errores.",
-      "id" => "Peningkatan keamanan dan perbaikan bug.",
-      "de" => "Sicherheitsverbesserungen und Fehlerbehebungen.",
-      "sk" => "Vylepšenia zabezpečenia a opravy chýb.",
-      "sv" => "Säkerhetsförbättringar och buggfixar.",
-      "da" => "Sikkerhedsforbedringer og fejlrettelser.",
-      "pt" => "Melhorias de segurança e correção de bugs.",
-      "he" => "שיפורי אבטחה ותיקוני באגים.",
-      "el" => "Βελτιώσεις ασφαλείας και διορθώσεις σφαλμάτων.",
-      "zh" => "安全增强和错误修复。",
-      "ja" => "セキュリティの向上とバグ修正。",
-      "ru" => "Улучшения безопасности и исправление ошибок.",
-      "ar" => "تحسينات الأمان وإصلاح الأخطاء."
-    }
+    # Read from locales.json -- the SAME source `build_metadata.py` uses to
+    # generate metadata/<locale>/release_notes.txt.
+    #
+    # This used to be a hardcoded table keyed by language, and it had already
+    # drifted from locales.json. That is the exact failure the header of this
+    # file describes for descriptions: two trees holding two generations of the
+    # copy, text moved between them by hand. Whichever of `upload_metadata` and
+    # `update_notes` ran last silently won. One source now, no hand copying.
+    locales_path = File.expand_path('../../tool/appstore/locales.json', __dir__)
+    # `encoding: 'UTF-8'` explicitly: `File.read` otherwise uses the default
+    # external encoding, and on a shell whose locale is not UTF-8 the Arabic
+    # notes raise Encoding::InvalidByteSequenceError. Found by running this
+    # lookup standalone before shipping it.
+    config = JSON.parse(File.read(locales_path, encoding: 'UTF-8'))['locales']
+    fallback = config.fetch('en-US').fetch('whatsNew')
     
     all_locales.each do |locale|
-      lang_code = locale.split('-').first
-      localized_whats_new = translations[lang_code] || translations["en"]
+      # Exact locale, else any configured locale of the same language (App Store
+      # Connect asks for en-CA; locales.json may only define en-US), else English.
+      entry = config[locale] ||
+              config.find { |code, _| code.split('-').first == locale.split('-').first }&.last
+      localized_whats_new = entry&.fetch('whatsNew', nil) || fallback
       
       if existing_locales.include?(locale)
         UI.message("Aggiorno lingua esistente: #{locale} con testo: #{localized_whats_new}...")

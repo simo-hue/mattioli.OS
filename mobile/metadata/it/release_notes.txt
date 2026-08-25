@@ -1,1 +1,5 @@
-We've added dates to the Goals header, improved the Overview page, squashed sync and timezone bugs, and made several other stability enhancements.
+Rimuovere un'abitudine ora ne conserva lo storico. Sparisce dai tuoi elenchi, ma i giorni passati e le statistiche restano esattamente dov'erano.
+
+I promemoria mantengono l'orario che hai impostato anche quando cambia l'ora.
+
+Inoltre: le date nell'intestazione degli Obiettivi, una pagina Panoramica più chiara e correzioni a sincronizzazione, privacy e stabilità generale.

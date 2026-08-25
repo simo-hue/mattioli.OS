@@ -1,5 +1,50 @@
 # PROSSIME AZIONI MANUALI (SIMO)
 
+## ▶ 1.3.1 (build 50) — release steps
+
+Version and metadata are done and committed. What is left needs your Apple
+account, so it cannot be run from here.
+
+1. **Archive and upload the build.** From `mobile/`:
+
+   ```bash
+   flutter build ipa --release
+   ```
+
+   Version comes from `pubspec.yaml` (`1.3.1+50`) — nothing else to edit.
+
+2. **Upload the metadata.** From `mobile/ios/`:
+
+   ```bash
+   fastlane upload_metadata
+   ```
+
+   Validates all 39 localisations first and aborts on failure, so a partial
+   upload cannot happen. Metadata only — no binary, no screenshots, never
+   auto-submits.
+
+3. **Release notes are already in `metadata/`** and go up with step 2. The
+   separate `fastlane update_notes` lane now reads the same `locales.json`, so
+   the two can no longer disagree — but you only need it if you are editing
+   notes on a version already created in App Store Connect.
+
+4. **Verify the storefronts afterwards**, as before:
+
+   ```bash
+   for cc in us es de fr mx gb it; do echo -n "$cc "; curl -s "https://itunes.apple.com/lookup?id=6770482363&country=$cc" | grep -c stdeula; done
+   ```
+
+   Expect `1` on every line.
+
+5. **Do NOT add demo account fields in App Store Connect.** `demo_user.txt` and
+   `demo_password.txt` stay deleted — see the note further down for why.
+
+Note the live listing is **1.1.3**, not 1.3.0: users are upgrading across two
+versions, which is why the notes cover 1.3.0's changes too.
+
+---
+
+
 Manual / on-device / Apple-account steps that can't be done from code. The
 in-code work behind each of these is implemented and committed.
 

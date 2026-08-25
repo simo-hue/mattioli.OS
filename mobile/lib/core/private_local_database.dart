@@ -240,7 +240,7 @@ class PrivateLocalDatabase implements PrivateDataStore {
   static Future<bool> databaseFileExists() async {
     try {
       final dir = await getApplicationSupportDirectory();
-      return File(p.join(dir.path, _dbName)).exists();
+      return await File(p.join(dir.path, _dbName)).exists();
     } catch (_) {
       return false;
     }
@@ -1841,7 +1841,7 @@ class PrivateLocalDatabase implements PrivateDataStore {
   Future<bool> hasStashedDatabase() async {
     try {
       final dir = await getApplicationSupportDirectory();
-      return File('${p.join(dir.path, _dbName)}$_bakSuffix').exists();
+      return await File('${p.join(dir.path, _dbName)}$_bakSuffix').exists();
     } catch (_) {
       return false;
     }

@@ -758,7 +758,7 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
   Future<bool> hasStashedDatabase() async {
     try {
       final dir = await getApplicationSupportDirectory();
-      return File('${p.join(dir.path, _dbFileName)}$_bakSuffix').exists();
+      return await File('${p.join(dir.path, _dbFileName)}$_bakSuffix').exists();
     } catch (_) {
       return false;
     }

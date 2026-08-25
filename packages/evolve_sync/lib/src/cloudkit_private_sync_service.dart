@@ -247,7 +247,7 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
       } else {
         logger.info('[CloudKit] Sync enable skipped (blocked by: ${res.blockedBy})');
       }
-      return _status(
+      return await _status(
         appliedChanges: res.applied,
         keyPending: res.keyPending,
         undecryptableCount: res.undecryptable,
@@ -266,7 +266,7 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
           // Stop syncing; leave the CloudKit data + key intact (re-enable resumes).
           await enabledStore.setEnabled(false);
           logger.info('[CloudKit] Sync disabled successfully');
-          return _status();
+          return await _status();
         } catch (e, stack) {
           logger.error('[CloudKit] Failed to disable sync', e, stack);
           rethrow;
@@ -294,11 +294,11 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
         final r = await (await _engine(store))
             .syncNow(await keys.readKey() ?? crypto.generateKey());
         logger.info('[CloudKit] Zone wipe completed');
-        return _status(appliedChanges: r.applied);
+        return await _status(appliedChanges: r.applied);
       }
-      if (!await enabledStore.isEnabled()) return status();
+      if (!await enabledStore.isEnabled()) return await status();
       final key = await keys.readKey();
-      if (key == null) return status(); // key not in iCloud Keychain yet
+      if (key == null) return await status(); // key not in iCloud Keychain yet
       
       await _ensureSubscribed();
 
@@ -323,7 +323,7 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
         'applied': r.applied,
         'skipped': r.skipped,
       });
-      return _status(appliedChanges: r.applied);
+      return await _status(appliedChanges: r.applied);
     } catch (e, stack) {
       logger.error('[CloudKit] Sync failed', e, stack);
       rethrow;
@@ -401,7 +401,7 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
           // (pending_zone_wipe) and a later syncNow completes it. Call the
           // un-locked _syncNow directly — we already hold the lock.
           await _syncNow();
-          return _status();
+          return await _status();
         } catch (e, stack) {
           logger.error('[CloudKit] Request full reset failed', e, stack);
           rethrow;

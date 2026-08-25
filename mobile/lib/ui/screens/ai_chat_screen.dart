@@ -18,6 +18,7 @@ import 'package:markdown/markdown.dart' as md;
 import '../../models/macro_goal.dart';
 import '../../models/chat_message.dart';
 import '../../providers/goal_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../providers/macro_goals_provider.dart';
 import '../../providers/user_provider.dart';
 import '../../i18n/translations.g.dart';
@@ -27,6 +28,7 @@ import '../kit/evolve_sheet.dart';
 import '../kit/evolve_switch.dart';
 import '../../core/haptics.dart';
 import 'app_settings_screen.dart';
+import 'subscription_screen.dart';
 import '../widgets/pro_features_modal.dart';
 import '../kit/evolve_route.dart';
 import '../../core/calendar_days.dart';
@@ -420,11 +422,10 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
     String key(DateTime d) =>
         '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-    final monday = shiftDays(DateTime(
-      now.year,
-      now.month,
-      now.day,
-    ), -(now.weekday - 1));
+    final monday = shiftDays(
+      DateTime(now.year, now.month, now.day),
+      -(now.weekday - 1),
+    );
 
     // Single pass: the weakest scheduled habit (lowest completion so far this
     // week, with at least one miss) and the longest current streak.
@@ -461,11 +462,10 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     // Full-week completion rate over all 7 days (mirrors the desktop snapshot
     // getter) so this-vs-last-week momentum is measured identically.
     double weekRate(DateTime anchor) {
-      final mon = shiftDays(DateTime(
-        anchor.year,
-        anchor.month,
-        anchor.day,
-      ), -(anchor.weekday - 1));
+      final mon = shiftDays(
+        DateTime(anchor.year, anchor.month, anchor.day),
+        -(anchor.weekday - 1),
+      );
       var d = 0;
       var tot = 0;
       for (var i = 0; i < 7; i++) {
@@ -481,8 +481,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
     final thisRate = weekRate(now);
     final thisPct = (thisRate * 100).round();
-    final lastPct = (weekRate(shiftDays(now, -7)) * 100)
-        .round();
+    final lastPct = (weekRate(shiftDays(now, -7)) * 100).round();
     final hasHistory = habits.isNotEmpty && (thisPct > 0 || lastPct > 0);
     final allGreen = habits.isNotEmpty && thisRate >= 0.999;
 
@@ -528,15 +527,28 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   }
 
   /// Setup state: no transport resolves yet, so this card replaces the composer.
-  /// Its only action opens Settings, so there is no button here that can fail
-  /// (Guideline 2.1).
   ///
-  /// Names BOTH ways to get a working coach, because there are two and only one
-  /// of them involves a key. In Private mode there is only one — it keeps no
-  /// account, so there is no subscription to unlock anything with, and offering
-  /// one would put monetization UI in the mode that promises none.
+  /// Its action opens a SCREEN — the paywall or Settings, by mode — never a
+  /// network call, so there is still no button here that can fail (Guideline
+  /// 2.1). It used to always open Settings, which in account mode is a screen
+  /// with no purchase route at all.
+  ///
+  /// Names the ONE way to get a working coach in this mode, and they differ.
+  /// Account mode: Evolve Pro, run on our key — bringing your own is not
+  /// offered there (`resolveCoachMode`), so the copy must not imply it can be.
+  /// Private mode: the user's own OpenRouter key, which is the only transport
+  /// that exists without an account — and offering a subscription there would
+  /// put monetization UI in the mode that promises none.
   Widget _buildApiKeySetupCard(AppColorsExtension colors) {
     final canUseStandard = ref.watch(canUseStandardCoachProvider);
+    // NOT `canUseStandard` alone for the paywall branch. That is `!isPrivate`,
+    // which answers "could this user ever reach Standard mode" — not "do they
+    // still need to buy it". `resolveCoachMode` returns null for
+    // `isPro && !hasSession` too, and its own comment names that state: a Pro
+    // user mid sign-in or token refresh. Branching on the mode alone offered a
+    // paying subscriber, whose session had merely lapsed, a button reading
+    // "Upgrade to Pro" that opened the paywall for the thing they already own.
+    final needsSubscription = canUseStandard && !ref.watch(settingsProvider).isPro;
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Container(
@@ -594,9 +606,30 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
               child: FilledButton(
                 onPressed: () {
                   ref.hapticLight();
-                  Navigator.push(context, AppSettingsScreen.route());
+                  // WHERE the missing thing actually is, which differs by mode.
+                  //
+                  // This always opened Settings. In account mode that is a dead
+                  // end: `app_settings_screen.dart` contains no navigation at
+                  // all, and its only subscription item opens Apple's external
+                  // manage-subscriptions page — so a user told the coach comes
+                  // with Evolve Pro was sent to a screen that cannot sell it.
+                  // The paywall is reachable from Profile, the habit sheet and
+                  // the Pro modal, but not from here.
+                  //
+                  // Private mode keeps Settings: the BYOK key row lives there,
+                  // and there is no subscription in that mode to offer.
+                  Navigator.push(
+                    context,
+                    needsSubscription
+                        ? SubscriptionScreen.route()
+                        : AppSettingsScreen.route(),
+                  );
                 },
-                child: Text(context.t.ai.apiKey.setupAction),
+                child: Text(
+                  needsSubscription
+                      ? context.t.profile.upgradeToPro
+                      : context.t.ai.apiKey.setupAction,
+                ),
               ),
             ),
           ],

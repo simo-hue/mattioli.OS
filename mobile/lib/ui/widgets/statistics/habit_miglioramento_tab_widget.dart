@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../kit/evolve_async_error.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme.dart';
@@ -8,7 +9,7 @@ import '../../../i18n/translations.g.dart';
 class AlertData {
   final Map<String, dynamic> worstNegative;
   final List<Map<String, dynamic>> brokenStreaks;
-  
+
   AlertData({required this.worstNegative, required this.brokenStreaks});
 }
 
@@ -20,12 +21,14 @@ class HabitMiglioramentoTabWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final alertsAsync = ref.watch(habitAlertsProvider(goalId));
-    
+
     return alertsAsync.when(
       data: (data) {
         final worstNegative = {
           'days': (data['worst_negative_days'] as num?)?.toInt() ?? 0,
-          'startDate': data['worst_negative_start'] != null ? DateTime.parse(data['worst_negative_start'] as String) : null,
+          'startDate': data['worst_negative_start'] != null
+              ? DateTime.parse(data['worst_negative_start'] as String)
+              : null,
         };
 
         final brokenStreaks = <Map<String, dynamic>>[];
@@ -34,7 +37,9 @@ class HabitMiglioramentoTabWidget extends ConsumerWidget {
           for (final item in brokenStreaksRaw) {
             brokenStreaks.add({
               'days': (item['days'] as num?)?.toInt() ?? 0,
-              'date': item['date'] != null ? DateTime.parse(item['date'] as String) : DateTime.now(),
+              'date': item['date'] != null
+                  ? DateTime.parse(item['date'] as String)
+                  : DateTime.now(),
             });
           }
         }
@@ -56,7 +61,13 @@ class HabitMiglioramentoTabWidget extends ConsumerWidget {
       ),
       error: (err, stack) => SizedBox(
         height: 200,
-        child: Center(child: Text('${context.t.common.status.error}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+        child: Center(
+          child: EvolveAsyncError(
+            error: err,
+            stackTrace: stack,
+            context: '[Stats] habit improvement',
+          ),
+        ),
       ),
     );
   }
@@ -70,10 +81,11 @@ class _SerieNegativaCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final days = data['days'] as int;
     final startDate = data['startDate'] as DateTime?;
-    
+
     String dateStr = '';
     if (startDate != null) {
-      dateStr = '${context.t.statistics.startedOn} ${startDate.day} ${startDate.month} ${startDate.year}';
+      dateStr =
+          '${context.t.statistics.startedOn} ${startDate.day} ${startDate.month} ${startDate.year}';
     }
 
     return Container(
@@ -88,7 +100,11 @@ class _SerieNegativaCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(LucideIcons.trendingDown, size: 20, color: Color(0xFFEF4444)),
+              const Icon(
+                LucideIcons.trendingDown,
+                size: 20,
+                color: Color(0xFFEF4444),
+              ),
               const SizedBox(width: 8),
               Text(
                 context.t.statistics.worstNegativeStreak,
@@ -186,10 +202,16 @@ class _StreakInterrottiCard extends StatelessWidget {
               ),
             )
           else
-            ...streaks.map((s) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12.0),
-                  child: _buildStreakItem(context, s['days'] as int, s['date'] as DateTime),
-                )),
+            ...streaks.map(
+              (s) => Padding(
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: _buildStreakItem(
+                  context,
+                  s['days'] as int,
+                  s['date'] as DateTime,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -197,12 +219,15 @@ class _StreakInterrottiCard extends StatelessWidget {
 
   Widget _buildStreakItem(BuildContext context, int days, DateTime date) {
     final dateStr = '${date.day} ${date.month} ${date.year}';
-    
+
     return Container(
       decoration: BoxDecoration(
         color: context.appColors.cardElevated,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.appColors.border.withValues(alpha: 0.5), width: 1),
+        border: Border.all(
+          color: context.appColors.border.withValues(alpha: 0.5),
+          width: 1,
+        ),
       ),
       padding: const EdgeInsets.all(12),
       child: Row(
@@ -231,7 +256,10 @@ class _StreakInterrottiCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  context.t.statistics.streakOfCountDaysBroken.replaceFirst('count', days.toString()),
+                  context.t.statistics.streakOfCountDaysBroken.replaceFirst(
+                    'count',
+                    days.toString(),
+                  ),
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 15,

@@ -950,6 +950,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 Expanded(
                   child: Container(
                     key: _calendarBoxKey,
+                    // `habits.isEmpty`, NOT "nothing active today". An
+                    // ARCHIVED habit still draws on the past days it was live,
+                    // and the month view pages back through them — so gating on
+                    // activity would replace two years of preserved history
+                    // with "your canvas is empty", which is both wrong and the
+                    // exact opposite of why archiving exists.
                     child: habits.isEmpty && currentView != CalendarView.vita
                         ? _buildGlobalEmptyState()
                         : AnimatedSwitcher(

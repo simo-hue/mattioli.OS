@@ -75,14 +75,31 @@ void main() async {
   AppLogger.setExternalReportingDisabled(startsInPrivateMode);
 
   // ── Supabase init ─────────────────────────────────────────────────────────
-  if (!startsInPrivateMode) {
+  //
+  // Gated on the consent question having been ANSWERED, through the same shape
+  // as the Sentry gate below. This used to be `if (!startsInPrivateMode)`, which
+  // is the whole condition on a FRESH install but not on a REINSTALL: Keychain
+  // items survive app deletion and `NSUserDefaults` does not, so the session
+  // outlived `has_completed_consent` and the SDK restored it — refreshing the
+  // token over the network — while the router was still on its way to the
+  // consent screen.
+  //
+  // Deferring is cheap because the lazy path already existed:
+  // `ensureSupabaseInitialized` guards every auth entry point, and the consent
+  // screen calls `adoptSessionAfterConsent` the moment the user answers.
+  if (shouldInitialiseSupabaseAtStartup(
+    hasCompletedConsent: prefs.getBool(kHasCompletedConsentPrefKey) ?? false,
+    isPrivateMode: startsInPrivateMode,
+  )) {
     await Supabase.initialize(
       url: SupabaseConfig.url,
       anonKey: SupabaseConfig.anonKey,
       authOptions: FlutterAuthClientOptions(localStorage: SecureLocalStorage()),
     );
     // Cold-start foreground: flush any habit-log actions queued by notification
-    // taps while the app was terminated/offline (NOTIF-1). Non-blocking.
+    // taps while the app was terminated/offline (NOTIF-1). Non-blocking. Inside
+    // the gate deliberately — replaying WRITES to the server, which is the last
+    // thing that may happen before consent.
     unawaited(NotificationService().replayPendingHabitLogs());
   }
 
@@ -168,7 +185,7 @@ void main() async {
   // answers, ConsentScreen starts the SDK itself, and _EvolveAppState keeps it
   // aligned for the rest of the session.
   final shouldStartSentry = SentryService.shouldRun(
-    hasCompletedConsent: prefs.getBool('has_completed_consent') ?? false,
+    hasCompletedConsent: prefs.getBool(kHasCompletedConsentPrefKey) ?? false,
     hasSentryConsent: prefs.getBool('has_sentry_consent') ?? false,
     isPrivateMode: startsInPrivateMode,
   );

@@ -543,9 +543,9 @@
     "systemPermissionsHeader": "Systemberechtigungen",
     "sentryHelpSubtitle": "Hilf uns, die App zu verbessern (Sentry)",
     "errors": {
-      "deletePrefix": "Fehler beim Löschen: ",
-      "exportPrefix": "Exportfehler: ",
-      "resetPrefix": "Fehler beim Zurücksetzen: "
+      "exportFailed": "Deine Daten konnten nicht exportiert werden. Versuche es erneut.",
+      "resetFailed": "Deine Daten konnten nicht zurückgesetzt werden. Versuche es erneut.",
+      "deleteFailed": "Dein Konto konnte nicht gelöscht werden. Versuche es erneut."
     },
     "privateDataDeletedSuccess": "Private Daten erfolgreich gelöscht!",
     "deletePrivateData": "Private Daten löschen",
@@ -679,7 +679,7 @@
       "unlimitedMacroGoals": "Erstelle alle deine Makroziele ohne Limit.",
       "deepCharts": "Detaillierte Diagramme und Trendanalysen.",
       "advancedStats": "Erweiterte Statistiken",
-      "smartSuggestions": "Wir betreiben ihn für dich: kein API-Schlüssel nötig. Dein eigenes OpenRouter-Konto geht auch — kostenlos.",
+      "smartSuggestions": "Ein Coach, mit dem du über deine Gewohnheiten sprechen kannst — enthalten, und wir betreiben ihn.",
       "unlimitedGoals": "Unbegrenzte Ziele"
     },
     "status": {
@@ -730,7 +730,7 @@
     },
     "personalizedAiCoach": "AI Coach, ohne Einrichtung",
     "unlimitedHabits": "Unbegrenzte Gewohnheiten",
-    "advancedTrendAnalysisAndSmartAi": "Wir betreiben ihn mit unserem Schlüssel: kein API-Schlüssel zu besorgen, kein zweites Konto. Lieber dein eigenes OpenRouter-Konto? Das ist ebenfalls kostenlos.",
+    "advancedTrendAnalysisAndSmartAi": "Ein Coach, mit dem du über deine Gewohnheiten sprechen kannst. Wir betreiben ihn mit unserem Schlüssel: kein API-Schlüssel, kein zweites Konto.",
     "createAndTrackAllTheHabits": "Erstellen und verfolgen Sie alle gewünschten Gewohnheiten ohne Einschränkungen.",
     "maybeLater": "Vielleicht später",
     "keyInsightsToBoostYourProductivity": "Wichtige Erkenntnisse zur Steigerung Ihrer Produktivität.",
@@ -826,9 +826,9 @@
       "statusMissing": "Nicht gesetzt",
       "saveFailed": "Der Schlüssel konnte nicht im Schlüsselbund gespeichert werden. Versuch es noch einmal.",
       "setupTitle": "Richte deinen AI Coach ein",
-      "setupBody": "Zwei Wege: Evolve Pro enthält den Coach ganz ohne Einrichtung, oder du verbindest kostenlos dein eigenes OpenRouter-Konto. Beides findest du in den Einstellungen.",
+      "setupBody": "Der AI Coach ist in Evolve Pro enthalten — wir betreiben ihn für dich, kein API-Schlüssel, kein zweites Konto.",
       "setupAction": "Einstellungen öffnen",
-      "descriptionProActive": "Evolve Pro betreibt den Coach bereits für dich — ganz ohne Schlüssel. Verbinde dein OpenRouter-Konto nur, wenn du lieber deines nutzen möchtest.",
+      "descriptionProActive": "Evolve Pro betreibt den Coach bereits für dich — kein Schlüssel nötig.",
       "setupBodyPrivate": "Der Private Modus führt kein Konto, daher läuft der Coach über dein eigenes OpenRouter-Konto. Füge in den Einstellungen einen Schlüssel hinzu, um zu chatten.",
       "accountModeNote": "Mit einem Konto läuft der AI Coach über Evolve Pro. Um deinen eigenen OpenRouter-Schlüssel zu nutzen, wechsle in den Privaten Modus."
     },
@@ -845,7 +845,7 @@
     "coachModes": {
       "standardName": "Evolve Pro",
       "standardDesc": "In deinem Abo enthalten. Keine Einrichtung, kein API-Schlüssel.",
-      "standardNeedsPro": "Der AI Coach ist in Evolve Pro enthalten. Du kannst auch kostenlos dein eigenes OpenRouter-Konto verbinden.",
+      "standardNeedsPro": "Der AI Coach ist in Evolve Pro enthalten.",
       "standardRateLimited": "Du hast das Nutzungslimit des AI Coach vorerst erreicht. Bitte versuche es etwas später erneut.",
       "byokName": "Verbinde dein OpenRouter-Konto",
       "byokDesc": "Kostenlos. Nutze dein eigenes OpenRouter-Konto — der Verbrauch bleibt deiner.",
@@ -1176,6 +1176,7 @@
     "mood": "Stimmung",
     "birth": "Geburt",
     "productiveLifeTitle": "Mein produktives Leben",
+    "lifeViewNeedsDob": "Trage dein Geburtsdatum unter Persönliche Informationen ein, um dein Leben in Monaten zu sehen.",
     "aiChat": "AI-Chat",
     "manager": "Verwaltung",
     "reminder": "Erinnerung",

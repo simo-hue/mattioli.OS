@@ -543,9 +543,9 @@
     "systemPermissionsHeader": "Permisos del sistema",
     "sentryHelpSubtitle": "Ayúdanos a mejorar la app (Sentry)",
     "errors": {
-      "deletePrefix": "Error de eliminación: ",
-      "exportPrefix": "Error de exportación: ",
-      "resetPrefix": "Error de restablecimiento: "
+      "exportFailed": "No hemos podido exportar tus datos. Inténtalo de nuevo.",
+      "resetFailed": "No hemos podido restablecer tus datos. Inténtalo de nuevo.",
+      "deleteFailed": "No hemos podido eliminar tu cuenta. Inténtalo de nuevo."
     },
     "privateDataDeletedSuccess": "¡Datos privados eliminados correctamente!",
     "deletePrivateData": "Eliminar datos privados",
@@ -679,7 +679,7 @@
       "unlimitedMacroGoals": "Crea todos tus macroobjetivos sin límites.",
       "deepCharts": "Gráficos detallados y análisis de tendencias.",
       "advancedStats": "Estadísticas avanzadas",
-      "smartSuggestions": "Lo ejecutamos por ti: sin clave API. Tu propia cuenta de OpenRouter también sirve, gratis.",
+      "smartSuggestions": "Un coach con el que hablar de tus hábitos: incluido, y lo ejecutamos nosotros.",
       "unlimitedGoals": "Objetivos ilimitados"
     },
     "status": {
@@ -730,7 +730,7 @@
     },
     "personalizedAiCoach": "AI Coach, sin configuración",
     "unlimitedHabits": "Hábitos ilimitados",
-    "advancedTrendAnalysisAndSmartAi": "Lo ejecutamos nosotros con nuestra clave: sin clave API que buscar, sin segunda cuenta. ¿Prefieres tu propia cuenta de OpenRouter? También es gratis.",
+    "advancedTrendAnalysisAndSmartAi": "Un coach con el que hablar de tus hábitos. Lo ejecutamos nosotros con nuestra clave: sin clave API ni segunda cuenta.",
     "createAndTrackAllTheHabits": "Crea y rastrea todos los hábitos que quieras sin límites.",
     "maybeLater": "Quizá más tarde",
     "keyInsightsToBoostYourProductivity": "Información clave para aumentar su productividad.",
@@ -826,9 +826,9 @@
       "statusMissing": "Sin configurar",
       "saveFailed": "No se ha podido guardar la clave en el llavero. Inténtalo de nuevo.",
       "setupTitle": "Configura tu AI Coach",
-      "setupBody": "Dos formas de usarlo: Evolve Pro incluye el coach sin ninguna configuración, o conectas gratis tu propia cuenta de OpenRouter. Ambas están en Ajustes.",
+      "setupBody": "El AI Coach viene con Evolve Pro: lo ejecutamos nosotros, sin clave API ni segunda cuenta.",
       "setupAction": "Abrir ajustes",
-      "descriptionProActive": "Evolve Pro ya ejecuta el coach por ti, sin necesidad de claves. Conecta tu cuenta de OpenRouter solo si prefieres usar la tuya.",
+      "descriptionProActive": "Evolve Pro ya ejecuta el coach por ti, sin necesidad de ninguna clave.",
       "setupBodyPrivate": "El modo Privado no guarda ninguna cuenta, así que el coach se ejecuta en tu cuenta de OpenRouter. Añade una clave en Ajustes para empezar a chatear.",
       "accountModeNote": "Con una cuenta, el AI Coach funciona con Evolve Pro. Para usar tu propia clave de OpenRouter, cambia al modo Privado."
     },
@@ -845,7 +845,7 @@
     "coachModes": {
       "standardName": "Evolve Pro",
       "standardDesc": "Incluido en tu suscripción. Sin configuración ni clave API.",
-      "standardNeedsPro": "El AI Coach está incluido en Evolve Pro. También puedes conectar tu propia cuenta de OpenRouter gratis.",
+      "standardNeedsPro": "El AI Coach está incluido en Evolve Pro.",
       "standardRateLimited": "Has alcanzado el límite de uso del AI Coach por ahora. Inténtalo de nuevo más tarde.",
       "byokName": "Conecta tu cuenta de OpenRouter",
       "byokDesc": "Gratis. Usa tu propia cuenta de OpenRouter: el consumo es tuyo.",
@@ -1176,6 +1176,7 @@
     "mood": "Estado de ánimo",
     "birth": "Nacimiento",
     "productiveLifeTitle": "Mi vida productiva",
+    "lifeViewNeedsDob": "Añade tu fecha de nacimiento en Información personal para ver tu vida en meses.",
     "aiChat": "Chat AI",
     "manager": "Gestión",
     "reminder": "Recordatorio",

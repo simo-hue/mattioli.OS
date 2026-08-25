@@ -846,7 +846,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
       if (context.mounted) {
         showEvolveToast(
           context,
-          message: '${context.t.privacy.errors.exportPrefix}$e',
+          message: context.t.privacy.errors.exportFailed,
         );
       }
     }
@@ -1412,7 +1412,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
       if (context.mounted) {
         showEvolveToast(
           context,
-          message: '${context.t.privacy.errors.resetPrefix}$e',
+          message: context.t.privacy.errors.resetFailed,
         );
       }
     }
@@ -1518,7 +1518,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
       if (context.mounted) {
         showEvolveToast(
           context,
-          message: '${context.t.privacy.errors.deletePrefix}$e',
+          message: context.t.privacy.errors.deleteFailed,
         );
       }
     }

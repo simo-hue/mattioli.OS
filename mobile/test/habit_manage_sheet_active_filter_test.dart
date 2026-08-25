@@ -1,16 +1,24 @@
-// The Manage-habits sheet lists EVERY habit, unfiltered.
+// The Manage-habits sheet shows the habits whose active range covers today, and
+// counts exactly those against the free tier.
 //
-// It used to filter by `isActiveOn(now)` and then hand those FILTERED indices to
-// `GoalsNotifier.reorder`, which indexes the UNFILTERED list. So the moment any
-// habit was inactive — a future start date, or a past end date — a drag moved a
-// DIFFERENT habit than the one under the finger. Habit order is now persisted
-// per-row and survives sync, which made that mistake durable rather than
-// transient.
+// Two properties are pinned here because they pull against each other. The sheet
+// once filtered by `isActiveOn(now)` and then handed those FILTERED indices to
+// `GoalsNotifier.reorder`, which indexes the UNFILTERED list — so the moment any
+// habit was inactive, a drag moved a DIFFERENT habit than the one under the
+// finger, and habit order is persisted per-row, which made the mistake durable
+// rather than transient. The filter was deleted to kill that bug; it is back
+// now, with the indices remapped through `activePositions` instead. So: the
+// ended habit must be HIDDEN, *and* a drag must still move the habit under the
+// finger.
 //
-// Removing the filter, rather than remapping the indices, is the deliberate
-// choice: this is the surface that renames, recolours, reschedules and DELETES a
-// habit, so hiding one here makes it unreachable. "What is due today?" belongs
-// to the day card; this screen answers "what do I have?".
+// The free-tier gate counts the same population the list shows, so archiving a
+// habit FREES a slot. Both clients can end a habit — the web app's soft delete
+// and, since `deleteHabit` started archiving rather than destroying history,
+// this one too. That is a deliberate trade: counting the hidden rows would
+// strand a free user at "5/5" above a list they had just emptied, with no iOS
+// screen listing archived habits and so nothing they could tap to resolve it.
+// Note the gate is live in ACCOUNT mode only: Private mode forces `isPro: true`,
+// which is why these tests override the settings notifier.
 import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -22,6 +30,7 @@ import 'package:mattioli_os/core/theme.dart';
 import 'package:mattioli_os/i18n/translations.g.dart';
 import 'package:mattioli_os/models/goal.dart';
 import 'package:mattioli_os/providers/goal_provider.dart';
+import 'package:mattioli_os/providers/settings_provider.dart';
 import 'package:mattioli_os/providers/shared_prefs_provider.dart';
 import 'package:mattioli_os/ui/widgets/habit_management_modal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -53,10 +62,29 @@ Goal _goal(String id, double key, {bool ended = false}) => Goal(
       orderKey: key,
     );
 
+/// Private mode forces `isPro: true`, which would switch the free-tier gate
+/// off entirely. The gate is an ACCOUNT-mode rule, so pin the flag down.
+class _FreeTier extends AppSettingsNotifier {
+  @override
+  AppSettings build() => super.build().copyWith(isPro: false);
+
+  // `build()` alone is not enough: it kicks off `_loadPrivateSettings()`, which
+  // lands asynchronously and re-asserts `isPro: true` for Private mode. Pin the
+  // flag on the setter so no later write can put it back.
+  @override
+  set state(AppSettings value) => super.state = value.copyWith(isPro: false);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  Future<ProviderContainer> pumpSheet(WidgetTester tester, _Store store) async {
+  // `Override` is not part of Riverpod 3's public surface, so the free-tier
+  // override is built in here rather than passed in as a typed list.
+  Future<ProviderContainer> pumpSheet(
+    WidgetTester tester,
+    _Store store, {
+    bool freeTier = false,
+  }) async {
     await tester.binding.setSurfaceSize(const Size(900, 2600));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     SharedPreferences.setMockInitialValues({'active_data_mode': 'private'});
@@ -66,6 +94,7 @@ void main() {
       privateLocalDatabaseProvider.overrideWith((ref) => store),
       initialGoalsProvider.overrideWithValue('[]'),
       initialLogsProvider.overrideWithValue('{}'),
+      if (freeTier) settingsProvider.overrideWith(_FreeTier.new),
     ]);
     addTearDown(container.dispose);
     await container.read(goalsProvider.notifier).ensureLoaded();
@@ -92,9 +121,7 @@ void main() {
     return container;
   }
 
-  testWidgets('an ENDED habit is still listed, so it can be managed',
-      (tester) async {
-    // You cannot rename, reschedule or DELETE a habit you cannot see.
+  testWidgets('an ENDED habit is hidden', (tester) async {
     final keys = renumberedOrderKeys(3);
     final store = _Store([
       _goal('a', keys[0]),
@@ -103,8 +130,48 @@ void main() {
     ]);
     await pumpSheet(tester, store);
 
-    expect(find.text('Habit b'), findsOneWidget,
-        reason: 'an ended habit must remain reachable on the MANAGE surface');
+    expect(find.text('Habit b'), findsNothing,
+        reason: 'an ended habit is not part of "what am I doing now"');
+    expect(find.text('Habit a'), findsOneWidget);
+    expect(find.text('Habit c'), findsOneWidget);
+  });
+
+  testWidgets('an ended habit does not consume a free slot', (tester) async {
+    // Four active + two ended. The free tier is NOT full, so no banner. Counting
+    // every row would put this at 6/5 and lock a user out of a slot they hold.
+    final keys = renumberedOrderKeys(6);
+    final store = _Store([
+      _goal('a', keys[0]),
+      _goal('b', keys[1]),
+      _goal('c', keys[2]),
+      _goal('d', keys[3]),
+      _goal('e', keys[4], ended: true),
+      _goal('f', keys[5], ended: true),
+    ]);
+    await pumpSheet(tester, store, freeTier: true);
+
+    expect(find.textContaining('free habit slots'), findsNothing,
+        reason: 'four active habits is under the limit of five');
+  });
+
+  testWidgets('the banner counts the habits the list shows', (tester) async {
+    // Five active + two ended: the tier IS full, and the banner must say 5/5.
+    // Counting every row said 7/5 — a number the user cannot reconcile with the
+    // five rows in front of them.
+    final keys = renumberedOrderKeys(7);
+    final store = _Store([
+      _goal('a', keys[0]),
+      _goal('b', keys[1]),
+      _goal('c', keys[2]),
+      _goal('d', keys[3]),
+      _goal('e', keys[4]),
+      _goal('f', keys[5], ended: true),
+      _goal('g', keys[6], ended: true),
+    ]);
+    await pumpSheet(tester, store, freeTier: true);
+
+    expect(find.textContaining('(5/5)'), findsOneWidget,
+        reason: 'the gate and the list must report the same population');
   });
 
   testWidgets(

@@ -409,7 +409,11 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
     if (!isEditing) {
       final settings = ref.read(settingsProvider);
       final isPro = settings.isPro;
-      final currentHabitsCount = ref.read(goalsProvider).length;
+      // The SAME population the banner counts in `build` — active habits only.
+      // If these two ever disagree the button offers a slot the save refuses.
+      final now = DateTime.now();
+      final currentHabitsCount =
+          ref.read(goalsProvider).where((g) => g.isActiveOn(now)).length;
 
       if (!isPro && currentHabitsCount >= 5) {
         FocusScope.of(context).unfocus();
@@ -777,11 +781,16 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
     // backing store for reorder index mapping.
     final allHabits = ref.watch(goalsProvider);
 
-    // Only habits whose active range covers today are shown. Ended habits
-    // (endDate in the past) are hidden — the user can manage them from desktop.
-    // The old filter was removed because it passed filtered indices straight to
-    // `GoalsNotifier.reorder`, which indexes the full list, silently moving the
-    // wrong habit. The fix is to KEEP the filter but remap indices below.
+    // Only habits whose active range covers today are shown. An ended habit is
+    // one the user REMOVED — `deleteHabit` archives rather than destroys a habit
+    // with history — so hiding it here is the point, not a loss: its history
+    // stays browsable in the statistics habit picker and still draws on the past
+    // days it was live.
+    //
+    // The filter was once removed entirely, because it passed filtered indices
+    // straight to `GoalsNotifier.reorder`, which indexes the full list and so
+    // silently moved the wrong habit. It is back, with the indices remapped
+    // through `activePositions` below.
     final now = DateTime.now();
     final habits = allHabits.where((g) => g.isActiveOn(now)).toList();
 
@@ -796,9 +805,20 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
     final settings = ref.watch(settingsProvider);
     final isPro = settings.isPro;
-    // The free-tier gate counts ALL habits you own (active + ended) to prevent
-    // gaming the system by ending habits and re-creating them.
-    final currentHabitsCount = allHabits.length;
+    // The free-tier gate counts the habits you can SEE here.
+    //
+    // It used to count every row, ended ones included, on an anti-gaming
+    // argument that is deliberately not taken: archiving a habit DOES free a
+    // slot, on both clients. `deleteHabit` now archives rather than destroys a
+    // habit that has history, so the removal is a real user action with a real
+    // cost — you give up tracking something to gain the slot — not an exploit.
+    //
+    // The alternative was worse in the direction that matters. Counting rows
+    // this filter hides would show "5/5 used" above a list of two, after the
+    // user had just removed three habits and watched them disappear: a paywall
+    // with no visible cause and, because no iOS screen lists archived habits,
+    // nothing they could tap to resolve it.
+    final currentHabitsCount = habits.length;
     // A habit's true class isn't offered here when it was authored on a device
     // where that class's flag is on but is off on this build (a mixed-version
     // fleet). Show it as a LOCKED read-only row rather than a mislabelled picker,

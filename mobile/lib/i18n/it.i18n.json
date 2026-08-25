@@ -543,9 +543,9 @@
     "systemPermissionsHeader": "PERMESSI DI SISTEMA",
     "sentryHelpSubtitle": "Aiutaci a migliorare l'app (Sentry)",
     "errors": {
-      "deletePrefix": "Errore durante l'eliminazione: ",
-      "exportPrefix": "Errore durante l'esportazione: ",
-      "resetPrefix": "Errore durante il reset: "
+      "exportFailed": "Non siamo riusciti a esportare i tuoi dati. Riprova.",
+      "resetFailed": "Non siamo riusciti a reimpostare i tuoi dati. Riprova.",
+      "deleteFailed": "Non siamo riusciti a eliminare il tuo account. Riprova."
     },
     "privateDataDeletedSuccess": "Dati privati eliminati con successo!",
     "deletePrivateData": "Elimina Dati Privati",
@@ -679,7 +679,7 @@
       "unlimitedMacroGoals": "Crea tutti i tuoi macro obiettivi senza limiti.",
       "deepCharts": "Grafici profondi e analisi dei trend.",
       "advancedStats": "Statistiche Avanzate",
-      "smartSuggestions": "Lo eseguiamo noi: nessuna chiave API necessaria. Va bene anche il tuo account OpenRouter, gratis.",
+      "smartSuggestions": "Un coach con cui parlare delle tue abitudini: incluso, e lo facciamo girare noi.",
       "unlimitedGoals": "Obiettivi Illimitati"
     },
     "status": {
@@ -730,7 +730,7 @@
     },
     "personalizedAiCoach": "AI Coach, senza configurazione",
     "unlimitedHabits": "Abitudini Illimitate",
-    "advancedTrendAnalysisAndSmartAi": "Lo eseguiamo noi con la nostra chiave: nessuna chiave API da recuperare, nessun secondo account. Preferisci il tuo account OpenRouter? È gratis anche così.",
+    "advancedTrendAnalysisAndSmartAi": "Un coach con cui parlare delle tue abitudini. Lo facciamo girare noi con la nostra chiave: nessuna chiave API, nessun secondo account.",
     "createAndTrackAllTheHabits": "Crea e traccia tutti gli habits che desideri senza alcun limite.",
     "maybeLater": "Forse più tardi",
     "keyInsightsToBoostYourProductivity": "Informazioni chiave per aumentare la tua produttività.",
@@ -826,9 +826,9 @@
       "statusMissing": "Non impostata",
       "saveFailed": "Impossibile salvare la chiave nel portachiavi. Riprova.",
       "setupTitle": "Configura il tuo AI Coach",
-      "setupBody": "Due modi per usarlo: Evolve Pro include il coach senza alcuna configurazione, oppure colleghi gratis il tuo account OpenRouter. Trovi entrambi nelle Impostazioni.",
+      "setupBody": "L'AI Coach è incluso in Evolve Pro — lo facciamo girare noi, senza chiave API e senza un secondo account.",
       "setupAction": "Apri Impostazioni",
-      "descriptionProActive": "Evolve Pro fa già girare il coach per te, senza bisogno di chiavi. Collega il tuo account OpenRouter solo se preferisci usare il tuo.",
+      "descriptionProActive": "Evolve Pro fa già girare il coach per te, senza bisogno di alcuna chiave.",
       "setupBodyPrivate": "La modalità Privata non conserva un account, quindi il coach gira sul tuo account OpenRouter. Aggiungi una chiave nelle Impostazioni per iniziare a chattare.",
       "accountModeNote": "Con un account, l'AI Coach funziona con Evolve Pro. Per usare la tua chiave OpenRouter, passa alla modalità Privata."
     },
@@ -845,7 +845,7 @@
     "coachModes": {
       "standardName": "Evolve Pro",
       "standardDesc": "Incluso nel tuo abbonamento. Nessuna configurazione, nessuna chiave API.",
-      "standardNeedsPro": "L'AI Coach è incluso in Evolve Pro. Puoi anche collegare gratuitamente il tuo account OpenRouter.",
+      "standardNeedsPro": "L'AI Coach è incluso in Evolve Pro.",
       "standardRateLimited": "Hai raggiunto il limite di utilizzo dell'AI Coach per ora. Riprova tra un po'.",
       "byokName": "Collega il tuo account OpenRouter",
       "byokDesc": "Gratis. Usa il tuo account OpenRouter — i consumi restano tuoi.",
@@ -1176,6 +1176,7 @@
     "mood": "Stato d'animo",
     "birth": "nascita",
     "productiveLifeTitle": "La Mia Vita Produttiva",
+    "lifeViewNeedsDob": "Aggiungi la tua data di nascita in Informazioni Personali per vedere la tua vita in mesi.",
     "aiChat": "AI Chat",
     "manager": "Gestione",
     "reminder": "Promemoria",

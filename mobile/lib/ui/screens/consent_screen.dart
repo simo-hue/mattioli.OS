@@ -83,14 +83,43 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
     setState(() => _isLoading = true);
     ref.hapticMedium();
 
-    // Every `ref` read has to happen before the first await. Persisting the
-    // consent flips consentProvider, which rebuilds the router and unmounts this
-    // screen; a `ref` read after that throws a StateError in release builds too.
+    // Every `ref` read has to happen before `setConsent`. Persisting the consent
+    // flips consentProvider, which rebuilds the router and unmounts this screen;
+    // a `ref` read after that throws a StateError in release builds too. The one
+    // read below that follows an await is the `isLoggedIn` at the end of the
+    // adoption block — deliberately, and guarded by `mounted`; the redirect
+    // keeps this screen on '/consent' until the flag is written, so nothing has
+    // unmounted at that point.
     final consentNotifier = ref.read(consentProvider.notifier);
     final authNotifier = ref.read(authProvider.notifier);
-    final isLoggedIn = ref.read(authProvider).isLoggedIn;
     final isPrivateMode =
         ref.read(activeDataModeProvider) == AppDataMode.private;
+
+    // Bring Supabase up and adopt the device's session BEFORE persisting the
+    // consent flag — the order is load-bearing three times over.
+    //
+    // `main()` refuses to initialise the SDK until this question has been
+    // answered (`shouldInitialiseSupabaseAtStartup`), because on a REINSTALL the
+    // Keychain session outlives `has_completed_consent`. The user has now
+    // answered — this handler is only reachable with the terms accepted — so the
+    // session may be picked up. Doing it here rather than after `setConsent`:
+    //
+    //  1. `isLoggedIn` below is read from the adopted state. Read before, it is
+    //     always false on a reinstall and the server-side consent record is
+    //     never written at all.
+    //  2. `setConsent` rebuilds the router. With the session already adopted the
+    //     redirect goes straight to '/'; without it the user is bounced to
+    //     '/choose' first and held there for a Keychain read plus a token
+    //     refresh — as a stranger, on their own account.
+    //  3. That '/choose' detour is a window in which they can tap "Continue
+    //     without an account". This ordering closes it rather than racing it.
+    if (!isPrivateMode) {
+      await authNotifier.adoptSessionAfterConsent();
+    }
+    if (!mounted) return;
+
+    // AFTER adoption, deliberately. See (1).
+    final isLoggedIn = ref.read(authProvider).isLoggedIn;
 
     // Salva il consenso nel provider
     await consentNotifier.setConsent(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../kit/evolve_async_error.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme.dart';
@@ -117,27 +118,30 @@ class HabitOverviewTabWidget extends ConsumerWidget {
               },
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (err, stack) => Center(
-                child: Text(
-                  '${context.t.common.status.error}: $err',
-                  style: TextStyle(color: context.appColors.mutedForeground),
+                child: EvolveAsyncError(
+                  error: err,
+                  stackTrace: stack,
+                  context: '[Stats] habit overview',
                 ),
               ),
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (err, stack) => Center(
-            child: Text(
-              '${context.t.common.status.error}: $err',
-              style: TextStyle(color: context.appColors.mutedForeground),
+            child: EvolveAsyncError(
+              error: err,
+              stackTrace: stack,
+              context: '[Stats] habit overview',
             ),
           ),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(
-        child: Text(
-          '${context.t.common.status.error}: $err',
-          style: TextStyle(color: context.appColors.mutedForeground),
+        child: EvolveAsyncError(
+          error: err,
+          stackTrace: stack,
+          context: '[Stats] habit overview',
         ),
       ),
     );
@@ -499,14 +503,21 @@ class _CorrelazioniSectionState extends State<_CorrelazioniSection> {
                       _CorrelazioneCard(
                         habitName: goal.title,
                         habitColor: goal.color,
-                        strengthText: context.t.statistics.strongCorrelationStrength(value: 
-                          '+${(c['percentage'] / 100).toStringAsFixed(2)}',
-                        ),
+                        strengthText: context.t.statistics
+                            .strongCorrelationStrength(
+                              value:
+                                  '+${(c['percentage'] / 100).toStringAsFixed(2)}',
+                            ),
                         strengthColor: const Color(0xFF10B981),
-                        subtitle: context.t.statistics.habitTogetherPercent(percentage: 
-                          c['percentage'] as int,
+                        subtitle: context.t.statistics.habitTogetherPercent(
+                          percentage: c['percentage'] as int,
                         ),
-                        description: context.t.statistics.habitPositiveCorrelationDescription(currentGoal: widget.currentGoalTitle, percentage: c['percentage'] as int, otherGoal: goal.title),
+                        description: context.t.statistics
+                            .habitPositiveCorrelationDescription(
+                              currentGoal: widget.currentGoalTitle,
+                              percentage: c['percentage'] as int,
+                              otherGoal: goal.title,
+                            ),
                         borderColor: const Color(0xFF10B981),
                       ),
                     );
@@ -564,14 +575,20 @@ class _CorrelazioniSectionState extends State<_CorrelazioniSection> {
                       _CorrelazioneCard(
                         habitName: goal.title,
                         habitColor: goal.color,
-                        strengthText: context.t.statistics.weakCorrelationStrength(value: 
-                          '+${(c['percentage'] / 100).toStringAsFixed(2)}',
+                        strengthText: context.t.statistics.weakCorrelationStrength(
+                          value:
+                              '+${(c['percentage'] / 100).toStringAsFixed(2)}',
                         ),
                         strengthColor: const Color(0xFFEF4444),
-                        subtitle: context.t.statistics.habitTogetherPercent(percentage: 
-                          c['percentage'] as int,
+                        subtitle: context.t.statistics.habitTogetherPercent(
+                          percentage: c['percentage'] as int,
                         ),
-                        description: context.t.statistics.habitNegativeCorrelationDescription(currentGoal: widget.currentGoalTitle, percentage: c['percentage'] as int, otherGoal: goal.title),
+                        description: context.t.statistics
+                            .habitNegativeCorrelationDescription(
+                              currentGoal: widget.currentGoalTitle,
+                              percentage: c['percentage'] as int,
+                              otherGoal: goal.title,
+                            ),
                         borderColor: const Color(0xFFEF4444),
                       ),
                     );

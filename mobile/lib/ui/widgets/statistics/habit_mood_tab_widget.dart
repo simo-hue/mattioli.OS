@@ -64,12 +64,16 @@ class _TopMetricsGrid extends StatelessWidget {
         _MetricCard(
           title: context.t.statistics.moodCorrelation,
           value: '${correlation.sensitivity}%',
-          subtitle: correlation.sensitivity > 10 ? context.t.statistics.positive : context.t.statistics.neutral,
+          subtitle: correlation.sensitivity > 10
+              ? context.t.statistics.positive
+              : context.t.statistics.neutral,
         ),
         _MetricCard(
           title: context.t.statistics.resilience,
           value: '${correlation.resilience}%',
-          subtitle: correlation.resilience > 50 ? context.t.statistics.high : context.t.statistics.low,
+          subtitle: correlation.resilience > 50
+              ? context.t.statistics.high
+              : context.t.statistics.low,
         ),
         _MetricCard(
           title: context.t.statistics.avgMood,
@@ -132,7 +136,9 @@ class _MetricCard extends StatelessWidget {
               fontFamily: 'Inter',
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: isRed ? const Color(0xFFEF4444) : context.appColors.foreground,
+              color: isRed
+                  ? const Color(0xFFEF4444)
+                  : context.appColors.foreground,
               height: 1,
             ),
           ),
@@ -164,12 +170,19 @@ class _ResilienteBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.appColors.card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3), width: 1),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+          width: 1,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(LucideIcons.activity, size: 14, color: Theme.of(context).colorScheme.primary),
+          Icon(
+            LucideIcons.activity,
+            size: 14,
+            color: Theme.of(context).colorScheme.primary,
+          ),
           const SizedBox(width: 6),
           Text(
             context.t.statistics.resilient,
@@ -221,9 +234,27 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
                 Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('10', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
-                    Text('5', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
-                    Text('0', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
+                    Text(
+                      '10',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: context.appColors.mutedForeground,
+                      ),
+                    ),
+                    Text(
+                      '5',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: context.appColors.mutedForeground,
+                      ),
+                    ),
+                    Text(
+                      '0',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: context.appColors.mutedForeground,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(width: 12),
@@ -234,15 +265,32 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
                       // Grid lines
                       Column(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: List.generate(3, (index) => _buildGridLine(context)),
+                        children: List.generate(
+                          3,
+                          (index) => _buildGridLine(context),
+                        ),
                       ),
                       // Bars
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Expanded(child: _buildBarGroup(context, context.t.statistics.completed2, correlation.avgMoodDone, correlation.avgEnergyDone)),
+                          Expanded(
+                            child: _buildBarGroup(
+                              context,
+                              context.t.statistics.completed2,
+                              correlation.avgMoodDone,
+                              correlation.avgEnergyDone,
+                            ),
+                          ),
                           const SizedBox(width: 16),
-                          Expanded(child: _buildBarGroup(context, context.t.statistics.missed2, correlation.avgMoodMissed, correlation.avgEnergyMissed)),
+                          Expanded(
+                            child: _buildBarGroup(
+                              context,
+                              context.t.statistics.missed2,
+                              correlation.avgMoodMissed,
+                              correlation.avgEnergyMissed,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -256,9 +304,17 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildLegendItem(context, const Color(0xFF10B981), context.t.statistics.mood2),
+              _buildLegendItem(
+                context,
+                const Color(0xFF10B981),
+                context.t.statistics.mood2,
+              ),
               const SizedBox(width: 16),
-              _buildLegendItem(context, const Color(0xFFF59E0B), context.t.statistics.energy),
+              _buildLegendItem(
+                context,
+                const Color(0xFFF59E0B),
+                context.t.statistics.energy,
+              ),
             ],
           ),
         ],
@@ -274,7 +330,12 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
     );
   }
 
-  Widget _buildBarGroup(BuildContext context, String label, double moodValue, double energiaValue) {
+  Widget _buildBarGroup(
+    BuildContext context,
+    String label,
+    double moodValue,
+    double energiaValue,
+  ) {
     // Mood/energy averages are on a 0–10 scale.
     final double moodPct = moodValue / 10.0;
     final double energiaPct = energiaValue / 10.0;
@@ -294,7 +355,9 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
                   child: Container(
                     decoration: const BoxDecoration(
                       color: Color(0xFF10B981),
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(4),
+                      ),
                     ),
                   ),
                 ),
@@ -307,7 +370,9 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
                   child: Container(
                     decoration: const BoxDecoration(
                       color: Color(0xFFF59E0B),
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(4),
+                      ),
                     ),
                   ),
                 ),
@@ -335,11 +400,7 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           label,
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 13,
-            color: color,
-          ),
+          style: TextStyle(fontFamily: 'Inter', fontSize: 13, color: color),
         ),
       ],
     );
@@ -373,30 +434,75 @@ class _PerformancePerLivelloCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          _buildLevelRow(context, context.t.statistics.withHighMood, correlation.highMoodPct, const Color(0xFF10B981)),
+          _buildLevelRow(
+            context,
+            context.t.statistics.withHighMood,
+            correlation.highMoodPct,
+            const Color(0xFF10B981),
+          ),
           const SizedBox(height: 16),
-          _buildLevelRow(context, context.t.statistics.withLowMood, correlation.lowMoodPct, const Color(0xFFEF4444)),
+          _buildLevelRow(
+            context,
+            context.t.statistics.withLowMood,
+            correlation.lowMoodPct,
+            const Color(0xFFEF4444),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildLevelRow(BuildContext context, String label, int percentage, Color color) {
+  Widget _buildLevelRow(
+    BuildContext context,
+    String label,
+    int percentage,
+    Color color,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: TextStyle(fontFamily: 'Inter', fontSize: 13, color: context.appColors.foreground)),
-            Text('$percentage%', style: TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w700, color: color)),
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 13,
+                color: context.appColors.foreground,
+              ),
+            ),
+            Text(
+              '$percentage%',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 8),
         Stack(
           children: [
-            Container(height: 6, decoration: BoxDecoration(color: context.appColors.border.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(3))),
-            FractionallySizedBox(widthFactor: percentage / 100, child: Container(height: 6, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3)))),
+            Container(
+              height: 6,
+              decoration: BoxDecoration(
+                color: context.appColors.border.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+            FractionallySizedBox(
+              widthFactor: percentage / 100,
+              child: Container(
+                height: 6,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+            ),
           ],
         ),
       ],

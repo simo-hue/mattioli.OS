@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../kit/evolve_async_error.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme.dart';
@@ -96,18 +97,20 @@ class InfoTabWidget extends ConsumerWidget {
           },
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (err, stack) => Center(
-            child: Text(
-              '${context.t.common.status.error}: $err',
-              style: TextStyle(color: context.appColors.mutedForeground),
+            child: EvolveAsyncError(
+              error: err,
+              stackTrace: stack,
+              context: '[Stats] info tab',
             ),
           ),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(
-        child: Text(
-          '${context.t.common.status.error}: $err',
-          style: TextStyle(color: context.appColors.mutedForeground),
+        child: EvolveAsyncError(
+          error: err,
+          stackTrace: stack,
+          context: '[Stats] info tab',
         ),
       ),
     );
@@ -455,9 +458,10 @@ class _TopHabitCorrelationsSectionState
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(
-        child: Text(
-          '${context.t.common.status.error}: $err',
-          style: TextStyle(color: context.appColors.mutedForeground),
+        child: EvolveAsyncError(
+          error: err,
+          stackTrace: stack,
+          context: '[Stats] info tab',
         ),
       ),
     );
@@ -571,155 +575,160 @@ class _AbitudineChiaveCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-            children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: dotColor,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: dotColor.withValues(alpha: 0.4),
-                      blurRadius: 4,
-                      spreadRadius: 1,
+              children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: dotColor,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: dotColor.withValues(alpha: 0.4),
+                        blurRadius: 4,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: context.appColors.foreground,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                ),
+                Icon(
+                  LucideIcons.crown,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    context.t.statistics.highImpact,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  '${correlations.length + extraConnections} ${context.t.statistics.connections}',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: context.appColors.mutedForeground,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ...correlations.map((c) {
+              final isPositive = c.value.startsWith('+');
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      c.key,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        color: context.appColors.mutedForeground,
+                      ),
+                    ),
+                    Text(
+                      c.value,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: isPositive
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFFEF4444),
+                      ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: context.appColors.foreground,
-                    letterSpacing: -0.3,
-                  ),
+              );
+            }),
+            const SizedBox(height: 8),
+            Center(
+              child: Text(
+                context.t.statistics.additionalConnections(
+                  count: extraConnections,
                 ),
-              ),
-              Icon(
-                LucideIcons.crown,
-                size: 18,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.primary.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  context.t.statistics.highImpact,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                '${correlations.length + extraConnections} ${context.t.statistics.connections}',
                 style: TextStyle(
                   fontFamily: 'Inter',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
+                  fontSize: 10,
                   color: context.appColors.mutedForeground,
+                  fontStyle: FontStyle.italic,
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ...correlations.map((c) {
-            final isPositive = c.value.startsWith('+');
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    c.key,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 12,
-                      color: context.appColors.mutedForeground,
-                    ),
-                  ),
-                  Text(
-                    c.value,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: isPositive
-                          ? const Color(0xFF10B981)
-                          : const Color(0xFFEF4444),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-          const SizedBox(height: 8),
-          Center(
-            child: Text(
-              context.t.statistics.additionalConnections(count: extraConnections),
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 10,
-                color: context.appColors.mutedForeground,
-                fontStyle: FontStyle.italic,
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Divider(color: context.appColors.border, height: 1),
-          const SizedBox(height: 14),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    LucideIcons.chartSpline,
-                    size: 14,
-                    color: context.appColors.mutedForeground,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    context.t.statistics.avgImpact,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+            const SizedBox(height: 16),
+            Divider(color: context.appColors.border, height: 1),
+            const SizedBox(height: 14),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      LucideIcons.chartSpline,
+                      size: 14,
                       color: context.appColors.mutedForeground,
                     ),
-                  ),
-                ],
-              ),
-              Text(
-                media,
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: context.appColors.foreground,
+                    const SizedBox(width: 6),
+                    Text(
+                      context.t.statistics.avgImpact,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: context.appColors.mutedForeground,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-        ],
+                Text(
+                  media,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: context.appColors.foreground,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -819,8 +828,16 @@ class _CorrelationsSectionState extends ConsumerState<_CorrelationsSection> {
             cooccorrenza: '$percentage%',
             giorni: '$togetherCount',
             desc: widget.isPositive
-                ? context.t.statistics.habitPositiveCorrelationDescription(currentGoal: currentGoal.title, percentage: percentage, otherGoal: otherGoal.title)
-                : context.t.statistics.habitNegativeCorrelationDescription(currentGoal: currentGoal.title, percentage: percentage, otherGoal: otherGoal.title),
+                ? context.t.statistics.habitPositiveCorrelationDescription(
+                    currentGoal: currentGoal.title,
+                    percentage: percentage,
+                    otherGoal: otherGoal.title,
+                  )
+                : context.t.statistics.habitNegativeCorrelationDescription(
+                    currentGoal: currentGoal.title,
+                    percentage: percentage,
+                    otherGoal: otherGoal.title,
+                  ),
           );
         }).toList();
 
@@ -916,9 +933,10 @@ class _CorrelationsSectionState extends ConsumerState<_CorrelationsSection> {
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(
-        child: Text(
-          '${context.t.common.status.error}: $err',
-          style: TextStyle(color: context.appColors.mutedForeground),
+        child: EvolveAsyncError(
+          error: err,
+          stackTrace: stack,
+          context: '[Stats] info tab',
         ),
       ),
     );

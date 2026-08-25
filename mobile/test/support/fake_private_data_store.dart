@@ -63,6 +63,12 @@ class FakePrivateDataStore implements PrivateDataStore {
 
   // ── Habit logs ──────────────────────────────────────────────────────────
   @override
+  /// NOTE for anyone driving `GoalsNotifier.deleteHabit` through this fake:
+  /// this returns EMPTY, and so does [loadHabitProgress]. `deleteHabit` reads
+  /// both to decide between ARCHIVING a habit that has history and hard-deleting
+  /// an empty one — so against the bare fake it always takes the hard-delete
+  /// branch, and a test meaning to exercise archiving must override them. See
+  /// `habit_delete_preserves_history_test.dart`.
   Future<Map<String, Map<String, String>>> loadHabitLogs() async =>
       <String, Map<String, String>>{};
 

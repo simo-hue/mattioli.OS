@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../kit/evolve_async_error.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme.dart';
@@ -14,16 +15,14 @@ class HabitPerformanceTabWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final performanceAsync = ref.watch(habitPerformanceProvider(goalId));
-    
+
     return performanceAsync.when(
       data: (data) {
         final daysOfWeek = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-        final List<Map<String, dynamic>> performance = List.generate(7, (i) => {
-          'day': daysOfWeek[i],
-          'pct': 0,
-          'done': 0,
-          'total': 0,
-        });
+        final List<Map<String, dynamic>> performance = List.generate(
+          7,
+          (i) => {'day': daysOfWeek[i], 'pct': 0, 'done': 0, 'total': 0},
+        );
 
         for (final item in data) {
           final dayIndex = (item['day_index'] as num).toInt();
@@ -32,7 +31,7 @@ class HabitPerformanceTabWidget extends ConsumerWidget {
             final total = (item['total_count'] as num).toInt();
             final done = (item['done_count'] as num).toInt();
             final pct = total > 0 ? (done / total * 100).round() : 0;
-            
+
             performance[idx] = {
               'day': daysOfWeek[idx],
               'pct': pct,
@@ -44,15 +43,15 @@ class HabitPerformanceTabWidget extends ConsumerWidget {
 
         Map<String, dynamic>? strongest;
         Map<String, dynamic>? weakest;
-        
+
         final activeDays = performance.where((p) => p['total'] > 0).toList();
-        
+
         if (activeDays.isNotEmpty) {
           strongest = activeDays.reduce((a, b) => a['pct'] > b['pct'] ? a : b);
           weakest = activeDays.reduce((a, b) => a['pct'] < b['pct'] ? a : b);
-          
+
           if (strongest['pct'] == weakest['pct']) {
-            weakest = null; 
+            weakest = null;
           }
         }
 
@@ -74,7 +73,13 @@ class HabitPerformanceTabWidget extends ConsumerWidget {
       ),
       error: (err, stack) => SizedBox(
         height: 200,
-        child: Center(child: Text('${context.t.common.status.error}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+        child: Center(
+          child: EvolveAsyncError(
+            error: err,
+            stackTrace: stack,
+            context: '[Stats] habit performance',
+          ),
+        ),
       ),
     );
   }
@@ -109,7 +114,12 @@ class _PerformanceChartCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
-            children: data.map((d) => _buildBar(context, d['day'] as String, d['pct'] as int)).toList(),
+            children: data
+                .map(
+                  (d) =>
+                      _buildBar(context, d['day'] as String, d['pct'] as int),
+                )
+                .toList(),
           ),
         ],
       ),
@@ -118,7 +128,7 @@ class _PerformanceChartCard extends StatelessWidget {
 
   Widget _buildBar(BuildContext context, String day, int pct) {
     final screenHeight = MediaQuery.of(context).size.height;
-    double height = screenHeight * 0.14; 
+    double height = screenHeight * 0.14;
     if (height > 120) height = 120;
     if (height < 70) height = 70;
 
@@ -183,7 +193,10 @@ class _GiornoForteCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: primaryColor.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: primaryColor.withValues(alpha: 0.2), width: 1),
+        border: Border.all(
+          color: primaryColor.withValues(alpha: 0.2),
+          width: 1,
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -232,12 +245,19 @@ class _GiornoDeboleCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFEF4444).withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.2), width: 1),
+        border: Border.all(
+          color: const Color(0xFFEF4444).withValues(alpha: 0.2),
+          width: 1,
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Icon(LucideIcons.triangleAlert, size: 22, color: Color(0xFFEF4444)),
+          const Icon(
+            LucideIcons.triangleAlert,
+            size: 22,
+            color: Color(0xFFEF4444),
+          ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(

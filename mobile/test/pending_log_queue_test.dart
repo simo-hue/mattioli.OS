@@ -136,6 +136,13 @@ void main() {
         key: <String>['g1|2026-07-22|done'],
       });
       NotificationService.currentUserId = () => 'user-1';
+      // The streak resolver is a SEAM for the same reason logUpserter is: its
+      // production body reaches for `Supabase.instance`, which this file
+      // deliberately never initialises. Left at its default it would throw on
+      // every cloud replay here — caught and swallowed, so these tests would
+      // still pass, but for the wrong reason and with the file's stated
+      // invariant quietly broken.
+      NotificationService.cloudStreakResolver = (_, _, _) async => null;
       NotificationService.logUpserter = (row) async {
         upserted.add(row);
         if (throwOnUpsert != null) throw throwOnUpsert!;

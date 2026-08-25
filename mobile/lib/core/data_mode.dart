@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app_logger.dart';
 import 'sentry_service.dart';
+import '../providers/consent_provider.dart';
 import '../providers/shared_prefs_provider.dart';
 
 enum AppDataMode {
@@ -44,7 +45,7 @@ class ActiveDataModeNotifier extends Notifier<AppDataMode> with ChangeNotifier {
       // question was never answered, not "yes", so leaving Private Mode must
       // not be a side door that starts the SDK without consent.
       final allowed = SentryService.shouldRun(
-        hasCompletedConsent: prefs.getBool('has_completed_consent') ?? false,
+        hasCompletedConsent: prefs.getBool(kHasCompletedConsentPrefKey) ?? false,
         hasSentryConsent: prefs.getBool('has_sentry_consent') ?? false,
         isPrivateMode: false,
       );

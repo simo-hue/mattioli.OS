@@ -9,11 +9,14 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../i18n/translations.g.dart';
+import '../providers/auth_provider.dart';
+import '../providers/consent_provider.dart';
 import '../providers/goal_provider.dart';
 import 'data_mode.dart';
 import 'navigator_key.dart';
 import 'private_local_database.dart';
 import 'secure_local_storage.dart';
+import 'streak_utils.dart';
 import 'supabase_config.dart';
 import 'targets_config.dart';
 import 'verification_config.dart';
@@ -267,26 +270,55 @@ class NotificationService {
       return;
     }
 
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) {
+    // Read through the seam, not `Supabase.instance` directly: the default is
+    // exactly that, but without it nothing below is reachable from a test.
+    final userId = currentUserId();
+    if (userId == null) {
       // No restored session yet — queue and replay when the app foregrounds.
       await _enqueuePendingLog(habitId, dateKey, status);
       return;
     }
 
+    // DURABLE FIRST. The queue entry is written BEFORE any network call and
+    // removed only once the server has the row.
+    //
+    // The order matters because this runs in a notification-action background
+    // isolate the OS may reclaim at any moment, and the write is no longer a
+    // single round trip: resolving the streak reads the goal and its history
+    // first. If the isolate died during that, a version that queued only from
+    // the catch below would leave NO server row and NO queue entry — the user's
+    // tap gone, having tapped Done and watched the banner dismiss. A redundant
+    // queue entry costs one idempotent re-upsert on the next foreground; a lost
+    // one cannot be recovered at all.
+    await _enqueuePendingLog(habitId, dateKey, status);
+
     try {
-      await Supabase.instance.client.from('goal_logs').upsert({
-        'user_id': user.id,
-        'goal_id': habitId,
-        'date': dateKey,
-        'status': status,
-      }, onConflict: 'goal_id, date');
+      final streak = await _boundedStreak(habitId, dateKey, status);
+      if (streak == null) {
+        // Never a silent cap: the replay logs its skipped count, and so does
+        // this path. A null here means the resolution timed out or could not be
+        // established, so the row lands on the column's default.
+        AppLogger.warning(
+          '[Notifications] $habitId/$dateKey written without a recomputed '
+          'streak (timed out or unresolvable)',
+        );
+      }
+      await logUpserter(
+        goalLogUpsertPayload(
+          userId: userId,
+          goalId: habitId,
+          dateKey: dateKey,
+          status: status,
+          streak: streak,
+        ),
+      );
+      await _dequeuePendingLog(habitId, dateKey, status);
       if (kDebugMode) {
         debugPrint('[Notifications] Habit $habitId set to $status');
       }
     } catch (e, stack) {
+      // Deliberately no re-queue: the entry is already there, and it stays.
       AppLogger.error('[Notifications] Error writing habit log', e, stack);
-      await _enqueuePendingLog(habitId, dateKey, status);
     }
   }
 
@@ -341,10 +373,161 @@ class NotificationService {
   static Future<void> Function(Map<String, Object?> row) logUpserter =
       _defaultLogUpsert;
 
-  static Future<void> _defaultLogUpsert(Map<String, Object?> row) =>
-      Supabase.instance.client
-          .from('goal_logs')
-          .upsert(row, onConflict: 'goal_id, date');
+  static Future<void> _defaultLogUpsert(Map<String, Object?> row) => Supabase
+      .instance
+      .client
+      .from('goal_logs')
+      .upsert(row, onConflict: 'goal_id, date');
+
+  /// How long a single streak resolution may take before the write proceeds
+  /// without it. This runs inside the notification-action background isolate,
+  /// where the OS budget is short and finite: an unbounded read could consume
+  /// the whole of it and the isolate be suspended before `logUpserter` is ever
+  /// reached — leaving no server row AND no queue entry, which loses the user's
+  /// tap outright. Degrading to a missing streak is the strictly safer failure.
+  /// Mutable so a test can pin the degrade-on-stall behaviour without a
+  /// six-second test. Note the replay's overall budget is checked BEFORE a
+  /// resolution starts, so the true worst case there is that budget plus one
+  /// of these.
+  @visibleForTesting
+  static Duration kStreakResolveTimeout = const Duration(seconds: 6);
+
+  /// Total time one [replayPendingHabitLogs] run may spend recomputing
+  /// streaks, across all its entries. See the loop for why. Mutable so a test
+  /// can drive the exhausted-budget branch, which is otherwise unreachable
+  /// without a 15-second test.
+  @visibleForTesting
+  static Duration kReplayStreakBudget = const Duration(seconds: 15);
+
+  /// The `goal_logs.streak` value a notification-driven cloud write should
+  /// carry, or null when it cannot be established.
+  ///
+  /// The Private branch of [_writeHabitLogFromNotification] computes this
+  /// (`PrivateLocalDatabase.setHabitLogWithStreak`) so a notification Done/Skip
+  /// matches the foreground toggle — since `ee6777e` (2026-06-23), which fixed
+  /// exactly this bug on that side: "a notification action could zero out a
+  /// user's visible streak". The cloud branch was not fixed with it, and the
+  /// column it left unset is the one the `habit_stats` view reads
+  /// (schema.sql) — while `runStreakRepairOnce` (main.dart) is Private-mode
+  /// only, so nothing ever recomputed it for an account. Answering a reminder
+  /// from the lock screen therefore degraded that habit's statistics
+  /// permanently. Same seam shape as [logUpserter], and for the same reason:
+  /// without it this branch is unreachable from any test.
+  @visibleForTesting
+  static Future<int?> Function(String goalId, String dateKey, String status)
+  cloudStreakResolver = _defaultCloudStreak;
+
+  /// [cloudStreakResolver], bounded by [kStreakResolveTimeout].
+  ///
+  /// The re-wrap is load-bearing, not style. A resolver whose body returns a
+  /// non-null int hands back a `Future<int>` at RUNTIME even though the seam's
+  /// static type is `Future<int?>`, and `Future.timeout` type-checks its
+  /// `onTimeout` callback against that runtime type argument — so calling
+  /// `.timeout(..., onTimeout: () => null)` on it throws a TypeError, which the
+  /// replay then treats as a failed write. Constructing a genuine `Future<int?>`
+  /// first is what makes the timeout applicable at all.
+  ///
+  /// A THROW still propagates: the caller decides what a failure means, and for
+  /// the replay that is "keep the entry queued and retry".
+  static Future<int?> _boundedStreak(
+    String goalId,
+    String dateKey,
+    String status,
+  ) => Future<int?>(
+    () => cloudStreakResolver(goalId, dateKey, status),
+  ).timeout(kStreakResolveTimeout, onTimeout: () => null);
+
+  /// Mirrors `PrivateLocalDatabase.setHabitLogWithStreak` step for step: load
+  /// the habit's history, apply the day being written in-memory so
+  /// [computeStreak] sees the toggled status, then score it.
+  ///
+  /// ABSENCE IS NOT EVIDENCE — the same rule the Private writer states. Any
+  /// failure (missing goal, unreadable history, offline) returns null, and
+  /// [goalLogUpsertPayload] omits the column rather than sending it. On the
+  /// ON CONFLICT path that PRESERVES a stored streak instead of overwriting a
+  /// correct value with a fabrication. On a fresh INSERT the column takes its
+  /// schema default of 0 (schema.sql) — no worse than before this resolver
+  /// existed, which is the honest claim: a failure here restores the old
+  /// behaviour, it does not improve on it. The status write itself must never
+  /// be lost to a failure in this cache.
+  static Future<int?> _defaultCloudStreak(
+    String goalId,
+    String dateKey,
+    String status,
+  ) async {
+    try {
+      final client = Supabase.instance.client;
+      final goal = await client
+          .from('goals')
+          .select('start_date, frequency_days')
+          .eq('id', goalId)
+          .maybeSingle();
+      if (goal == null) return null;
+      final startDate = DateTime.tryParse('${goal['start_date']}');
+      if (startDate == null) return null;
+
+      // The habit's ENTIRE history, through the same helper `_syncFromSupabase`
+      // uses. A streak computed from a truncated history is wrong in the one
+      // direction that matters — too short — and would then be written back
+      // over the correct value.
+      //
+      // ORDERED, for the reason every other paged read in this repo states:
+      // LIMIT/OFFSET over an unordered relation has no stability guarantee, so
+      // page 2 may repeat rows from page 1 and skip others. A skipped day
+      // inside the current run reads as pending, breaks computeStreak's
+      // backward walk, and the too-short value is written back OVER the correct
+      // one. `(goal_id, date)` is UNIQUE (schema.sql), and this read is already
+      // filtered to one goal, so `date` alone is a total order here.
+      final logs = await fetchGoalLogsPaginated((offset, limit) async {
+        final page = await client
+            .from('goal_logs')
+            .select('goal_id, date, status')
+            .eq('goal_id', goalId)
+            .order('date', ascending: true)
+            .range(offset, offset + limit - 1);
+        return List<Map<String, dynamic>>.from(page);
+      });
+      // The day being written is not on the server yet (or still holds its old
+      // status), so apply it before scoring.
+      (logs[dateKey] ??= <String, String>{})[goalId] = status;
+
+      final parsedDate = DateTime.tryParse(dateKey);
+      if (parsedDate == null) return null;
+
+      return computeStreak(
+        habitId: goalId,
+        date: parsedDate,
+        logs: logs,
+        startDate: startDate,
+        frequencyDays: _frequencyDaysFrom(goal['frequency_days']),
+      );
+    } catch (e, stack) {
+      AppLogger.warning(
+        '[Notifications] streak not resolved for $goalId/$dateKey — the '
+        'status is still written and the stored streak left alone',
+        e,
+        stack,
+      );
+      return null;
+    }
+  }
+
+  /// `frequency_days` arrives as a JSON list from PostgREST (the column is
+  /// `integer[]`). Absent, null or empty means "every day" — the same encoding
+  /// `Goal.fromJson` and `computeStreak` agree on. It diverges from
+  /// `Goal.fromJson` in one unreachable case: a non-int element is dropped here
+  /// and throws there. Dropping a weekday would make it transparent to
+  /// `computeStreak` and over-count the run, so if that ever becomes reachable
+  /// this must throw too rather than guess.
+  static List<int>? _frequencyDaysFrom(Object? raw) {
+    if (raw is! List) return null;
+    final days = <int>[];
+    for (final d in raw) {
+      final n = d is int ? d : int.tryParse('$d');
+      if (n != null) days.add(n);
+    }
+    return days.isEmpty ? null : days;
+  }
 
   /// Test seam for the session check that gates the replay's cloud branch.
   /// Paired with [logUpserter]: without both, the branch cannot be entered at
@@ -354,13 +537,27 @@ class NotificationService {
   static String? Function() currentUserId = _defaultCurrentUserId;
 
   static String? _defaultCurrentUserId() =>
-      Supabase.instance.client.auth.currentUser?.id;
+      // "Not initialised" is a real, reachable state now that startup defers the
+      // SDK until consent is answered — and the honest answer to "who is signed
+      // in?" is nobody. Reading `Supabase.instance` regardless would throw out of
+      // an `async void` notification handler, escape to the global
+      // `PlatformDispatcher.onError`, and pop the "something went wrong" modal
+      // over the consent screen. Returning null instead queues the tap, which is
+      // what the no-session path already does.
+      isSupabaseInitialized
+      ? Supabase.instance.client.auth.currentUser?.id
+      : null;
 
-  /// Restores both replay seams to their production implementations.
+  /// Restores the notification write seams to their production
+  /// implementations. [cloudStreakResolver] serves the direct write too,
+  /// not only the replay.
   @visibleForTesting
   static void resetTestSeams() {
     logUpserter = _defaultLogUpsert;
     currentUserId = _defaultCurrentUserId;
+    cloudStreakResolver = _defaultCloudStreak;
+    kReplayStreakBudget = const Duration(seconds: 15);
+    kStreakResolveTimeout = const Duration(seconds: 6);
   }
 
   static const String _pendingLogsKey = 'pending_habit_logs';
@@ -389,6 +586,43 @@ class NotificationService {
     }
   }
 
+  /// Drops the queued entry for [habitId] on [date] whose verdict is [status],
+  /// once the server has exactly that.
+  ///
+  /// The status is part of the key, and that is the whole point. Matching on
+  /// habit+date alone looks equivalent — [_enqueuePendingLog] dedupes to one
+  /// entry per habit-day — but the entry present at DEQUEUE time need not be
+  /// the one this call wrote: everything between the two is network work, and
+  /// a second tap lands inside that window. Done is tapped and its write is
+  /// slow; Skip is tapped, replacing the queued entry; Skip's write fails, so
+  /// it relies on the queue; Done's write then completes and a status-blind
+  /// delete removes the QUEUED SKIP. The server has `done`, the queue is empty,
+  /// and the user's Skip is gone with nothing left to replay it.
+  Future<void> _dequeuePendingLog(
+    String habitId,
+    String date,
+    String status,
+  ) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final existing = prefs.getStringList(_pendingLogsKey);
+      if (existing == null || existing.isEmpty) return;
+      final remaining = existing
+          .where((e) => e != '$habitId|$date|$status')
+          .toList();
+      if (remaining.length == existing.length) return;
+      await prefs.setStringList(_pendingLogsKey, remaining);
+    } catch (e, stack) {
+      // Harmless: the entry survives and the next replay re-upserts the same
+      // row. Idempotent by `onConflict: 'goal_id, date'`.
+      AppLogger.warning(
+        '[Notifications] Failed to drop a written pending log',
+        e,
+        stack,
+      );
+    }
+  }
+
   /// Shared in-flight replay, so two callers on the same foreground run ONE.
   /// Both the lifecycle observer and the manual-target sweep replay on resume —
   /// the sweep must, because a queued Done is a verdict it would otherwise read
@@ -396,8 +630,10 @@ class NotificationService {
   /// (the upserts are idempotent) but doubled every network call, and a loser
   /// writing its own `remaining` could resurrect an entry the winner had already
   /// applied.
-  Future<({int written, bool drained, Map<String, Map<String, String>>? pending})>?
-      _replayInFlight;
+  Future<
+    ({int written, bool drained, Map<String, Map<String, String>>? pending})
+  >?
+  _replayInFlight;
 
   /// Replay queued habit-log actions accumulated while the app was terminated
   /// or offline. Safe to call on every foreground: no-ops when the queue is
@@ -437,9 +673,11 @@ class NotificationService {
   /// rule then protects exactly the decided days and nothing else. Same
   /// invariant, enforced per-day instead of globally — and no way for one stuck
   /// entry to park the feature.
-  Future<({int written, bool drained, Map<String, Map<String, String>>? pending})>
-      replayPendingHabitLogs() => _replayInFlight ??= _replayPendingHabitLogs()
-          .whenComplete(() => _replayInFlight = null);
+  Future<
+    ({int written, bool drained, Map<String, Map<String, String>>? pending})
+  >
+  replayPendingHabitLogs() => _replayInFlight ??= _replayPendingHabitLogs()
+      .whenComplete(() => _replayInFlight = null);
 
   /// Parses queue entries (`goalId|date|status`) into the verdict map shape the
   /// sweep reads. Malformed entries are skipped, exactly as the replay skips
@@ -454,13 +692,19 @@ class NotificationService {
     return out;
   }
 
-  Future<({int written, bool drained, Map<String, Map<String, String>>? pending})>
-      _replayPendingHabitLogs() async {
+  Future<
+    ({int written, bool drained, Map<String, Map<String, String>>? pending})
+  >
+  _replayPendingHabitLogs() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final pending = prefs.getStringList(_pendingLogsKey);
       if (pending == null || pending.isEmpty) {
-        return (written: 0, drained: true, pending: const <String, Map<String, String>>{});
+        return (
+          written: 0,
+          drained: true,
+          pending: const <String, Map<String, String>>{},
+        );
       }
 
       // The queue is a CLOUD mechanism — `_writeHabitLogFromNotification`
@@ -483,11 +727,32 @@ class NotificationService {
       }
 
       final remaining = <String>[];
+      // The entries this run FINISHED with — written, or dropped as
+      // unlandable. Used at the end to subtract from whatever the key holds
+      // THEN, rather than overwriting it with a list computed from a stale
+      // snapshot. See the write below.
+      final handled = <String>{};
+      // Entries a newer write replaced while this run was in flight. Neither
+      // written nor retryable — the newer verdict already owns that habit-day.
+      var superseded = 0;
       // Counted separately from `remaining`, because a dropped entry is neither
       // written nor retryable. Folding it into `written` (as `pending.length -
       // remaining.length` alone does) would report a server write that never
       // happened and force a full `goal_logs` re-download for nothing.
       var dropped = 0;
+      // Streak resolution costs a `goals` read plus the habit's history, per
+      // entry. The queue is normally tiny — it only fills while offline or
+      // signed out — but a fortnight of unsent taps across ten habits is
+      // hundreds of round trips, and main.dart AWAITS this replay before the
+      // reconcile sweeps. So the run gets one shared budget: past it, entries
+      // are written WITHOUT a streak, which is exactly what they did before the
+      // resolver existed. Never silently — the skipped count is logged.
+      // Started and stopped around the streak work ONLY. Left running across the
+      // whole loop it would charge every upsert's round trip to the streak
+      // budget, so a slow connection would strip streaks from rows for a reason
+      // that has nothing to do with what streaks cost.
+      final streakBudget = Stopwatch();
+      var streaksSkipped = 0;
       for (final entry in pending) {
         final parts = entry.split('|');
         if (parts.length < 3) {
@@ -495,15 +760,64 @@ class NotificationService {
           // so without this it would inflate `written` and trigger a full
           // `goal_logs` re-download for a server write that never happened.
           dropped++;
+          handled.add(entry);
           continue;
         }
         try {
-          await logUpserter({
-            'user_id': userId,
-            'goal_id': parts[0],
-            'date': parts[1],
-            'status': parts[2],
-          });
+          // The entry may have been SUPERSEDED since `pending` was snapshotted.
+          // A direct notification write inside that window can land a newer
+          // verdict for the same habit-day and dequeue itself; upserting the
+          // stale snapshot afterwards would overwrite the user's newer tap and
+          // leave nothing queued to undo it — the same loss the status-keyed
+          // dequeue exists to prevent, arrived at from the replay side.
+          //
+          // Checked twice on purpose. Once here, to skip the round trips
+          // entirely; and again immediately before the write, because the
+          // widest window is the network work BETWEEN the two — a `goals` read
+          // plus the habit's full paginated history. The second check is the
+          // one that matters; the first only makes it cheaper.
+          //
+          // NARROWED, not closed. A direct write that enqueues, resolves,
+          // upserts and dequeues entirely inside the replay's own in-flight
+          // upsert still loses to the stale snapshot. That needs the direct
+          // write to finish more work than the replay has left, so it is
+          // improbable — but it is a window, not an absence of one.
+          if (!(prefs.getStringList(_pendingLogsKey) ?? const []).contains(
+            entry,
+          )) {
+            superseded++;
+            continue;
+          }
+
+          int? streak;
+          if (streakBudget.elapsed < kReplayStreakBudget) {
+            streakBudget.start();
+            try {
+              streak = await _boundedStreak(parts[0], parts[1], parts[2]);
+            } finally {
+              streakBudget.stop();
+            }
+          }
+          // The check that counts — see above.
+          if (!(prefs.getStringList(_pendingLogsKey) ?? const []).contains(
+            entry,
+          )) {
+            superseded++;
+            continue;
+          }
+          await logUpserter(
+            goalLogUpsertPayload(
+              userId: userId,
+              goalId: parts[0],
+              dateKey: parts[1],
+              status: parts[2],
+              streak: streak,
+            ),
+          );
+          handled.add(entry);
+          // Counted AFTER the write, so the number names rows that really
+          // landed — budget-exhausted, timed out and unresolvable alike.
+          if (streak == null) streaksSkipped++;
         } on PostgrestException catch (e, stack) {
           // 23503 = foreign_key_violation: `goal_logs.goal_id` references
           // `goals(id)`, so this is a queued verdict for a habit that no longer
@@ -517,27 +831,78 @@ class NotificationService {
               '(${parts[0]}/${parts[1]}): $e',
             );
             dropped++;
+            handled.add(entry);
             continue;
           }
-          AppLogger.error('[Notifications] Replay failed, will retry', e, stack);
+          AppLogger.error(
+            '[Notifications] Replay failed, will retry',
+            e,
+            stack,
+          );
           remaining.add(entry);
         } catch (e, stack) {
-          AppLogger.error('[Notifications] Replay failed, will retry', e, stack);
+          AppLogger.error(
+            '[Notifications] Replay failed, will retry',
+            e,
+            stack,
+          );
           remaining.add(entry);
         }
       }
-      await prefs.setStringList(_pendingLogsKey, remaining);
-      if (kDebugMode) {
-        debugPrint(
-          '[Notifications] Replayed pending logs; ${remaining.length} remaining',
+      if (streaksSkipped > 0) {
+        AppLogger.warning(
+          '[Notifications] $streaksSkipped queued log(s) written without a '
+          'recomputed streak (budget exhausted, timed out, or unresolvable)',
         );
       }
-      // Only entries that actually landed count as written: a retry-kept entry
-      // changed nothing on the server, so it must not make the caller reload.
+      // SUBTRACT what this run handled from the key as it stands NOW, rather
+      // than writing `remaining` over it.
+      //
+      // `pending` is a snapshot taken before the loop, and the loop does
+      // network I/O. A direct notification write running in that same window
+      // enqueues its verdict BEFORE issuing its request — that ordering is what
+      // makes the tap survivable at all — and a blind
+      // `setStringList(remaining)` would delete that entry, losing the very tap
+      // the enqueue exists to protect. `_replayInFlight` does not help here: it
+      // dedupes replay against replay and says nothing about a direct write.
+      //
+      // Anything this run did not finish is left exactly as the key has it, so
+      // an entry enqueued (or dequeued) concurrently is respected.
+      //
+      // SAME-ISOLATE only, and that is a pre-existing property of the queue
+      // rather than something this subtract can fix: SharedPreferences caches
+      // the whole map per isolate and nothing here calls `reload()`, so a tap
+      // handled by the background isolate is invisible to a main-isolate run
+      // and vice versa. Within one isolate the read-modify-write is genuinely
+      // atomic — the cache read and the cache update have no await between
+      // them.
+      final latest = prefs.getStringList(_pendingLogsKey) ?? const <String>[];
+      final survivors = latest.where((e) => !handled.contains(e)).toList();
+      await prefs.setStringList(_pendingLogsKey, survivors);
+      if (kDebugMode) {
+        debugPrint(
+          '[Notifications] Replayed pending logs; ${survivors.length} remaining',
+        );
+      }
+      // `drained`/`pending` describe THE QUEUE, not this run's leftovers, so
+      // they are built from `survivors` — what the key actually holds now.
+      //
+      // Reporting `remaining` alone was a real data-loss path. The caller uses
+      // `pending` to know which days the user has already DECIDED, and
+      // withholds auto-fail for them. A tap enqueued mid-replay is a survivor
+      // but not in `remaining`; omit it and, once the clock passes midnight,
+      // that day is closed, its verdict is absent from both the server and
+      // `pending`, and `reconcileManualTargets` writes `missed` over the Done
+      // the user tapped. Over-reporting the queue only ever WITHHOLDS a write;
+      // under-reporting grants one. Only one of those is recoverable.
+      //
+      // Only entries that actually landed count as written: a retry-kept or
+      // superseded entry changed nothing this run put on the server, so it must
+      // not make the caller reload.
       return (
-        written: pending.length - remaining.length - dropped,
-        drained: remaining.isEmpty,
-        pending: _verdictsFrom(remaining),
+        written: pending.length - remaining.length - dropped - superseded,
+        drained: survivors.isEmpty,
+        pending: _verdictsFrom(survivors),
       );
     } catch (e, stack) {
       AppLogger.error('[Notifications] replayPendingHabitLogs error', e, stack);
@@ -642,10 +1007,7 @@ class NotificationService {
 
     // Clamp to valid ISO weekdays (1-7): a corrupt/legacy row carrying e.g. [0]
     // or [8] must not reach the weekday-seek loop, which would spin forever.
-    final valid = frequencyDays
-        ?.where((d) => d >= 1 && d <= 7)
-        .toSet()
-        .toList()
+    final valid = frequencyDays?.where((d) => d >= 1 && d <= 7).toSet().toList()
       ?..sort();
     final freq = (valid == null || valid.isEmpty) ? null : valid;
 
@@ -678,7 +1040,8 @@ class NotificationService {
   /// Notification-channel + action config shared by every habit reminder
   /// instance (the daily one and the per-weekday ones).
   NotificationDetails _habitReminderDetails() {
-    final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+    final AndroidNotificationDetails
+    androidDetails = AndroidNotificationDetails(
       'habit_reminders',
       t.notifications.habitChannelName,
       channelDescription: t.notifications.specificHabitChannelDescription,
@@ -755,15 +1118,15 @@ class NotificationService {
 
   /// Shared notification details for the auto-verification channel (D11).
   NotificationDetails get _verificationDetails => NotificationDetails(
-        android: AndroidNotificationDetails(
-          'verification_nudges',
-          t.verification.channelName,
-          channelDescription: t.verification.channelDescription,
-          importance: Importance.defaultImportance,
-          priority: Priority.defaultPriority,
-        ),
-        iOS: const DarwinNotificationDetails(),
-      );
+    android: AndroidNotificationDetails(
+      'verification_nudges',
+      t.verification.channelName,
+      channelDescription: t.verification.channelDescription,
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
+    ),
+    iOS: const DarwinNotificationDetails(),
+  );
 
   /// Opt-in "goal reached" celebration for an auto-verified habit that passed
   /// today (D11 — OFF by default). Id keyed to goal + day so a re-fire replaces
@@ -888,36 +1251,90 @@ class NotificationService {
     return messages[rotationSeed.abs() % messages.length];
   }
 
-  tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
-    final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
-    tz.TZDateTime scheduledDate = tz.TZDateTime(
-      tz.local,
-      now.year,
-      now.month,
-      now.day,
-      hour,
-      minute,
-    );
-    if (scheduledDate.isBefore(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
-    }
-    return scheduledDate;
-  }
+  tz.TZDateTime _nextInstanceOfTime(int hour, int minute) =>
+      nextInstanceOfTimeFrom(tz.TZDateTime.now(tz.local), hour, minute);
 
-  /// Next occurrence of [hour]:[minute] falling on ISO [weekday] (1=Mon…7=Sun),
-  /// the seed date for a `dayOfWeekAndTime` weekly repeat.
-  tz.TZDateTime _nextInstanceOfWeekdayTime(int weekday, int hour, int minute) {
-    tz.TZDateTime scheduledDate = _nextInstanceOfTime(hour, minute);
-    while (scheduledDate.weekday != weekday) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
-    }
-    return scheduledDate;
-  }
+  tz.TZDateTime _nextInstanceOfWeekdayTime(int weekday, int hour, int minute) =>
+      nextInstanceOfWeekdayTimeFrom(
+        tz.TZDateTime.now(tz.local),
+        weekday,
+        hour,
+        minute,
+      );
 
   Future<bool> _isPrivateMode() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('active_data_mode') == AppDataMode.private.name;
   }
+}
+
+/// The next occurrence of [hour]:[minute] at or after [now] — the seed date for
+/// a daily repeat.
+///
+/// [now] is a parameter rather than read inside, so the DST behaviour can be
+/// tested at all: the transition dates are fixed points in the calendar and the
+/// bug only shows on the eve of one. The result is built in `now.location`, NOT
+/// `tz.local` — otherwise a test could set up a transition in one zone and be
+/// silently answered in another (UTC, which has no transitions, would pass
+/// against the very arithmetic this replaced).
+@visibleForTesting
+tz.TZDateTime nextInstanceOfTimeFrom(tz.TZDateTime now, int hour, int minute) {
+  tz.TZDateTime scheduledDate = tz.TZDateTime(
+    now.location,
+    now.year,
+    now.month,
+    now.day,
+    hour,
+    minute,
+  );
+  if (scheduledDate.isBefore(now)) {
+    // CALENDAR arithmetic, not `add(Duration(days: 1))`. A Duration day is a
+    // fixed 24 hours; a calendar day across a DST transition is 23 or 25. So
+    // adding one to a 09:00 seed on the eve of a spring-forward lands at
+    // 10:00, and the first firing of that reminder is an hour late.
+    // `matchDateTimeComponents` re-matches wall clock on every LATER firing,
+    // which is exactly why only the seed was ever wrong — and why it was easy
+    // to miss. Rebuilding through the constructor re-resolves the zone offset
+    // for the target date, which is what makes the wall-clock time hold.
+    scheduledDate = tz.TZDateTime(
+      now.location,
+      now.year,
+      now.month,
+      now.day + 1,
+      hour,
+      minute,
+    );
+  }
+  return scheduledDate;
+}
+
+/// Next occurrence of [hour]:[minute] falling on ISO [weekday] (1=Mon…7=Sun),
+/// the seed date for a `dayOfWeekAndTime` weekly repeat. See
+/// [nextInstanceOfTimeFrom] for why [now] is a parameter.
+@visibleForTesting
+tz.TZDateTime nextInstanceOfWeekdayTimeFrom(
+  tz.TZDateTime now,
+  int weekday,
+  int hour,
+  int minute,
+) {
+  tz.TZDateTime scheduledDate = nextInstanceOfTimeFrom(now, hour, minute);
+  // Same calendar-day rule as above. NOT a wrong-weekday bug, despite how it
+  // looks: this loop exits only when the weekday already matches, so the result
+  // is always the requested day. What a Duration walk got wrong is the HOUR —
+  // and for a reminder set near midnight, an hour of drift is a ~23-hour
+  // displacement of when it actually fires within that correct day.
+  while (scheduledDate.weekday != weekday) {
+    scheduledDate = tz.TZDateTime(
+      now.location,
+      scheduledDate.year,
+      scheduledDate.month,
+      scheduledDate.day + 1,
+      hour,
+      minute,
+    );
+  }
+  return scheduledDate;
 }
 
 @pragma('vm:entry-point')
@@ -941,11 +1358,19 @@ void notificationTapBackground(NotificationResponse response) async {
       prefs.getString('active_data_mode') == AppDataMode.private.name;
   AppLogger.setExternalReportingDisabled(isPrivateMode);
 
-  if (!isPrivateMode) {
-    // Initialize Supabase if needed. Crucially, use SecureLocalStorage so the
-    // persisted auth session is restored in this background isolate — without
-    // it currentUser is null and Done/Skip silently no-op when the app is
-    // terminated (NOTIF-1). Must mirror main.dart's initialization.
+  // The SAME gate as `main()`, not just `!isPrivateMode`. This isolate restores
+  // the Keychain session exactly as a cold start does, so leaving it on the old
+  // predicate would keep the pre-consent hole open here after closing it there:
+  // a device that loses `NSUserDefaults` without losing its app container has
+  // scheduled notifications that survive, and tapping one would refresh the
+  // token before the user had answered anything.
+  if (shouldInitialiseSupabaseAtStartup(
+    hasCompletedConsent: prefs.getBool(kHasCompletedConsentPrefKey) ?? false,
+    isPrivateMode: isPrivateMode,
+  )) {
+    // Use SecureLocalStorage so the persisted auth session is restored in this
+    // background isolate — without it currentUser is null and Done/Skip silently
+    // no-op when the app is terminated (NOTIF-1). Mirrors main.dart.
     try {
       Supabase.instance.client;
     } catch (e) {

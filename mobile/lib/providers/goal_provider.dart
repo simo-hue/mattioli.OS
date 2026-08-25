@@ -801,13 +801,90 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     }
   }
 
+  /// Removes the habit from the user's list — ARCHIVING it when it has history.
+  ///
+  /// Smart delete, matching the web client (`useGoals.ts`): a habit with no logs
+  /// is deleted outright, because there is nothing to preserve and an archived
+  /// empty row is just litter. A habit with logs is archived by stamping
+  /// `end_date` — the row and every `goal_logs` row it owns stay.
+  ///
+  /// This exists because a hard delete cascades. `goal_logs.goal_id REFERENCES
+  /// goals(id) ON DELETE CASCADE` (schema.sql), so deleting a two-year habit
+  /// destroyed two years of tracking, irreversibly, behind a confirm dialog that
+  /// only named the habit. The web client had never done that; the two clients
+  /// gave opposite outcomes for the same tap.
+  ///
+  /// The habit VANISHES from every "what am I doing now" surface — the manage
+  /// sheet, the day card, the calendars, the current-habits stats tab all filter
+  /// on `isActiveOn`/`isScheduledOn` — while remaining selectable in the
+  /// statistics habit picker (which reads the unfiltered list) and still drawn
+  /// on the past days it was live. That is the whole point: removed, not erased.
+  ///
+  /// `end_date` is YESTERDAY, not today, for two reasons: `isActiveOn` is
+  /// INCLUSIVE of the end date, so stamping today would leave the habit sitting
+  /// in the manage sheet the user just removed it from; and the web client
+  /// stamps yesterday, so the two agree on what "archived" means.
   Future<void> deleteHabit(String id) async {
-    // Snapshot for optimistic rollback if persistence fails.
+    final isPrivate =
+        ref.read(activeDataModeProvider) == AppDataMode.private;
+
+    // ARCHIVE OPTIMISTICALLY FIRST, before deciding whether this is really an
+    // archive or a delete.
+    //
+    // Both outcomes hide the habit from every "what am I doing now" surface, so
+    // stamping the end date up front is correct either way — and it is the only
+    // way the row disappears the moment the user confirms. Probing first left
+    // the habit sitting there, fully tappable, for two network round trips with
+    // no spinner and no disabled state; on a dead network that is a minute of a
+    // confirmed delete visibly doing nothing.
+    //
+    // It also keeps the rollback snapshot honest without any reasoning about
+    // await points: the snapshot and the mutation are adjacent and synchronous,
+    // so a second delete confirmed while this one is probing snapshots a state
+    // that already reflects this one.
     final previousGoals = state;
+    final now = DateTime.now();
+    // Calendar arithmetic, never `Duration(days: 1)`: a Duration day is a fixed
+    // 24h and lands on the wrong date across a DST transition.
+    final yesterday = DateTime(now.year, now.month, now.day - 1);
+    Goal? archived;
+    state = <Goal>[
+      for (final g in state)
+        if (g.id == id) archived = g.copyWith(endDate: yesterday) else g,
+    ];
+    if (archived == null) return; // Already gone; nothing to do.
+
+    // Does this habit have history worth keeping? Asked of the STORE, never of
+    // the in-memory log map: a failed or not-yet-settled load leaves that map
+    // empty, and reading empty as "no history" would hard-delete exactly the
+    // habits this method exists to protect. Unanswerable ⇒ archive, the choice
+    // that cannot destroy anything.
+    final bool hasHistory;
+    try {
+      hasHistory = isPrivate
+          ? await _privateHabitHasHistory(id)
+          : await _cloudHabitHasHistory(id);
+    } catch (e, stack) {
+      AppLogger.warning(
+        '[Goals] Could not establish whether $id has history — archiving',
+        e,
+        stack,
+      );
+      await _persistArchive(archived, previousGoals, isPrivate: isPrivate);
+      return;
+    }
+
+    if (hasHistory) {
+      await _persistArchive(archived, previousGoals, isPrivate: isPrivate);
+      return;
+    }
+
+    // Nothing to preserve, so take the row out entirely rather than leaving an
+    // archived husk the user can never see or reach again.
     final newGoals = state.where((h) => h.id != id).toList();
     state = newGoals;
 
-    if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+    if (isPrivate) {
       try {
         await ref.read(privateLocalDatabaseProvider).deleteGoal(id);
         unawaited(NotificationService().cancelHabitReminder(id));
@@ -858,6 +935,95 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       // Restore the habit that failed to delete.
       state = previousGoals;
       _saveToCache(previousGoals);
+      _showGoalError(
+        t.common.errorDuringDeletion,
+        t.common.habitDeleteFailed,
+        e,
+      );
+    }
+  }
+
+  /// Whether [id] has anything worth preserving in the private store.
+  ///
+  /// BOTH cascading children, not just `goal_logs`. `goal_progress.goal_id` also
+  /// references `goals(id) ON DELETE CASCADE` (schema.sql), and a quantitative
+  /// habit can accumulate progress with no verdict row at all: a partially-met
+  /// target scores `pending`, which stores the amount and DELETES the verdict.
+  /// A non-daily target is worse — the sweep returns nothing for anything but a
+  /// daily period — so "run 50 km a month", logged 5 km a day for six months and
+  /// never completed, has ~120 progress rows and zero logs. Asking only about
+  /// logs would call that "no history" and hard-delete every kilometre.
+  Future<bool> _privateHabitHasHistory(String id) async {
+    final store = ref.read(privateLocalDatabaseProvider);
+    final logs = await store.loadHabitLogs();
+    for (final day in logs.values) {
+      if (day.containsKey(id)) return true;
+    }
+    final progress = await store.loadHabitProgress();
+    for (final day in progress.values) {
+      if (day.containsKey(id)) return true;
+    }
+    return false;
+  }
+
+  /// Whether [id] has anything worth preserving on the server. See
+  /// [_privateHabitHasHistory] for why `goal_progress` counts too.
+  ///
+  /// One row is enough — `.limit(1)`, not a count: the answer is a boolean and a
+  /// habit with years of history should not pay for an exact tally to produce it.
+  /// A throw propagates to [deleteHabit], which archives rather than guesses.
+  Future<bool> _cloudHabitHasHistory(String id) async {
+    final logs = await supabase
+        .from('goal_logs')
+        .select('id')
+        .eq('goal_id', id)
+        .limit(1);
+    if (logs.isNotEmpty) return true;
+    final progress = await supabase
+        .from('goal_progress')
+        .select('id')
+        .eq('goal_id', id)
+        .limit(1);
+    return progress.isNotEmpty;
+  }
+
+  /// Archives [id] by stamping `end_date` = yesterday, preserving its history.
+  ///
+  /// PERSISTS the archive [deleteHabit] has already applied to `state`.
+  ///
+  /// Reminders and any device-local Screen Time selection are torn down exactly
+  /// as a hard delete would: an archived habit must stop notifying and stop
+  /// being monitored — it is gone from the user's day either way. The reminder
+  /// also has to be filtered out of `settings_provider`'s reschedule loop, or
+  /// this cancel is undone by the next settings change.
+  Future<void> _persistArchive(
+    Goal archived,
+    List<Goal> previousGoals, {
+    required bool isPrivate,
+  }) async {
+    final id = archived.id;
+    try {
+      if (isPrivate) {
+        await ref.read(privateLocalDatabaseProvider).upsertGoal(archived);
+      } else {
+        // `end_date` only, deliberately. A full `toJson` payload would re-send
+        // every column of a habit the user is REMOVING, so a stale in-memory
+        // field would be written back to the server as a side effect of a
+        // delete. Nothing here needs to clear the column, so the
+        // omitted-column hazard that forces `reminder_time`/`target` to be
+        // force-written on the edit path does not apply.
+        await supabase
+            .from('goals')
+            .update({'end_date': archived.endDate!.toIso8601String()})
+            .eq('id', id);
+        _saveToCache(state);
+      }
+      unawaited(NotificationService().cancelHabitReminder(id));
+      unawaited(ref.read(screenTimeSelectionsProvider.notifier).remove(id));
+    } catch (e, stack) {
+      AppLogger.error('[Goals] Archive error', e, stack);
+      state = previousGoals;
+      if (!isPrivate) _saveToCache(previousGoals);
       _showGoalError(
         t.common.errorDuringDeletion,
         t.common.habitDeleteFailed,

@@ -543,9 +543,9 @@
     "systemPermissionsHeader": "أذونات النظام",
     "sentryHelpSubtitle": "ساعدنا في تحسين التطبيق (Sentry)",
     "errors": {
-      "deletePrefix": "خطأ في الحذف: ",
-      "exportPrefix": "خطأ في التصدير: ",
-      "resetPrefix": "خطأ في إعادة التعيين: "
+      "exportFailed": "تعذّر تصدير بياناتك. حاول مرة أخرى.",
+      "resetFailed": "تعذّرت إعادة تعيين بياناتك. حاول مرة أخرى.",
+      "deleteFailed": "تعذّر حذف حسابك. حاول مرة أخرى."
     },
     "privateDataDeletedSuccess": "تم حذف البيانات الخاصة بنجاح!",
     "deletePrivateData": "حذف البيانات الخاصة",
@@ -679,7 +679,7 @@
       "unlimitedMacroGoals": "أنشئ كل أهدافك الكبرى دون حدود.",
       "deepCharts": "رسوم بيانية معمّقة وتحليل للاتجاهات.",
       "advancedStats": "إحصاءات متقدّمة",
-      "smartSuggestions": "نشغّله نيابةً عنك: بلا مفتاح API. ويمكنك أيضًا استخدام حساب OpenRouter الخاص بك مجانًا.",
+      "smartSuggestions": "مدرّب يمكنك التحدّث معه عن عاداتك: مُضمَّن، ونحن نشغّله.",
       "unlimitedGoals": "أهداف غير محدودة"
     },
     "status": {
@@ -730,7 +730,7 @@
     },
     "personalizedAiCoach": "AI Coach بلا إعداد",
     "unlimitedHabits": "عادات غير محدودة",
-    "advancedTrendAnalysisAndSmartAi": "نشغّله نحن بمفتاحنا: لا مفتاح API تبحث عنه، ولا حساب ثانٍ. تفضّل حساب OpenRouter الخاص بك؟ هذا مجاني أيضًا.",
+    "advancedTrendAnalysisAndSmartAi": "مدرّب يمكنك التحدّث معه عن عاداتك. نشغّله نحن بمفتاحنا: بلا مفتاح API وبلا حساب ثانٍ.",
     "createAndTrackAllTheHabits": "أنشئ وتتبّع كل العادات التي تريدها دون أي حدود.",
     "maybeLater": "ربما لاحقاً",
     "keyInsightsToBoostYourProductivity": "رؤى أساسية لتعزيز إنتاجيتك.",
@@ -826,9 +826,9 @@
       "statusMissing": "غير مُعيَّن",
       "saveFailed": "تعذّر حفظ المفتاح في سلسلة المفاتيح. حاول مرة أخرى.",
       "setupTitle": "إعداد الـ AI Coach",
-      "setupBody": "طريقتان لتشغيله: Evolve Pro يتضمّن الكوتش بلا أي إعداد، أو تربط حساب OpenRouter الخاص بك مجانًا. كلاهما في الإعدادات.",
+      "setupBody": "الـ AI Coach مُضمَّن في Evolve Pro — نشغّله نيابةً عنك، بلا مفتاح API وبلا حساب ثانٍ.",
       "setupAction": "فتح الإعدادات",
-      "descriptionProActive": "يشغّل Evolve Pro الكوتش نيابةً عنك بالفعل، دون الحاجة إلى أي مفتاح. اربط حساب OpenRouter الخاص بك فقط إذا كنت تفضّل استخدام حسابك.",
+      "descriptionProActive": "يشغّل Evolve Pro الـ AI Coach نيابةً عنك بالفعل، دون الحاجة إلى أي مفتاح.",
       "setupBodyPrivate": "الوضع الخاص لا يحتفظ بحساب، لذا يعمل الكوتش عبر حساب OpenRouter الخاص بك. أضف مفتاحًا من الإعدادات لبدء المحادثة.",
       "accountModeNote": "مع وجود حساب، يعمل مدرّب الذكاء الاصطناعي عبر Evolve Pro. لاستخدام مفتاح OpenRouter الخاص بك، بدّل إلى الوضع الخاص."
     },
@@ -845,7 +845,7 @@
     "coachModes": {
       "standardName": "Evolve Pro",
       "standardDesc": "مُضمَّن في اشتراكك. بلا إعداد وبلا مفتاح API.",
-      "standardNeedsPro": "مدرّب الذكاء الاصطناعي مُضمَّن في Evolve Pro. يمكنك أيضًا ربط حساب OpenRouter الخاص بك مجانًا.",
+      "standardNeedsPro": "AI Coach مُضمَّن في Evolve Pro.",
       "standardRateLimited": "لقد وصلت إلى حد استخدام مدرّب الذكاء الاصطناعي حاليًا. يُرجى المحاولة لاحقًا.",
       "byokName": "اربط حساب OpenRouter الخاص بك",
       "byokDesc": "مجانًا. استخدم حساب OpenRouter الخاص بك — الاستهلاك يبقى لك.",
@@ -1176,6 +1176,7 @@
     "mood": "المزاج",
     "birth": "الميلاد",
     "productiveLifeTitle": "حياتي المنتجة",
+    "lifeViewNeedsDob": "أضِف تاريخ ميلادك في المعلومات الشخصية لترى حياتك بالأشهر.",
     "aiChat": "محادثة AI",
     "manager": "الإدارة",
     "reminder": "تذكير",

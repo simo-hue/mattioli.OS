@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../kit/evolve_async_error.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme.dart';
@@ -142,18 +143,20 @@ class GlobalAlertsTabWidget extends ConsumerWidget {
           },
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (err, stack) => Center(
-            child: Text(
-              '${context.t.common.status.error}: $err',
-              style: TextStyle(color: context.appColors.mutedForeground),
+            child: EvolveAsyncError(
+              error: err,
+              stackTrace: stack,
+              context: '[Stats] global alerts',
             ),
           ),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(
-        child: Text(
-          '${context.t.common.status.error}: $err',
-          style: TextStyle(color: context.appColors.mutedForeground),
+        child: EvolveAsyncError(
+          error: err,
+          stackTrace: stack,
+          context: '[Stats] global alerts',
         ),
       ),
     );
@@ -524,7 +527,11 @@ class _MiglioramentoCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(LucideIcons.circleAlert, size: 14, color: Color(0xFFEF4444)),
+              const Icon(
+                LucideIcons.circleAlert,
+                size: 14,
+                color: Color(0xFFEF4444),
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
@@ -570,8 +577,7 @@ class _MiglioramentoCard extends StatelessWidget {
                               ),
                             ),
                             TextSpan(
-                              text:
-                                  ' ${context.t.statistics.ofCompletion}',
+                              text: ' ${context.t.statistics.ofCompletion}',
                             ),
                           ],
                         ),
@@ -633,7 +639,11 @@ class _AnalisiFallimentiSectionState extends State<_AnalisiFallimentiSection> {
       children: [
         Row(
           children: [
-            const Icon(LucideIcons.chartBar, size: 16, color: Color(0xFFF97316)),
+            const Icon(
+              LucideIcons.chartBar,
+              size: 16,
+              color: Color(0xFFF97316),
+            ),
             const SizedBox(width: 8),
             Text(
               context.t.statistics.failureAnalysis,

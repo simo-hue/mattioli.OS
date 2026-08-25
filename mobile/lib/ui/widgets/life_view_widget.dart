@@ -12,20 +12,29 @@ class LifeViewWidget extends ConsumerWidget {
     final userProfile = ref.watch(userProfileProvider);
     final dobStr = userProfile.dateOfBirth;
 
-    int birthYear = 2003; // Fallback
-    int endYear = 2088; // Fallback
-    DateTime birthDate = DateTime(birthYear, 1, 1);
-
-    if (dobStr != null) {
-      final parsedDate = DateTime.tryParse(dobStr);
-      if (parsedDate != null) {
-        birthDate = parsedDate;
-        birthYear = birthDate.year;
-        endYear = birthYear + 85;
-      }
-    }
-
+    // NO FALLBACK BIRTH YEAR.
+    //
+    // This used to default to 2003, and the consequence was not a cosmetic one:
+    // every number on this screen is derived from it, so a user who had never
+    // entered a date of birth was shown a complete, plausible, entirely
+    // fabricated life — months lived, current age, months remaining — with
+    // nothing marking any of it as invented. Someone twice that age read their
+    // own life back wrong.
+    //
+    // A missing date is not a number we are allowed to guess. Say so instead.
+    final parsed = dobStr == null ? null : DateTime.tryParse(dobStr);
+    // A date in the FUTURE is treated as absent too. It cannot be a birth date,
+    // and every figure here is a subtraction from it — so it renders "-41 months
+    // lived, age -4", which is the same class of nonsense as the invented 2003.
+    // Not reachable through the picker; reachable through synced or imported
+    // data, which is where a bad value actually comes from.
     final now = DateTime.now();
+    final birthDate =
+        parsed == null || parsed.isAfter(now) ? null : parsed;
+    if (birthDate == null) return const _NeedsDateOfBirth();
+
+    final int birthYear = birthDate.year;
+    final int endYear = birthYear + 85;
 
     final int totalMonths = (endYear - birthYear + 1) * 12;
     final int livedMonths =
@@ -288,4 +297,46 @@ class _LifeGridPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Shown in place of the whole life grid when no date of birth is set.
+///
+/// Deliberately keeps the panel and its title, so the view still explains what
+/// it IS — it simply declines to invent the one input it needs.
+class _NeedsDateOfBirth extends StatelessWidget {
+  const _NeedsDateOfBirth();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+      decoration: AppTheme.glassPanelDecoration(context, radius: 14),
+      child: Column(
+        children: [
+          Text(
+            context.t.habits.productiveLifeTitle,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: context.appColors.foreground,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            context.t.habits.lifeViewNeedsDob,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 14,
+              height: 1.45,
+              color: context.appColors.mutedForeground,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

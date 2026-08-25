@@ -543,9 +543,9 @@
     "systemPermissionsHeader": "SYSTEM PERMISSIONS",
     "sentryHelpSubtitle": "Help us improve the app (Sentry)",
     "errors": {
-      "deletePrefix": "Deletion error: ",
-      "exportPrefix": "Export error: ",
-      "resetPrefix": "Reset error: "
+      "exportFailed": "We could not export your data. Try again.",
+      "resetFailed": "We could not reset your data. Try again.",
+      "deleteFailed": "We could not delete your account. Try again."
     },
     "privateDataDeletedSuccess": "Private data deleted successfully!",
     "deletePrivateData": "Delete Private Data",
@@ -679,7 +679,7 @@
       "unlimitedMacroGoals": "Create all your macro goals without limits.",
       "deepCharts": "Deep charts and trend analysis.",
       "advancedStats": "Advanced Statistics",
-      "smartSuggestions": "We run it for you — no API key needed. Your own OpenRouter account works too, free.",
+      "smartSuggestions": "A coach you can chat with about your habits — included, and run on our key.",
       "unlimitedGoals": "Unlimited Goals"
     },
     "status": {
@@ -730,7 +730,7 @@
     },
     "personalizedAiCoach": "AI Coach, with no setup",
     "unlimitedHabits": "Unlimited Habits",
-    "advancedTrendAnalysisAndSmartAi": "We run it on our key — no API key to fetch, no second account. Prefer your own OpenRouter account? That's free too.",
+    "advancedTrendAnalysisAndSmartAi": "A coach you can chat with about your habits. We run it on our key: no API key, no second account.",
     "createAndTrackAllTheHabits": "Create and track all the habits you want without any limits.",
     "maybeLater": "Maybe later",
     "keyInsightsToBoostYourProductivity": "Key insights to boost your productivity.",
@@ -826,9 +826,9 @@
       "statusMissing": "Not set",
       "saveFailed": "Couldn't save the key to the keychain. Try again.",
       "setupTitle": "Set up your AI Coach",
-      "setupBody": "Two ways to run it: Evolve Pro includes the coach with no setup at all, or connect your own OpenRouter account for free. Both live in Settings.",
+      "setupBody": "The AI Coach comes with Evolve Pro — we run it for you, with no API key and no second account.",
       "setupAction": "Open Settings",
-      "descriptionProActive": "Evolve Pro already runs the coach for you, with no key needed. Connect your own OpenRouter account only if you would rather run it on yours.",
+      "descriptionProActive": "Evolve Pro already runs the coach for you, with no key needed.",
       "setupBodyPrivate": "Private mode keeps no account, so the coach runs on your own OpenRouter account. Add a key in Settings to start chatting.",
       "accountModeNote": "With an account, the AI Coach runs on Evolve Pro. To use your own OpenRouter key, switch to Private mode."
     },
@@ -845,7 +845,7 @@
     "coachModes": {
       "standardName": "Evolve Pro",
       "standardDesc": "Included with your subscription. No setup, no API key.",
-      "standardNeedsPro": "The AI Coach is included with Evolve Pro. You can also connect your own OpenRouter account for free.",
+      "standardNeedsPro": "The AI Coach is included with Evolve Pro.",
       "standardRateLimited": "You've reached the AI Coach usage limit for now. Please try again a little later.",
       "byokName": "Connect your OpenRouter account",
       "byokDesc": "Free. Use your own OpenRouter account — your usage stays yours.",
@@ -1176,6 +1176,7 @@
     "mood": "Mood",
     "birth": "birth",
     "productiveLifeTitle": "My Productive Life",
+    "lifeViewNeedsDob": "Add your date of birth in Personal Information to see your life in months.",
     "aiChat": "AI Chat",
     "manager": "Manager",
     "reminder": "Reminder",

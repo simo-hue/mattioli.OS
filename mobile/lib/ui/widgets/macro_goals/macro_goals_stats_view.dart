@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../kit/evolve_async_error.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:fl_chart/fl_chart.dart';
@@ -90,7 +91,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                 children: [
                   Text(
                     'Performance',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: context.appColors.foreground,
@@ -117,9 +119,10 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
       error: (err, stack) => SizedBox(
         height: 300,
         child: Center(
-          child: Text(
-            '${context.t.common.status.error}: $err',
-            style: TextStyle(color: context.appColors.mutedForeground),
+          child: EvolveAsyncError(
+            error: err,
+            stackTrace: stack,
+            context: '[Stats] macro goals',
           ),
         ),
       ),
@@ -161,8 +164,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
             child: _buildHighlightCard(
               title: context.t.macroGoals.strength,
               value: bestCategory,
-              subtitle:
-                  '$bestCatRate% ${context.t.common.ofCompletion}',
+              subtitle: '$bestCatRate% ${context.t.common.ofCompletion}',
               icon: LucideIcons.zap,
               color: const Color(0xFFA855F7),
             ),
@@ -174,8 +176,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
               value: (bestMonthIdx != null && bestMonthIdx > 0)
                   ? _monthLabel(bestMonthIdx, abbreviated: true)
                   : context.t.common.none,
-              subtitle:
-                  '$bestMonthRate% ${context.t.macroGoals.successRate2}',
+              subtitle: '$bestMonthRate% ${context.t.macroGoals.successRate2}',
               icon: LucideIcons.trophy,
               color: const Color(0xFFF59E0B),
             ),
@@ -227,7 +228,9 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
           Expanded(
             child: _buildKpiCard(
               context.t.macroGoals.trend,
-              (trendPositive ? context.t.statistics.growth : context.t.statistics.decline),
+              (trendPositive
+                  ? context.t.statistics.growth
+                  : context.t.statistics.decline),
               trendPositive ? LucideIcons.trendingUp : LucideIcons.trendingDown,
               color: const Color(0xFF60A5FA),
             ),
@@ -294,8 +297,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
             child: _buildHighlightCard(
               title: context.t.macroGoals.globalSuccess,
               value: '$succ%',
-              subtitle:
-                  '$comp ${context.t.macroGoals.completedGoals}',
+              subtitle: '$comp ${context.t.macroGoals.completedGoals}',
               icon: LucideIcons.trophy,
               color: const Color(0xFF10B981),
             ),
@@ -309,8 +311,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
             child: _buildHighlightCard(
               title: context.t.macroGoals.bestYear,
               value: bestYear != null ? '$bestYear' : 'N/A',
-              subtitle:
-                  '$bestYearRate% ${context.t.macroGoals.completion}',
+              subtitle: '$bestYearRate% ${context.t.macroGoals.completion}',
               icon: LucideIcons.calendar,
               color: const Color(0xFFD97706),
             ),
@@ -320,8 +321,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
             child: _buildHighlightCard(
               title: context.t.macroGoals.mostProductiveYear,
               value: mostProdYear != null ? '$mostProdYear' : 'N/A',
-              subtitle:
-                  '$mostProdCount ${context.t.macroGoals.totalGoals}',
+              subtitle: '$mostProdCount ${context.t.macroGoals.totalGoals}',
               icon: LucideIcons.activity,
               color: const Color(0xFF06B6D4),
             ),
@@ -499,7 +499,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
               Expanded(
                 child: Text(
                   title.toUpperCase(),
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 10,
                     color: color.withValues(alpha: 0.8),
                     fontWeight: FontWeight.w700,
@@ -523,7 +524,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
           const SizedBox(height: 12),
           Text(
             value,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: 24,
               color: context.appColors.foreground,
               fontWeight: FontWeight.w800,
@@ -533,7 +535,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: 11,
               color: context.appColors.mutedForeground,
               fontWeight: FontWeight.w500,
@@ -566,7 +569,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
               Expanded(
                 child: Text(
                   title,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 11,
                     color: context.appColors.mutedForeground,
                     letterSpacing: -0.2,
@@ -581,7 +585,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
           const SizedBox(height: 8),
           Text(
             value,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: 18,
               color: context.appColors.foreground,
               fontWeight: FontWeight.w700,
@@ -618,7 +623,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
         children: [
           Text(
             title,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: 17,
               color: context.appColors.foreground,
               fontWeight: FontWeight.w700,
@@ -628,7 +634,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: 13,
               color: context.appColors.mutedForeground,
               fontWeight: FontWeight.w400,
@@ -693,7 +700,9 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
               rightTitles: const AxisTitles(
                 sideTitles: SideTitles(showTitles: false),
               ),
-              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              topTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
               bottomTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
@@ -704,7 +713,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                       padding: const EdgeInsets.only(top: 8.0),
                       child: Text(
                         _monthLabel(val.toInt(), abbreviated: true),
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 10,
                           color: context.appColors.mutedForeground,
                         ),
@@ -721,7 +731,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                   getTitlesWidget: (val, meta) {
                     return Text(
                       val.toInt().toString(),
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 10,
                         color: context.appColors.mutedForeground,
                       ),
@@ -856,7 +867,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
               }
               return const RadarChartTitle(text: '');
             },
-            titleTextStyle: TextStyle(fontFamily: 'Inter', 
+            titleTextStyle: TextStyle(
+              fontFamily: 'Inter',
               fontSize: 10,
               color: context.appColors.mutedForeground,
             ),
@@ -949,7 +961,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                   showTitles: true,
                   getTitlesWidget: (val, meta) => Text(
                     'Q${val.toInt()}',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: 10,
                       color: context.appColors.mutedForeground,
                     ),
@@ -1051,7 +1064,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                   final comp = (item?['completed'] as num?)?.toInt() ?? 0;
                   return BarTooltipItem(
                     '${_monthLabel(m)}\n',
-                    TextStyle(fontFamily: 'Inter', 
+                    TextStyle(
+                      fontFamily: 'Inter',
                       color: context.appColors.foreground,
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
@@ -1059,14 +1073,16 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                     children: [
                       TextSpan(
                         text: '${context.t.macroGoals.total}$tot\n',
-                        style: const TextStyle(fontFamily: 'Inter', 
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
                           color: Color(0xFF6366F1),
                           fontSize: 10,
                         ),
                       ),
                       TextSpan(
                         text: '${context.t.macroGoals.completed2}$comp',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           color: Theme.of(context).colorScheme.primary,
                           fontSize: 10,
                         ),
@@ -1099,7 +1115,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                   reservedSize: 30,
                   getTitlesWidget: (v, _) => Text(
                     v.toInt().toString(),
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: 10,
                       color: context.appColors.mutedForeground,
                     ),
@@ -1118,7 +1135,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
                         _monthLabel(index, abbreviated: true),
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 10,
                           color: context.appColors.mutedForeground,
                           fontWeight: FontWeight.w600,
@@ -1214,7 +1232,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                   children: [
                     Text(
                       '$totalCount',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
                         color: context.appColors.foreground,
@@ -1222,7 +1241,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                     ),
                     Text(
                       context.t.macroGoals.goals,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 12,
                         color: context.appColors.mutedForeground,
                       ),
@@ -1280,7 +1300,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                     Expanded(
                       child: Text(
                         label,
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 12,
                           color: context.appColors.foreground,
                         ),
@@ -1289,7 +1310,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                     ),
                     Text(
                       '$perc%',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 12,
                         color: context.appColors.mutedForeground,
                       ),
@@ -1396,7 +1418,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                       final comp = item['completed'] as int? ?? 0;
                       return BarTooltipItem(
                         '$y\n',
-                        TextStyle(fontFamily: 'Inter', 
+                        TextStyle(
+                          fontFamily: 'Inter',
                           color: context.appColors.foreground,
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
@@ -1404,23 +1427,24 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                         children: [
                           TextSpan(
                             text: '${context.t.macroGoals.active}$act\n',
-                            style: const TextStyle(fontFamily: 'Inter', 
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
                               color: Color(0xFF3B82F6),
                               fontSize: 11,
                             ),
                           ),
                           TextSpan(
-                            text:
-                                '${context.t.macroGoals.failed2}$fail\n',
-                            style: const TextStyle(fontFamily: 'Inter', 
+                            text: '${context.t.macroGoals.failed2}$fail\n',
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
                               color: Color(0xFFEF4444),
                               fontSize: 11,
                             ),
                           ),
                           TextSpan(
-                            text:
-                                '${context.t.macroGoals.completed2}$comp',
-                            style: const TextStyle(fontFamily: 'Inter', 
+                            text: '${context.t.macroGoals.completed2}$comp',
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
                               color: Color(0xFF10B981),
                               fontSize: 11,
                             ),
@@ -1455,7 +1479,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                         padding: const EdgeInsets.only(right: 8),
                         child: Text(
                           v.toInt().toString(),
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: 10,
                             color: context.appColors.mutedForeground,
                           ),
@@ -1477,7 +1502,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                           padding: const EdgeInsets.only(top: 10),
                           child: Text(
                             y?.toString() ?? '',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: 10,
                               color: context.appColors.mutedForeground,
                               fontWeight: FontWeight.w600,
@@ -1526,7 +1552,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                 const SizedBox(width: 6),
                 Text(
                   i.label,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 12,
                     color: context.appColors.mutedForeground,
                   ),
@@ -1561,7 +1588,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                       width: 85,
                       child: Text(
                         e.key,
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 12,
                           color: context.appColors.mutedForeground,
                         ),
@@ -1602,7 +1630,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                       width: 30,
                       child: Text(
                         '${e.value}',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 12,
                           color: context.appColors.foreground,
                           fontWeight: FontWeight.bold,
@@ -1701,7 +1730,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                       final comp = (item?['completed'] as num?)?.toInt() ?? 0;
                       return BarTooltipItem(
                         '${context.t.macroGoals.quarterNumber(quarter: q)}\n',
-                        TextStyle(fontFamily: 'Inter', 
+                        TextStyle(
+                          fontFamily: 'Inter',
                           color: context.appColors.foreground,
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
@@ -1709,23 +1739,24 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                         children: [
                           TextSpan(
                             text: '${context.t.macroGoals.active}$act\n',
-                            style: const TextStyle(fontFamily: 'Inter', 
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
                               color: Color(0xFF3B82F6),
                               fontSize: 10,
                             ),
                           ),
                           TextSpan(
-                            text:
-                                '${context.t.macroGoals.failed2}$fail\n',
-                            style: const TextStyle(fontFamily: 'Inter', 
+                            text: '${context.t.macroGoals.failed2}$fail\n',
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
                               color: Color(0xFFD97706),
                               fontSize: 10,
                             ),
                           ),
                           TextSpan(
-                            text:
-                                '${context.t.macroGoals.completed2}$comp',
-                            style: const TextStyle(fontFamily: 'Inter', 
+                            text: '${context.t.macroGoals.completed2}$comp',
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
                               color: Color(0xFF10B981),
                               fontSize: 10,
                             ),
@@ -1762,7 +1793,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
                             'Q$index',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: 10,
                               color: context.appColors.mutedForeground,
                               fontWeight: FontWeight.w600,
@@ -1824,7 +1856,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                   return touchedSpots.map((s) {
                     return LineTooltipItem(
                       '${_monthLabel(s.x.toInt())}\n',
-                      TextStyle(fontFamily: 'Inter', 
+                      TextStyle(
+                        fontFamily: 'Inter',
                         color: context.appColors.mutedForeground,
                         fontSize: 10,
                       ),
@@ -1832,7 +1865,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                         TextSpan(
                           text:
                               '${s.y.round()}%${context.t.macroGoals.success}',
-                          style: const TextStyle(fontFamily: 'Inter', 
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
                             color: Color(0xFF10B981),
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
@@ -1863,7 +1897,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                   reservedSize: 34,
                   getTitlesWidget: (v, _) => Text(
                     '${v.toInt()}%',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: 9,
                       color: context.appColors.mutedForeground,
                     ),
@@ -1881,7 +1916,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
                         _monthLabel(idx, abbreviated: true),
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 9,
                           color: context.appColors.mutedForeground,
                           fontWeight: FontWeight.w600,
@@ -2044,7 +2080,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                           categorySpans.add(
                             TextSpan(
                               text: '${c.label}: $count\n',
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 color: c.color,
                                 fontSize: 10,
                                 fontWeight: FontWeight.w500,
@@ -2056,7 +2093,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
 
                       return BarTooltipItem(
                         '$y\n',
-                        TextStyle(fontFamily: 'Inter', 
+                        TextStyle(
+                          fontFamily: 'Inter',
                           color: context.appColors.foreground,
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
@@ -2086,7 +2124,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                       reservedSize: 30,
                       getTitlesWidget: (v, _) => Text(
                         v.toInt().toString(),
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 10,
                           color: context.appColors.mutedForeground,
                         ),
@@ -2107,7 +2146,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
                             y?.toString() ?? '',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: 10,
                               color: context.appColors.mutedForeground,
                               fontWeight: FontWeight.w600,

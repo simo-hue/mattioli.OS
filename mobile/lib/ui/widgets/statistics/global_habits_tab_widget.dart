@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../kit/evolve_async_error.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -29,35 +30,38 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
     List<Goal> goals,
     String filter,
   ) {
-    return stats.where((stat) {
-      final goalId = stat['goal_id'] as String;
-      final goal = goals.cast<Goal?>().firstWhere(
-        (g) => g?.id == goalId,
-        orElse: () => null,
-      );
-      if (goal == null) return false;
-      
-      if (filter == 'active') {
-        return goal.isActiveOn(DateTime.now());
-      }
-      return true;
-    }).map((stat) {
-      final goalId = stat['goal_id'] as String;
-      final goal = goals.cast<Goal?>().firstWhere(
-        (g) => g?.id == goalId,
-        orElse: () => null,
-      );
+    return stats
+        .where((stat) {
+          final goalId = stat['goal_id'] as String;
+          final goal = goals.cast<Goal?>().firstWhere(
+            (g) => g?.id == goalId,
+            orElse: () => null,
+          );
+          if (goal == null) return false;
 
-      return {
-        'goal_id': goalId,
-        'name': stat['title'] ?? '',
-        'color': goal?.color ?? const Color(0xFF64748B),
-        'best': stat['best_streak'] ?? 0,
-        'worst': stat['worst_streak'] ?? 0,
-        'serie': stat['current_streak'] ?? 0,
-        'rate': (stat['rate'] as num?)?.round() ?? 0,
-      };
-    }).toList();
+          if (filter == 'active') {
+            return goal.isActiveOn(DateTime.now());
+          }
+          return true;
+        })
+        .map((stat) {
+          final goalId = stat['goal_id'] as String;
+          final goal = goals.cast<Goal?>().firstWhere(
+            (g) => g?.id == goalId,
+            orElse: () => null,
+          );
+
+          return {
+            'goal_id': goalId,
+            'name': stat['title'] ?? '',
+            'color': goal?.color ?? const Color(0xFF64748B),
+            'best': stat['best_streak'] ?? 0,
+            'worst': stat['worst_streak'] ?? 0,
+            'serie': stat['current_streak'] ?? 0,
+            'rate': (stat['rate'] as num?)?.round() ?? 0,
+          };
+        })
+        .toList();
   }
 
   List<Map<String, dynamic>> _getSortedHabits(
@@ -91,7 +95,11 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
 
     return statsAsync.when(
       data: (stats) {
-        final habits = _mapStatsToHabits(stats, goals, settings.statsHabitFilter);
+        final habits = _mapStatsToHabits(
+          stats,
+          goals,
+          settings.statsHabitFilter,
+        );
         final sortedHabits = _getSortedHabits(habits);
 
         return Column(
@@ -105,26 +113,26 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
                 spacing: 12,
                 runSpacing: 16,
                 children: [
-                Text(
-                  context.t.statistics.habitDetails,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: context.appColors.foreground,
+                  Text(
+                    context.t.statistics.habitDetails,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: context.appColors.foreground,
+                    ),
                   ),
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildFilterDropdown(settings.statsHabitFilter),
-                    const SizedBox(width: 8),
-                    _buildSortDropdown(),
-                  ],
-                ),
-              ],
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildFilterDropdown(settings.statsHabitFilter),
+                      const SizedBox(width: 8),
+                      _buildSortDropdown(),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
             const SizedBox(height: 20),
             sortedHabits.isEmpty
                 ? Center(
@@ -154,9 +162,10 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(
-        child: Text(
-          '${context.t.common.status.error}: $err',
-          style: TextStyle(color: context.appColors.mutedForeground),
+        child: EvolveAsyncError(
+          error: err,
+          stackTrace: stack,
+          context: '[Stats] global habits',
         ),
       ),
     );
@@ -324,8 +333,16 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
 
   void _showFilterPicker(String currentFilter) {
     final options = [
-      (val: 'active', icon: LucideIcons.activity, label: context.t.statistics.filterActive),
-      (val: 'all', icon: LucideIcons.layers, label: context.t.statistics.filterAll),
+      (
+        val: 'active',
+        icon: LucideIcons.activity,
+        label: context.t.statistics.filterActive,
+      ),
+      (
+        val: 'all',
+        icon: LucideIcons.layers,
+        label: context.t.statistics.filterAll,
+      ),
     ];
 
     showEvolveSheet<void>(
@@ -344,7 +361,9 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
               onTap: () {
                 final settingsNotifier = ref.read(settingsProvider.notifier);
                 settingsNotifier.updateSettings(
-                  ref.read(settingsProvider).copyWith(statsHabitFilter: opt.val),
+                  ref
+                      .read(settingsProvider)
+                      .copyWith(statsHabitFilter: opt.val),
                 );
                 Navigator.pop(sheetContext);
               },

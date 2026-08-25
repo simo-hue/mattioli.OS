@@ -14,3 +14,4 @@ export 'evolve_segmented_control.dart';
 export 'evolve_section_header.dart';
 export 'evolve_toast.dart';
 export 'evolve_spinner.dart';
+export 'evolve_async_error.dart';

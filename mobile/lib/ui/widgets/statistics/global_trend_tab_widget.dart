@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../kit/evolve_async_error.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -48,9 +49,10 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
           error: (err, stack) => Container(
             height: 300,
             alignment: Alignment.center,
-            child: Text(
-              '${context.t.common.status.error}: $err',
-              style: TextStyle(color: context.appColors.mutedForeground),
+            child: EvolveAsyncError(
+              error: err,
+              stackTrace: stack,
+              context: '[Stats] global trend',
             ),
           ),
         ),
@@ -617,9 +619,10 @@ class _MiglioriAbitudiniSectionState
       error: (err, stack) => SizedBox(
         height: 200,
         child: Center(
-          child: Text(
-            '${context.t.common.status.error}: $err',
-            style: TextStyle(color: context.appColors.mutedForeground),
+          child: EvolveAsyncError(
+            error: err,
+            stackTrace: stack,
+            context: '[Stats] global trend',
           ),
         ),
       ),
@@ -905,9 +908,10 @@ class _AbitudiniCriticheSectionState
       error: (err, stack) => SizedBox(
         height: 200,
         child: Center(
-          child: Text(
-            '${context.t.common.status.error}: $err',
-            style: TextStyle(color: context.appColors.mutedForeground),
+          child: EvolveAsyncError(
+            error: err,
+            stackTrace: stack,
+            context: '[Stats] global trend',
           ),
         ),
       ),

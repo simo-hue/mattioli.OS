@@ -64,7 +64,11 @@ void main() {
     expect(
       apiKey,
       containsAll([
-        'descriptionProActive', // the sheet, when Pro already serves
+        // The sheet is Private-mode only (`if (isPrivate)` guards its one
+        // caller), and Private never resolves to CoachMode.standard — so this
+        // branch cannot currently render. Kept, and kept HONEST, because the
+        // guard is one edit from moving.
+        'descriptionProActive',
         'setupBodyPrivate', // the chat card, where Pro is not an option
       ]),
     );
@@ -104,7 +108,7 @@ void main() {
         en[key],
         isNot(matches(RegExp(r'runs on your own', caseSensitive: false))),
         reason: 'ai.apiKey.$key still frames BYOK as how the coach works, '
-            'rather than as one of two ways to run it',
+            'rather than as what Evolve Pro does for you',
       );
     }
   });
@@ -120,6 +124,73 @@ void main() {
         isNot(contains('apiKeyMissingFull')),
         reason: '$locale still carries the removed string',
       );
+    }
+  });
+
+  test('no account-mode surface offers BYOK, in any locale', () {
+    // BYOK is Private-mode ONLY. `resolveCoachMode` (coach_endpoint.dart) is
+    // explicit — "account mode is Standard-only and Pro-gated: a signed-in user
+    // cannot bring their own key" — and the key-entry row in Settings is behind
+    // `if (isPrivate)`, so there is no field to paste one into.
+    //
+    // These three strings render exclusively in account mode:
+    //   * subscription.features.smartSuggestions        -> the paywall's feature
+    //     list, built only in the `else if (!isPro)` branch;
+    //   * subscription.advancedTrendAnalysisAndSmartAi  -> the Pro upsell modal;
+    //   * ai.apiKey.setupBody                           -> the chat empty state,
+    //     gated on `canUseStandardCoach`, which IS "not private".
+    //
+    // Each of them promised a free bring-your-own-key alternative that account
+    // mode does not have. Two of the three are purchase surfaces, so the false
+    // claim sat on the exact screen Guideline 3.1.2 is read against — on an app
+    // already rejected twice over its paywall copy. Mentioning OpenRouter at
+    // all here is the smell; nothing on these screens has any business naming
+    // it, because nothing on these screens can use it.
+    // The last two never render today — `standardNeedsPro` lost its caller when
+    // `not_subscribed` started throwing to the Pro modal, and
+    // `descriptionProActive` sits in a branch the Private-only sheet cannot
+    // reach. They are pinned anyway, on this file's own stated principle: "a
+    // leftover string invites a leftover caller". Both are one `return` from
+    // shipping the exact claim this test exists to keep out, in five languages.
+    const accountModeStrings = <List<String>>[
+      ['subscription', 'features', 'smartSuggestions'],
+      ['subscription', 'advancedTrendAnalysisAndSmartAi'],
+      ['ai', 'apiKey', 'setupBody'],
+      ['ai', 'apiKey', 'descriptionProActive'],
+      ['ai', 'coachModes', 'standardNeedsPro'],
+    ];
+    for (final locale in _locales) {
+      final root = _loadLocale(locale);
+      for (final path in accountModeStrings) {
+        final value =
+            _block(root, path.sublist(0, path.length - 1))[path.last] as String;
+        final lower = value.toLowerCase();
+        expect(
+          lower,
+          isNot(contains('openrouter')),
+          reason: '$locale ${path.join(".")} names OpenRouter on an '
+              'account-mode surface, where the user cannot use their own key',
+        );
+        // The brand name is the obvious tell, but the claim survives a
+        // paraphrase — "connect your own account for free" names no brand and
+        // is the same lie. The offer is always a free one, so the price word is
+        // the second tell, in each language the app actually ships.
+        for (final freebie in const [
+          'free', // en
+          'gratis', // it / es / de
+          'gratuit', // it / es — STEM: gratuita/gratuite evade 'gratuito'
+          'kostenlos', // de
+          'مجان', // ar (stem of مجانًا / مجاني)
+        ]) {
+          expect(
+            lower,
+            isNot(contains(freebie)),
+            reason: '$locale ${path.join(".")} offers something "free" on a '
+                'purchase surface — the BYOK claim reads exactly like this '
+                'once the brand name is paraphrased away',
+          );
+        }
+      }
     }
   });
 }

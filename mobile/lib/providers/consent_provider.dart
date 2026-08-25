@@ -26,8 +26,18 @@ class ConsentState {
   }
 }
 
+/// The prefs key recording that the consent question has been ANSWERED.
+///
+/// Public because several places outside this file gate on it — `main()`'s
+/// Sentry and Supabase startup gates, `data_mode.dart`'s late Sentry init, and
+/// the notification background isolate's Supabase gate. Each of the first three
+/// was carrying its own string literal. Renaming the private field while
+/// leaving those literals behind would silently re-open the pre-consent
+/// initialisation bug in every one of them.
+const String kHasCompletedConsentPrefKey = 'has_completed_consent';
+
 class ConsentNotifier extends Notifier<ConsentState> {
-  static const _keyCompleted = 'has_completed_consent';
+  static const _keyCompleted = kHasCompletedConsentPrefKey;
   static const _keySentry = 'has_sentry_consent';
   static const _keyTerms = 'has_accepted_terms';
 

@@ -237,8 +237,10 @@ void main() {
         'locale, not the cloud-mode language', () async {
       // The user-visible end of the same bug, pinned where it is observable.
       // `settingsProvider` cannot be built in supabase mode here — this suite
-      // deliberately never calls `Supabase.initialize`, and `authProvider`
-      // reaches for `Supabase.instance` — so the reader under test is
+      // deliberately never calls `Supabase.initialize`. (`authProvider` itself
+      // no longer throws on that — it reports signed-out — but a signed-out
+      // account-mode `settingsProvider` still loads nothing.) So the reader
+      // under test is
       // main.dart's `storedLanguageFor`, which decides what slang renders before
       // the first frame. It is also the coupling that breaks silently: if
       // main.dart were left reading `pref_language` in Private mode, the private

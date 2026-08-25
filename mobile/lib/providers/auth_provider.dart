@@ -18,18 +18,55 @@ import '../i18n/translations.g.dart';
 // to the account/login path.
 SupabaseClient get supabase => Supabase.instance.client;
 
-Future<void> ensureSupabaseInitialized() async {
+/// Whether `Supabase.initialize` has already run in this isolate.
+///
+/// `Supabase.instance.isInitialized` exists but is unreachable for this
+/// question: the `Supabase.instance` getter asserts initialisation before you
+/// can read the flag off it. So the probe has to be a try/catch. Reading it is not the
+/// same question as "is the user signed in": before consent there may be a
+/// perfectly good session sitting in the Keychain that we have deliberately not
+/// picked up yet.
+bool get isSupabaseInitialized {
   try {
     Supabase.instance.client;
-    return;
+    return true;
   } catch (_) {
-    await Supabase.initialize(
-      url: SupabaseConfig.url,
-      anonKey: SupabaseConfig.anonKey,
-      authOptions: FlutterAuthClientOptions(localStorage: SecureLocalStorage()),
-    );
+    return false;
   }
 }
+
+Future<void> ensureSupabaseInitialized() async {
+  if (isSupabaseInitialized) return;
+  await Supabase.initialize(
+    url: SupabaseConfig.url,
+    anonKey: SupabaseConfig.anonKey,
+    authOptions: FlutterAuthClientOptions(localStorage: SecureLocalStorage()),
+  );
+}
+
+/// Whether a cold start may initialise Supabase before the app has a UI.
+///
+/// Gated on the consent question having been ANSWERED, not on the answer —
+/// exactly like [SentryService.shouldRun], and for the same reason.
+///
+/// The failure this closes is a REINSTALL. iOS Keychain items survive app
+/// deletion; `NSUserDefaults` does not. So a user who deletes the app and
+/// installs it again arrives with `has_completed_consent` gone (the router
+/// correctly sends them to `/consent`) but their Supabase session still on the
+/// device — and `Supabase.initialize` would restore it and refresh the token
+/// over the network before they had answered anything. A third-party request
+/// carrying a user's credentials, made on a screen that exists to ask whether
+/// that is allowed.
+///
+/// Deferring costs nothing: `ensureSupabaseInitialized` already exists and every
+/// auth entry point calls it, so the SDK comes up on the first action that
+/// genuinely needs it — and [AuthNotifier.adoptSessionAfterConsent] brings the
+/// session in the moment consent is given.
+bool shouldInitialiseSupabaseAtStartup({
+  required bool hasCompletedConsent,
+  required bool isPrivateMode,
+}) =>
+    !isPrivateMode && hasCompletedConsent;
 
 // ── Auth State ────────────────────────────────────────────────────────────────
 
@@ -88,6 +125,24 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
       return const AuthState(isLoggedIn: false, dataMode: AppDataMode.private);
     }
 
+    ref.onDispose(() {
+      _authSubscription?.cancel();
+      _authSubscription = null;
+    });
+
+    // Account mode, but the SDK is not up: a PRE-CONSENT cold start, where
+    // `main()` deliberately skipped `Supabase.initialize` so a reinstall cannot
+    // reach the network before the user has answered
+    // (`shouldInitialiseSupabaseAtStartup`). Touching `supabase` here would
+    // throw, and the honest state is "not signed in" — there may well be a
+    // session in the Keychain, but we have not looked, and must not until the
+    // consent screen says we may. [adoptSessionAfterConsent] is what looks.
+    if (!isSupabaseInitialized) {
+      _authSubscription?.cancel();
+      _authSubscription = null;
+      return AuthState(isLoggedIn: false, dataMode: dataMode);
+    }
+
     // Legge la sessione corrente (già in memoria grazie a Supabase.initialize)
     final session = supabase.auth.currentSession;
     final initialState = AuthState(
@@ -96,18 +151,82 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
       dataMode: dataMode,
     );
 
-    // Ascolta i cambi di sessione in real-time (login/logout/token refresh)
+    _subscribeToAuthChanges();
+
+    return initialState;
+  }
+
+  /// Ascolta i cambi di sessione in real-time (login/logout/token refresh).
+  void _subscribeToAuthChanges() {
     _authSubscription?.cancel();
     _authSubscription = supabase.auth.onAuthStateChange.listen(
       _handleAuthStateChange,
       onError: _handleAuthStreamError,
     );
-    ref.onDispose(() {
-      _authSubscription?.cancel();
-      _authSubscription = null;
-    });
+  }
 
-    return initialState;
+  /// Brings up Supabase and adopts whatever session the device already holds,
+  /// once the user has answered the consent screen.
+  ///
+  /// The counterpart to the `!isSupabaseInitialized` branch in [build]. Called
+  /// by the consent screen rather than by a provider invalidation on purpose:
+  /// `routerProvider` watches this notifier, so invalidating the provider would
+  /// tear down and rebuild the GoRouter — and with it the whole Navigator —
+  /// underneath the screen that is mid-transition. Mutating state in place lets
+  /// the existing router redirect normally, and `goalsProvider`'s auth listener
+  /// picks the session up from there.
+  Future<void> adoptSessionAfterConsent() async {
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) return;
+    if (isSupabaseInitialized && _authSubscription != null) return;
+    try {
+      // NOT `_ensureAuthReady` — that subscribes, and the mode has to be
+      // re-checked first (below). Subscribing before the check is precisely the
+      // "cloud auth subscription in Private mode" this method guards against.
+      await ensureSupabaseInitialized();
+    } catch (e, stack) {
+      // Nothing to adopt and nothing to break: the user continues signed out,
+      // and every auth entry point goes through `_ensureAuthReady`, which brings
+      // the SDK up AND subscribes.
+      AppLogger.error('[Auth] Post-consent Supabase init failed', e, stack);
+      return;
+    }
+    // RE-CHECK the mode. `ensureSupabaseInitialized` awaits a Keychain read and
+    // a possible token refresh, and the user is on a live screen throughout —
+    // they can reach the chooser and pick "continue without an account" inside
+    // that window. Writing `dataMode: supabase` over a private state would then
+    // hand a Private-mode user a cloud auth subscription AND fire
+    // `settingsProvider`'s auth listener, which reads `profiles` and configures
+    // RevenueCat with the Supabase uid. `_handleAuthStateChange` already guards
+    // this way; this path is the one that did not.
+    final mode = ref.read(activeDataModeProvider);
+    if (mode == AppDataMode.private) {
+      AppLogger.info(
+        '[Auth] Session adoption abandoned — Private mode was chosen while '
+        'Supabase was starting',
+      );
+      return;
+    }
+    _subscribeToAuthChanges();
+    final session = supabase.auth.currentSession;
+    state = AuthState(
+      isLoggedIn: session != null,
+      user: session?.user,
+      dataMode: mode,
+    );
+    notifyListeners();
+  }
+
+  /// Brings the SDK up AND makes sure this notifier is listening to it.
+  ///
+  /// The subscription half matters because `build()` no longer always creates
+  /// one: a pre-consent cold start returns early with `_authSubscription` null,
+  /// and nothing re-runs `build()` afterwards. Without this, a sign-in would
+  /// succeed on the server while `onAuthStateChange` — the only thing that sets
+  /// `isLoggedIn` on that path — had nobody listening, leaving the user staring
+  /// at the login screen after a successful login.
+  Future<void> _ensureAuthReady() async {
+    await ensureSupabaseInitialized();
+    if (_authSubscription == null) _subscribeToAuthChanges();
   }
 
   void _handleAuthStateChange(dynamic data) {
@@ -184,7 +303,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
   Future<bool> login(String email, String password) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      await ensureSupabaseInitialized();
+      await _ensureAuthReady();
       final response = await supabase.auth.signInWithPassword(
         email: email.trim(),
         password: password,
@@ -218,7 +337,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
   Future<bool> signUp(String email, String password) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      await ensureSupabaseInitialized();
+      await _ensureAuthReady();
       final consentState = ref.read(consentProvider);
 
       final response = await supabase.auth.signUp(
@@ -260,7 +379,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
   Future<bool> resetPassword(String email) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      await ensureSupabaseInitialized();
+      await _ensureAuthReady();
       await supabase.auth.resetPasswordForEmail(email.trim());
       state = state.copyWith(isLoading: false, clearError: true);
       return true;
@@ -281,7 +400,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
 
   Future<void> logout() async {
     try {
-      await ensureSupabaseInitialized();
+      await _ensureAuthReady();
       await supabase.auth.signOut();
       // onAuthStateChange emette signedOut → state si aggiorna automaticamente
     } catch (e, stack) {
@@ -305,7 +424,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
   }
 
   Future<void> returnToLoginFromPrivateMode() async {
-    await ensureSupabaseInitialized();
+    await _ensureAuthReady();
 
     try {
       // Force sign-out so the user actually lands on the login screen,
@@ -334,7 +453,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
   Future<bool> signInWithGoogle() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      await ensureSupabaseInitialized();
+      await _ensureAuthReady();
       final googleSignIn = google_auth.GoogleSignIn(
         clientId: SupabaseConfig.googleIosClientId,
         serverClientId: SupabaseConfig.googleWebClientId,
@@ -386,7 +505,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
   Future<bool> signInWithApple() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      await ensureSupabaseInitialized();
+      await _ensureAuthReady();
       final rawNonce = supabase.auth.generateRawNonce();
       final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
 
@@ -465,7 +584,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
   Future<bool> updateProfileName(String fullName) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      await ensureSupabaseInitialized();
+      await _ensureAuthReady();
       final response = await supabase.auth.updateUser(
         UserAttributes(data: {'full_name': fullName.trim()}),
       );
@@ -500,7 +619,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
   Future<bool> updateConsentInDb(bool acceptedTerms, bool sentryConsent) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      await ensureSupabaseInitialized();
+      await _ensureAuthReady();
       await supabase
           .from('profiles')
           .update({

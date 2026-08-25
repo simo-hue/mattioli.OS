@@ -1173,9 +1173,21 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
         );
       }
 
-      // Schedule specific habit reminders
+      // Schedule specific habit reminders.
+      //
+      // ACTIVE habits only. This runs `cancelAll()` first and then re-registers
+      // from the list, so anything it skips stays cancelled and anything it
+      // includes comes BACK. An archived habit (`deleteHabit` stamps `end_date`
+      // rather than destroying its history) keeps its `reminder_time` and stays
+      // in this list — so without the filter, the one-off cancel in
+      // `_persistArchive` was undone by the next settings change, and a habit the
+      // user removed went on notifying them forever, from no screen they could
+      // reach: the manage sheet hides it, so its reminder could never be
+      // cleared. `isActiveOn` also covers a not-yet-started habit, which has
+      // equally little business firing today.
+      final now = DateTime.now();
       for (final goal in goals) {
-        if (goal.reminderTime != null) {
+        if (goal.reminderTime != null && goal.isActiveOn(now)) {
           await _notificationService.scheduleHabitReminder(
             goal.id,
             goal.title,

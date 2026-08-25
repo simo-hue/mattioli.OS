@@ -50,8 +50,11 @@ class _NoopNotificationsPlatform extends Fake
   Future<void> cancelAll() async {}
 }
 
-/// `settingsProvider` listens to `authProvider`, whose real build reaches for an
-/// uninitialized `Supabase.instance`. Cloud mode + signed out is the free user
+/// `settingsProvider` listens to `authProvider`. Its real build no longer
+/// throws on an uninitialized `Supabase.instance` — it reports signed-out, since
+/// startup defers the SDK until consent is answered — but this override still
+/// states the state under test rather than inferring it. Cloud mode + signed out
+/// is the free user
 /// the paywall is written for; Private mode forces `isPro` true and would render
 /// the Pro branch instead of the plan cards.
 class _SignedOutAuth extends AuthNotifier {

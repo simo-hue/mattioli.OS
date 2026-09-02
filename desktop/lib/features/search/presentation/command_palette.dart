@@ -101,15 +101,18 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
   /// the section shortcuts.
   List<PaletteGroup> _launchpadGroups(List<DashboardGoal> goals) {
     final now = DateTime.now();
-    final week = logicalWeekOfMonth(now);
+    // Compared as buckets so a goal stored under the previous month's week 5 —
+    // the same week as this month's week 1 — still counts as "this week".
+    final bucket = weekBucketOf(now);
     final thisWeek = goals
         .where(
           (g) =>
               g.state == GoalState.active &&
               g.type == GoalType.weekly &&
-              g.year == now.year &&
-              g.month == now.month &&
-              g.weekNumber == week,
+              g.year != null &&
+              g.month != null &&
+              g.weekNumber != null &&
+              canonicalWeekBucket(g.year!, g.month!, g.weekNumber!) == bucket,
         )
         .take(_kMaxThisWeek)
         .map(
@@ -129,9 +132,9 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
             score: 0,
             navTarget: GoalNavTarget(
               type: GoalType.weekly,
-              year: now.year,
-              month: now.month,
-              week: week,
+              year: bucket.year,
+              month: bucket.month,
+              week: bucket.week,
             ),
           ),
           ActionEntry(

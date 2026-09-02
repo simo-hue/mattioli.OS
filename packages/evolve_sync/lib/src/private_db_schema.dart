@@ -829,7 +829,9 @@ CREATE TABLE long_term_goals (
     CHECK (type IN ('lifetime', 'annual', 'quarterly', 'monthly', 'weekly')),
   year INTEGER,
   month INTEGER CHECK (month >= 1 AND month <= 12),
-  -- week_number is a week-of-month index (the app emits 1..6 via weeksInMonth).
+  -- week_number is a week-of-month index. The app now emits 1..4 only (see
+  -- macroGoalWeeksInMonth); 1..6 rows written by older clients are legacy
+  -- addresses meaning "next month's week 1" and are canonicalised on read.
   -- The 1..53 bound matches cloud schema.sql to avoid cross-backend CHECK drift.
   week_number INTEGER CHECK (week_number >= 1 AND week_number <= 53),
   quarter INTEGER CHECK (quarter >= 1 AND quarter <= 4),

@@ -1,3 +1,4 @@
+import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/features/search/application/goal_nav_target.dart';
 
@@ -41,12 +42,13 @@ List<GoalNavTarget> parsePeriodQuery(
   // Bare period keywords → the current period of that granularity.
   if (month == null && quarter == null && week == null && year == null) {
     if (_hasWord(q, const ['week', 'wk'])) {
+      final bucket = weekBucketOf(now);
       return [
         GoalNavTarget(
           type: GoalType.weekly,
-          year: now.year,
-          month: now.month,
-          week: ((now.day - 1) ~/ 7) + 1,
+          year: bucket.year,
+          month: bucket.month,
+          week: bucket.week,
         ),
       ];
     }
@@ -74,12 +76,20 @@ List<GoalNavTarget> parsePeriodQuery(
 
   // Most specific wins: a week reference implies a weekly target, and so on.
   if (week != null) {
+    // "week 5 august" names a week that is no longer its own address — it is
+    // the head of September's week 1 — so the parsed triple is canonicalised
+    // rather than rejected.
+    final bucket = canonicalWeekBucket(
+      resolvedYear,
+      month ?? now.month,
+      week,
+    );
     return [
       GoalNavTarget(
         type: GoalType.weekly,
-        year: resolvedYear,
-        month: month ?? now.month,
-        week: week,
+        year: bucket.year,
+        month: bucket.month,
+        week: bucket.week,
       ),
     ];
   }

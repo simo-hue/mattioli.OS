@@ -124,10 +124,17 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     final now = DateTime.now();
     // Default to the current week...
     _selectedType = GoalType.weekly;
-    _selectedYear = now.year;
+    // The board opens on the weekly plan, so year/month seed from the current
+    // WEEK bucket — which on the 29th–31st is next month, and on 30 December is
+    // next year. Quarter follows TODAY instead: it is never a weekly field, and
+    // on 30 September the bucket's October would read Q4 while the current
+    // quarter is still Q3. [reanchorPeriod] moves year/month back to today's
+    // when the user switches to a calendar-shaped plan.
+    final bucket = weekBucketOf(now);
+    _selectedYear = bucket.year;
     _selectedQuarter = ((now.month - 1) ~/ 3) + 1;
-    _selectedMonth = now.month;
-    _selectedWeek = logicalWeekOfMonth(now);
+    _selectedMonth = bucket.month;
+    _selectedWeek = bucket.week;
 
     // ...unless the command palette queued a one-shot jump to a specific goal's
     // period. We only READ the target here — clearing a provider while a parent
@@ -314,6 +321,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                         showStats: _showStats,
                         onTypeChanged: (type) => setState(() {
                           _lastDirection = 0; // plan switch — neutral fade
+                          _reanchorFor(type);
                           _selectedType = type;
                           _showStats = false;
                         }),
@@ -332,10 +340,6 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                         onYearChanged: (year) => setState(() {
                           _lastDirection = year.compareTo(_selectedYear);
                           _selectedYear = year;
-                          _selectedWeek = _selectedWeek.clamp(
-                            1,
-                            logicalWeeksInMonth(_selectedYear, _selectedMonth),
-                          );
                         }),
                         onQuarterChanged: (quarter) => setState(() {
                           _lastDirection = quarter.compareTo(_selectedQuarter);
@@ -553,16 +557,46 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     };
   }
 
+  /// Moves the shared year/month to [type]'s idea of "today" when the board is
+  /// still parked on the current period — see [reanchorPeriod]. Without it, on
+  /// the 29th–31st the weekly seed (next month) would leak into the Monthly,
+  /// Quarterly and Annual boards.
+  void _reanchorFor(GoalType type) {
+    final wasWeekly = _selectedType == GoalType.weekly;
+    final willBeWeekly = type == GoalType.weekly;
+    if (wasWeekly == willBeWeekly) return;
+    final anchored = reanchorPeriod(
+      now: DateTime.now(),
+      toWeekly: willBeWeekly,
+      year: _selectedYear,
+      month: _selectedMonth,
+    );
+    _selectedYear = anchored.year;
+    _selectedMonth = anchored.month;
+  }
+
   bool _matchesPeriod(DashboardGoal goal) {
     final type = _selectedType;
     if (goal.type != type) return false;
     if (type == GoalType.lifetime) return true;
+
+    // Weekly is compared as a BUCKET, and a bucket can cross the year: a legacy
+    // goal stored at (2026, 12, 5) belongs to January 2027 week 1. So it has to
+    // be settled before the plain year guard below, which would reject exactly
+    // those goals for having the "wrong" stored year.
+    if (type == GoalType.weekly) {
+      final year = goal.year;
+      final month = goal.month;
+      final week = goal.weekNumber;
+      if (year == null || month == null || week == null) return false;
+      return canonicalWeekBucket(year, month, week) ==
+          canonicalWeekBucket(_selectedYear, _selectedMonth, _selectedWeek);
+    }
+
     if (goal.year != _selectedYear) return false;
     return switch (type) {
       GoalType.quarterly => goal.quarter == _selectedQuarter,
       GoalType.monthly => goal.month == _selectedMonth,
-      GoalType.weekly =>
-        goal.month == _selectedMonth && goal.weekNumber == _selectedWeek,
       _ => true,
     };
   }
@@ -652,23 +686,17 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
             _selectedYear--;
           }
         case GoalType.weekly:
-          _selectedWeek += direction;
-          if (_selectedWeek >
-              logicalWeeksInMonth(_selectedYear, _selectedMonth)) {
-            _selectedWeek = 1;
-            _selectedMonth++;
-            if (_selectedMonth > 12) {
-              _selectedMonth = 1;
-              _selectedYear++;
-            }
-          } else if (_selectedWeek < 1) {
-            _selectedMonth--;
-            if (_selectedMonth < 1) {
-              _selectedMonth = 12;
-              _selectedYear--;
-            }
-            _selectedWeek = logicalWeeksInMonth(_selectedYear, _selectedMonth);
-          }
+          final current = WeekBucket(
+            year: _selectedYear,
+            month: _selectedMonth,
+            week: _selectedWeek,
+          );
+          final moved = direction >= 0
+              ? nextWeekBucket(current)
+              : prevWeekBucket(current);
+          _selectedYear = moved.year;
+          _selectedMonth = moved.month;
+          _selectedWeek = moved.week;
       }
     });
   }
@@ -691,6 +719,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
         if (newIndex == values.length) {
           _showStats = true;
         } else {
+          _reanchorFor(values[newIndex]);
           _selectedType = values[newIndex];
           _showStats = false;
         }
@@ -1319,12 +1348,7 @@ class _GoalCommandBar extends StatelessWidget {
         _PeriodDropdown(
           value: selectedWeek,
           values: [
-            for (
-              var week = 1;
-              week <= logicalWeeksInMonth(selectedYear, selectedMonth);
-              week++
-            )
-              week,
+            for (var week = 1; week <= macroGoalWeeksInMonth; week++) week,
           ],
           labelFor: (value) => '${t.common.calendarView.week} $value',
           onChanged: onWeekChanged,

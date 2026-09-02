@@ -1,5 +1,6 @@
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 
 /// A one-shot instruction to open the Goals page on a *specific* period
 /// (and optionally spotlight one goal), instead of its default "today's week".
@@ -41,16 +42,26 @@ class GoalNavTarget {
   final bool openEditor;
 
   /// Build a target that lands on [goal]'s own period and spotlights it.
-  factory GoalNavTarget.forGoal(DashboardGoal goal, {bool openEditor = false}) =>
-      GoalNavTarget(
-        type: goal.type,
-        year: goal.year,
-        quarter: goal.quarter,
-        month: goal.month,
-        week: goal.weekNumber,
-        highlightGoalId: goal.id,
-        openEditor: openEditor,
-      );
+  factory GoalNavTarget.forGoal(DashboardGoal goal, {bool openEditor = false}) {
+    // A weekly goal's stored address may be a legacy week 5, which the Goals
+    // board no longer offers; canonicalise so the jump lands on the bucket that
+    // actually contains it (the next month's week 1).
+    final bucket = goal.type == GoalType.weekly &&
+            goal.year != null &&
+            goal.month != null &&
+            goal.weekNumber != null
+        ? canonicalWeekBucket(goal.year!, goal.month!, goal.weekNumber!)
+        : null;
+    return GoalNavTarget(
+      type: goal.type,
+      year: bucket?.year ?? goal.year,
+      quarter: goal.quarter,
+      month: bucket?.month ?? goal.month,
+      week: bucket?.week ?? goal.weekNumber,
+      highlightGoalId: goal.id,
+      openEditor: openEditor,
+    );
+  }
 }
 
 /// Holds the pending [GoalNavTarget], or null when there is nothing queued.

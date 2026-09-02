@@ -115,15 +115,30 @@ void main() {
     expect(find.text('8 – 14 August 2026'), findsOneWidget);
   });
 
-  testWidgets('the final logical week shows its true cross-month span', (
-    tester,
-  ) async {
+  testWidgets('week 1 shows its true cross-month span', (tester) async {
     final container = await _pumpGoalsScreen(tester);
-    // August 2026 has five logical weeks; the fifth runs 29 Aug – 4 Sep, and
-    // those September days really are summed into the goal.
+    // September 2026 week 1 absorbs August's 29th-31st, so it runs
+    // 29 Aug – 7 Sep — and all ten of those days really are summed into the
+    // goal. August has no separate week 5: it is this same bucket.
+    await _selectPeriod(
+      tester,
+      container,
+      type: GoalType.weekly,
+      month: 9,
+      week: 1,
+    );
+
+    expect(find.text('29 August – 7 September 2026'), findsOneWidget);
+  });
+
+  testWidgets('the week picker never offers a fifth week', (tester) async {
+    final container = await _pumpGoalsScreen(tester);
+    // Asking for a week past the fourth is clamped: August 2026's tail days are
+    // September week 1's, not a week of August.
     await _selectPeriod(tester, container, type: GoalType.weekly, week: 5);
 
-    expect(find.text('29 August – 4 September 2026'), findsOneWidget);
+    expect(find.text('${t.common.calendarView.week} 4'), findsOneWidget);
+    expect(find.text('22 – 28 August 2026'), findsOneWidget);
   });
 
   testWidgets('quarterly shows the quarter first and last day', (tester) async {

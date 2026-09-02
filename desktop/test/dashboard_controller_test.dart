@@ -386,8 +386,12 @@ void main() {
           .read(dashboardControllerProvider)
           .goals
           .lastWhere((item) => item.id != goal.id);
+      // (2026, 5, 5) is a LEGACY address: May has 31 days, so its week 5 is the
+      // same bucket as June week 1 (29 May – 7 June). Rescheduling therefore
+      // has to skip past it to June week 2 — landing on June week 1 would file
+      // the goal in the very week it just failed in.
       expect(rescheduled.month, 6);
-      expect(rescheduled.weekNumber, 1);
+      expect(rescheduled.weekNumber, 2);
       expect(rescheduled.categoryId, 'custom-category');
     },
   );

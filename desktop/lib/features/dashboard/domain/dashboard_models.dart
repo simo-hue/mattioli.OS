@@ -3,6 +3,7 @@ import 'package:evolve_targets/evolve_targets.dart';
 import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter/material.dart';
 import 'package:evolve_desktop/core/calendar_days.dart';
+import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 
 enum HabitState { pending, completed }
 
@@ -889,11 +890,22 @@ String dashboardGoalDueLabel({
       quarter == null ? t.dueLabel.quarter : 'Q$quarter ${year ?? ''}',
     GoalType.monthly =>
       month == null ? t.common.calendarView.month : '$month/${year ?? ''}',
-    GoalType.weekly =>
-      weekNumber == null
-          ? t.common.calendarView.week
-          : '${t.common.calendarView.week} $weekNumber, ${month ?? ''}/${year ?? ''}',
+    GoalType.weekly => _weeklyDueLabel(year, month, weekNumber),
   };
+}
+
+/// "Week 2, 9/2026" for a weekly goal, named by the bucket it actually lives in.
+///
+/// A goal stored at week 5 belongs to the NEXT month's week 1, and the Goals
+/// board files it there — so the label has to canonicalise too, or a legacy
+/// goal would read "Week 5, 8/2026" while sitting under September's week 1.
+String _weeklyDueLabel(int? year, int? month, int? weekNumber) {
+  if (weekNumber == null) return t.common.calendarView.week;
+  if (year == null || month == null) {
+    return '${t.common.calendarView.week} $weekNumber, ${month ?? ''}/${year ?? ''}';
+  }
+  final bucket = canonicalWeekBucket(year, month, weekNumber);
+  return '${t.common.calendarView.week} ${bucket.week}, ${bucket.month}/${bucket.year}';
 }
 
 extension GoalStateLabel on GoalState {

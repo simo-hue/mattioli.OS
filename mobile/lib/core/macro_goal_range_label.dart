@@ -1,17 +1,19 @@
 import 'macro_goal_calendar.dart';
 
 /// Human-readable date range for a macro goal period — "8 – 14 August 2026",
-/// "29 August – 4 September 2026", "29 December 2025 – 4 January 2026".
+/// "29 August – 7 September 2026", "29 December 2025 – 7 January 2026".
 ///
 /// The Goals period header states *which* period you are looking at ("Week 2",
 /// "Q3 2026", "August 2026"); those labels are opaque on their own, so the line
 /// underneath spells out the exact days the period covers. The range always
 /// comes from [macroGoalPeriodRange], which is the same window a linked habit's
 /// daily progress is summed over — so the header can never disagree with the
-/// progress the screen reports. Notably that means the final logical week of a
-/// month prints its true cross-month window (August week 5 → 29 August –
-/// 4 September): those four days genuinely count toward the goal, and clamping
-/// the label to the month end would show a window the app does not use.
+/// progress the screen reports. Notably that means week 1 prints its true
+/// cross-month window (September 2026 week 1 → 29 August – 7 September): a
+/// month's 29th-31st are the head of the NEXT month's week 1, all ten of those
+/// days genuinely count toward the goal, and clamping the label to the month
+/// end would show a window the app does not use. See `macro_goal_calendar.dart`
+/// for why those days merge forward rather than forming a fifth week.
 ///
 /// Every locale-visible fragment is injected rather than hardcoded: month names
 /// come from `t.common.months` (so a month is spelled the same here as

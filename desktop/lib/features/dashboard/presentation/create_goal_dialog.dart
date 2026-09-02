@@ -71,10 +71,14 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
   void initState() {
     super.initState();
     final now = DateTime.now();
+    // [_selectedType] starts at Monthly, so year/month seed from TODAY, not from
+    // the current week bucket — on 30 August the bucket is September, and
+    // seeding from it would file a monthly goal under the wrong month.
+    // [_reanchorFor] swaps them to the weekly anchor if the user picks Weekly.
     _selectedYear = now.year;
     _selectedQuarter = ((now.month - 1) ~/ 3) + 1;
     _selectedMonth = now.month;
-    _selectedWeek = logicalWeekOfMonth(now);
+    _selectedWeek = weekBucketOf(now).week;
     final initial = widget.initialTitle?.trim() ?? '';
     if (initial.isNotEmpty) _titleController.text = initial;
   }
@@ -341,7 +345,6 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
       );
     }
     if (_selectedType == GoalType.weekly) {
-      final weeks = logicalWeeksInMonth(_selectedYear, _selectedMonth);
       row.add(const SizedBox(width: 8));
       row.add(
         Expanded(
@@ -351,7 +354,7 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
             height: 46,
             fillColor: fill,
             options: [
-              for (var w = 1; w <= weeks; w++)
+              for (var w = 1; w <= macroGoalWeeksInMonth; w++)
                 EvolveSelectOption(
                   value: w,
                   label: '${t.common.calendarView.week} $w',
@@ -373,9 +376,30 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
     );
   }
 
+  /// Moves the shared year/month to [type]'s idea of "today" while the dialog
+  /// is still on the period it opened with — see [reanchorPeriod]. The weekly
+  /// plan addresses next month on the 29th–31st; the calendar plans do not.
+  void _reanchorFor(GoalType type) {
+    final wasWeekly = _selectedType == GoalType.weekly;
+    final willBeWeekly = type == GoalType.weekly;
+    if (wasWeekly == willBeWeekly) return;
+    final anchored = reanchorPeriod(
+      now: DateTime.now(),
+      toWeekly: willBeWeekly,
+      year: _selectedYear,
+      month: _selectedMonth,
+    );
+    _selectedYear = anchored.year;
+    _selectedMonth = anchored.month;
+  }
+
+  /// Saturates a picked week at [macroGoalWeeksInMonth]. Deliberately a clamp
+  /// and not [canonicalWeekBucket]'s merge-forward: a picked week is an intent
+  /// inside the month on screen, not a stored address to be resolved.
   void _clampWeek() {
-    final weeks = logicalWeeksInMonth(_selectedYear, _selectedMonth);
-    if (_selectedWeek > weeks) _selectedWeek = weeks;
+    if (_selectedWeek > macroGoalWeeksInMonth) {
+      _selectedWeek = macroGoalWeeksInMonth;
+    }
   }
 
   String _unitLabel(TargetUnit unit) => unit == TargetUnit.count
@@ -522,7 +546,10 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
                 label: t.createGoal.longTerm,
               ),
             ],
-            onChanged: (val) => setState(() => _selectedType = val),
+            onChanged: (val) => setState(() {
+              _reanchorFor(val);
+              _selectedType = val;
+            }),
           ),
           _periodPicker(context),
           _targetSection(context),

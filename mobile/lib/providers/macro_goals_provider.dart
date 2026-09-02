@@ -621,19 +621,22 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
         nextQ = ((nextM - 1) ~/ 3) + 1;
         break;
       case GoalType.weekly:
-        final maxW = weeksInMonth(nextY, nextM);
-        if (nextW < maxW) {
-          nextW++;
-        } else {
-          if (nextM < 12) {
-            nextM++;
-            nextW = 1;
-          } else {
-            nextY++;
-            nextM = 1;
-            nextW = 1;
-          }
-        }
+        // Advance the BUCKET. A legacy goal stored at week 5 already IS the
+        // next month's week 1, so bumping its number would reschedule it into
+        // the very week it just failed in.
+        //
+        // A NULL week_number (allowed by both schemas, and reachable via
+        // import) has no week to advance from, so it anchors on TODAY's bucket
+        // rather than pairing a guessed week with the goal's own year/month —
+        // that pairing can land on a week that has already ended.
+        final next = nextWeekBucket(
+          goal.weekNumber == null
+              ? weekBucketOf(DateTime.now())
+              : canonicalWeekBucket(nextY, nextM, goal.weekNumber!),
+        );
+        nextY = next.year;
+        nextM = next.month;
+        nextW = next.week;
         nextQ = ((nextM - 1) ~/ 3) + 1;
         break;
     }
@@ -668,13 +671,22 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
     return state.goals.where((g) {
       if (g.type != type) return false;
       if (type == GoalType.lifetime) return true;
+      // Weekly matches on the canonical BUCKET, which can cross the year: a
+      // goal stored at (2026, 12, 5) is really January 2027 week 1. That has to
+      // be settled before the plain year guard below, which would otherwise
+      // reject exactly those goals for carrying the "wrong" stored year.
+      if (type == GoalType.weekly) {
+        final gy = g.year;
+        final gm = g.month;
+        final gw = g.weekNumber;
+        if (gy == null || gm == null || gw == null) return false;
+        if (month == null || weekNumber == null) return false;
+        return canonicalWeekBucket(gy, gm, gw) ==
+            canonicalWeekBucket(year, month, weekNumber);
+      }
       if (g.year != year) return false;
       if (type == GoalType.quarterly && g.quarter != quarter) return false;
       if (type == GoalType.monthly && g.month != month) return false;
-      if (type == GoalType.weekly &&
-          (g.month != month || g.weekNumber != weekNumber)) {
-        return false;
-      }
       return true;
     }).toList()..sort(_sortGoals);
   }
@@ -765,18 +777,14 @@ class MacroGoalsViewState {
           return _clamp(copyWith(selectedYear: y + 1, selectedMonth: 1, selectedWeek: 1));
         }
       case GoalType.weekly:
-        final maxW = weeksInMonth(y, m);
-        if (w < maxW) {
-          return _clamp(copyWith(selectedWeek: w + 1));
-        } else {
-          if (m < 12) {
-            return _clamp(copyWith(selectedMonth: m + 1, selectedWeek: 1));
-          } else {
-            return _clamp(
-              copyWith(selectedYear: y + 1, selectedMonth: 1, selectedWeek: 1),
-            );
-          }
-        }
+        final next = nextWeekBucket(WeekBucket(year: y, month: m, week: w));
+        return _clamp(
+          copyWith(
+            selectedYear: next.year,
+            selectedMonth: next.month,
+            selectedWeek: next.week,
+          ),
+        );
     }
   }
 
@@ -804,26 +812,20 @@ class MacroGoalsViewState {
           return _clamp(copyWith(selectedYear: y - 1, selectedMonth: 12, selectedWeek: 1));
         }
       case GoalType.weekly:
-        if (w > 1) {
-          return _clamp(copyWith(selectedWeek: w - 1));
-        } else {
-          if (m > 1) {
-            final prevMonth = m - 1;
-            final maxW = weeksInMonth(y, prevMonth);
-            return _clamp(copyWith(selectedMonth: prevMonth, selectedWeek: maxW));
-          } else {
-            final maxW = weeksInMonth(y - 1, 12);
-            return _clamp(
-              copyWith(selectedYear: y - 1, selectedMonth: 12, selectedWeek: maxW),
-            );
-          }
-        }
+        final prev = prevWeekBucket(WeekBucket(year: y, month: m, week: w));
+        return _clamp(
+          copyWith(
+            selectedYear: prev.year,
+            selectedMonth: prev.month,
+            selectedWeek: prev.week,
+          ),
+        );
     }
   }
 
   MacroGoalsViewState _clamp(MacroGoalsViewState state) {
     return state.copyWith(
-      selectedWeek: state.selectedWeek.clamp(1, weeksInMonth(state.selectedYear, state.selectedMonth)),
+      selectedWeek: state.selectedWeek.clamp(1, macroGoalWeeksInMonth),
     );
   }
 }
@@ -832,20 +834,48 @@ class MacroGoalsViewNotifier extends Notifier<MacroGoalsViewState> {
   @override
   MacroGoalsViewState build() {
     final now = DateTime.now();
+    // The screen opens on the weekly plan, so year/month seed from the current
+    // WEEK bucket — which on the 29th-31st is next month, and on 30 December is
+    // next year. Quarter follows TODAY instead: it is never a weekly field, and
+    // on 30 September the bucket's October would read Q4 while the current
+    // quarter is still Q3. [setType] re-anchors year/month when the user
+    // switches to a calendar-shaped plan.
+    final bucket = weekBucketOf(now);
     return MacroGoalsViewState(
       selectedType: GoalType.weekly,
-      selectedYear: now.year,
+      selectedYear: bucket.year,
       selectedQuarter: _quarter(now.month),
-      selectedMonth: now.month,
-      selectedWeek: logicalWeekOfMonth(now),
+      selectedMonth: bucket.month,
+      selectedWeek: bucket.week,
     );
   }
 
-  void setType(GoalType t) => state = state.copyWith(selectedType: t);
+  /// Switching plan re-anchors the shared year/month to the new plan's idea of
+  /// "today" — see [reanchorPeriod]. Without it, on the 29th-31st the weekly
+  /// seed (next month) would leak into the Monthly, Quarterly and Annual views.
+  void setType(GoalType t) {
+    final wasWeekly = state.selectedType == GoalType.weekly;
+    final willBeWeekly = t == GoalType.weekly;
+    if (wasWeekly == willBeWeekly) {
+      state = state.copyWith(selectedType: t);
+      return;
+    }
+    final anchored = reanchorPeriod(
+      now: DateTime.now(),
+      toWeekly: willBeWeekly,
+      year: state.selectedYear,
+      month: state.selectedMonth,
+    );
+    state = state.copyWith(
+      selectedType: t,
+      selectedYear: anchored.year,
+      selectedMonth: anchored.month,
+    );
+  }
   void setYear(int y) {
     state = state.copyWith(
       selectedYear: y,
-      selectedWeek: _clampWeek(y, state.selectedMonth, state.selectedWeek),
+      selectedWeek: _clampWeek(state.selectedWeek),
     );
   }
 
@@ -854,15 +884,16 @@ class MacroGoalsViewNotifier extends Notifier<MacroGoalsViewState> {
       state = state.copyWith(selectedMonth: m, selectedWeek: 1);
   void setWeek(int w) {
     state = state.copyWith(
-      selectedWeek: _clampWeek(state.selectedYear, state.selectedMonth, w),
+      selectedWeek: _clampWeek(w),
     );
   }
 
   int _quarter(int month) => ((month - 1) ~/ 3) + 1;
 
-  int _clampWeek(int year, int month, int week) {
-    return week.clamp(1, weeksInMonth(year, month));
-  }
+  /// Saturates a picked week at [macroGoalWeeksInMonth]. Deliberately a clamp
+  /// and not [canonicalWeekBucket]'s merge-forward: a picked week is an intent
+  /// inside the month on screen, not a stored address to be resolved.
+  int _clampWeek(int week) => week.clamp(1, macroGoalWeeksInMonth);
 
   void nextPeriod() {
     state = state.getNextPeriod();
@@ -879,7 +910,3 @@ final macroGoalsViewProvider =
     );
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-int weeksInMonth(int year, int month) {
-  return logicalWeeksInMonth(year, month);
-}

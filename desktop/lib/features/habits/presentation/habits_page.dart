@@ -2,7 +2,6 @@ import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/calendar_days.dart';
 import 'package:evolve_desktop/core/calendar_view_preference.dart';
 import 'package:evolve_desktop/core/clock.dart';
-import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/core/performance_color.dart';
@@ -1879,7 +1878,7 @@ class _YearCalendar extends StatelessWidget {
   }
 
   Widget _monthTile(BuildContext context, int month) {
-    final weeks = logicalWeeksInMonth(anchor.year, month);
+    final weeks = _calendarWeeksInMonth(anchor.year, month);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -1933,6 +1932,19 @@ class _YearCalendar extends StatelessWidget {
       ),
     );
   }
+
+  /// Week-bars to draw for [month] in the year overview — 5 for any month
+  /// longer than 28 days, 4 otherwise.
+  ///
+  /// Deliberately NOT the macro-goal week model. A goal's week is an identity
+  /// that must partition the calendar exactly once (see `macroGoalWeeksInMonth`
+  /// in `core/macro_goal_calendar.dart`, where the month's 1–3 day tail merges
+  /// forward into the next month's week 1). This tile is a density strip inside
+  /// a month caption, so its tail stays home: [_weekCompletion] filters the
+  /// trailing bar to `date.month == month`, and adopting the merged model here
+  /// would make a tile captioned "September" render three days of August.
+  int _calendarWeeksInMonth(int year, int month) =>
+      ((DateTime(year, month + 1, 0).day - 1) ~/ 7) + 1;
 
   double _weekCompletion(int month, int week) {
     final first = DateTime(anchor.year, month, 1 + week * 7);

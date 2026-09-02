@@ -89,7 +89,7 @@ void main() {
       expect(macroGoalPeriodRange(type: 'monthly', year: 2024, month: 2)!.end,
           DateTime.utc(2024, 2, 29));
       expect(macroGoalPeriodRange(type: 'weekly', year: 2026, month: 7, week: 2)!.start,
-          logicalWeekRange(2026, 7, 2).start);
+          weekBucketRange(2026, 7, 2).start);
       expect(macroGoalPeriodRange(type: 'lifetime'), isNull);
       expect(macroGoalPeriodRange(type: 'annual'), isNull);
     });

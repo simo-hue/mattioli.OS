@@ -78,6 +78,16 @@ void main() {
       expect(r.first.year, 2026);
     });
 
+    test('"week 5 august" canonicalises into September week 1', () {
+      // Week 5 is no longer an address — August's tail days are September
+      // week 1's — so the parsed triple is merged forward, not rejected.
+      final r = parse('week 5 august');
+      expect(r.first.type, GoalType.weekly);
+      expect(r.first.year, 2026);
+      expect(r.first.month, 9);
+      expect(r.first.week, 1);
+    });
+
     test('compact week form "wk3 sep"', () {
       final r = parse('wk3 sep');
       expect(r.first.type, GoalType.weekly);

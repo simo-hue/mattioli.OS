@@ -822,6 +822,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     String? linkedGoalId,
   }) async {
     final now = _now();
+    final nowBucket = weekBucketOf(now);
     final draft = DashboardGoal(
       id: _newLocalId(),
       title: title,
@@ -831,16 +832,16 @@ class DashboardController extends Notifier<DashboardSnapshot> {
       dueLabel: dueLabel,
       type: type,
       categoryId: categoryId,
-      year: type == GoalType.lifetime ? null : (year ?? now.year),
+      year: type == GoalType.lifetime
+          ? null
+          : (year ?? (type == GoalType.weekly ? nowBucket.year : now.year)),
       quarter: type == GoalType.quarterly
           ? (quarter ?? ((now.month - 1) ~/ 3) + 1)
           : null,
       month: type == GoalType.monthly || type == GoalType.weekly
-          ? (month ?? now.month)
+          ? (month ?? (type == GoalType.weekly ? nowBucket.month : now.month))
           : null,
-      weekNumber: type == GoalType.weekly
-          ? (weekNumber ?? logicalWeekOfMonth(now))
-          : null,
+      weekNumber: type == GoalType.weekly ? (weekNumber ?? nowBucket.week) : null,
       createdAt: now,
       targetAmount: targetAmount,
       targetUnit: targetUnit,
@@ -1106,10 +1107,18 @@ class DashboardController extends Notifier<DashboardSnapshot> {
   }
 
   _GoalPeriod _nextGoalPeriod(DashboardGoal goal) {
+    final nowBucket = weekBucketOf(_now());
     var year = goal.year ?? _now().year;
     var month = goal.month ?? _now().month;
     var quarter = goal.quarter ?? ((month - 1) ~/ 3) + 1;
-    var weekNumber = goal.weekNumber ?? ((_now().day - 1) ~/ 7) + 1;
+    var weekNumber = goal.weekNumber ?? nowBucket.week;
+    // A weekly goal with a NULL week_number (allowed by both schemas, and
+    // reachable via import) has no week to advance from. Anchor it on TODAY's
+    // whole bucket rather than pairing a guessed week with the goal's own
+    // year/month, which can land on a week that has already ended.
+    final weeklyBase = goal.weekNumber == null
+        ? nowBucket
+        : canonicalWeekBucket(year, month, goal.weekNumber!);
 
     switch (goal.type) {
       case GoalType.lifetime:
@@ -1133,17 +1142,13 @@ class DashboardController extends Notifier<DashboardSnapshot> {
         }
         quarter = ((month - 1) ~/ 3) + 1;
       case GoalType.weekly:
-        final maximumWeek = logicalWeeksInMonth(year, month);
-        if (weekNumber < maximumWeek) {
-          weekNumber++;
-        } else if (month < 12) {
-          month++;
-          weekNumber = 1;
-        } else {
-          year++;
-          month = 1;
-          weekNumber = 1;
-        }
+        // Advance the BUCKET, never the raw week number. A legacy goal stored
+        // at week 5 already IS the next month's week 1, so bumping its number
+        // would reschedule it into the very week it just failed in.
+        final next = nextWeekBucket(weeklyBase);
+        year = next.year;
+        month = next.month;
+        weekNumber = next.week;
         quarter = ((month - 1) ~/ 3) + 1;
     }
 

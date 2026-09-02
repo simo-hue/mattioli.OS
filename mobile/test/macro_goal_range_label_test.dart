@@ -49,36 +49,51 @@ void main() {
       );
     });
 
-    test('covers the first seven days for week 1', () {
+    test('week 1 absorbs the previous month tail', () {
+      // July has 31 days, so its 29th-31st are the head of August week 1.
       expect(
         label(type: 'weekly', tr: en, year: 2026, month: 8, week: 1),
-        '1 – 7 August 2026',
+        '29 July – 7 August 2026',
       );
     });
 
-    // The final logical week of a month is a full seven days that spills into
-    // the next month, and those spilled days really are summed into the goal
-    // (see macroGoalPeriodRange). The label must show that, not a tidier window
-    // the app does not actually use.
-    test('spells out both months when the final week spills over', () {
+    test('week 1 after a 28-day February is an ordinary seven days', () {
+      // Nothing to absorb: February 2026 ends exactly on its week 4.
+      expect(
+        label(type: 'weekly', tr: en, year: 2026, month: 3, week: 1),
+        '1 – 7 March 2026',
+      );
+    });
+
+    // A stored week 5 is the LEGACY spelling of the next month's week 1 — the
+    // same ten-day bucket — and those days really are summed into the goal (see
+    // macroGoalPeriodRange). The label must show the window the app uses.
+    test('spells out both months for a legacy week 5', () {
       expect(
         label(type: 'weekly', tr: en, year: 2026, month: 8, week: 5),
-        '29 August – 4 September 2026',
+        '29 August – 7 September 2026',
+      );
+      // Identical to the canonical spelling of the same bucket.
+      expect(
+        label(type: 'weekly', tr: en, year: 2026, month: 9, week: 1),
+        '29 August – 7 September 2026',
       );
     });
 
-    test('spells out both years when the final week spills into January', () {
+    test('spells out both years when week 1 reaches back into December', () {
       expect(
         label(type: 'weekly', tr: en, year: 2025, month: 12, week: 5),
-        '29 December 2025 – 4 January 2026',
+        '29 December 2025 – 7 January 2026',
       );
     });
 
-    test('clamps a week number past the end of a short month', () {
-      // February 2026 has 4 logical weeks; asking for a 5th yields the 4th.
+    test('merges an out-of-range week number forward', () {
+      // Only weeks 1-4 are addressable, so anything past 4 is not a February
+      // week at all — it canonicalises to the next month's week 1. February
+      // 2026 ends on its week 4, so that week has no tail to absorb.
       expect(
         label(type: 'weekly', tr: en, year: 2026, month: 2, week: 9),
-        label(type: 'weekly', tr: en, year: 2026, month: 2, week: 4),
+        label(type: 'weekly', tr: en, year: 2026, month: 3, week: 1),
       );
     });
   });
@@ -220,21 +235,21 @@ void main() {
 
       expect(
         await crossYear(AppLocale.en),
-        '29 December 2025 – 4 January 2026',
+        '29 December 2025 – 7 January 2026',
       );
       expect(
         await crossYear(AppLocale.it),
-        '29 Dicembre 2025 – 4 Gennaio 2026',
+        '29 Dicembre 2025 – 7 Gennaio 2026',
       );
       expect(
         await crossYear(AppLocale.es),
-        '29 de Diciembre de 2025 – 4 de Enero de 2026',
+        '29 de Diciembre de 2025 – 7 de Enero de 2026',
       );
       expect(
         await crossYear(AppLocale.de),
-        '29. Dezember 2025 – 4. Januar 2026',
+        '29. Dezember 2025 – 7. Januar 2026',
       );
-      expect(await crossYear(AppLocale.ar), '29 ديسمبر 2025 – 4 يناير 2026');
+      expect(await crossYear(AppLocale.ar), '29 ديسمبر 2025 – 7 يناير 2026');
     });
   });
 
@@ -292,22 +307,22 @@ void main() {
 
     test('picks sameMonth and fills every slot from the right endpoint', () {
       expect(
-        run(logicalWeekRange(2026, 8, 2)),
+        run(weekBucketRange(2026, 8, 2)),
         'SAME_MONTH sd=8 ed=14 m=M8 y=2026',
       );
     });
 
     test('picks sameYear across a month boundary', () {
       expect(
-        run(logicalWeekRange(2026, 8, 5)),
-        'SAME_YEAR sd=29 sm=M8 ed=4 em=M9 y=2026',
+        run(weekBucketRange(2026, 8, 5)),
+        'SAME_YEAR sd=29 sm=M8 ed=7 em=M9 y=2026',
       );
     });
 
     test('picks crossYear across a year boundary', () {
       expect(
-        run(logicalWeekRange(2025, 12, 5)),
-        'CROSS_YEAR sd=29 sm=M12 sy=2025 ed=4 em=M1 ey=2026',
+        run(weekBucketRange(2025, 12, 5)),
+        'CROSS_YEAR sd=29 sm=M12 sy=2025 ed=7 em=M1 ey=2026',
       );
     });
 
@@ -317,7 +332,7 @@ void main() {
         // Defensive: a truncated month list must soften the label, never crash
         // the page mid-render.
         expect(
-          run(logicalWeekRange(2026, 8, 2), monthNames: const ['M1']),
+          run(weekBucketRange(2026, 8, 2), monthNames: const ['M1']),
           'SAME_MONTH sd=8 ed=14 m= y=2026',
         );
       },

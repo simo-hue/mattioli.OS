@@ -117,7 +117,7 @@ void main() {
     test('weekly reuses the logical week-of-month range', () {
       final r = macroGoalPeriodRange(
           type: 'weekly', year: 2026, month: 7, week: 2)!;
-      final w = logicalWeekRange(2026, 7, 2);
+      final w = weekBucketRange(2026, 7, 2);
       expect(r.start, w.start);
       expect(r.end, w.end);
     });

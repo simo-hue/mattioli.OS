@@ -71,10 +71,11 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     final now = DateTime.now();
-    final initialWeek = logicalWeekOfMonth(now);
-    final weeksInMonth = logicalWeeksInMonth(now.year, now.month);
-    // Rolls to week 1 of the next month once past the last logical week.
-    final nextWeek = initialWeek < weeksInMonth ? initialWeek + 1 : 1;
+    // Walking buckets handles the month and year rollovers on its own, and
+    // guarantees the next stop is a DIFFERENT week from the current one.
+    final bucket = weekBucketOf(now);
+    final initialWeek = bucket.week;
+    final nextWeek = nextWeekBucket(bucket).week;
 
     await _pumpGoalsPage(tester);
 
@@ -101,7 +102,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(1200, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    final initialWeek = logicalWeekOfMonth(DateTime.now());
+    final initialWeek = weekBucketOf(DateTime.now()).week;
 
     await _pumpGoalsPage(tester);
     expect(weekLabel(initialWeek), findsWidgets);
@@ -136,8 +137,10 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     final now = DateTime.now();
-    final initialWeek = logicalWeekOfMonth(now);
-    final yearText = '${now.year}';
+    final bucket = weekBucketOf(now);
+    final initialWeek = bucket.week;
+    // The board shows the BUCKET's year, which on 29-31 December is next year.
+    final yearText = '${bucket.year}';
 
     await _pumpGoalsPage(tester);
     expect(weekLabel(initialWeek), findsWidgets);
@@ -167,7 +170,7 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     final now = DateTime.now();
-    final initialWeek = logicalWeekOfMonth(now);
+    final initialWeek = weekBucketOf(now).week;
 
     await _pumpGoalsPage(tester);
     expect(weekLabel(initialWeek), findsWidgets);
@@ -198,6 +201,7 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     final now = DateTime.now();
+    final bucket = weekBucketOf(now);
     final goal = DashboardGoal(
       id: 'g1',
       title: 'Ship the thing',
@@ -207,10 +211,10 @@ void main() {
       type: GoalType.weekly,
       createdAt: DateTime(2020),
       dueLabel: '',
-      year: now.year,
-      quarter: ((now.month - 1) ~/ 3) + 1,
-      month: now.month,
-      weekNumber: logicalWeekOfMonth(now),
+      year: bucket.year,
+      quarter: ((bucket.month - 1) ~/ 3) + 1,
+      month: bucket.month,
+      weekNumber: bucket.week,
       progress: 0,
     );
 

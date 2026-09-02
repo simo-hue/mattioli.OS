@@ -973,9 +973,10 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
   ///
   /// Sourced from [macroGoalPeriodRange], the same window a linked habit's
   /// progress is summed over, so this line can never describe a different
-  /// period than the one being scored. That is also why the last logical week
-  /// of a month prints its true cross-month span (29 August – 4 September):
-  /// those days do count toward the goal.
+  /// period than the one being scored. That is also why week 1 prints its true
+  /// cross-month span (September 2026 week 1 → 29 August – 7 September): a
+  /// month's 29th-31st belong to the NEXT month's week 1, and those days do
+  /// count toward the goal.
   String? _periodRangeLabel(MacroGoalsViewState vs) {
     if (vs.selectedType == GoalType.lifetime ||
         vs.selectedType == GoalType.annual) {

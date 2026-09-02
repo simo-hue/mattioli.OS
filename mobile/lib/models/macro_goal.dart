@@ -13,7 +13,9 @@ class MacroGoal {
   final int? year;
   final int? quarter; // 1-4
   final int? month; // 1-12
-  final int? weekNumber; // 1-6 (logical week of month)
+  // 1-4 canonical; a stored 5 is a legacy address for the NEXT month's week 1
+  // (see canonicalWeekBucket in core/macro_goal_calendar.dart).
+  final int? weekNumber;
   final String? categoryKey; // e.g. 'red', 'blue', 'lavoro', etc.
   final String? categoryId; // UUID for custom categories
   final DateTime createdAt;

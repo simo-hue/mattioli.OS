@@ -59,12 +59,15 @@ Future<void> _pumpGoalsPage(WidgetTester tester) async {
 /// wall clock exactly as the page does.
 String _expectedRange(GoalType type) {
   final now = DateTime.now();
+  // The current week can belong to the NEXT month (days 29-31), so a weekly
+  // range has to be asked for by bucket, not by today's month.
+  final bucket = weekBucketOf(now);
   final range = macroGoalPeriodRange(
     type: type.name,
-    year: now.year,
+    year: type == GoalType.weekly ? bucket.year : now.year,
     quarter: ((now.month - 1) ~/ 3) + 1,
-    month: now.month,
-    week: logicalWeekOfMonth(now),
+    month: type == GoalType.weekly ? bucket.month : now.month,
+    week: bucket.week,
   )!;
   return macroGoalRangeLabel(
     range,
@@ -150,19 +153,13 @@ void main() {
     await _pumpGoalsPage(tester);
 
     final now = DateTime.now();
-    final week = logicalWeekOfMonth(now);
-    final weeksInMonth = logicalWeeksInMonth(now.year, now.month);
-    // Rolls to week 1 of the next month once past the last logical week.
-    final nextIsSameMonth = week < weeksInMonth;
+    // Walking buckets handles the month and year rollovers on its own.
+    final next = nextWeekBucket(weekBucketOf(now));
     final nextRange = macroGoalPeriodRange(
       type: 'weekly',
-      year: nextIsSameMonth
-          ? now.year
-          : (now.month == 12 ? now.year + 1 : now.year),
-      month: nextIsSameMonth
-          ? now.month
-          : (now.month == 12 ? 1 : now.month + 1),
-      week: nextIsSameMonth ? week + 1 : 1,
+      year: next.year,
+      month: next.month,
+      week: next.week,
     )!;
     final expected = macroGoalRangeLabel(
       nextRange,

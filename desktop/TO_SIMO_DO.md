@@ -23,6 +23,19 @@ is left needs your Apple account.
    Build 30 assumes 29 was the last one App Store Connect saw for macOS; if
    ASC rejects it, raise the number in `pubspec.yaml` and rebuild.
 
+   **Verified 2026-09-12 on this Mac:** the archive builds (1.4.0 / 30) once
+   `pod install` has been run in `macos/` — the `The sandbox is not in sync
+   with the Podfile.lock` failure was `Podfile.lock` carrying the FlutterMacOS
+   checksum of an older Flutter than the one installed here; the regenerated
+   lock is committed. The **export** then stops with `No signing certificate
+   "Mac App Distribution" found` / `"Mac Installer Distribution" found` /
+   `Unable to log in with account`: the keychain has no distribution
+   certificates and Xcode cannot sign in from a shell. Fix once in Xcode →
+   Settings → Accounts → sign in → Manage Certificates → **+ Apple
+   Distribution** and **+ Mac Installer Distribution**, then re-run `fastlane
+   release`. Or open the archive under
+   `~/Library/Developer/Xcode/Archives/` in Organizer and use Distribute App.
+
 2. **Release notes** are `macos/fastlane/metadata/<locale>/release_notes.txt`
    (new in this release — there were none before) and go up with `fastlane
    release` or `fastlane metadata`. Localized in the five languages the app

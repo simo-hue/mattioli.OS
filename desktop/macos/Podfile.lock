@@ -35,7 +35,7 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/sqflite_sqlcipher/macos
 
 SPEC CHECKSUMS:
-  FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
+  FlutterMacOS: c232990155153907050900a2e175c7773903ba4e
   FMDB: 728731dd336af3936ce00f91d9d8495f5718a0e6
   sign_in_with_apple: 6673c03c9e3643f6c8d33601943fbfa9ae99f94e
   sqflite_sqlcipher: a4c2f17db76d2f86dfe044937d3a851d8880cbb9

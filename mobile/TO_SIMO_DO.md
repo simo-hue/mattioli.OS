@@ -17,6 +17,16 @@ account, so it cannot be run from here.
    Build 51 assumes build 50 was the last one App Store Connect saw; if ASC
    rejects it as already used, raise the number in `pubspec.yaml` and rebuild.
 
+   **Verified 2026-09-12 on this Mac:** the archive builds from the committed
+   tree — `build/ios/archive/Runner.xcarchive`, 1.4.0 (51) in both `Runner`
+   and `DeviceActivityMonitorExtension`. The IPA **export** then stops with
+   `No signing certificate "iOS Distribution" found` / `Unable to log in with
+   account`: the keychain holds only an Apple Development identity (two older
+   ones are revoked) and Xcode cannot sign in from a shell. Fix once, then
+   re-run the command: Xcode → Settings → Accounts → sign in → Manage
+   Certificates → **+ Apple Distribution**. Or open the archive in Organizer
+   and use Distribute App, which creates the certificate itself.
+
 2. **Upload the metadata.** From `mobile/ios/`:
 
    ```bash

@@ -461,8 +461,10 @@ List<ConsistencyScore> computeConsistencyScores(
           ..sort();
     if (dates.length < 3) return;
     final gaps = <int>[
-      for (var i = 1; i < dates.length; i++)
-        dates[i].difference(dates[i - 1]).inDays,
+      // _calDays, not .difference().inDays: these are LOCAL midnights, and the
+      // 23-hour spring-forward day truncates to a gap of zero, which reads as a
+      // wobble in an otherwise perfect daily record.
+      for (var i = 1; i < dates.length; i++) _calDays(dates[i - 1], dates[i]),
     ];
     final mean = gaps.reduce((a, b) => a + b) / gaps.length;
     double score;

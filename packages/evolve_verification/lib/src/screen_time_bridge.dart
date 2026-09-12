@@ -85,19 +85,30 @@ class ScreenTimeSelectionResult {
   final int applicationCount;
   final int categoryCount;
 
+  /// Web domains picked. `FamilyActivitySelection` has three token sets, and
+  /// this was the missing third: a websites-only selection reported 0 apps and
+  /// 0 categories, so [isEmpty] discarded a perfectly valid blob. Defaulted so
+  /// a bridge that does not report it keeps compiling.
+  final int webDomainCount;
+
   const ScreenTimeSelectionResult({
     required this.blob,
     required this.applicationCount,
     required this.categoryCount,
+    this.webDomainCount = 0,
   });
+
+  /// Everything the user picked, across all three token sets — what the editor's
+  /// metric-agnostic "{count} selected" summary counts.
+  int get totalCount => applicationCount + categoryCount + webDomainCount;
 
   /// Whether the user actually picked anything. An empty selection cannot be
   /// monitored and must not be treated as "watch everything".
-  bool get isEmpty => applicationCount == 0 && categoryCount == 0;
+  bool get isEmpty => totalCount == 0;
 
   @override
-  String toString() =>
-      'ScreenTimeSelectionResult(apps: $applicationCount, categories: $categoryCount)';
+  String toString() => 'ScreenTimeSelectionResult(apps: $applicationCount, '
+      'categories: $categoryCount, webDomains: $webDomainCount)';
 }
 
 /// What the `DeviceActivityMonitor` extension observed for a goal-day.

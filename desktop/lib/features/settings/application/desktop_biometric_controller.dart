@@ -74,14 +74,11 @@ class DesktopBiometricController extends Notifier<DesktopBiometricState> {
       unlocked: !enabled || state.unlocked,
       clearError: true,
     );
+    // Persisted LOCALLY only. This preference is device-local: the Mac neither
+    // reads nor writes `profiles.biometric_lock`, so arming Touch ID here
+    // cannot arm (or disarm) Face ID on the user's iPhone, and vice versa.
     await _persist(enabled);
-    await _syncProfile(enabled);
     return true;
-  }
-
-  Future<void> applyProfile(bool enabled) async {
-    state = state.copyWith(enabled: enabled, unlocked: !enabled);
-    await _persist(enabled);
   }
 
   /// Re-arms the lock (e.g. when the app leaves the foreground) so the next
@@ -162,20 +159,6 @@ class DesktopBiometricController extends Notifier<DesktopBiometricState> {
       if (preferences != null) preferences.remove('biometric_lock'),
       SecureStorageUtils.write(_preferenceKey, enabled.toString()),
     ]);
-  }
-
-  Future<void> _syncProfile(bool enabled) async {
-    final client = ref.read(supabaseClientProvider);
-    final user = client?.auth.currentUser;
-    if (client == null || user == null) return;
-    try {
-      await client.from('profiles').upsert({
-        'id': user.id,
-        'biometric_lock': enabled,
-      });
-    } catch (error, stack) {
-      AppLogger.error('Unable to sync biometric preference', error, stack);
-    }
   }
 }
 

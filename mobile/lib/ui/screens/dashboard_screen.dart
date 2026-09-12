@@ -105,6 +105,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       final isProfileReady = await _ensureProfileNameReady();
       if (!isProfileReady || !mounted) return;
       _checkTutorial();
+      _resumeInterruptedTutorialFlow();
     } finally {
       _isRunningStartupOnboardingFlow = false;
     }
@@ -134,6 +135,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
 
     return _showNameDialog(isPrivateMode: true);
+  }
+
+  /// Puts the user back on the page where an interrupted tour resumes.
+  ///
+  /// Navigation is locked until all three steps are done, and each tour can only
+  /// start while its own page is active — so a flow interrupted BETWEEN steps
+  /// (force-quit, iOS reclaiming the backgrounded app, or a Supabase-mode
+  /// upgrade that only carried the legacy `has_seen_tutorial` key) would strand
+  /// the user on Home with Statistics and Goals unreachable. Handing the page
+  /// over is what the finished step would have done itself.
+  void _resumeInterruptedTutorialFlow() {
+    if (!mounted) return;
+    if (!ref.read(tutorialProvider)) return; // step one still starts on Home
+    if (!ref.read(goalsTutorialProvider)) {
+      _onItemTapped(2, bypassTutorialLock: true);
+    } else if (!ref.read(statsTutorialProvider)) {
+      _onItemTapped(0, bypassTutorialLock: true);
+    }
   }
 
   void _checkTutorial() {

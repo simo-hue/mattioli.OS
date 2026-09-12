@@ -672,13 +672,12 @@ class PrivacySettingsScreen extends ConsumerWidget {
       // `context` in this branch and would otherwise cross an async gap.
       final shareText = context.t.privacy.exportedDataTitle;
       final settings = ref.read(settingsProvider);
-      // habits / macro goals / moods are no longer read from the in-memory
-      // providers: their models carry no `updated_at`, which is what silently
-      // broke Merge re-imports. They come from the tables below instead.
-      // Categories stay — the importer matches them by NAME and never consults a
-      // timestamp, so serialising them is lossless.
-      final categories =
-          ref.read(macroGoalCategoriesProvider).value ?? const [];
+      // habits / macro goals / moods / categories are no longer read from the
+      // in-memory providers: their models carry no `updated_at`, which is what
+      // silently broke Merge re-imports, and `macroGoalCategoriesProvider` is
+      // only ever built by the Macro Goals screen — a lazy page the app does not
+      // start on — so a cold launch straight here read `.value` as null and
+      // exported an EMPTY category list. They come from the tables below instead.
       final profile = ref.read(userProfileProvider);
 
       // Read the logs from the table, NOT from habitLogsProvider. That map is
@@ -749,6 +748,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
       final habitRows = await fetchAllRows('goals');
       final macroGoalRows = await fetchAllRows('long_term_goals');
       final moodRows = await fetchAllRows('daily_moods');
+      final categoryRows = await fetchAllRows('macro_goal_categories');
 
       // Quantitative-target daily numbers ride in the backup under 'habitProgress'
       // (the key the import side already reads) so a Replace-import can't wipe
@@ -770,12 +770,20 @@ class PrivacySettingsScreen extends ConsumerWidget {
           if (rows.length < kGoalLogsSyncPageSize) break;
         }
       } catch (e, stack) {
-        AppLogger.error(
-            '[Export] goal_progress read skipped (pre-migration?)', e, stack);
+        // ONLY the pre-migration case (the table isn't there yet, so nothing was
+        // read) may degrade to an empty block. Any other failure — a dropped
+        // connection, a 5xx, an expired JWT — would ship a PARTIAL page set as a
+        // complete backup, and a Replace restore then prunes every quantitative
+        // daily number the file is missing.
+        final missingTable = e is PostgrestException &&
+            (e.code == '42P01' || e.code == 'PGRST205');
+        if (habitProgress.isEmpty && missingTable) {
+          AppLogger.error(
+              '[Export] goal_progress read skipped (pre-migration?)', e, stack);
+        } else {
+          rethrow;
+        }
       }
-
-      String colorToHex(Color c) =>
-          '#${c.toARGB32().toRadixString(16).substring(2)}';
 
       // Construct JSON
       final data = {
@@ -812,17 +820,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
         'habitLogs': habitLogs,
         'habitProgress': habitProgress,
         'macroGoals': macroGoalRows,
-        'macroGoalCategories': categories
-            .map(
-              (c) => {
-                'id': c.key,
-                'name': c.label,
-                'color': colorToHex(c.color),
-                if (c.archivedAt != null)
-                  'archived_at': c.archivedAt!.toIso8601String(),
-              },
-            )
-            .toList(),
+        'macroGoalCategories': categoryRows,
         'dailyMoods': moodRows,
       };
 
@@ -1368,6 +1366,15 @@ class PrivacySettingsScreen extends ConsumerWidget {
 
       await supabase.from('goals').delete().eq('user_id', user.id);
       await supabase.from('long_term_goals').delete().eq('user_id', user.id);
+      // Named explicitly, like the private branch wipes every table by name:
+      // `daily_moods.user_id` cascades from auth.users and
+      // `macro_goal_categories` is its own table, so neither follows the goals
+      // delete — leaving them behind contradicts "delete all your data".
+      await supabase.from('daily_moods').delete().eq('user_id', user.id);
+      await supabase
+          .from('macro_goal_categories')
+          .delete()
+          .eq('user_id', user.id);
 
       // Clear local state and cache
       ref.read(goalsProvider.notifier).clearAll();
@@ -1400,6 +1407,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
       ref.invalidate(habitCorrelationsProvider);
       ref.invalidate(allHabitCorrelationsProvider);
       ref.invalidate(macroGoalsStatsProvider);
+      ref.invalidate(dailyMoodsProvider);
+      ref.invalidate(macroGoalCategoriesProvider);
 
       if (context.mounted) {
         showEvolveToast(

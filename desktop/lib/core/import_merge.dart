@@ -93,6 +93,55 @@ num? _num(dynamic v) {
 
 bool _inRange(int? v, int lo, int hi) => v == null || (v >= lo && v <= hi);
 
+/// Coerce to a date string the read path can parse, or null. `goals.start_date`
+/// / `end_date` are TEXT columns that accept anything, but every reader parses
+/// them with `DateTime.tryParse` and treats a null `end_date` as never-ending —
+/// so a value like "31/12/2026" silently drops a real constraint, and an
+/// unparseable `start_date` silently becomes now. The original string is kept
+/// (not normalized) so a `yyyy-MM-dd` value stays a bare date for the cloud
+/// plan's `date` column. Mirrors mobile's `_date`.
+String? _date(dynamic v) {
+  final s = _str(v);
+  if (s == null) return null;
+  return DateTime.tryParse(s) == null ? null : s;
+}
+
+/// Coerce `goals.frequency_days` to ISO weekdays (1-7), or null. A file written
+/// against a 0-based convention (Sunday = 0) would otherwise be stored verbatim,
+/// and `freq.contains(date.weekday)` never matches day 0 — the habit disappears
+/// from every day-scoped view and from statistics, while the reminder scheduler
+/// clamps to empty and treats it as "every day". A present-but-entirely-unusable
+/// value becomes null — i.e. the documented "every day" default — rather than an
+/// empty list, which means "no day". Mirrors mobile's `_frequencyDays` and the
+/// clamping decoders already in this file and DesktopPrivateDb.
+List<int>? _frequencyDays(dynamic v) {
+  if (v is! List) return null;
+  final days = v
+      .map(_int)
+      .whereType<int>()
+      .where((d) => d >= 1 && d <= 7)
+      .toList();
+  if (days.isEmpty && v.isNotEmpty) return null;
+  return days;
+}
+
+final _hexColorRe = RegExp(r'^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$');
+
+/// Normalize a hex colour to `#RRGGBB`, or null when the value is not a hex
+/// colour. Shorthand is expanded because `dashboardColorFromHex` parses `#FFF`
+/// as `0x000FFFFF` — alpha 0, a fully transparent category — without throwing.
+/// Mirrors mobile's `_hexColor`.
+String? _hexColor(dynamic v) {
+  final s = _str(v);
+  if (s == null) return null;
+  final m = _hexColorRe.firstMatch(s);
+  if (m == null) return null;
+  final digits = m.group(1)!;
+  final rrggbb =
+      digits.length == 3 ? digits.split('').map((c) => '$c$c').join() : digits;
+  return '#${rrggbb.toUpperCase()}';
+}
+
 /// Validates + sanitizes a canonical backup. Rows that cannot be made to
 /// satisfy the local schema are DROPPED (never coerced with invented values)
 /// and counted in [ValidatedBackup.skipped], so a single bad row can never
@@ -114,7 +163,7 @@ ValidatedBackup validateCanonical(Map<String, dynamic> canonical) {
   final categories = <Map<String, dynamic>>[];
   for (final c in _asList(canonical[kCategoriesKey])) {
     final name = _str(c['name']);
-    final color = _str(c['color']);
+    final color = _hexColor(c['color']);
     if (name == null || color == null) {
       drop('categories');
       continue;
@@ -133,8 +182,16 @@ ValidatedBackup validateCanonical(Map<String, dynamic> canonical) {
   for (final g in _asList(canonical[kGoalsKey])) {
     final title = _str(g['title']);
     final color = _str(g['color']);
-    final start = _str(g['start_date']);
-    if (title == null || color == null || start == null) {
+    final start = _date(g['start_date']);
+    final rawEnd = _str(g['end_date']);
+    final end = _date(rawEnd);
+    // A present-but-unparseable end_date drops the row rather than importing the
+    // habit without its end: silently nulling it would hide a real constraint
+    // and make the habit never-ending. Mirrors mobile's rule.
+    if (title == null ||
+        color == null ||
+        start == null ||
+        (rawEnd != null && end == null)) {
       drop('habits');
       continue;
     }
@@ -144,9 +201,9 @@ ValidatedBackup validateCanonical(Map<String, dynamic> canonical) {
       'description': _str(g['description']),
       'icon': _str(g['icon']),
       'color': color,
-      'frequency_days': g['frequency_days'],
+      'frequency_days': _frequencyDays(g['frequency_days']),
       'start_date': start,
-      'end_date': _str(g['end_date']),
+      'end_date': end,
       'display_order': _int(g['display_order']),
       'order_key': g['order_key'],
       'order_key_updated_at': _str(g['order_key_updated_at']),
@@ -321,12 +378,21 @@ class CategoryReconciliation {
   /// Matched categories that needed no change (counted as "unchanged").
   final int unchanged;
 
+  /// Every imported category that matched an existing row, carried with the
+  /// EXISTING row's id. The private merge ignores these (the existing row wins);
+  /// the cloud plan's REPLACE pass re-upserts them, because Replace prunes every
+  /// row it did not plan and a matched category is one the backup contains.
+  /// Id-unique, and disjoint from [toInsert]: the two lists are upserted as one
+  /// `on_conflict=id` batch, which may not touch a row twice.
+  final List<Map<String, dynamic>> matched;
+
   const CategoryReconciliation({
     required this.toInsert,
     required this.remap,
     required this.validIds,
     required this.archiveFills,
     required this.unchanged,
+    this.matched = const [],
   });
 }
 
@@ -352,6 +418,13 @@ CategoryReconciliation reconcileCategoriesByName({
   final validIds = <String>{for (final c in existing) c['id'] as String};
   final toInsert = <Map<String, dynamic>>[];
   final archiveFills = <({String id, String archivedAt})>[];
+  final matched = <Map<String, dynamic>>[];
+  // Final ids already emitted into [toInsert] or [matched]. The cloud plan
+  // upserts both lists as ONE `on_conflict=id` batch, and Postgres rejects a
+  // batch that touches the same row twice (21000). Two file rows CAN land on
+  // one final id: UNIQUE(user_id,name) is case-sensitive so 'Work' and 'work'
+  // coexist, while the match below is trim+lowercase.
+  final plannedIds = <String>{};
   var unchanged = 0;
 
   for (final cat in categories) {
@@ -362,6 +435,7 @@ CategoryReconciliation reconcileCategoriesByName({
       final finalId = match['id'] as String;
       remap[importedId] = finalId;
       validIds.add(finalId);
+      if (plannedIds.add(finalId)) matched.add({...cat, 'id': finalId});
       final importedArchived = cat['archived_at'] as String?;
       if (match['archived_at'] == null && importedArchived != null) {
         archiveFills.add((id: finalId, archivedAt: importedArchived));
@@ -371,6 +445,7 @@ CategoryReconciliation reconcileCategoriesByName({
     } else {
       remap[importedId] = importedId;
       validIds.add(importedId);
+      plannedIds.add(importedId);
       toInsert.add({...cat, 'id': importedId});
       // Register it so a later same-name imported category dedups onto it.
       catByName[name.toLowerCase()] = {
@@ -387,6 +462,7 @@ CategoryReconciliation reconcileCategoriesByName({
     validIds: validIds,
     archiveFills: archiveFills,
     unchanged: unchanged,
+    matched: matched,
   );
 }
 
@@ -558,8 +634,17 @@ CloudImportPlan planCloudImport({
     newId: newId,
   );
   stats.categories.added += rec.toInsert.length;
-  stats.categories.updated += rec.archiveFills.length;
-  stats.categories.unchanged += rec.unchanged;
+  if (replaceExisting) {
+    // Replace re-upserts every matched row (see below), so none is "unchanged"
+    // — except a file row that deduped onto an id already planned, which writes
+    // nothing.
+    stats.categories.updated += rec.matched.length;
+    stats.categories.unchanged +=
+        categories.length - rec.toInsert.length - rec.matched.length;
+  } else {
+    stats.categories.updated += rec.archiveFills.length;
+    stats.categories.unchanged += rec.unchanged;
+  }
   final catsToWrite = [
     for (final cat in rec.toInsert)
       {
@@ -570,15 +655,42 @@ CloudImportPlan planCloudImport({
         'created_at': cat['created_at'] ?? now,
         'archived_at': cat['archived_at'],
       },
+    // Replace must leave the account holding exactly the backup, so a category
+    // that matched an existing row is re-upserted under that row's EXISTING id
+    // (a fresh id would collide on UNIQUE(user_id,name)). Omitting it would hand
+    // _deleteComplement — which keeps only the planned rows — a category the
+    // backup contains.
+    if (replaceExisting)
+      for (final cat in rec.matched)
+        {
+          'id': cat['id'],
+          'user_id': userId,
+          'name': cat['name'],
+          'color': cat['color'],
+          'created_at': cat['created_at'] ?? now,
+          'archived_at': cat['archived_at'],
+        },
   ];
+  // Ids a macro goal may reference after the import. In REPLACE mode an existing
+  // category the backup does not contain is about to be pruned, so it is NOT
+  // valid to point at — only the rows this plan writes are.
+  final validCatIds = replaceExisting
+      ? {for (final c in catsToWrite) c['id'] as String}
+      : rec.validIds;
 
   // ── Goals ──
-  final knownGoalIds = <String>{...existingGoals.keys};
+  // In REPLACE mode a server goal absent from the backup is pruned, so it is not
+  // a valid parent for an incoming log/progress row or a macro's linked_goal_id
+  // — only the backup's own goals are.
+  final knownGoalIds = <String>{if (!replaceExisting) ...existingGoals.keys};
   final goalsToWrite = <Map<String, dynamic>>[];
   for (final g in goals) {
     final id = (g['id'] as String?) ?? newId();
     final has = existingGoals.containsKey(id);
+    // REPLACE bypasses last-write-wins: the file is the desired end state, and a
+    // row skipped here as "unchanged" would be deleted by the Replace prune.
     if (has &&
+        !replaceExisting &&
         !incomingWins(
           incoming: g['updated_at'] as String?,
           existing: existingGoals[id],
@@ -624,7 +736,7 @@ CloudImportPlan planCloudImport({
     final remapped = importedCatId == null
         ? null
         : (rec.remap[importedCatId] ?? importedCatId);
-    final categoryId = (remapped != null && rec.validIds.contains(remapped))
+    final categoryId = (remapped != null && validCatIds.contains(remapped))
         ? remapped
         : null;
     final rawLinked = g['linked_goal_id'] as String?;
@@ -634,6 +746,7 @@ CloudImportPlan planCloudImport({
             : null;
     final has = existingMacros.containsKey(id);
     if (has &&
+        !replaceExisting &&
         !incomingWins(
           incoming: g['updated_at'] as String?,
           existing: existingMacros[id],
@@ -693,10 +806,11 @@ CloudImportPlan planCloudImport({
       });
       affectedGoals.add(goalId);
       stats.logs.added++;
-    } else if (incomingWins(
-      incoming: l['updated_at'] as String?,
-      existing: match['updated_at'] as String?,
-    )) {
+    } else if (replaceExisting ||
+        incomingWins(
+          incoming: l['updated_at'] as String?,
+          existing: match['updated_at'] as String?,
+        )) {
       logsToWrite.add({
         'id': match['id'], // reuse to update in place, not duplicate
         'user_id': userId,
@@ -730,6 +844,7 @@ CloudImportPlan planCloudImport({
     if (!seenProgressKeys.add(key)) continue;
     final existing = existingProgress[key];
     if (existing != null &&
+        !replaceExisting &&
         !incomingWins(
             incoming: p['updated_at'] as String?,
             existing: existing['updated_at'] as String?)) {
@@ -766,10 +881,11 @@ CloudImportPlan planCloudImport({
         'updated_at': m['updated_at'] ?? now,
       });
       stats.moods.added++;
-    } else if (incomingWins(
-      incoming: m['updated_at'] as String?,
-      existing: match['updated_at'] as String?,
-    )) {
+    } else if (replaceExisting ||
+        incomingWins(
+          incoming: m['updated_at'] as String?,
+          existing: match['updated_at'] as String?,
+        )) {
       moodsToWrite.add({
         'id': match['id'],
         'user_id': userId,

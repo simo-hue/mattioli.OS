@@ -1042,28 +1042,50 @@ class SyncEngine {
       );
       return _ApplyOutcome.applied;
     } catch (e, stack) {
-      // A read/decrypt failure here is often transient — e.g. a CKAsset temp
-      // file that CloudKit hadn't materialized yet. Treat it as [failed] so the
-      // token holds and the avatar record is re-fetched next sync (the asset is
-      // re-staged), rather than advancing past it and losing the avatar.
+      final rowId =
+          rec.recordName.substring(PrivateDbSchema.avatarRecordTable.length + 1);
+      // A read/decrypt failure here CAN be transient, so the first one is
+      // [failed]: the token holds and the record is re-fetched next sync.
       //
-      // markPullError for the same reason as the row path: a device that has
-      // never held this avatar has no `sync_state` row for it, so markError's
-      // bare UPDATE would write nothing at all.
-      await store.markPullError(
-        rec.recordName,
-        rec.tableName,
-        rec.recordName
-            .substring(PrivateDbSchema.avatarRecordTable.length + 1),
-        e.toString(),
-      );
+      // Only the first one. The avatar's bytes reach us as a path to a file
+      // this app does not own, and a path that cannot be read once usually
+      // cannot be read ever — so holding again on the retry holds forever, and
+      // a device whose whole zone is re-downloaded and re-discarded on every
+      // sync, with "last synced" frozen, never recovers on its own. That is the
+      // state [_pull]'s undecryptable branch exists to avoid, reached through
+      // the avatar instead of the key. A second consecutive failure is
+      // therefore PARKED exactly like an unstorable record: the token advances,
+      // the reason stays in [SyncDiagnostics.parkedByReason], the image stays
+      // intact in the zone and on the device that published it, and a later
+      // full re-fetch (or a re-publish from that device) applies it.
+      //
+      // markPullError/quarantineRecord rather than markError for the same
+      // reason as the row path: a device that has never held this avatar has no
+      // `sync_state` row for it, so markError's bare UPDATE would write nothing
+      // at all.
+      final retried = await store.hasPullFailure(rec.recordName);
+      if (retried) {
+        await store.quarantineRecord(
+          rec.recordName,
+          rec.tableName,
+          rowId,
+          e.toString(),
+        );
+      } else {
+        await store.markPullError(
+          rec.recordName,
+          rec.tableName,
+          rowId,
+          e.toString(),
+        );
+      }
       logger.error(
         '[CloudKit] Avatar apply failed',
         e,
         stack,
-        {'recordName': rec.recordName},
+        {'recordName': rec.recordName, 'retried': retried},
       );
-      return _ApplyOutcome.failed;
+      return retried ? _ApplyOutcome.skipped : _ApplyOutcome.failed;
     }
   }
 

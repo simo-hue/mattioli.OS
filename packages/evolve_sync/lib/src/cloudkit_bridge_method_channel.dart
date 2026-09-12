@@ -9,6 +9,12 @@ import 'cloudkit_bridge.dart';
 class MethodChannelCloudKitBridge implements CloudKitBridge {
   static const MethodChannel channel = MethodChannel('evolve/cloudkit');
 
+  /// `CKError.changeTokenExpired` (21) as the native side reports it —
+  /// `flutterError` builds every code as `cloudkit_<CKError.Code.rawValue>`.
+  /// Recoverable, and recoverable ONLY by discarding the token, so it is not an
+  /// error the engine can be handed.
+  static const String _changeTokenExpiredCode = 'cloudkit_21';
+
   const MethodChannelCloudKitBridge();
 
   @override
@@ -158,8 +164,16 @@ class MethodChannelCloudKitBridge implements CloudKitBridge {
       'fetchChanges',
       {'token': token},
     ).catchError(
-      (_) => <String, dynamic>{}, // missing plugin → no remote changes
-      test: (e) => e is MissingPluginException,
+      // Missing plugin → no remote changes. An EXPIRED change token → an empty
+      // page with a null `newToken`, which is what the native side already
+      // answers for a missing zone: the engine persists the null and the next
+      // sync re-fetches the zone in full. Letting it throw instead escapes
+      // `_pull` before its `setChangeToken`, so the same dead token is re-sent
+      // on every later sync and iCloud never recovers on its own.
+      (_) => <String, dynamic>{},
+      test: (e) =>
+          e is MissingPluginException ||
+          (e is PlatformException && e.code == _changeTokenExpiredCode),
     );
     if (res == null || res.isEmpty) return const FetchOutcome();
     return FetchOutcome(

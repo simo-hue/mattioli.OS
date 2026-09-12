@@ -676,6 +676,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
         blob: result.blob,
         applicationCount: result.applicationCount,
         categoryCount: result.categoryCount,
+        webDomainCount: result.webDomainCount,
       );
       _verifyError = null;
     });

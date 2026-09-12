@@ -1,10 +1,12 @@
+import 'dart:async';
+
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
-import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/core/desktop_private_db.dart';
 import 'package:evolve_desktop/core/desktop_private_sync_service.dart';
 import 'package:evolve_desktop/core/private_data_refresh.dart';
+import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/auth/application/private_mode_recovery.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
@@ -204,9 +206,14 @@ class _PrivateModeGateState extends ConsumerState<PrivateModeGate> {
   }
 
   void _backToSignIn() {
-    // Leaving Private mode flips the persisted data mode; the app's home router
-    // rebuilds to the sign-in page so the user is never stranded.
-    ref.read(activeDesktopDataModeProvider.notifier).enterSupabaseMode();
+    // Through goToLogin, NOT enterSupabaseMode: this app was launched in
+    // Private mode, so `main.dart` skipped `Supabase.initialize` entirely and
+    // `supabaseClientProvider` has already cached null. Flipping the mode alone
+    // left the router on `_DesktopBackendConfigurationErrorPage` — a dead end
+    // with no way back until the app is quit. `goToLogin` does the lazy
+    // validate + initialize + `ref.invalidate(supabaseClientProvider)` BEFORE
+    // flipping, which is what makes "the user is never stranded" true.
+    unawaited(ref.read(desktopAuthControllerProvider.notifier).goToLogin());
   }
 
   @override

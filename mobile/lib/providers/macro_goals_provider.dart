@@ -6,6 +6,13 @@ import '../core/macro_goal_calendar.dart';
 import '../core/macro_targets_config.dart';
 import 'shared_prefs_provider.dart';
 import 'auth_provider.dart';
+import 'goal_provider.dart'
+    show
+        GoalLogPageFetcher,
+        awaitStableBarrier,
+        cacheSeedAllowed,
+        loadBarrier,
+        rememberCacheOwner;
 import '../core/navigator_key.dart';
 import '../core/app_logger.dart';
 import '../core/data_mode.dart';
@@ -37,11 +44,68 @@ class MacroGoalsState {
   );
 }
 
+/// Page size for the windowed `long_term_goals` sync. A single unbounded
+/// PostgREST select is capped by the project's `db-max-rows` (1000 by default)
+/// and truncates SILENTLY — and this table grows one row per goal AND one more
+/// per reschedule, so a long-running weekly-goal user reaches the cap. Because
+/// the read is ordered oldest-first, truncation drops the NEWEST goals: the
+/// current period's board. Mirrors `kGoalLogsSyncPageSize` and
+/// `kMacroGoalProgressPageSize`.
+const int kMacroGoalsSyncPageSize = 1000;
+
+/// Accumulates every page [fetchPage] returns, requesting successive ranges
+/// until a short (final) page comes back. Kept separate from the notifier —
+/// like [fetchGoalLogsPaginated] — so the paging is deterministic and testable
+/// without a live client, and so the caller can assign state ONCE at the end: a
+/// partial page written mid-loop would be cached as if it were the whole list.
+Future<List<Map<String, dynamic>>> fetchMacroGoalsPaginated(
+  GoalLogPageFetcher fetchPage, {
+  int pageSize = kMacroGoalsSyncPageSize,
+}) async {
+  final rows = <Map<String, dynamic>>[];
+  var offset = 0;
+  while (true) {
+    final page = await fetchPage(offset, pageSize);
+    rows.addAll(page);
+    if (page.length < pageSize) break;
+    offset += pageSize;
+  }
+  return rows;
+}
+
 // ─── Notifier ─────────────────────────────────────────────────────────────────
 
 class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
   static const String _cacheKey = 'macro_goals_cache';
   static const String _tutorialGoalId = 'tutorial_fake_goal';
+
+  /// Set once the server's answer has been applied, so the owner-gated cache
+  /// seed — which now awaits a Keychain read and can therefore land after the
+  /// sync — cannot overwrite fresher state with the mirror. Mirrors
+  /// [GoalsNotifier]'s flag of the same name.
+  bool _serverStateApplied = false;
+
+  /// The in-flight initial load, so a caller that must not mistake "not loaded
+  /// yet" for "this account has no macro goals" can wait for the real list.
+  ///
+  /// [build] returns an empty state and fills it in asynchronously — the cache
+  /// seed is gated on a Keychain round trip — so a `ref.read` that BUILDS this
+  /// provider gets `[]` synchronously, every time. That is only a frame of
+  /// blank UI for a widget, but [GoalsNotifier.deleteHabit] reads this state as
+  /// EVIDENCE (see [ensureLoaded]), and this provider is routinely never built
+  /// before that read: MacroGoalsScreen is index 2 of a lazy PageView. Mirrors
+  /// [GoalsNotifier._initialLoad], which exists for the identical hazard.
+  Future<void>? _initialLoad;
+
+  /// Awaits the loaders [build] started, if any.
+  ///
+  /// Callers that act destructively on an empty `state.goals` must use this
+  /// first. The one today is [GoalsNotifier.deleteHabit]: an empty list there
+  /// means "no macro goal is linked to this habit", which skips the delete-time
+  /// snapshot — and the habit DELETE then cascades `goal_progress` away while
+  /// the `ON DELETE SET NULL` FK un-links the macro goal, collapsing a "500 km"
+  /// goal that had reached 320 to 0 with nothing left to re-derive it from.
+  Future<bool> ensureLoaded() => awaitStableBarrier(() => _initialLoad);
 
   @override
   MacroGoalsState build() {
@@ -51,8 +115,8 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       return const MacroGoalsState(goals: []);
     }
 
-    // 1. Caricamento sincrono iniziale dalla cache (Offline-First)
-    final initialState = _loadFromCache();
+    _serverStateApplied = false;
+    _initialLoad = null;
 
     // 2. Ascolta i cambi di autenticazione per scaricare i dati dal cloud
     ref.listen(authProvider, (previous, next) {
@@ -65,13 +129,44 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       }
     });
 
-    // 3. Sincronizzazione iniziale se l'utente è già loggato
+    // 1./3. Offline-first seed AND the initial sync, if a session is signed in.
+    // The seed is now asynchronous because the cache's owner marker lives in the
+    // Keychain: `macro_goals_cache` is one blob shared by every account on the
+    // device, so seeding it unconditionally handed the next account the previous
+    // one's long-term goals. Costs the owning user one empty frame before the
+    // marker read returns — the same trade `GoalsNotifier._seedFromCache` makes.
     final authState = ref.read(authProvider);
-    if (authState.isLoggedIn && authState.user != null) {
-      _syncFromSupabase();
+    final user = authState.user;
+    if (authState.isLoggedIn && user != null) {
+      // Joined into one barrier so [ensureLoaded] cannot resolve before BOTH
+      // legs have settled — the seed's Keychain round trip routinely outlives
+      // the server call, which returns in milliseconds when it fails.
+      _initialLoad = loadBarrier([_seedFromCache(user.id), _syncFromSupabase()]);
     }
 
-    return initialState;
+    return const MacroGoalsState(goals: []);
+  }
+
+  /// See [GoalsNotifier._seedFromCache] — same shared blob, same owner guard.
+  ///
+  /// Contains its own errors even though [loadBarrier] would also swallow them:
+  /// the marker read is a Keychain round trip, and an unreadable marker means
+  /// "not provably this account's cache" — a refusal, not a crash, and one the
+  /// log has to record.
+  Future<void> _seedFromCache(String userId) async {
+    try {
+      if (!await cacheSeedAllowed(userId)) return;
+      if (!ref.mounted ||
+          _serverStateApplied ||
+          supabase.auth.currentUser?.id != userId) {
+        return;
+      }
+      final cached = _loadFromCache();
+      if (cached.goals.isEmpty) return;
+      state = cached;
+    } catch (e, stack) {
+      AppLogger.error('[MacroGoals] Cache seed error', e, stack);
+    }
   }
 
   Future<void> _loadFromPrivateStore() async {
@@ -107,6 +202,13 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
     final prefs = ref.read(sharedPrefsProvider);
     final jsonList = goals.map((g) => g.toJson()).toList();
     prefs.setString(_cacheKey, jsonEncode(jsonList));
+    // The blob and its owner marker move together, or [_seedFromCache] refuses
+    // this account's own mirror on the next cold start. An EMPTY blob is left
+    // unowned (nothing to protect, and the logout arm above writes one with no
+    // session at all) — same rule as `GoalsNotifier._writeCache`.
+    if (goals.isEmpty) return;
+    final userId = supabase.auth.currentUser?.id;
+    if (userId != null) rememberCacheOwner(userId);
   }
 
   /// Surface a Private-mode persistence failure to the user, mirroring the
@@ -147,16 +249,25 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
     if (user == null) return;
 
     try {
-      final response = await supabase
-          .from('long_term_goals')
-          .select()
-          .eq('user_id', user.id)
-          .order('created_at', ascending: true);
+      // Windowed, not one unbounded select — see [kMacroGoalsSyncPageSize]. The
+      // `id` tiebreaker makes the sort total across pages (created_at alone is
+      // not unique: a reschedule mints its rows together), so no row is served
+      // twice or skipped. State and the cache are written once, AFTER the last
+      // page: assigning per page would cache a partial list.
+      final response = await fetchMacroGoalsPaginated((offset, limit) async {
+        final page = await supabase
+            .from('long_term_goals')
+            .select()
+            .eq('user_id', user.id)
+            .order('created_at', ascending: true)
+            .order('id', ascending: true)
+            .range(offset, offset + limit - 1);
+        return List<Map<String, dynamic>>.from(page);
+      });
 
-      final goals = (response as List)
-          .map((j) => MacroGoal.fromJson(j))
-          .toList();
+      final goals = response.map((j) => MacroGoal.fromJson(j)).toList();
 
+      _serverStateApplied = true;
       state = state.copyWith(goals: goals);
       _saveToCache(goals);
     } catch (e, stack) {
@@ -408,7 +519,15 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
     try {
       await supabase
           .from('long_term_goals')
-          .update({'category_id': categoryId})
+          .update({
+            'category_id': categoryId,
+            // Clearing nulls the KEY as well as the id (the optimistic
+            // `copyWith(clearCategory: true)` above, and the private branch's
+            // whole-row upsert). A payload that omits category_key leaves a
+            // legacy built-in slug on the row, and the next _syncFromSupabase
+            // brings the chip straight back.
+            if (categoryId == null) 'category_key': null,
+          })
           .eq('id', id);
     } catch (e, stack) {
       AppLogger.error('[MacroGoals] Update category error', e, stack);

@@ -24,18 +24,21 @@ class GoalsStatsView extends ConsumerStatefulWidget {
 }
 
 class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
+  /// Localized macro-goal type name, from the `macroGoals.types` map the rest
+  /// of the app already reads. The Italian values are byte-identical to the
+  /// literals this replaced; the other four locales stop rendering Italian.
   String _goalTypeLabel(String type) {
     switch (type) {
       case 'lifetime':
-        return 'Lifetime';
+        return t.macroGoals.types.lifetime;
       case 'annual':
-        return 'Annuale';
+        return t.macroGoals.types.annual;
       case 'quarterly':
-        return 'Trimestrale';
+        return t.macroGoals.types.quarterly;
       case 'monthly':
-        return 'Mensile';
+        return t.macroGoals.types.monthly;
       case 'weekly':
-        return 'Settimanale';
+        return t.macroGoals.types.weekly;
       default:
         return 'N/A';
     }
@@ -372,7 +375,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
             child: _buildHighlightCard(
               title: t.macroGoals.bestYear,
               value: bestYear != null ? '$bestYear' : 'N/A',
-              subtitle: '$bestYearRate% completamento',
+              subtitle: '$bestYearRate% ${t.statistics.ofCompletion}',
               icon: LucideIcons.calendar,
               color: const Color(0xFFD97706),
             ),
@@ -1295,7 +1298,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                       ),
                     ),
                     Text(
-                      'obiettivi',
+                      t.macroGoals.totalGoals,
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w500,

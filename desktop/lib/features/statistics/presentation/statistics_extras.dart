@@ -662,15 +662,10 @@ class _RollingTrendPanel extends StatelessWidget {
   double _windowRate(int startAgo, int endAgo) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    var sum = 0.0;
-    var n = 0;
-    for (var ago = startAgo; ago <= endAgo; ago++) {
-      sum += snapshot.completionFor(
-        DateTime(today.year, today.month, today.day - ago),
-      );
-      n++;
-    }
-    return n == 0 ? 0 : sum / n;
+    return snapshot.windowCompletionRate(
+      DateTime(today.year, today.month, today.day - endAgo),
+      DateTime(today.year, today.month, today.day - startAgo),
+    );
   }
 
   @override
@@ -787,16 +782,16 @@ class _WeekVsAveragePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final thisWeek = snapshot.currentWeekCompletionRate;
-    // Average week = mean of the daily completion over the last 8 weeks.
+    // Average week = completion over the last 8 weeks, counted in habit-days so
+    // it is the same quantity as `thisWeek` — averaging per-day fractions over
+    // calendar days scored every unscheduled day as 0% and made the pill compare
+    // two different measures of the same data.
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    var sum = 0.0;
-    for (var i = 0; i < 56; i++) {
-      sum += snapshot.completionFor(
-        DateTime(today.year, today.month, today.day - i),
-      );
-    }
-    final average = sum / 56;
+    final average = snapshot.windowCompletionRate(
+      DateTime(today.year, today.month, today.day - 55),
+      today,
+    );
     final diff = thisWeek - average;
 
     return EvolvePanel(

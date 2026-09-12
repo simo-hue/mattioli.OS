@@ -66,6 +66,7 @@ class MethodChannelScreenTimeBridge implements ScreenTimeBridge {
         blob: blob,
         applicationCount: (m['appCount'] as num?)?.toInt() ?? 0,
         categoryCount: (m['categoryCount'] as num?)?.toInt() ?? 0,
+        webDomainCount: (m['webCount'] as num?)?.toInt() ?? 0,
       );
     } on MissingPluginException {
       // Picker unavailable (dark build / entitlement absent / pre-iOS 16).

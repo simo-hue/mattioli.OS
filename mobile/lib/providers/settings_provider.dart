@@ -241,6 +241,20 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
   /// snap-back this whole mechanism exists to prevent, through a second door.
   int _privateLoadGeneration = 0;
 
+  /// Which secure (cloud-mode) load is the LIVE one. Bumped by every [build]
+  /// AND by the sign-out arm below.
+  ///
+  /// The sign-out half is the load-bearing one. [_loadSecureSettings] reads
+  /// `pref_is_pro` and then awaits three more sequential Keychain reads before
+  /// it assigns `isPro`, so a sign-out landing inside that window — which drops
+  /// the entitlement in `state` and in BOTH mirrors — is immediately overwritten
+  /// back to `true` by the value read before it, and the next `_saveToPrefs`
+  /// writes Pro back to the mirrors too. The window is not launch-only:
+  /// `sync_refresh.dart` invalidates this provider after every sync that
+  /// applied remote changes, so this load runs routinely. Same rule as
+  /// [_privateLoadGeneration].
+  int _secureLoadGeneration = 0;
+
   /// The Focus Mode value THIS process last enforced on the actual iOS
   /// schedule — not the value in [state], which is only what the UI shows.
   ///
@@ -284,6 +298,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     _privateLoaded = false;
     _preloadEdits.clear();
     _privateLoadGeneration++;
+    _secureLoadGeneration++;
 
     if (dataMode == AppDataMode.private) {
       _loadPrivateSettings();
@@ -298,6 +313,26 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
           next.isLoggedIn &&
           next.user != null) {
         unawaited(_syncAccount(next.user!.id));
+      } else if (next.dataMode == AppDataMode.supabase && !next.isLoggedIn) {
+        // Nothing else drops the entitlement on sign-out — this provider is
+        // never invalidated by the logout path — so without this arm the
+        // previous account's Pro survives into the next account's session:
+        // in memory until `profiles` answers, and in BOTH `pref_is_pro`
+        // mirrors (SharedPreferences and the Keychain) indefinitely when that
+        // select fails or the app is relaunched before a sync lands. The
+        // mirrors must be rewritten, not just `state`, because the cold-start
+        // seed reads them. Guarded on the mode: Private mode reports
+        // `isLoggedIn: false` permanently and is entitled by design.
+        // `this.state`: the local `state` above shadows the notifier's inside
+        // build().
+        //
+        // Bumping the generation FIRST retires any `_loadSecureSettings` that
+        // is mid-flight: it read `pref_is_pro` before this write and would
+        // otherwise reinstate the entitlement over the lines below — see
+        // [_secureLoadGeneration].
+        _secureLoadGeneration++;
+        this.state = this.state.copyWith(isPro: false);
+        _saveToPrefs(this.state);
       }
     });
 
@@ -324,6 +359,9 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
   }
 
   Future<void> _loadSecureSettings() async {
+    // Which rebuild — or pre-sign-out epoch — this load belongs to. See
+    // [_secureLoadGeneration].
+    final generation = _secureLoadGeneration;
     try {
       final secureStorage = ref.read(secureStorageProvider);
 
@@ -339,6 +377,11 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       final deepWorkInsightsVal = await secureStorage.read(
         key: 'pref_deep_work_insights',
       );
+
+      // A sign-out (or a rebuild) landed while those reads were in flight. Every
+      // value above is from the previous epoch, so this load must land NOTHING —
+      // reinstating even one of them is how the dropped entitlement came back.
+      if (generation != _secureLoadGeneration) return;
 
       state = state.copyWith(
         biometricLock: biometricLockVal != null

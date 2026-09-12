@@ -761,6 +761,31 @@ class DashboardSnapshot {
     return done / activeHabits.length;
   }
 
+  /// Completion fraction (0–1) over the inclusive calendar window [from]…[to],
+  /// counting HABIT-DAYS — the same shape as [_weekCompletionRate] and the
+  /// Momentum ring's `_windowCompletionRate`.
+  ///
+  /// Averaging [completionFor] over calendar days instead is wrong: it returns a
+  /// hard 0 for a day with nothing scheduled, so a perfectly kept Mon–Fri habit
+  /// scored (5 * 1.0 + 2 * 0.0) / 7 = 71%, and the week-vs-average pill compared
+  /// that against a habit-day figure for the same data.
+  double windowCompletionRate(DateTime from, DateTime to) {
+    var done = 0;
+    var total = 0;
+    for (
+      var date = DateTime(from.year, from.month, from.day);
+      !date.isAfter(to);
+      date = shiftDays(date, 1) // DST-safe day step
+    ) {
+      final activeHabits = habitsFor(date);
+      total += activeHabits.length;
+      done += activeHabits
+          .where((habit) => resolvedHabitStatus(habit, date) == 'done')
+          .length;
+    }
+    return total == 0 ? 0 : done / total;
+  }
+
   List<DashboardHabit> habitsFor(DateTime date) =>
       habits.where((habit) => habit.isScheduledOn(date)).toList();
 

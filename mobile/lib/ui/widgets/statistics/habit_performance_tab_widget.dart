@@ -217,8 +217,14 @@ class _GiornoForteCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
+                // Substitute on `%`, the slot the translations actually carry
+                // ("Well done! % completion", "Ben fatto! % di completamento").
+                // This used to replace the word "done", which only en contains —
+                // so it/de/es/ar rendered a bare % with no number, and en had
+                // the word eaten out of its own congratulation ("Well 86! %
+                // completion").
                 Text(
-                  '${context.t.statistics.wellDoneCompletion.replaceFirst('done', data['pct'].toString())} (${data['done']}/${data['total']})',
+                  '${context.t.statistics.wellDoneCompletion.replaceFirst('%', '${data['pct']}%')} (${data['done']}/${data['total']})',
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 13,
@@ -273,8 +279,14 @@ class _GiornoDeboleCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
+                // Substitute on `%`, the slot the translations actually carry
+                // ("Well done! % completion", "Ben fatto! % di completamento").
+                // This used to replace the word "done", which only en contains —
+                // so it/de/es/ar rendered a bare % with no number, and en had
+                // the word eaten out of its own congratulation ("Well 86! %
+                // completion").
                 Text(
-                  '${context.t.statistics.onlyCompletion.replaceFirst('done', data['pct'].toString())} (${data['done']}/${data['total']})',
+                  '${context.t.statistics.onlyCompletion.replaceFirst('%', '${data['pct']}%')} (${data['done']}/${data['total']})',
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 13,

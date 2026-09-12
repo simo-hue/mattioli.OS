@@ -9,6 +9,9 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../i18n/translations.g.dart';
+// For the two language helpers the cold-start path already uses; see
+// [notificationTapBackground].
+import '../main.dart' show appLocaleFor, storedLanguageFor;
 import '../providers/auth_provider.dart';
 import '../providers/consent_provider.dart';
 import '../providers/goal_provider.dart';
@@ -144,6 +147,10 @@ class NotificationService {
       await _snoozeHabit(
         habitId,
         parts.length > 2 ? parts[2] : t.notifications.habitFallbackTitle,
+        // Length-guarded and defaulting to false so a notification already
+        // pending on device from a build that predates the field keeps working
+        // — with exactly the copy it was scheduled with.
+        isLimit: parts.length > 3 && parts[3] == '1',
       );
     } else if (response.actionId == 'action_skip') {
       await _skipHabit(habitId);
@@ -177,7 +184,11 @@ class NotificationService {
     await _writeHabitLogFromNotification(habitId, 'done');
   }
 
-  Future<void> _snoozeHabit(String habitId, String title) async {
+  Future<void> _snoozeHabit(
+    String habitId,
+    String title, {
+    bool isLimit = false,
+  }) async {
     final now = DateTime.now();
     final scheduledDate = now.add(const Duration(minutes: 10));
 
@@ -204,13 +215,14 @@ class NotificationService {
     );
 
     await _notifications.zonedSchedule(
-      id: habitId.hashCode + 1000,
+      id: _snoozeReminderId(habitId),
       title: 'Evolve • $title',
-      body: _getHabitMessage(title),
+      body: _getHabitMessage(title, isLimit: isLimit),
       scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
       notificationDetails: platformDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      payload: 'habit|$habitId|$title',
+      // Re-emitted so a second snooze off this notification keeps the flag.
+      payload: 'habit|$habitId|$title|${isLimit ? 1 : 0}',
     );
     if (kDebugMode) {
       debugPrint('[Notifications] Habit $habitId snoozed for 10 minutes');
@@ -1003,7 +1015,12 @@ class NotificationService {
     final minute = int.parse(parts[1]);
 
     final platformDetails = _habitReminderDetails();
-    final payload = 'habit|$id|$title';
+    // The limit flag travels ON the payload because the snooze action is
+    // handled in the background isolate, which has no goal list to look the
+    // habit up in. Without it the snooze rebuilt the body with `isLimit` at its
+    // default of false and re-sent motivational copy to a habit the user is
+    // trying to consume LESS of — see [reminderBody].
+    final payload = 'habit|$id|$title|${isLimit ? 1 : 0}';
 
     // Clamp to valid ISO weekdays (1-7): a corrupt/legacy row carrying e.g. [0]
     // or [8] must not reach the weekday-seek loop, which would spin forever.
@@ -1097,6 +1114,11 @@ class NotificationService {
   /// id (`id.hashCode`) and from other habits' ids.
   int _weekdayReminderId(String id, int weekday) => '$id#wd$weekday'.hashCode;
 
+  /// Id of the one-shot reminder a Snooze registers, distinct from the
+  /// recurring ids above. Named rather than inlined so [cancelHabitReminder]
+  /// and [_snoozeHabit] cannot drift apart.
+  int _snoozeReminderId(String id) => id.hashCode + 1000;
+
   /// Immediate "couldn't-verify — did you keep it?" nudge for an auto-verified
   /// habit whose day ended without a definitive signal (D6/D11). The id is
   /// stable per goal so re-firing on a later reconcile replaces the banner
@@ -1186,6 +1208,11 @@ class NotificationService {
     for (var weekday = 1; weekday <= 7; weekday++) {
       await _notifications.cancel(id: _weekdayReminderId(id, weekday));
     }
+    // …and the one-shot a Snooze may have left pending. It is not a recurring
+    // instance, which is why the reasoning above missed it, but it is exactly
+    // as capable of firing for a habit that has just been deleted or archived
+    // — and its Done writes a log against a goal that no longer exists.
+    await _notifications.cancel(id: _snoozeReminderId(id));
   }
 
   Future<void> cancelAll() async {
@@ -1357,6 +1384,14 @@ void notificationTapBackground(NotificationResponse response) async {
   final isPrivateMode =
       prefs.getString('active_data_mode') == AppDataMode.private.name;
   AppLogger.setExternalReportingDisabled(isPrivateMode);
+
+  // Apply the saved app language, exactly as `main()` does at cold start. This
+  // isolate composes user-visible copy — Snooze is the one action deliberately
+  // handled WITHOUT bringing the app forward, so its replacement reminder is
+  // written here — and without this slang stays on its base locale and an
+  // Italian user's snoozed reminder comes back in English. The same two helpers
+  // as main.dart, so the private/cloud language-key split cannot drift.
+  await LocaleSettings.setLocale(appLocaleFor(storedLanguageFor(prefs)));
 
   // The SAME gate as `main()`, not just `!isPrivateMode`. This isolate restores
   // the Keychain session exactly as a cold start does, so leaving it on the old

@@ -13,6 +13,8 @@ import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/core/macro_targets_config.dart';
 import 'package:evolve_desktop/core/targets_config.dart';
 import 'package:evolve_desktop/features/dashboard/data/private_dashboard_repository.dart';
+import 'package:evolve_desktop/features/settings/application/settings_data_controller.dart'
+    show fetchAllRowsPaginated;
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_verification/evolve_verification.dart';
 import 'package:evolve_desktop/features/dashboard/domain/macro_goal_progress.dart';
@@ -374,7 +376,14 @@ class SupabaseDashboardRepository extends DashboardRepository {
       // for existing goals/logs/moods too. Kicked off concurrently, awaited after.
       // Mirrors mobile, which degrades progress to empty on the same failure.
       final progressFuture = _fetchProgressRows();
-      final responses = await Future.wait([
+      // `daily_moods` and `long_term_goals` are PAGED rather than fetched in one
+      // select. A single unbounded PostgREST select is capped by the project's
+      // db-max-rows and comes back partial with no error — and `daily_moods` had
+      // no ORDER BY at all, so which rows survived was unstable between
+      // refreshes, while `long_term_goals`' ascending created_at made the
+      // truncation deterministically drop the NEWEST goals. Still members of the
+      // same Future.wait, so a failure in either is reported the same way.
+      final responses = await Future.wait<List<Map<String, dynamic>>>([
         _client
             .from('goals')
             .select()
@@ -385,12 +394,26 @@ class SupabaseDashboardRepository extends DashboardRepository {
             .order('display_order', ascending: true)
             .order('created_at', ascending: true),
         _client.from('goal_logs').select().eq('user_id', _userId),
-        _client
-            .from('long_term_goals')
-            .select()
-            .eq('user_id', _userId)
-            .order('created_at', ascending: true),
-        _client.from('daily_moods').select().eq('user_id', _userId),
+        fetchAllRowsPaginated((offset, limit) async {
+          final page = await _client
+              .from('long_term_goals')
+              .select()
+              .eq('user_id', _userId)
+              .order('created_at', ascending: true)
+              .order('id', ascending: true)
+              .range(offset, offset + limit - 1);
+          return List<Map<String, dynamic>>.from(page);
+        }),
+        fetchAllRowsPaginated((offset, limit) async {
+          final page = await _client
+              .from('daily_moods')
+              .select()
+              .eq('user_id', _userId)
+              .order('date', ascending: true)
+              .order('id', ascending: true)
+              .range(offset, offset + limit - 1);
+          return List<Map<String, dynamic>>.from(page);
+        }),
       ]);
       final progressRows = await progressFuture;
       _snapshot = _fromRemote(
@@ -562,14 +585,39 @@ class SupabaseDashboardRepository extends DashboardRepository {
     // request was rejected in full, so nothing was atomic about it. A mid-loop
     // failure here leaves a prefix applied, which the next reorder overwrites —
     // and every write is idempotent.
+    //
+    // Each row goes through `_runOrQueue`, like every other write in this class:
+    // offline the drag has already moved the state and the local cache, so
+    // without a queued mutation the next refresh re-reads the server's untouched
+    // order_keys straight back over both and the reorder silently reverts.
+    //
+    // The loop does NOT abort on the first failure — queueing row 0 alone would
+    // replay a single renumbered row against N-1 untouched ones, an order the
+    // user never chose. Every row is attempted (each write is idempotent), and
+    // the first error is rethrown afterwards so the caller still reports the
+    // failure exactly as before.
     final now = DateTime.now().toUtc().toIso8601String();
     final keys = renumberedOrderKeys(habits.length);
+    Object? failure;
+    StackTrace? failureStack;
     for (var i = 0; i < habits.length; i++) {
-      await _client.from('goals').update({
+      final payload = {
         'display_order': i,
         'order_key': keys[i],
         'order_key_updated_at': now,
-      }).eq('id', habits[i].id);
+      };
+      try {
+        await _runOrQueue(
+          _PendingMutation.update('goals', payload, {'id': habits[i].id}),
+          () => _client.from('goals').update(payload).eq('id', habits[i].id),
+        );
+      } catch (error, stack) {
+        failure ??= error;
+        failureStack ??= stack;
+      }
+    }
+    if (failure != null) {
+      Error.throwWithStackTrace(failure, failureStack!);
     }
   }
 
@@ -982,7 +1030,20 @@ class SupabaseDashboardRepository extends DashboardRepository {
           state: logs[dashboardDateKey(now)]?[row['id']] == 'done'
               ? HabitState.completed
               : HabitState.pending,
-          streak: _latestStreak(row['id'] as String, logRows),
+          // As of TODAY, not "whatever the newest log row stored". No rows are
+          // written for unlogged days, so reading the newest row's `streak`
+          // column kept a broken run burning. Same call the private repository
+          // makes, so both modes and the iPhone agree.
+          streak: computeStreak(
+            habitId: row['id'] as String,
+            date: now,
+            logs: logs,
+            startDate:
+                DateTime.tryParse(row['start_date'] as String? ?? '') ?? now,
+            frequencyDays: (row['frequency_days'] as List<dynamic>?)
+                ?.map((day) => day as int)
+                .toList(),
+          ),
         ),
     ];
     final moods = <String, DailyCheckIn>{};
@@ -1019,12 +1080,6 @@ class SupabaseDashboardRepository extends DashboardRepository {
   String _formatAbbrev(String text) {
     if (text.isEmpty) return text;
     return text[0].toUpperCase() + text.substring(1).toLowerCase();
-  }
-
-  int _latestStreak(String habitId, List<Map<String, dynamic>> rows) {
-    final matches = rows.where((row) => row['goal_id'] == habitId).toList()
-      ..sort((a, b) => (b['date'] as String).compareTo(a['date'] as String));
-    return matches.isEmpty ? 0 : (matches.first['streak'] as int? ?? 0);
   }
 
   /// Signed streak for [habitId] as of [date] with [nextStatus] applied,

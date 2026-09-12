@@ -290,6 +290,25 @@ class SyncLocalStore {
         ],
       );
 
+  /// Whether [recordName] is ALREADY carrying a held pull-apply failure from an
+  /// earlier sync — i.e. applying it has failed before and the change token was
+  /// held for it once already.
+  ///
+  /// The hold exists to retry a transient failure. A failure that survives the
+  /// retry is not transient, and holding again is unbounded: the same record is
+  /// re-delivered and re-fails on every sync, forever. This is what lets the
+  /// engine tell those two apart.
+  Future<bool> hasPullFailure(String recordName) async {
+    final rows = await _db.query(
+      PrivateDbSchema.syncStateTable,
+      columns: ['record_name'],
+      where: 'record_name = ? AND last_error LIKE ?',
+      whereArgs: [recordName, '$pullFailurePrefix%'],
+      limit: 1,
+    );
+    return rows.isNotEmpty;
+  }
+
   /// Marks a `last_error` as a pull-apply failure whose change token is HELD,
   /// so [diagnostics] can separate "being retried" from "parked forever".
   /// Matched with SQL `LIKE`, so it must not contain `%` or `_`.
@@ -738,6 +757,44 @@ class SyncLocalStore {
     await _db.execute('PRAGMA foreign_keys = OFF');
     try {
       await _db.transaction((txn) async {
+        // A BARE identity shell standing in the canonical owner's name —
+        // a `profiles` row plus the `goal_category_settings` row minted
+        // alongside it, owning not one row of data — is leftover bookkeeping,
+        // not the canonical identity arriving. It has to go BEFORE the re-key,
+        // for two independent reasons:
+        //
+        //  * its settings row already holds `user_id = canonicalOwner`, and
+        //    that column is UNIQUE, so the `UPDATE` below fails with
+        //    SQLITE_CONSTRAINT. The whole transaction rolls back and
+        //    `SyncEngine.enable` throws — identically on every later attempt,
+        //    because nothing else ever removes the shell. That is iCloud sync
+        //    wedged on this device permanently.
+        //  * the `canonicalExists` branch would otherwise read it as "the
+        //    canonical profile already arrived" and delete the LOCAL profile —
+        //    replacing the user's real profile with the shell's defaults.
+        //
+        // Stricter than [reapOrphanIdentities]' notion of an orphan: every
+        // synced table counts here, not just the five that carry user data, so
+        // an identity holding anything at all is left for the merge below to
+        // fail on rather than silently deleted.
+        var canonicalOwns = 0;
+        for (final t in PrivateDbSchema.syncedTables) {
+          if (t == 'profiles' || t == 'goal_category_settings') continue;
+          final r = await txn.rawQuery(
+            'SELECT COUNT(*) AS n FROM $t WHERE user_id = ?',
+            [canonicalOwner],
+          );
+          canonicalOwns += (r.first['n'] as int?) ?? 0;
+        }
+        if (canonicalOwns == 0) {
+          await txn.delete(
+            'goal_category_settings',
+            where: 'user_id = ?',
+            whereArgs: [canonicalOwner],
+          );
+          await txn
+              .delete('profiles', where: 'id = ?', whereArgs: [canonicalOwner]);
+        }
         final canonicalExists = (await txn.query(
           'profiles',
           where: 'id = ?',
@@ -802,7 +859,16 @@ class SyncLocalStore {
     for (final p in profiles) {
       final avatar = p['avatar_url'] as String?;
       if (avatar != null && avatar.isNotEmpty) {
-        await markAvatarDirty(p['id'] as String);
+        // The profile row's OWN stamp, mirroring the row loop above — never
+        // "now". markAllDirty runs when a device joins sync, and a wall-clock
+        // stamp would make this device's avatar the newest copy in the zone by
+        // construction: the pull skips the peer's genuinely newer avatar as
+        // older under LWW, and the push then overwrites it everywhere with
+        // this device's stale image.
+        await markAvatarDirty(
+          p['id'] as String,
+          stamp: p['updated_at'] as String?,
+        );
       }
     }
   }
@@ -812,14 +878,23 @@ class SyncLocalStore {
   /// Mark the avatar record dirty for push — called explicitly by the app's
   /// avatar write path (no trigger exists for it). [deleted] pushes a tombstone
   /// (avatar removed).
-  Future<void> markAvatarDirty(String owner, {bool deleted = false}) =>
+  ///
+  /// [stamp] overrides the LWW timestamp for a mark that is BACKFILL rather
+  /// than an edit — [markAllDirty] passes the profile row's own `updated_at`
+  /// so joining sync cannot pass an old avatar off as the newest one. A real
+  /// avatar write leaves it null and gets "now", which is the truth there.
+  Future<void> markAvatarDirty(
+    String owner, {
+    bool deleted = false,
+    String? stamp,
+  }) =>
       _db.insert(
         PrivateDbSchema.syncStateTable,
         {
           'record_name': PrivateDbSchema.avatarRecordName(owner),
           'table_name': PrivateDbSchema.avatarRecordTable,
           'row_id': owner,
-          'updated_at': _nowIso(),
+          'updated_at': stamp ?? _nowIso(),
           'dirty': 1,
           'deleted': deleted ? 1 : 0,
         },

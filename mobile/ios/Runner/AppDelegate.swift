@@ -489,10 +489,18 @@ enum CloudKitSyncBridge {
     op.recordZoneChangeTokensUpdatedBlock = { _, token, _ in
       newToken = token
     }
+    // The per-zone failure, kept so the operation-level failure below can be
+    // classified. CloudKit reports .changeTokenExpired against the ZONE, and
+    // the operation result then carries it either directly or wrapped in a
+    // .partialFailure — so reading only the operation's own error misses it.
+    var zoneError: Error?
     op.recordZoneFetchResultBlock = { _, res in
-      if case .success(let info) = res {
+      switch res {
+      case .success(let info):
         newToken = info.serverChangeToken
         moreComing = info.moreComing
+      case .failure(let error):
+        zoneError = error
       }
     }
     op.fetchRecordZoneChangesResultBlock = { res in
@@ -505,7 +513,21 @@ enum CloudKitSyncBridge {
             "moreComing": moreComing,
           ])
         case .failure(let error):
-          if let ck = error as? CKError, ck.code == .zoneNotFound || ck.code == .userDeletedZone {
+          // Unwrap a .partialFailure onto the zone's own error before deciding.
+          var ck = (zoneError ?? error) as? CKError
+          if let outer = ck, outer.code == .partialFailure,
+             let inner = outer.partialErrorsByItemID?[zoneID] as? CKError {
+            ck = inner
+          }
+          // An expired change token belongs with a vanished zone, not with the
+          // errors that get reported to Dart: the ONLY recovery is to throw the
+          // token away and re-fetch the zone in full, and answering an empty
+          // page with a nil token is exactly how that is asked for. Reporting
+          // it instead wedges the device — every later sync re-sends the same
+          // dead token and fails identically, forever.
+          if let ck = ck,
+             ck.code == .zoneNotFound || ck.code == .userDeletedZone
+              || ck.code == .changeTokenExpired {
             result(["records": [], "newToken": nil as Any?, "moreComing": false])
             return
           }
@@ -533,7 +555,37 @@ enum CloudKitSyncBridge {
       map["payload"] = FlutterStandardTypedData(bytes: payload)
     }
     if let asset = record["asset"] as? CKAsset, let url = asset.fileURL {
-      map["assetPath"] = url.path
+      // Take CUSTODY of the bytes while the record is still alive.
+      //
+      // `url` points into a file CloudKit owns and whose lifetime is the
+      // CKAsset's: nothing here retains the record, so it is released as soon
+      // as this batch has crossed the channel — and the avatar is applied LAST
+      // by the Dart engine, after every row in the pull. Forwarding the bare
+      // path therefore hands Dart a file that is routinely already gone.
+      //
+      // The copy's name is derived from the record name and the previous one is
+      // removed first, so this is ONE file per asset record, overwritten on
+      // each pull, not an accumulating pile of temp files.
+      let safeName = record.recordID.recordName
+        .replacingOccurrences(of: "/", with: "_")
+        .replacingOccurrences(of: ":", with: "_")
+      let dest = URL(fileURLWithPath: NSTemporaryDirectory())
+        .appendingPathComponent("evolve_ck_asset_\(safeName).bin")
+      do {
+        try? FileManager.default.removeItem(at: dest)
+        try FileManager.default.copyItem(at: url, to: dest)
+        map["assetPath"] = dest.path
+      } catch {
+        // Fall back to CloudKit's own path rather than dropping the asset: the
+        // engine retries an unreadable one and then parks it, which is strictly
+        // better than an avatar record that arrives with no bytes at all.
+        logNative(
+          "error",
+          "[CloudKit] Could not take custody of a CKAsset — forwarding the "
+            + "CloudKit-owned path: \(error.localizedDescription)"
+        )
+        map["assetPath"] = url.path
+      }
     }
     return map
   }
@@ -1553,10 +1605,15 @@ enum ScreenTimeBridge {
           result(nil)
           return
         }
+        // All THREE token sets. Reporting only apps and categories made a
+        // websites-only pick look empty to Dart, which discarded a valid blob —
+        // even though the monitoring path already feeds `webDomainTokens` into
+        // the DeviceActivityEvent and the entitlement covers website usage.
         result([
           "blob": blob,
           "appCount": selection.applicationTokens.count,
           "categoryCount": selection.categoryTokens.count,
+          "webCount": selection.webDomainTokens.count,
         ])
       }
       let sheet = ActivityPickerSheet(

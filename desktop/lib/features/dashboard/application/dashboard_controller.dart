@@ -571,7 +571,12 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     List<int>? frequencyDays,
     HabitTarget? target,
   }) async {
-    if (!ref.read(desktopIsProProvider) && state.habits.length >= 5) {
+    // Count the SAME population every list surface shows — active habits only.
+    // Deleting a habit with history archives it (end_date in the past) rather
+    // than removing the row, so a raw `.length` would let an archived habit
+    // eat a free slot. Mirrors mobile's gate.
+    if (!ref.read(desktopIsProProvider) &&
+        state.habits.where((h) => h.isActiveOn(_now())).length >= 5) {
       return false;
     }
     // A new target takes effect today (v11, forward-only), so the local sweep

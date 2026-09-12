@@ -265,7 +265,7 @@ void main() async {
   }
 
   // Apply the saved app language to slang before the first frame is built.
-  await LocaleSettings.setLocale(_appLocaleFor(storedLanguageFor(prefs)));
+  await LocaleSettings.setLocale(appLocaleFor(storedLanguageFor(prefs)));
 
   // `isConfigured` is the second half of the gate: shouldStartSentry answers
   // "may we?", this answers "can we?". A build whose sentry_config.dart is the
@@ -1022,7 +1022,7 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
     // (covers the private-mode case where settings load asynchronously, and any
     // runtime language change). slang drives the app locale; MaterialApp follows.
     ref.listen<String>(settingsProvider.select((s) => s.language), (_, next) {
-      final target = _appLocaleFor(next);
+      final target = appLocaleFor(next);
       if (LocaleSettings.currentLocale != target) {
         LocaleSettings.setLocale(target);
       }
@@ -1111,7 +1111,9 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
 /// The Private-mode fallback to `pref_language` covers exactly one cold start:
 /// an install that predates the split has no private mirror yet, and without the
 /// fallback that launch would flash the device locale before the DB load lands.
-@visibleForTesting
+/// No longer test-only: the background notification isolate
+/// ([notificationTapBackground]) reads the language from the same prefs to
+/// compose its copy, so this and [appLocaleFor] are its entry point too.
 String? storedLanguageFor(SharedPreferences prefs) {
   final isPrivate =
       prefs.getString('active_data_mode') == AppDataMode.private.name;
@@ -1124,7 +1126,12 @@ String? storedLanguageFor(SharedPreferences prefs) {
 /// "System" follows the device locale (clamped to a shipped locale); any
 /// code with no shipped translation resolves to the base locale (English) via
 /// slang's `parse` fallback.
-AppLocale _appLocaleFor(String? language) {
+///
+/// Public for the same reason [storedLanguageFor] is: the background
+/// notification isolate has to make the identical decision from the identical
+/// prefs, and a second copy of these six lines is exactly how the two would
+/// drift.
+AppLocale appLocaleFor(String? language) {
   final override = AppLanguagePreference.localeOverrideFor(
     language ?? AppLanguagePreference.system,
   );

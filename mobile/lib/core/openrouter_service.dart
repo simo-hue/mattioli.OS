@@ -253,6 +253,12 @@ class OpenRouterService {
     } on TimeoutException catch (e, stack) {
       AppLogger.error('[OpenRouter] Timeout streaming', e, stack);
       yield t.ai.openRouter.serverTimeout;
+    } on CoachNotSubscribedException {
+      // Thrown by _errorMessage from INSIDE this try, so the untyped catch below
+      // used to swallow it and hand the chat a "connection error" bubble — the
+      // paywall branch in ai_chat_screen could never run. Mirrors desktop's
+      // openai_compatible_client, which rethrows here over the same proxy.
+      rethrow;
     } catch (e, stack) {
       AppLogger.error('[OpenRouter] Eccezione streaming', e, stack);
       yield t.ai.openRouter.connectionErrorShort;

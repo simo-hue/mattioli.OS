@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:evolve_targets/evolve_targets.dart';
 import 'package:evolve_verification/evolve_verification.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/goal.dart';
@@ -96,8 +95,9 @@ Future<void> rememberCacheOwner(String userId) => SecureStorageUtils.tryWrite(
 /// handles its own errors internally; this only stops them escaping.
 ///
 /// Shared rather than inlined because it was inlined, and the second notifier
-/// silently got a different — wrong — composition.
-@visibleForTesting
+/// silently got a different — wrong — composition. No longer
+/// `@visibleForTesting`: `MacroGoalsNotifier` — a different library — composes
+/// its own barrier from this, which is precisely the sharing this exists for.
 Future<void> loadBarrier(Iterable<Future<void>> loaders) =>
     Future.wait([for (final f in loaders) f.catchError((Object _) {})]);
 
@@ -240,6 +240,19 @@ class GoalsNotifier extends Notifier<List<Goal>> {
         // an empty app even though their data is safe in the cloud. The cache is
         // refreshed on the next successful sync and only replaced on a real
         // account switch (see _syncFromSupabase) or explicit reset (clearAll).
+        //
+        // DISARM the barrier with it, the mirror image of the login arm above:
+        // leaving the previous load's completed future in place would let
+        // `ensureLoaded` vouch for the `[]` this line just installed, and the
+        // callers that ask before acting on emptiness (Screen Time monitoring
+        // reads `[]` as "stop monitoring everything") would tear down real
+        // registrations over a token-rotation blip. Monitoring then keeps
+        // running while signed out — the policy already shipped for a failed
+        // load; account deletion still tears down explicitly via clearAll,
+        // which runs while the session is still alive.
+        _syncFailed = true;
+        _cacheSeeded = false;
+        _initialLoad = null;
         state = [];
       }
     });
@@ -250,6 +263,10 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       // BOTH loaders — see [loadBarrier].
       _initialLoad = loadBarrier([_seedFromCache(user.id), _syncFromSupabase()]);
     } else {
+      // No session, so nothing loaded this list — and [awaitStableBarrier]
+      // returns TRUE for a null barrier, so the flag is what stops that
+      // "settled" from reading as a trustworthy empty account.
+      _syncFailed = true;
       _initialLoad = null;
     }
 
@@ -914,6 +931,15 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       // (no extra round-trip) while the feature is dark and no links exist. Its
       // failure must not block the delete (the FK still un-links server-side).
       final user = supabase.auth.currentUser;
+      // Wait for that provider's loaders before believing its list. `ref.read`
+      // on a provider nobody has built yet RUNS build() and takes its
+      // synchronous return — which is the empty state, because the macro-goals
+      // cache seed is gated on a Keychain round trip. And nobody has usually
+      // built it: MacroGoalsScreen is index 2 of a lazy PageView, so a session
+      // that never opened the Goals tab reaches this line with the provider
+      // cold, reads `[]`, and skips the snapshot for exactly the habit it was
+      // written to protect.
+      await ref.read(macroGoalsProvider.notifier).ensureLoaded();
       final hasLinkedMacroGoal = ref
           .read(macroGoalsProvider)
           .goals
@@ -1368,7 +1394,11 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
       } else if (!next.isLoggedIn) {
         // Clear only in-memory state for the /login redirect; keep the on-disk
         // cache so a transient logout doesn't destroy the offline mirror (see
-        // GoalsNotifier for the full rationale).
+        // GoalsNotifier for the full rationale) — and disarm the barrier with
+        // it, or `ensureLoaded` vouches for the `{}` this line installs and the
+        // sweep reads it as "no verdicts stored".
+        _syncFailed = true;
+        _initialLoad = null;
         state = {};
       }
     });
@@ -1382,6 +1412,9 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
       // barrier exists to prevent.
       _initialLoad = loadBarrier([_seedFromCache(user.id), _syncFromSupabase()]);
     } else {
+      // See GoalsNotifier: a null barrier "settles", so nothing but this flag
+      // distinguishes "no session loaded this" from an empty account.
+      _syncFailed = true;
       _initialLoad = null;
     }
 
@@ -2022,6 +2055,13 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
         _cacheSeeded = false;
         _initialLoad = _syncFromSupabase();
       } else if (!next.isLoggedIn) {
+        // Disarm the barrier with the state, or `_ensureLoaded` vouches for the
+        // `{}` installed here and the sweep resolves every `atMost` day to a
+        // quiet success — see the login arm above for why the flags travel
+        // together.
+        _syncFailed = true;
+        _cacheSeeded = false;
+        _initialLoad = null;
         state = {};
       }
     });
@@ -2037,6 +2077,9 @@ class HabitProgressNotifier extends Notifier<HabitProgressMap> {
       // which deletes the stored row and tombstones the deletion to CloudKit.
       _initialLoad = loadBarrier([_seedFromCache(user.id), _syncFromSupabase()]);
     } else {
+      // See GoalsNotifier: a null barrier "settles", so nothing but this flag
+      // distinguishes "no session loaded this" from an empty account.
+      _syncFailed = true;
       _initialLoad = null;
     }
     return {};

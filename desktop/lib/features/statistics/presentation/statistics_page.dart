@@ -2347,7 +2347,6 @@ class _HabitPerformance extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    const labels = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
     final rpc =
         ref.watch(habitPerformanceRpcProvider(habit.id)).value ?? const [];
     final extremes = _weekdayExtremes(rpc);
@@ -2361,13 +2360,13 @@ class _HabitPerformance extends ConsumerWidget {
             subtitle: t.stats.performancePerDaySubtitle,
           ),
           const SizedBox(height: 18),
-          for (var index = 0; index < labels.length; index++) ...[
+          for (var index = 0; index < 7; index++) ...[
             Row(
               children: [
                 SizedBox(
                   width: 44,
                   child: Text(
-                    labels[index],
+                    _weekdayShort(index + 1),
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -2406,7 +2405,7 @@ class _HabitPerformance extends ConsumerWidget {
                 ),
               ],
             ),
-            if (index < labels.length - 1) const SizedBox(height: 14),
+            if (index < 6) const SizedBox(height: 14),
           ],
         ],
       ),
@@ -3457,21 +3456,11 @@ List<TrendPoint> _rpcTrendPoints(
   ];
 }
 
-const List<String> _trendWeekdayTokens = [
-  'Lun',
-  'Mar',
-  'Mer',
-  'Gio',
-  'Ven',
-  'Sab',
-  'Dom',
-];
-
 String _trendLabel(String? rawDate, _TrendTimeframe timeframe) {
   final date = DateTime.tryParse(rawDate ?? '');
   if (date == null) return '-';
   if (timeframe == _TrendTimeframe.week) {
-    return _trendWeekdayTokens[date.weekday - 1];
+    return _weekdayShort(date.weekday);
   }
   return '${date.day}/${date.month}';
 }

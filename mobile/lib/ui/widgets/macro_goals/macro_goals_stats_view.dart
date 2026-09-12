@@ -1659,7 +1659,14 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
         final q = item['quarter'] as int?;
         if (q != null) {
           dataMap[q] = item;
-          final tot = (item['total'] as num?)?.toDouble() ?? 0.0;
+          // Summed, not read: the seasonality payload carries only the three
+          // statuses — neither the private computation nor the
+          // get_macro_goals_stats RPC emits a 'total' here, unlike the sibling
+          // cards. Reading one left every rod at 0, and a rod whose toY equals
+          // its fromY is skipped by the painter along with its whole stack.
+          final tot = ((item['active'] as num?)?.toDouble() ?? 0.0) +
+              ((item['failed'] as num?)?.toDouble() ?? 0.0) +
+              ((item['completed'] as num?)?.toDouble() ?? 0.0);
           if (tot > maxX) maxX = tot;
         }
       }
@@ -1667,10 +1674,11 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
 
     for (int q = 1; q <= 4; q++) {
       final item = dataMap[q];
-      final tot = (item?['total'] as num?)?.toDouble() ?? 0.0;
       final act = (item?['active'] as num?)?.toDouble() ?? 0.0;
       final fail = (item?['failed'] as num?)?.toDouble() ?? 0.0;
       final comp = (item?['completed'] as num?)?.toDouble() ?? 0.0;
+      // See the maxX loop above: 'total' is not part of this payload.
+      final tot = act + fail + comp;
 
       groups.add(
         BarChartGroupData(

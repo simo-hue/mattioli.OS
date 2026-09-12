@@ -80,6 +80,22 @@ void main() {
       );
       expect(changes, isEmpty);
     });
+
+    test('an explicit missed with NO number is never overruled', () {
+      // The mirror of the atLeast rule below: the habit reminder's "Skip"
+      // action writes a goal_logs row and nothing else. A quiet limit day is
+      // normally a success, but a stored status with no number behind it is a
+      // deliberate human act, and the absence of a count is not evidence
+      // against it — rewriting it to 'done' hands back a streak the user just
+      // said they broke.
+      final changes = run(
+        target: _limit(),
+        today: today,
+        start: DateTime(2026, 7, 23),
+        status: const {'2026-07-23': 'missed'},
+      );
+      expect(changes, isEmpty);
+    });
   });
 
   group('atLeast habits — untouched days stay absent', () {

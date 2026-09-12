@@ -525,11 +525,39 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
     }
   }
 
+  /// The Goals-board target for the week that contains now — the same
+  /// `weekBucketOf` the launchpad build uses, so both routes to
+  /// [PaletteActionKind.goToThisWeek] land on exactly the same week.
+  GoalNavTarget? _thisWeekTarget(PaletteActionKind kind) {
+    if (kind != PaletteActionKind.goToThisWeek) return null;
+    final bucket = weekBucketOf(DateTime.now());
+    return GoalNavTarget(
+      type: GoalType.weekly,
+      year: bucket.year,
+      month: bucket.month,
+      week: bucket.week,
+    );
+  }
+
   void _runAction(ActionEntry entry) {
     switch (entry.kind) {
       case PaletteActionKind.goToThisWeek:
       case PaletteActionKind.jumpToPeriod:
-        if (entry.navTarget != null) _jump(entry.navTarget!);
+        // "This week" is derived HERE rather than taken from the entry: only
+        // the launchpad build attaches a navTarget to this kind, so the
+        // search-mode row built from `_commandCatalogue` (⌘K → "today") arrived
+        // with a null one and this case did nothing — no navigation, no
+        // dismissal — while `_activate` had already latched `_activated`, which
+        // nothing clears, so every later activation was swallowed too.
+        final target = entry.navTarget ?? _thisWeekTarget(entry.kind);
+        if (target == null) {
+          // Belt and braces for a future kind that lands here with nothing to
+          // jump to: this visit neither navigated nor popped, so the latch has
+          // to come back off or the palette is wedged until Esc.
+          _activated = false;
+          return;
+        }
+        _jump(target);
       case PaletteActionKind.createGoal:
         // Same free-tier cap the dashboard + quick-add enforce (mobile parity).
         final isPro = ref.read(desktopIsProProvider);
@@ -994,7 +1022,19 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
           EvolveMenuItem(
             leading: const Icon(LucideIcons.calendarClock, size: 15),
             label: t.palette.rowReschedule,
-            onTap: () => controller.rescheduleGoal(goal.id),
+            onTap: () {
+              // Rescheduling MINTS a goal (the old one is failed and a fresh
+              // id takes its place), so it is a create path and carries the
+              // same free-tier cap as `PaletteActionKind.createGoal` above and
+              // the Goals board's reschedule icon.
+              final isPro = ref.read(desktopIsProProvider);
+              final total = ref.read(dashboardControllerProvider).goals.length;
+              if (!isPro && total >= 100) {
+                _closeThen((ctx) => showProFeaturesDialog(ctx, ref));
+                return;
+              }
+              controller.rescheduleGoal(goal.id);
+            },
           ),
         EvolveMenuItem(
           leading: const Icon(LucideIcons.pencil, size: 15),

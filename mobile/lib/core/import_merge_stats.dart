@@ -8,7 +8,10 @@
 ///   - **unchanged** — a matching record existed and won (it was newer, equal,
 ///                     or the incoming timestamp was missing/older).
 ///
-/// Replace-mode imports wipe first, so everything is reported under [added].
+/// Replace-mode imports still reconcile against what is already stored (they
+/// must, to reuse the matching row's id), so a record the file and the store
+/// share is reported under [updated]; nothing is [unchanged], because Replace
+/// writes every record the file contains. The summary shows the total anyway.
 library;
 
 /// Mutable per-entity accumulator. Kept mutable so the merge loop can `++` in
@@ -40,8 +43,9 @@ class EntityMerge {
 
 /// The outcome of an import, broken down by entity type.
 class ImportMergeStats {
-  /// True when the import wiped existing data first (replace mode); in that case
-  /// every counted record is an [EntityMerge.added].
+  /// True when the import replaced existing data (replace mode); in that case
+  /// every counted record was written — [EntityMerge.added] or
+  /// [EntityMerge.updated], never [EntityMerge.unchanged].
   final bool replaced;
   final EntityMerge habits;
   final EntityMerge logs;

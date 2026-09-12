@@ -4,6 +4,24 @@ import '../../core/theme.dart';
 import '../../providers/user_provider.dart';
 import '../../i18n/translations.g.dart';
 
+/// Whole calendar months lived between [birthDate] and [now].
+///
+/// A top-level function rather than an expression inside `build` because the
+/// only input that matters is the wall clock, which a widget test cannot move —
+/// and the day-of-month case this has to get right is reachable for at most 30
+/// of any 31 possible "todays".
+/// The day-of-month term is what makes this months COMPLETED rather than month
+/// boundaries crossed: between the 1st of the birth month and the birthday, the
+/// current month has not been lived yet. Age is `livedMonths ~/ 12`, so without
+/// it the birthday arrived up to a month early.
+int lifeMonthsLived(DateTime birthDate, DateTime now) {
+  final months = (now.year - birthDate.year) * 12 +
+      now.month -
+      birthDate.month -
+      (now.day < birthDate.day ? 1 : 0);
+  return months < 0 ? 0 : months;
+}
+
 class LifeViewWidget extends ConsumerWidget {
   const LifeViewWidget({super.key});
 
@@ -37,8 +55,7 @@ class LifeViewWidget extends ConsumerWidget {
     final int endYear = birthYear + 85;
 
     final int totalMonths = (endYear - birthYear + 1) * 12;
-    final int livedMonths =
-        (now.year - birthDate.year) * 12 + now.month - birthDate.month;
+    final int livedMonths = lifeMonthsLived(birthDate, now);
     final int remainingMonths = totalMonths - livedMonths;
     final int age = (livedMonths / 12).floor();
 
@@ -295,8 +312,19 @@ class _LifeGridPainter extends CustomPainter {
     }
   }
 
+  // Every field this compares is read in paint(), and the CustomPaint sits alone
+  // under a RepaintBoundary — so `false` here meant a theme or accent change
+  // re-themed the numbers above the grid and left the 1032 dots on the old
+  // palette, and a date-of-birth edit moved the numbers without moving the "you
+  // are here" marker.
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _LifeGridPainter oldDelegate) =>
+      oldDelegate.totalMonths != totalMonths ||
+      oldDelegate.livedMonths != livedMonths ||
+      oldDelegate.currentMonth != currentMonth ||
+      oldDelegate.accentColor != accentColor ||
+      oldDelegate.borderColor != borderColor ||
+      oldDelegate.foregroundColor != foregroundColor;
 }
 
 /// Shown in place of the whole life grid when no date of birth is set.

@@ -225,22 +225,30 @@ List<TargetReconcileChange> reconcileManualTargetDays({
       // the desktop `progressStale` check, both written after a sweep over an
       // unloaded map deleted real rows and tombstoned them to CloudKit.
       final noStoredNumber = progress == null;
-      final untouchedCountDay = noStoredNumber && isAtLeast;
       // An untouched atLeast day stays absent before the auto-fail anchor (and
       // whenever no anchor is set) — don't invent a miss in a user's history.
       // From the anchor on it IS a miss: zero push-ups is zero push-ups whether
       // or not the user opened the sheet to say so.
       //
-      // But auto-fail only ever FILLS a day that has no verdict; it never
+      // But the sweep only ever FILLS a day that has no verdict; it never
       // overrules one. A stored status with no number behind it is a deliberate
-      // human act — tapping "Done" on the reminder writes exactly that — and the
-      // absence of a count is not evidence against it. (Days that DO carry a
-      // number keep being re-derived below, so a stale verdict is still
+      // human act — tapping "Done" or "Skip" on the reminder writes exactly that
+      // — and the absence of a count is not evidence against it. (Days that DO
+      // carry a number keep being re-derived below, so a stale verdict is still
       // corrected; it is only the no-number case that defers.)
-      final skip = untouchedCountDay &&
-          (autoFailFrom == null ||
-              cursor.isBefore(autoFailFrom) ||
-              storedStatus != null);
+      //
+      // That rule is direction-agnostic, and used to be gated on
+      // [untouchedCountDay]: a limit day the user explicitly skipped has no
+      // number either, so the quiet-day rule resolved it to `met` and upserted
+      // `done` over their own `missed`. Only the auto-fail anchor stays an
+      // atLeast-only concern; "a quiet limit day with no stored verdict
+      // resolves to done" is untouched.
+      final skip = noStoredNumber &&
+          (isAtLeast
+              ? (autoFailFrom == null ||
+                  cursor.isBefore(autoFailFrom) ||
+                  storedStatus != null)
+              : storedStatus != null);
       if (!skip) {
         final verdict = evaluateTarget(
           target: target,

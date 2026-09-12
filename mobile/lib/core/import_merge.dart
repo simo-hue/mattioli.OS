@@ -549,7 +549,7 @@ ValidatedBackup validateCanonical(Map<String, dynamic> canonical) {
       'start_date': start,
       'end_date': end,
       'display_order': _int(g['display_order']),
-      'order_key': g['order_key'],
+      'order_key': _num(g['order_key'])?.toDouble(),
       'order_key_updated_at': _str(g['order_key_updated_at']),
       'created_at': _str(g['created_at']),
       'updated_at': _str(g['updated_at']),
@@ -557,7 +557,7 @@ ValidatedBackup validateCanonical(Map<String, dynamic> canonical) {
       'verify_provider': _str(g['verify_provider']),
       'verify_metric': _str(g['verify_metric']),
       'verify_comparator': _str(g['verify_comparator']),
-      'verify_threshold': (g['verify_threshold'] as num?)?.toDouble(),
+      'verify_threshold': _num(g['verify_threshold'])?.toDouble(),
       'verify_unit': _str(g['verify_unit']),
       'verify_effective_from': _str(g['verify_effective_from']),
       'verify_conditions': _str(g['verify_conditions']),
@@ -1315,10 +1315,20 @@ CloudImportPlan planCloudImport({
       (c['name'] as String).trim().toLowerCase(): c,
   };
   final catRemap = <String, String>{};
+  // Ids a macro goal may reference after the import. In REPLACE mode an
+  // existing category the backup does not contain is about to be pruned, so it
+  // is NOT valid to point at — only the rows this plan writes are.
   final validCatIds = <String>{
-    for (final c in existingCategories) c['id'] as String,
+    if (!replaceExisting)
+      for (final c in existingCategories) c['id'] as String,
   };
   final catsToWrite = <Map<String, dynamic>>[];
+  // Final ids already in [catsToWrite]. The whole list goes out as ONE
+  // `on_conflict=id` upsert, and Postgres rejects a batch that touches the same
+  // row twice (21000). Two file rows CAN land on one final id: UNIQUE(user_id,
+  // name) is case-sensitive so 'Work' and 'work' coexist, while the match below
+  // is trim+lowercase.
+  final plannedCatIds = <String>{};
   final catArchiveFills = <({String id, String archivedAt})>[];
 
   for (final cat in categories) {
@@ -1330,7 +1340,28 @@ CloudImportPlan planCloudImport({
       catRemap[importedId] = finalId;
       validCatIds.add(finalId);
       final importedArchived = cat['archived_at'] as String?;
-      if (match['archived_at'] == null && importedArchived != null) {
+      if (replaceExisting) {
+        // Replace must leave the account holding exactly the backup, so the
+        // matched row is re-upserted under its EXISTING id (a fresh id would
+        // collide on UNIQUE(user_id,name)). Omitting it would hand
+        // _deleteComplement — which keeps only the planned rows — a category
+        // the backup contains.
+        if (plannedCatIds.add(finalId)) {
+          catsToWrite.add({
+            'id': finalId,
+            'user_id': userId,
+            'name': cat['name'],
+            'color': cat['color'],
+            'created_at': cat['created_at'] ?? now,
+            'archived_at': importedArchived,
+          });
+          stats.categories.updated++;
+        } else {
+          // A second file row deduped onto an id already planned: writing it
+          // again would make the batch touch that row twice.
+          stats.categories.unchanged++;
+        }
+      } else if (match['archived_at'] == null && importedArchived != null) {
         catArchiveFills.add((id: finalId, archivedAt: importedArchived));
         stats.categories.updated++;
       } else {
@@ -1339,6 +1370,7 @@ CloudImportPlan planCloudImport({
     } else {
       catRemap[importedId] = importedId;
       validCatIds.add(importedId);
+      plannedCatIds.add(importedId);
       catsToWrite.add({
         'id': importedId,
         'user_id': userId,
@@ -1357,12 +1389,18 @@ CloudImportPlan planCloudImport({
   }
 
   // ── Goals ──
-  final knownGoalIds = <String>{...existingGoals.keys};
+  // In REPLACE mode a server goal absent from the backup is pruned, so it is
+  // not a valid parent for an incoming log/progress row or a macro's
+  // linked_goal_id — only the backup's own goals are.
+  final knownGoalIds = <String>{if (!replaceExisting) ...existingGoals.keys};
   final goalsToWrite = <Map<String, dynamic>>[];
   for (final g in goals) {
     final id = (g['id'] as String?) ?? newId();
     final has = existingGoals.containsKey(id);
+    // REPLACE bypasses last-write-wins: the file is the desired end state, and
+    // a row skipped here as "unchanged" would be deleted by the Replace prune.
     if (has &&
+        !replaceExisting &&
         !incomingWins(
             incoming: g['updated_at'] as String?,
             existing: existingGoals[id])) {
@@ -1421,6 +1459,7 @@ CloudImportPlan planCloudImport({
         (rawLinked != null && knownGoalIds.contains(rawLinked)) ? rawLinked : null;
     final has = existingMacros.containsKey(id);
     if (has &&
+        !replaceExisting &&
         !incomingWins(
             incoming: g['updated_at'] as String?,
             existing: existingMacros[id])) {
@@ -1480,9 +1519,10 @@ CloudImportPlan planCloudImport({
       });
       affectedGoals.add(goalId);
       stats.logs.added++;
-    } else if (incomingWins(
-        incoming: l['updated_at'] as String?,
-        existing: match['updated_at'] as String?)) {
+    } else if (replaceExisting ||
+        incomingWins(
+            incoming: l['updated_at'] as String?,
+            existing: match['updated_at'] as String?)) {
       logsToWrite.add({
         'id': match['id'], // reuse to update in place, not duplicate
         'user_id': userId,
@@ -1517,6 +1557,7 @@ CloudImportPlan planCloudImport({
     if (!seenProgressKeys.add(key)) continue; // intra-file dup
     final existing = existingProgress[key];
     if (existing != null &&
+        !replaceExisting &&
         !incomingWins(
             incoming: p['updated_at'] as String?,
             existing: existing['updated_at'] as String?)) {
@@ -1553,9 +1594,10 @@ CloudImportPlan planCloudImport({
         'updated_at': m['updated_at'] ?? now,
       });
       stats.moods.added++;
-    } else if (incomingWins(
-        incoming: m['updated_at'] as String?,
-        existing: match['updated_at'] as String?)) {
+    } else if (replaceExisting ||
+        incomingWins(
+            incoming: m['updated_at'] as String?,
+            existing: match['updated_at'] as String?)) {
       moodsToWrite.add({
         'id': match['id'],
         'user_id': userId,

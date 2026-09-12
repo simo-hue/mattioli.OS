@@ -1,9 +1,11 @@
 import 'dart:io';
 
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
+import 'package:evolve_desktop/core/clock.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/data/dashboard_repository.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
+import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
@@ -501,6 +503,88 @@ void main() {
     expect(snapshot.previousWeekCompletionRate, closeTo(1 / 7, 0.0001));
     expect(snapshot.weeklyMomentum, closeTo(1 / 7, 0.0001));
   });
+
+  group('free-tier 5-habit cap', () {
+    // Deleting a habit that has history ARCHIVES it (end_date in the past)
+    // instead of removing the row, so `state.habits` keeps rows that no list
+    // surface shows. The cap must count the same population the UI shows —
+    // active habits — exactly as mobile's gate does.
+    test('archived habits do not consume a free slot', () async {
+      final now = DateTime(2026, 9, 3);
+      final container = _cappedContainer(
+        now: now,
+        habits: [
+          for (var i = 0; i < 2; i++) _capHabit('active-$i', start: now),
+          for (var i = 0; i < 3; i++)
+            _capHabit(
+              'archived-$i',
+              start: now.subtract(const Duration(days: 30)),
+              end: now.subtract(const Duration(days: 1)),
+            ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final added = await container
+          .read(dashboardControllerProvider.notifier)
+          .addHabit(title: 'Nuova abitudine', color: EvolveColors.cyan);
+
+      expect(added, isTrue);
+    });
+
+    test('five active habits still hit the cap', () async {
+      final now = DateTime(2026, 9, 3);
+      final container = _cappedContainer(
+        now: now,
+        habits: [
+          for (var i = 0; i < 5; i++) _capHabit('active-$i', start: now),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final added = await container
+          .read(dashboardControllerProvider.notifier)
+          .addHabit(title: 'Nuova abitudine', color: EvolveColors.cyan);
+
+      expect(added, isFalse);
+    });
+  });
+}
+
+/// A free-tier (non-Pro) container with a fixed clock and a seeded habit list.
+ProviderContainer _cappedContainer({
+  required DateTime now,
+  required List<DashboardHabit> habits,
+}) {
+  return ProviderContainer(
+    overrides: [
+      dashboardRepositoryProvider.overrideWithValue(
+        _TestDashboardRepository(
+          DashboardSnapshot(
+            habits: habits,
+            goals: const [],
+            trend: const [],
+            checkIn: const DailyCheckIn(),
+          ),
+        ),
+      ),
+      clockProvider.overrideWithValue(() => now),
+      desktopIsProProvider.overrideWithValue(false),
+    ],
+  );
+}
+
+DashboardHabit _capHabit(String id, {DateTime? start, DateTime? end}) {
+  return DashboardHabit(
+    id: id,
+    title: id,
+    color: EvolveColors.primaryStrong,
+    streak: 0,
+    weeklyProgress: const [false, false, false, false, false, false, false],
+    state: HabitState.pending,
+    startDate: start,
+    endDate: end,
+  );
 }
 
 ProviderContainer _testContainer({DashboardSnapshot? snapshot}) {

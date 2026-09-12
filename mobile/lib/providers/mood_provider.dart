@@ -14,6 +14,36 @@ SupabaseClient get supabase => Supabase.instance.client;
 
 typedef DailyMoodsMap = Map<String, DailyMood>; // dateKey -> DailyMood
 
+/// Fetches one window of `daily_moods` rows. Abstracted so the paging loop is
+/// unit-testable without a live Supabase client, mirroring [GoalLogPageFetcher].
+typedef DailyMoodPageFetcher =
+    Future<List<Map<String, dynamic>>> Function(int offset, int limit);
+
+/// Folds every page from [fetchPage] into a [DailyMoodsMap], requesting
+/// successive ranges until a short (final) page comes back.
+///
+/// A single unbounded PostgREST `select` is capped by the project's
+/// `db-max-rows` and truncates a long history with NO error — the export path in
+/// `privacy_settings_screen.dart` has paged this same table for that reason; the
+/// live read had not. [fetchPage] must impose a stable total order, or windows
+/// can repeat or skip rows.
+Future<DailyMoodsMap> fetchDailyMoodsPaginated(
+  DailyMoodPageFetcher fetchPage, {
+  int pageSize = kGoalLogsSyncPageSize,
+}) async {
+  final DailyMoodsMap moods = {};
+  var offset = 0;
+  while (true) {
+    final page = await fetchPage(offset, pageSize);
+    for (final row in page) {
+      moods[row['date'] as String] = DailyMood.fromJson(row);
+    }
+    if (page.length < pageSize) break;
+    offset += pageSize;
+  }
+  return moods;
+}
+
 class DailyMoodsNotifier extends Notifier<DailyMoodsMap> {
   @override
   DailyMoodsMap build() {
@@ -54,16 +84,21 @@ class DailyMoodsNotifier extends Notifier<DailyMoodsMap> {
     if (user == null) return;
 
     try {
-      final response = await supabase
-          .from('daily_moods')
-          .select('*')
-          .eq('user_id', user.id);
-
-      final DailyMoodsMap newMap = {};
-      for (final row in response) {
-        final date = row['date'] as String;
-        newMap[date] = DailyMood.fromJson(row);
-      }
+      // Paged, and ordered so the windows are a stable total order: an
+      // unbounded select is silently truncated at the project's db-max-rows, and
+      // ranges over an unordered select can repeat or skip rows between pages.
+      // Accumulated fully before assigning, so a mid-sync failure leaves the
+      // previous state rather than a half-loaded one.
+      final newMap = await fetchDailyMoodsPaginated((offset, limit) async {
+        final page = await supabase
+            .from('daily_moods')
+            .select()
+            .eq('user_id', user.id)
+            .order('date', ascending: true)
+            .order('id', ascending: true)
+            .range(offset, offset + limit - 1);
+        return List<Map<String, dynamic>>.from(page);
+      });
       state = newMap;
     } catch (e, stack) {
       AppLogger.error('[DailyMoods] Sync error', e, stack);

@@ -55,7 +55,12 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
   GoalType _selectedType = GoalType.monthly;
   bool _isLoading = false;
   bool _isNewCategory = false;
-  String? _selectedCategoryLabel;
+
+  /// The selected saved category's ID — the thing `category_id` is written
+  /// from. Tracked instead of the label because the label is not an identity:
+  /// the read path matches `goal.categoryId == category.id` first and a saved
+  /// category has no `key`, so a name in `category_key` matches nothing.
+  String? _selectedCategoryId;
 
   // The exact period the goal is filed under. Defaults to the current period
   // (initState) but the user can now pick any year/quarter/month/week.
@@ -97,16 +102,22 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
           .where((c) => !c.isArchived)
           .toList();
 
-  /// The goal category as a plain string for `addGoal`: the typed name in
-  /// "create new" mode (or when there are no saved categories yet), otherwise
-  /// the selected existing category's label.
-  String _resolveCategory() {
+  /// The saved category the picker currently points at, or null when the user
+  /// is typing a brand new one (or has no saved categories yet).
+  DesktopGoalCategory? _selectedCategory() {
     final categories = _activeCategories();
-    if (categories.isEmpty || _isNewCategory) {
-      final typed = _categoryController.text.trim();
-      return typed.isEmpty ? t.createGoal.defaultCategory : typed;
+    if (categories.isEmpty || _isNewCategory) return null;
+    for (final category in categories) {
+      if (category.id == _selectedCategoryId) return category;
     }
-    return _selectedCategoryLabel ?? categories.first.label;
+    return categories.first;
+  }
+
+  /// The typed category name — meaningful only in the "create new" branch (and
+  /// when there are no saved categories yet).
+  String _resolveCategory() {
+    final typed = _categoryController.text.trim();
+    return typed.isEmpty ? t.createGoal.defaultCategory : typed;
   }
 
   /// A goal has no colour of its own — [DashboardGoal] re-derives it from its
@@ -114,13 +125,8 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
   /// category's colour. Mirror the quick-add bar (`goals_page`): use the selected
   /// category's colour, else the built-in mapping for a typed/new category.
   Color _resolveGoalColor() {
-    final categories = _activeCategories();
-    if (!(categories.isEmpty || _isNewCategory)) {
-      final label = _selectedCategoryLabel ?? categories.first.label;
-      for (final category in categories) {
-        if (category.label == label) return category.color;
-      }
-    }
+    final selected = _selectedCategory();
+    if (selected != null) return selected.color;
     return dashboardGoalColor(_resolveCategory());
   }
 
@@ -146,14 +152,14 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
         EvolveSelect<String>(
           value: _isNewCategory
               ? _kNewCategory
-              : (_selectedCategoryLabel ?? categories.first.label),
+              : (_selectedCategory()?.id ?? categories.first.id),
           expand: true,
           height: 46,
           fillColor: context.evolveColors.background.withValues(alpha: 0.5),
           options: [
             for (final category in categories)
               EvolveSelectOption(
-                value: category.label,
+                value: category.id,
                 label: category.label,
                 leading: CircleAvatar(
                   radius: 4,
@@ -177,7 +183,7 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
                 _categoryController.clear();
               } else {
                 _isNewCategory = false;
-                _selectedCategoryLabel = value;
+                _selectedCategoryId = value;
               }
             });
           },
@@ -207,7 +213,7 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
     final title = _titleController.text.trim();
     if (title.isEmpty) return;
 
-    final category = _resolveCategory();
+    final selected = _selectedCategory();
 
     setState(() => _isLoading = true);
 
@@ -238,13 +244,48 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
             ? 1.0
             : typedAmount);
 
+    // A goal is filed by category_id, exactly as the quick-add bar and the goal
+    // editor do; `category_key` stays for the built-in preset keys only. A
+    // typed NEW name has no row yet, so mint one first — otherwise the name
+    // lands in category_key, matches no category on the read path, and the goal
+    // shows the default colour under a category that is coloured everywhere
+    // else. If the mint fails, fall back to today's behaviour (the name in
+    // category_key) rather than losing the user's draft.
+    // Resolved BEFORE the mint's await: `addCategory` invalidates the
+    // categories provider, so re-deriving the colour afterwards would read a
+    // rebuilt picker instead of what the user actually chose.
+    var goalColor = _resolveGoalColor();
+    var categoryId = selected?.id;
+    var categoryKey = '';
+    if (selected == null) {
+      final typed = _categoryController.text.trim();
+      if (typed.isEmpty) {
+        categoryKey = _resolveCategory();
+      } else {
+        try {
+          final created = await ref
+              .read(desktopGoalCategoriesControllerProvider.notifier)
+              .addCategory(typed, dashboardGoalColor(typed));
+          if (created != null) {
+            categoryId = created.id;
+            goalColor = created.color;
+          } else {
+            categoryKey = typed;
+          }
+        } catch (_) {
+          categoryKey = typed;
+        }
+      }
+    }
+
     try {
       await ref
           .read(dashboardControllerProvider.notifier)
           .addGoal(
             title: title,
-            category: category,
-            color: _resolveGoalColor(),
+            category: categoryKey,
+            categoryId: categoryId,
+            color: goalColor,
             type: type,
             dueLabel: dueLabel,
             year: year,

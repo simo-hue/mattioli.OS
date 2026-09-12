@@ -242,9 +242,10 @@ class SettingsFormController extends Notifier<SettingsFormState> {
   /// bug wearing the fix's clothes. Mobile's `settings_provider.dart` uses the
   /// same pair; `test/settings_hydration_clobber_test.dart` pins both halves.
   ///
-  /// In Supabase mode nothing ever clears it, because [applySyncedSettings] is
-  /// a no-op there — harmless, since that mode never consults it, and it is
-  /// bounded by the number of synced keys either way.
+  /// Cleared in BOTH modes now that `desktopSyncedSettingsProvider` also reads
+  /// the account's `profiles` row (it used to return an empty map in Supabase
+  /// mode, which made [applySyncedSettings] a no-op there and left this set to
+  /// grow — harmlessly — for the life of the visit).
   final Set<String> _preloadEdits = <String>{};
 
   @override
@@ -763,12 +764,14 @@ class SettingsFormController extends Notifier<SettingsFormState> {
           preferences.setInt('accent_color', state.accent.toARGB32()),
         ]);
       }
-      final biometric = profile['biometric_lock'] as bool?;
-      if (biometric != null) {
-        await ref
-            .read(desktopBiometricControllerProvider.notifier)
-            .applyProfile(biometric);
-      }
+      // `biometric_lock` is deliberately NOT read here. App Lock is
+      // DEVICE-local: a Touch ID lock armed on this Mac must not be disarmed by
+      // a stale value — or by a value that belongs to another device. Reading
+      // it let the iPhone's Face ID switch reach across and turn this Mac's
+      // lock off (and back on). Private mode already excludes the column
+      // (`PrivateDbSchema.deviceLocalProfileColumns`), mobile already refuses
+      // the server value, and the reset payload at the bottom of this file says
+      // the same — this read was the last cross-device channel left.
       await syncNotifications();
     } catch (error, stack) {
       AppLogger.error('Unable to download desktop preferences', error, stack);
@@ -980,7 +983,16 @@ class SettingsFormController extends Notifier<SettingsFormState> {
   Future<void> resetSettingsToDefaults() async {
     final preferences = ref.read(sharedPreferencesProvider);
     final keys = preferences?.getKeys().where(
-      (key) => key.startsWith('pref_') || key.startsWith('notif_'),
+      (key) =>
+          (key.startsWith('pref_') || key.startsWith('notif_')) &&
+          // `pref_is_pro_$userId` is NOT a setting: it is the offline
+          // entitlement cache `DesktopSubscriptionController.build` seeds
+          // `isPro` from, and `refresh()` deliberately keeps that seed when the
+          // RevenueCat call throws. Sweeping it downgraded a paying subscriber
+          // on the next offline launch — a settings reset says nothing about
+          // whether the user pays. `pref_biometric_lock` stays in the sweep on
+          // purpose: `setEnabled(false)` below is what actually resets it.
+          !key.startsWith('pref_is_pro'),
     );
     if (preferences != null && keys != null) {
       await Future.wait([for (final key in keys) preferences.remove(key)]);

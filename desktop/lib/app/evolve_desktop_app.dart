@@ -19,7 +19,14 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 
 AppLocale _appLocaleFor(Locale? locale) {
-  switch (locale?.languageCode) {
+  // NULL is the stored `system` value — the picker's first option and what
+  // every fresh install holds. It used to fall through to `default:` and pin
+  // English, so an Italian Mac rendered English copy. Mobile resolves the same
+  // stored value with `findDeviceLocale()`; this is that call. An unsupported
+  // device language still lands on the base locale (English) inside it, which
+  // is what `default:` below keeps doing for an unsupported explicit code.
+  if (locale == null) return AppLocaleUtils.findDeviceLocale();
+  switch (locale.languageCode) {
     case 'it':
       return AppLocale.it;
     case 'es':
@@ -92,7 +99,13 @@ class EvolveDesktopApp extends ConsumerWidget {
         ),
       ),
       themeMode: appearance.themeMode,
-      locale: locale,
+      // The RESOLVED locale, never the raw stored one. Passing null here let
+      // Flutter resolve the Material half on its own and fall back to
+      // `supportedLocales.first` (it), so the date picker's months and
+      // `firstDayOfWeekIndex` could be Italian inside an English dialog. Taken
+      // from `appLocale` rather than from `TranslationProvider.of(context)` so
+      // the two halves agree on the very first frame, not one rebuild later.
+      locale: appLocale.flutterLocale,
       supportedLocales: const [
         Locale('it'),
         Locale('en'),

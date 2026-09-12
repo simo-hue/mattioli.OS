@@ -94,18 +94,24 @@ class ScreenTimeSelectionEntry {
   final int applicationCount;
   final int categoryCount;
 
+  /// Web domains picked — the third `FamilyActivitySelection` token set. Absent
+  /// from entries written before it was reported, hence the 0 default on read.
+  final int webDomainCount;
+
   const ScreenTimeSelectionEntry({
     required this.blob,
     required this.applicationCount,
     required this.categoryCount,
+    this.webDomainCount = 0,
   });
 
-  int get totalCount => applicationCount + categoryCount;
+  int get totalCount => applicationCount + categoryCount + webDomainCount;
 
   Map<String, Object?> toJson() => {
         'blob': blob,
         'apps': applicationCount,
         'categories': categoryCount,
+        'web': webDomainCount,
       };
 
   factory ScreenTimeSelectionEntry.fromJson(Map<String, Object?> j) =>
@@ -113,6 +119,7 @@ class ScreenTimeSelectionEntry {
         blob: j['blob'] as String,
         applicationCount: (j['apps'] as num?)?.toInt() ?? 0,
         categoryCount: (j['categories'] as num?)?.toInt() ?? 0,
+        webDomainCount: (j['web'] as num?)?.toInt() ?? 0,
       );
 }
 

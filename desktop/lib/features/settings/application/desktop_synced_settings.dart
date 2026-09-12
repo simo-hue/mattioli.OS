@@ -1,12 +1,16 @@
 import 'package:evolve_desktop/app/localization/desktop_locale_controller.dart';
 import 'package:evolve_desktop/app/theme/desktop_appearance_controller.dart';
+import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/core/desktop_private_db.dart';
+import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_sync/evolve_sync.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The user's synced settings, read out of the encrypted private database.
+/// The user's synced settings, whichever store owns them in the active mode:
+/// the encrypted private database, or the `profiles` row of the signed-in
+/// account.
 ///
 /// Private mode never has a Supabase session, so the settings page's old
 /// "select from `profiles` as the signed-in user" read-back returned
@@ -15,8 +19,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// back — which is exactly why the accent was orange on the iPhone and yellow
 /// on the Mac, and the two apps ran in different languages.
 ///
-/// Empty in Supabase mode: there the profiles table is the source and the
-/// settings page reads it directly.
+/// Account mode used to return an EMPTY map here, on the grounds that "the
+/// settings page reads profiles directly". It does — but only when it is on
+/// screen. `loadProfilePreferences` has exactly one caller chain
+/// (hydrate <- initState), so a Mac that never opened Settings rendered in the
+/// system language with the default appearance while the account said
+/// otherwise, and after A signed out B inherited A's theme. The app root
+/// listens to THIS provider (see `evolve_desktop_app.dart`) precisely so a
+/// theme/accent/language changed on the iPhone repaints the Mac with Settings
+/// closed; account mode was simply not plugged into it.
 ///
 /// Invalidated by `refreshPrivateAfterPull`, so a change made on the iPhone
 /// lands on the Mac on the next pull instead of on the next restart.
@@ -24,7 +35,7 @@ final desktopSyncedSettingsProvider = FutureProvider<Map<String, String?>>((
   ref,
 ) async {
   if (!ref.watch(activeDesktopDataModeProvider).isPrivate) {
-    return const <String, String?>{};
+    return _readAccountSettings(ref);
   }
   try {
     return await DesktopPrivateDb.instance.loadSettingsRow();
@@ -39,6 +50,75 @@ final desktopSyncedSettingsProvider = FutureProvider<Map<String, String?>>((
     return const <String, String?>{};
   }
 });
+
+/// The synced settings columns of `profiles`, returned in the same canonical
+/// shape the private store uses so both modes feed one set of listeners.
+///
+/// `biometric_lock` is deliberately absent — App Lock is device-local (see
+/// `desktop_biometric_controller.dart`), and so are `is_pro` and the crash
+/// consent.
+const List<String> _accountSettingColumns = <String>[
+  kSettingThemeMode,
+  kSettingAccentColor,
+  kSettingLanguage,
+  kSettingCalendarView,
+  kSettingTimeFormat24h,
+  kSettingAiSuggestions,
+  kSettingFocusMode,
+  kSettingMilestones,
+  kSettingDeepWorkInsights,
+  kSettingHabitReminders,
+  kSettingGoalDeadlines,
+  kSettingAiInsights,
+  kSettingWeeklyReports,
+  kSettingEveningReview,
+  kSettingMorningBriefTime,
+  kSettingEveningReviewTime,
+];
+
+Future<Map<String, String?>> _readAccountSettings(Ref ref) async {
+  // WATCHED, not read: this read has to run again when the ACCOUNT changes, or
+  // a fresh sign-in never sees the account's appearance and — worse — B keeps
+  // rendering A's theme, accent and language after A signs out.
+  //
+  // The `select` is not a micro-optimisation. `DesktopAuthState` has no `==`,
+  // so watching it whole compares by identity and re-runs on every auth event —
+  // both legs of `_execute`, and every Supabase token refresh, which re-emits
+  // `onAuthStateChange` roughly hourly. Since the appearance controller
+  // persists a local theme/accent choice to SharedPreferences and never to
+  // `profiles`, re-applying this row on a timer would silently revert the ⌘K
+  // "Switch to light/dark" the user just used. Same reason the statistics,
+  // goals and dashboard providers next door watch the id.
+  final userId = ref.watch(
+    desktopAuthControllerProvider.select((state) => state.user?.id),
+  );
+  final client = ref.read(supabaseClientProvider);
+  if (client == null || userId == null) return const <String, String?>{};
+  try {
+    final row = await client
+        .from('profiles')
+        .select()
+        .eq('id', userId)
+        .maybeSingle();
+    if (row == null) return const <String, String?>{};
+    // NULL columns are omitted rather than passed through as null: every
+    // listener treats an absent key as "the store has no opinion" and keeps its
+    // own value, which is the right answer for a column the account never set.
+    return <String, String?>{
+      for (final column in _accountSettingColumns)
+        if (row[column] != null) column: encodeDesktopSetting(row[column]),
+    };
+  } catch (error, stack) {
+    // Best-effort, exactly like the private branch: an offline launch or a
+    // pre-migration column must not take down the app root that listens here.
+    AppLogger.warning(
+      '[Settings] unable to read the account settings',
+      error,
+      stack,
+    );
+    return const <String, String?>{};
+  }
+}
 
 /// The synced-settings WRITE, behind a provider.
 ///

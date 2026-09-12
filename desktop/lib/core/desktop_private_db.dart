@@ -958,7 +958,7 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
   /// desktop, mobile, and back. `frequency_days` is stored JSON-encoded;
   /// decode it back to a list so re-imports are representation-stable.
   static Future<Map<String, dynamic>> exportSnapshot(
-    DatabaseExecutor db, {
+    Database db, {
     required String owner,
   }) async {
     Future<List<Map<String, Object?>>> rows(String table, {String? orderBy}) =>
@@ -985,7 +985,34 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
       whereArgs: [owner],
       limit: 1,
     );
-    final profile = profileRows.isNotEmpty ? profileRows.first : null;
+    // The `profiles` columns are only the LEGACY half of the settings
+    // dual-write: [SyncedSettingsStore.readAll] resolves row-first, on purpose,
+    // so a column can hold a value the app has already stopped using (an
+    // unrelated profile write bumps `profiles.updated_at`, the whole-row record
+    // loses LWW on the next pull and the column keeps the superseded value).
+    // Exporting the raw row therefore shipped a setting nothing reads — and a
+    // REPLACE restore writes it back over BOTH stores (see
+    // _restoreSyncedSettingRows) and pushes it to the user's other devices.
+    // Overlay the authoritative values, keeping each column's storage class so
+    // the file stays byte-shaped like the row it came from.
+    final profile = profileRows.isNotEmpty
+        ? Map<String, Object?>.from(profileRows.first)
+        : null;
+    if (profile != null) {
+      final synced = await SyncedSettingsStore(db).readAll(owner);
+      for (final e in synced.entries) {
+        // Keys with no legacy column (e.g. `tutorial_completed`) are left out:
+        // this overlay corrects VALUES the export already carries, it does not
+        // widen the file's shape.
+        if (!profile.containsKey(e.key)) continue;
+        final current = profile[e.key];
+        final value = e.value;
+        profile[e.key] = current is int && value != null
+            ? (SyncedSettingsStore.decodeInt(value) ??
+                (SyncedSettingsStore.decodeBool(value)! ? 1 : 0))
+            : value;
+      }
+    }
 
     // Full rows (ids + timestamps) so this export round-trips losslessly and an
     // import can reconcile by identity + last-write-wins.
@@ -1583,6 +1610,11 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
   /// Deletes every user-data row (children before parents).
   static Future<void> wipeUserData(DatabaseExecutor txn) async {
     await txn.delete('goal_logs');
+    // Explicit, beside goal_logs, rather than leaning on the goals cascade:
+    // the sync engine flips `PRAGMA foreign_keys = OFF` connection-wide while
+    // applying an upsert, and an unlisted table is how a wipe silently leaves
+    // rows behind. Matches mobile's deleteAllPrivateData ordering.
+    await txn.delete('goal_progress');
     await txn.delete('daily_moods');
     await txn.delete('long_term_goals');
     await txn.delete('macro_goal_categories');

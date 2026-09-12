@@ -527,6 +527,140 @@ void main() {
     });
   });
 
+  // ── F55: the three field coercions desktop dropped in the port ────────────
+  // The same backup file must mean the same thing on both clients. Desktop's
+  // validator kept `frequency_days`, the two dates and the category colour as
+  // raw values, so a file mobile repairs (or honestly skips) was stored verbatim
+  // here: a 0-based weekday no reader ever matches, an unparseable end_date that
+  // silently makes a habit never-ending, and a `#FFF` shorthand that
+  // dashboardColorFromHex renders fully transparent.
+  group('field coercions match mobile (F55)', () {
+    Map<String, dynamic> modelWith({
+      List<Map<String, dynamic>> goals = const [],
+      List<Map<String, dynamic>> categories = const [],
+    }) => {
+      'goals': goals,
+      'macro_goal_categories': categories,
+    };
+
+    test('frequency_days is clamped to ISO weekdays 1-7', () {
+      final validated = DesktopBackupImportService.buildCanonicalModel(
+        modelWith(goals: [
+          {
+            'id': 'g1',
+            'title': 'Gym',
+            'color': '#123456',
+            'start_date': '2026-06-01',
+            // 0-based convention (Sunday = 0): day 0 never matches
+            // DateTime.weekday's 1..7, so the habit vanishes from every
+            // day-scoped view and from statistics.
+            'frequency_days': [0, 2, 4],
+          },
+        ]),
+      );
+      expect((validated.canonical['goals'] as List).single['frequency_days'],
+          [2, 4]);
+    });
+
+    test('an entirely out-of-range frequency_days becomes null ("every day"), '
+        'never an empty list', () {
+      final validated = DesktopBackupImportService.buildCanonicalModel(
+        modelWith(goals: [
+          {
+            'id': 'g1',
+            'title': 'Gym',
+            'color': '#123456',
+            'start_date': '2026-06-01',
+            'frequency_days': [0],
+          },
+        ]),
+      );
+      expect((validated.canonical['goals'] as List).single['frequency_days'],
+          isNull,
+          reason: 'an empty list means "no day" and spins the scheduled-day '
+              'search; null is the documented "every day" default');
+    });
+
+    test('an unparseable end_date drops the habit and counts it', () {
+      final validated = DesktopBackupImportService.buildCanonicalModel(
+        modelWith(goals: [
+          {
+            'id': 'g1',
+            'title': 'Gym',
+            'color': '#123456',
+            'start_date': '2026-06-01',
+            'end_date': '31/12/2026',
+          },
+        ]),
+      );
+      expect(validated.canonical['goals'], isEmpty,
+          reason: 'every reader parses end_date with DateTime.tryParse and '
+              'treats null as never-ending — importing it silently drops a real '
+              'constraint');
+      expect(validated.skipped['habits'], 1);
+    });
+
+    test('an unparseable start_date drops the habit and counts it', () {
+      final validated = DesktopBackupImportService.buildCanonicalModel(
+        modelWith(goals: [
+          {
+            'id': 'g1',
+            'title': 'Gym',
+            'color': '#123456',
+            'start_date': 'yesterday',
+          },
+        ]),
+      );
+      expect(validated.canonical['goals'], isEmpty);
+      expect(validated.skipped['habits'], 1);
+    });
+
+    test('a parseable end_date survives untouched', () {
+      final validated = DesktopBackupImportService.buildCanonicalModel(
+        modelWith(goals: [
+          {
+            'id': 'g1',
+            'title': 'Gym',
+            'color': '#123456',
+            'start_date': '2026-06-01',
+            'end_date': '2026-12-31',
+            'frequency_days': [1, 3, 5],
+          },
+        ]),
+      );
+      final goal = (validated.canonical['goals'] as List).single;
+      expect(goal['end_date'], '2026-12-31');
+      expect(goal['start_date'], '2026-06-01');
+      expect(goal['frequency_days'], [1, 3, 5]);
+      expect(validated.skipped['habits'], 0);
+    });
+
+    test('a shorthand category colour is expanded to #RRGGBB', () {
+      final validated = DesktopBackupImportService.buildCanonicalModel(
+        modelWith(categories: [
+          {'id': 'c1', 'name': 'Salute', 'color': '#FFF'},
+        ]),
+      );
+      expect(
+        (validated.canonical['macro_goal_categories'] as List).single['color'],
+        '#FFFFFF',
+        reason: 'dashboardColorFromHex parses "#FFF" as 0x000FFFFF — alpha 0, '
+            'so the category renders fully transparent without throwing',
+      );
+      expect(validated.skipped['categories'], 0);
+    });
+
+    test('a category colour that is not a hex colour drops the row', () {
+      final validated = DesktopBackupImportService.buildCanonicalModel(
+        modelWith(categories: [
+          {'id': 'c1', 'name': 'Salute', 'color': 'chartreuse'},
+        ]),
+      );
+      expect(validated.canonical['macro_goal_categories'], isEmpty);
+      expect(validated.skipped['categories'], 1);
+    });
+  });
+
   group('desktop → desktop full round-trip', () {
     test('exportSnapshot → JSON → import reproduces the data space', () async {
       final source = await seeded();

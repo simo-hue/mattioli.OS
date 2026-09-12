@@ -802,7 +802,17 @@ Future<ReconcileReport> runVerificationReconcile(
   // Couldn't-verify nudges (D6/D11) — one banner per goal (latest day), gated by
   // the user pref and de-duped across foregrounds via the store's nudged marker
   // so an unresolved day isn't re-alerted every time the app opens.
-  if (settings.verificationNudges && report.nudges.isNotEmpty) {
+  //
+  // Focus Mode is checked HERE, and on the two banners below, because the only
+  // other enforcement point — `_runNotificationSync`'s `cancelAll()` — clears
+  // PENDING SCHEDULED requests, and these three are `show()`n immediately.
+  // cancelAll can never reach them, so a switch whose own copy promises it
+  // "pauses all reminders and notifications" was letting the reconcile through.
+  // The nudged marker is deliberately inside the gate: a suppressed nudge must
+  // not consume its day, so it can still surface once Focus Mode is off.
+  if (!settings.focusMode &&
+      settings.verificationNudges &&
+      report.nudges.isNotEmpty) {
     final candidates = couldNotVerifyNudges(report, titles);
     final alreadyNudged = <String, Set<DateTime>>{};
     for (final c in candidates) {
@@ -819,7 +829,7 @@ Future<ReconcileReport> runVerificationReconcile(
 
   // Opt-in celebration for goals reached today (D11). Driven by the idempotent
   // write list, so each pass celebrates at most once.
-  if (settings.verificationCelebrations) {
+  if (!settings.focusMode && settings.verificationCelebrations) {
     final todayKey = dateKeyOf(now);
     for (final notice in celebrationNotices(report.writes, titles, todayKey)) {
       await notifications.showVerificationCelebration(
@@ -835,7 +845,7 @@ Future<ReconcileReport> runVerificationReconcile(
   // Count DISTINCT goals, not writes: a single habit that missed several
   // backfilled days produces one fail write per day, and the copy speaks of
   // "habits", not "days".
-  if (settings.verificationFailureSummary) {
+  if (!settings.focusMode && settings.verificationFailureSummary) {
     final failedGoals = report.writes
         .where((w) => w.outcome == VerificationOutcome.fail)
         .map((w) => w.goalId)

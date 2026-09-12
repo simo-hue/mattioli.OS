@@ -785,11 +785,13 @@ class _CorrelationsSectionState extends ConsumerState<_CorrelationsSection> {
           return const SizedBox.shrink();
         }
 
-        final correlationsData = allCorrelations
-            .where((c) => c['goal_id'] == widget.goalId)
-            .toList();
-
-        final filteredCorrelations = correlationsData.where((item) {
+        // NOT filtered by goal_id: habitCorrelationsProvider is already the
+        // per-goal query, and its rows carry the OTHER habit in `goal_id`
+        // (get_habit_correlations selects other_goal_id into that column, and
+        // the private mirror skips the target) — so filtering on the target id
+        // matched nothing, ever. Same reading as the sibling consumer in
+        // habit_overview_tab_widget.dart.
+        final filteredCorrelations = allCorrelations.where((item) {
           final percentage = (item['percentage'] as num?)?.toInt() ?? 0;
           return widget.isPositive ? percentage >= 50 : percentage < 50;
         }).toList();
@@ -799,7 +801,7 @@ class _CorrelationsSectionState extends ConsumerState<_CorrelationsSection> {
         }
 
         final List<Widget> cards = filteredCorrelations.take(4).map((item) {
-          final otherGoalId = item['other_goal_id'] as String;
+          final otherGoalId = item['goal_id'] as String;
           final otherGoal = goals.firstWhere(
             (g) => g.id == otherGoalId,
             orElse: () => Goal(

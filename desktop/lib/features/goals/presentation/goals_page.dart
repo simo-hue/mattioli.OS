@@ -404,9 +404,24 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                         failedGoals: failedGoals,
                         onToggleStatus: _cycleGoalStatus,
                         onEdit: _openGoalEditorFor,
-                        onReschedule: (goal) => ref
-                            .read(dashboardControllerProvider.notifier)
-                            .rescheduleGoal(goal.id),
+                        // Rescheduling MINTS a new goal, so it takes the same
+                        // free-tier cap quick-add and ⌘K enforce (mobile
+                        // parity) — without it a capped free user could mint a
+                        // 101st goal from this icon indefinitely.
+                        onReschedule: (goal) {
+                          final isPro = ref.read(desktopIsProProvider);
+                          final totalGoals = ref
+                              .read(dashboardControllerProvider)
+                              .goals
+                              .length;
+                          if (!isPro && totalGoals >= 100) {
+                            unawaited(showProFeaturesDialog(context, ref));
+                            return;
+                          }
+                          ref
+                              .read(dashboardControllerProvider.notifier)
+                              .rescheduleGoal(goal.id);
+                        },
                         onDelete: (goal) => ref
                             .read(dashboardControllerProvider.notifier)
                             .deleteGoal(goal.id),

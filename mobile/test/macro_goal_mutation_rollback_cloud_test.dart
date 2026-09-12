@@ -16,10 +16,12 @@
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mattioli_os/models/macro_goal.dart';
+import 'package:mattioli_os/providers/goal_provider.dart' show kCacheOwnerKey;
 import 'package:mattioli_os/providers/macro_goals_provider.dart';
 import 'package:mattioli_os/providers/shared_prefs_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -116,13 +118,20 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{
       _cacheKey: jsonEncode(goals.map((g) => g.toJson()).toList()),
     });
+    // The cache is one blob shared by every account on the device, so the seed
+    // is gated on this marker naming its owner (see `cacheSeedAllowed`).
+    FlutterSecureStorage.setMockInitialValues(<String, String>{
+      kCacheOwnerKey: _userId,
+    });
     final prefs = await SharedPreferences.getInstance();
     final container = ProviderContainer(
       overrides: [sharedPrefsProvider.overrideWithValue(prefs)],
     );
     addTearDown(container.dispose);
-    // Let the initial (failing) sync settle so it cannot land mid-test.
+    // Let the initial (failing) sync AND the owner-gated cache seed settle so
+    // neither lands mid-test.
     container.read(macroGoalsProvider.notifier);
+    await Future<void>.delayed(Duration.zero);
     await Future<void>.delayed(Duration.zero);
     return (container, prefs);
   }

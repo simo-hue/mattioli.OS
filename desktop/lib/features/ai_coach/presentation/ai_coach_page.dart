@@ -1932,7 +1932,12 @@ class _LocalOfflineBannerState extends ConsumerState<_LocalOfflineBanner> {
     // come back and press anything here.
     _timer = Timer.periodic(const Duration(seconds: 3), (_) {
       final config = ref.read(coachConfigProvider);
-      if (config.backend != CoachBackendKind.local) return;
+      // Effective, not persisted: an account-mode user whose stored choice is
+      // still Local is served by the proxy, so there is nothing on localhost to
+      // heal — and no reason to probe it every 3 seconds.
+      if (ref.read(effectiveCoachBackendProvider) != CoachBackendKind.local) {
+        return;
+      }
       final target = LocalServerTarget.forBaseUrl(config.localBaseUrl);
       if (!target.canLaunch) return;
       final reachable = ref
@@ -1956,8 +1961,10 @@ class _LocalOfflineBannerState extends ConsumerState<_LocalOfflineBanner> {
     final config = ref.watch(coachConfigProvider);
     // Gate on backend/target BEFORE touching the reachability probe, so cloud
     // (or a hand-typed custom server, which we can't launch) never triggers a
-    // localhost probe here.
-    if (config.backend != CoachBackendKind.local) {
+    // localhost probe here. Effective, not persisted — an account-mode user
+    // with a stored Local choice is answered by the proxy, and would otherwise
+    // get a permanent "server isn't running" banner over a working chat.
+    if (ref.watch(effectiveCoachBackendProvider) != CoachBackendKind.local) {
       return const SizedBox.shrink();
     }
     final target = LocalServerTarget.forBaseUrl(config.localBaseUrl);

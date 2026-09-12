@@ -103,7 +103,26 @@ void main() {
       habitId.hashCode,
       for (var weekday = 1; weekday <= 7; weekday++)
         '$habitId#wd$weekday'.hashCode,
+      // …plus the one-shot id a Snooze registers under — see the test below.
+      habitId.hashCode + 1000,
     ];
     expect(platform.cancelledIds, expected);
+  });
+
+  test('cancelHabitReminder also clears a pending SNOOZE', () async {
+    // A snooze reschedules under `habitId.hashCode + 1000` — an id the
+    // "every possible instance" reasoning above missed. Every removal path
+    // (delete, archive, and `_rescheduleReminder` when a reminder is switched
+    // off) goes through this one method, and `cancelAll()` runs on settings
+    // changes, not deletes. So a habit deleted inside the ten-minute snooze
+    // window still fired, and tapping Done wrote a log for a goal that no
+    // longer exists.
+    await NotificationService().cancelHabitReminder(habitId);
+
+    expect(
+      platform.cancelledIds,
+      contains(habitId.hashCode + 1000),
+      reason: 'the snoozed instance outlives the habit otherwise',
+    );
   });
 }

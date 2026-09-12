@@ -173,13 +173,26 @@
 	</array>
 	<key>NSPrivacyAccessedAPITypes</key>
 	<array>
-		<!-- shared_preferences → NSUserDefaults (app-internal data only) -->
+		<!--
+		  NSUserDefaults, for two distinct accesses this target performs:
+		    CA92.1 — shared_preferences, app-internal data only.
+		    1C8F.1 — the app ALSO reads and writes
+		             UserDefaults(suiteName: "group.com.simo.evolve.verification"),
+		             the App Group it shares with the DeviceActivityMonitor
+		             extension: ScreenTimeBridge.syncMonitoredGoals writes the
+		             monitored-spec record and the scheduled weekdays,
+		             setLocalizedNotificationCopy writes the notification strings,
+		             and drainSignals reads and clears the pending-signal buffer.
+		             App Group access is 1C8F.1, not CA92.1 — the extension's own
+		             manifest already states the distinction.
+		-->
 		<dict>
 			<key>NSPrivacyAccessedAPIType</key>
 			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
 			<key>NSPrivacyAccessedAPITypeReasons</key>
 			<array>
 				<string>CA92.1</string>
+				<string>1C8F.1</string>
 			</array>
 		</dict>
 		<!-- File timestamps: private SQLCipher DB + avatar files inside the app container -->

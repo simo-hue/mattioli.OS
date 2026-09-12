@@ -219,6 +219,28 @@ void main() {
       await db.close();
     });
 
+    test('markAllDirty keeps the avatar\'s real stamp, not the wall clock',
+        () async {
+      final db = await openFreshV3();
+      // seedOwner stamps the profile row at t(1) — long in the past, so a
+      // wall-clock stamp is unmistakable.
+      await seedOwner(db, avatarUrl: '/local/path/avatar.png');
+      final store = SyncLocalStore(db);
+
+      await store.markAllDirty();
+
+      // The avatar record's LWW stamp must be the profile row's own
+      // updated_at, exactly as the table rows above it keep theirs. Stamping
+      // it "now" makes a device that has merely JOINED sync outrank a peer's
+      // genuinely newer published avatar, which then loses to this older one.
+      expect(
+        (await syncRow(db, 'avatar:owner'))!['updated_at'],
+        (await syncRow(db, 'profiles:owner'))!['updated_at'],
+      );
+      expect((await syncRow(db, 'avatar:owner'))!['updated_at'], t(1));
+      await db.close();
+    });
+
     test('markAllDirty skips the avatar when no avatar is set', () async {
       final db = await openFreshV3();
       await seedOwner(db);

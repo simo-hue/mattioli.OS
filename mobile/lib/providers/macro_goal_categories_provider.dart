@@ -72,6 +72,31 @@ class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
     final supabase = Supabase.instance.client;
 
     try {
+      // macro_goal_categories is UNIQUE(user_id, name) and delete is a SOFT
+      // archive that keeps the row in that uniqueness slot forever, so a bare
+      // insert of a previously-deleted name raises 23505 and the create fails
+      // with a generic error — with no un-archive surface anywhere, since the
+      // picker filters archived rows out. Revive the archived row instead,
+      // mirroring the private branch's addMacroGoalCategory. A LIVE same-name
+      // row is a genuine duplicate: fall through to the insert so the UNIQUE
+      // violation still surfaces rather than silently merging onto it.
+      final existing = await supabase
+          .from('macro_goal_categories')
+          .select('id, archived_at')
+          .eq('user_id', authState.user!.id)
+          .eq('name', name)
+          .maybeSingle();
+      if (existing != null && existing['archived_at'] != null) {
+        final id = existing['id'] as String;
+        await supabase
+            .from('macro_goal_categories')
+            .update({'archived_at': null, 'color': colorHex})
+            .eq('id', id)
+            .eq('user_id', authState.user!.id);
+        ref.invalidateSelf();
+        return id;
+      }
+
       final response = await supabase
           .from('macro_goal_categories')
           .insert({

@@ -1959,6 +1959,24 @@ class _YearCalendar extends StatelessWidget {
   }
 }
 
+/// Whole calendar months lived between [birthDate] and [now].
+///
+/// Mirror of the mobile client's `lifeMonthsLived` — the two screens show the
+/// same three numbers and must not disagree by a month. Top-level rather than
+/// inline in `build` because the only input that matters is the wall clock,
+/// which a widget test cannot move.
+/// The day-of-month term is what makes this months COMPLETED rather than month
+/// boundaries crossed: between the 1st of the birth month and the birthday, the
+/// current month has not been lived yet. Age is `livedMonths ~/ 12`, so without
+/// it the birthday arrived up to a month early.
+int lifeMonthsLived(DateTime birthDate, DateTime now) {
+  final months = (now.year - birthDate.year) * 12 +
+      now.month -
+      birthDate.month -
+      (now.day < birthDate.day ? 1 : 0);
+  return months < 0 ? 0 : months;
+}
+
 class _LifeCalendar extends ConsumerStatefulWidget {
   const _LifeCalendar();
 
@@ -1995,11 +2013,7 @@ class _LifeCalendarState extends ConsumerState<_LifeCalendar> {
     final now = DateTime.now();
     const years = 85;
     final totalMonths = years * 12;
-    final livedMonths =
-        ((now.year - birthDate.year) * 12 + now.month - birthDate.month).clamp(
-          0,
-          totalMonths,
-        );
+    final livedMonths = lifeMonthsLived(birthDate, now).clamp(0, totalMonths);
     final remainingMonths = totalMonths - livedMonths;
     final age = livedMonths ~/ 12;
     return Scrollbar(

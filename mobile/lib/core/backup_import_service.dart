@@ -175,12 +175,17 @@ class BackupImportService {
 
     final now = DateTime.now().toUtc().toIso8601String();
 
-    // Fetch existing state (empty in replace mode) BEFORE building the plan.
+    // Fetch existing state BEFORE building the plan — in BOTH modes. Replace
+    // used to short-circuit this to an empty view, which was safe only while it
+    // deleted everything before upserting; now that it upserts first and prunes
+    // afterwards, a blind plan keeps the FILE's id for a row the server already
+    // holds under another id and the upsert (ON CONFLICT id) trips the natural
+    // key — goal_logs(goal_id,date), daily_moods(user_id,date),
+    // macro_goal_categories(user_id,name) — aborting the import half-written.
     // Windowed: the plan classifies an incoming row as new when it finds no
     // match here, so a row hidden past the row cap would be re-inserted under a
     // fresh id and collide with the table's natural-key UNIQUE constraint.
     Future<List<Map<String, dynamic>>> fetch(String table, String cols) async {
-      if (replaceExisting) return const [];
       return fetchAllRowsPaginated((offset, limit) async {
         final res = await client
             .from(table)

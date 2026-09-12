@@ -88,7 +88,11 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
       }
       
       if (activeCount == 0) {
-        completion[i] = 0.0;
+        // Nothing was scheduled, so there is nothing to have failed. Reuse the
+        // future-day sentinel: the summary's `>= 0` gate then leaves the day out
+        // of the average and out of the best/worst search, instead of scoring it
+        // a perfect zero and making an empty weekend the "worst day".
+        completion[i] = -1.0;
       } else {
         completion[i] = (doneCount / activeCount) * 100;
       }

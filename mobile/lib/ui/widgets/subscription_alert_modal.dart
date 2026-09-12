@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../core/fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -21,6 +22,12 @@ class SubscriptionAlertModal extends ConsumerWidget {
   final SubscriptionAlertType type;
   final VoidCallback? onConfirm;
 
+  /// Show [details] even outside debug builds. Off by default (SEC-7: raw error
+  /// text may leak internals), matching [ErrorModal]. On this surface [details]
+  /// is always a StoreKit `PlatformException.toString()`, so the release user
+  /// would otherwise read an untranslated exception under a localized title.
+  final bool forceDetails;
+
   const SubscriptionAlertModal({
     super.key,
     required this.title,
@@ -28,6 +35,7 @@ class SubscriptionAlertModal extends ConsumerWidget {
     required this.type,
     this.details,
     this.onConfirm,
+    this.forceDetails = false,
   });
 
   /// Shows an elegant dialog for a subscription status
@@ -165,8 +173,9 @@ class SubscriptionAlertModal extends ConsumerWidget {
             ),
           ),
 
-          // Technical Details (for errors)
-          if (details != null && details!.isNotEmpty) ...[
+          // Technical Details (for errors) — debug-only channel, see
+          // [forceDetails]. The exception is still reported by the call site.
+          if ((kDebugMode || forceDetails) && details != null && details!.isNotEmpty) ...[
             const SizedBox(height: 20),
             Container(
               width: double.infinity,

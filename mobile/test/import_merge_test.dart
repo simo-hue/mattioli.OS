@@ -477,6 +477,53 @@ void main() {
       expect(v.skipped['categories'], 1);
     });
 
+    test('coerces a string verify_threshold / order_key instead of throwing',
+        () {
+      // A raw `as num?` on either field turns a JSON string into a TypeError
+      // that escapes parsePreview — the import shows "type 'String' is not a
+      // subtype of type 'num?'" and NOTHING is imported, where the
+      // skip-and-report design would have handled the row.
+      final v = validateCanonical(normalizeBackup({
+        'mode': 'private',
+        'habits': [
+          {
+            'id': 'g1',
+            'title': 'Steps',
+            'color': '#fff',
+            'start_date': '2026-01-01',
+            'updated_at': now,
+            'verify_threshold': '10000',
+            'order_key': '2.5',
+          },
+        ],
+      }));
+      final goal = (v.canonical[kGoalsKey] as List).single;
+      expect(v.skipped['habits'], 0);
+      expect(goal['verify_threshold'], 10000.0);
+      expect(goal['order_key'], 2.5);
+    });
+
+    test('a non-numeric verify_threshold / order_key becomes null, not a throw',
+        () {
+      final v = validateCanonical(normalizeBackup({
+        'mode': 'private',
+        'habits': [
+          {
+            'id': 'g1',
+            'title': 'Steps',
+            'color': '#fff',
+            'start_date': '2026-01-01',
+            'updated_at': now,
+            'verify_threshold': {'nested': 'object'},
+            'order_key': ['not', 'a', 'number'],
+          },
+        ],
+      }));
+      final goal = (v.canonical[kGoalsKey] as List).single;
+      expect(goal['verify_threshold'], isNull);
+      expect(goal['order_key'], isNull);
+    });
+
     test('coerces a non-string id to its string form (no crash)', () {
       final v = validateCanonical(normalizeBackup({
         'mode': 'private',

@@ -47,3 +47,7 @@ app.*.map.json
 # Mattioli.OS desktop secrets
 .env*
 !.env.example
+
+# gym (fastlane build_mac_app) writes the exported app and .pkg next to the Fastfile.
+macos/*.app
+macos/*.pkg

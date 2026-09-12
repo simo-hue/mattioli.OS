@@ -10,6 +10,8 @@ import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/auth/application/desktop_profile_controller.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
+import 'package:evolve_desktop/features/dashboard/data/dashboard_repository.dart'
+    show DashboardRepository;
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/features/habits/application/protocol_reorder.dart';
 import 'package:evolve_desktop/features/habits/presentation/target_entry_dialog.dart';
@@ -25,6 +27,7 @@ import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_period_switcher.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_toast.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_weekday_selector.dart';
 import 'package:evolve_desktop/shared/widgets/habit_day_dots.dart';
 import 'package:evolve_desktop/shared/widgets/target_ring.dart';
@@ -1671,7 +1674,7 @@ class _DayCellState extends State<_DayCell> with SingleTickerProviderStateMixin 
     final hasActivity = indicators.any(
       (habit) => widget.snapshot.resolvedHabitStatus(habit, widget.date) != null,
     );
-    final isEditable = _canEditDate(widget.date);
+    final isQuickLog = _isQuickLogDay(widget.date);
     
     // Calculate statuses for the ring
     final ringData = indicators.map((h) {
@@ -1708,7 +1711,7 @@ class _DayCellState extends State<_DayCell> with SingleTickerProviderStateMixin 
             Color baseColor;
             if (hasActivity) {
               baseColor = performanceColor(widget.completion, saturation: 0.6, lightness: 0.15, alpha: 0.2);
-            } else if (isEditable || isToday) {
+            } else if (isQuickLog || isToday) {
               baseColor = context.evolveAccent.withValues(alpha: 0.05);
             } else {
               baseColor = context.evolveColors.panelSoft.withValues(alpha: 0.1);
@@ -2134,84 +2137,274 @@ Future<void> showDayDetailsDialog(BuildContext context, DateTime date) {
   );
 }
 
-class _DayDetailsDialog extends ConsumerWidget {
+class _DayDetailsDialog extends ConsumerStatefulWidget {
   const _DayDetailsDialog({required this.date});
 
   final DateTime date;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final snapshot = ref.watch(dashboardControllerProvider);
-    return EvolveAlertDialog(
-      maxWidth: 560,
-      icon: LucideIcons.calendarClock,
-      title: Text(
-        t.habitsPage.dayDetail(
-          day: date.day,
-          month: t.common.months[date.month - 1],
+  ConsumerState<_DayDetailsDialog> createState() => _DayDetailsDialogState();
+}
+
+/// The day-detail dialog. Today and yesterday are QUICK-LOG days: a click on
+/// a row's square toggles it at once, as it always has. Any older day opens in
+/// view mode and is changed through Edit → Save: the rows stage the same cycle
+/// a click performs, and nothing is written until Save commits the batch. The
+/// mobile sheet works the same way, so a day reads and edits alike on both.
+class _DayDetailsDialogState extends ConsumerState<_DayDetailsDialog> {
+  DateTime get date => widget.date;
+
+  /// Edit mode, for a day older than yesterday. Never entered on a quick-log
+  /// day, where the squares write directly and there is nothing to stage.
+  bool _editing = false;
+
+  /// The rows changed in edit mode, by habit id, each mapped to the status the
+  /// row will be SAVED as (null ⇒ no status). A habit is present only while its
+  /// staged value differs from what is persisted, so `isNotEmpty` is "dirty"
+  /// and cycling a row back to where it started un-stages it.
+  final Map<String, String?> _staged = <String, String?>{};
+
+  bool _saving = false;
+
+  bool get _dirty => _staged.isNotEmpty;
+
+  void _stage(String habitId, String? persisted, String? next) {
+    setState(() {
+      if (next == persisted) {
+        _staged.remove(habitId);
+      } else {
+        _staged[habitId] = next;
+      }
+    });
+  }
+
+  /// Cancel is the explicit choice: it leaves edit mode and drops the staging
+  /// without asking. The X, Escape and the barrier go through [_requestClose].
+  void _cancelEditing() {
+    setState(() {
+      _staged.clear();
+      _editing = false;
+    });
+  }
+
+  /// The X, Escape and the barrier, which all reach the PopScope below through
+  /// `Navigator.maybePop`. A dirty dialog asks first: the staged rows are the
+  /// user's work, and a stray Escape would throw all of them away. A clean one
+  /// closes at once — the prompt only ever appears when there is something to
+  /// lose.
+  Future<void> _requestClose() async {
+    if (_editing && _dirty) {
+      final discard = await showEvolveDialog<bool>(
+        context: context,
+        builder: (context) => EvolveAlertDialog(
+          icon: LucideIcons.triangleAlert,
+          iconColor: EvolveColors.destructive,
+          title: Text(t.habitsPage.discardChangesTitle),
+          content: Text(t.habitsPage.discardChangesBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(t.habitsPage.keepEditing),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(t.habitsPage.discard),
+            ),
+          ],
         ),
-      ),
-      subtitle: t.habitsPage.dayDetailSubtitle,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (!_canEditDate(date))
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Row(
-                children: [
-                  Icon(
-                    LucideIcons.lock,
-                    size: 14,
-                    color: context.evolveColors.muted,
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      t.habitsPage.editableHint,
-                      style: TextStyle(
-                        color: context.evolveColors.muted,
-                        fontSize: 12,
-                        fontStyle: FontStyle.italic,
+      );
+      if (discard != true || !mounted) return;
+    }
+    if (mounted) Navigator.pop(context);
+  }
+
+  /// Commits the staged rows one habit at a time, then repairs the stored
+  /// streaks of exactly the habits that changed — the single-day write leaves
+  /// every later row of a habit stale (see
+  /// [DashboardController.recomputeStreaksForHabits]). The controller is
+  /// optimistic and local-first: a remote failure is reported through the
+  /// snapshot's sync banner, not here, so the batch always completes.
+  Future<void> _save() async {
+    if (!_dirty || _saving) return;
+    setState(() => _saving = true);
+    final controller = ref.read(dashboardControllerProvider.notifier);
+    final saved = <String>{};
+    for (final entry in _staged.entries.toList()) {
+      await controller.setHabitStatusForDay(entry.key, date, entry.value);
+      saved.add(entry.key);
+    }
+    await controller.recomputeStreaksForHabits(saved);
+    if (!mounted) return;
+    setState(() {
+      _staged.clear();
+      _saving = false;
+      _editing = false;
+    });
+    showEvolveToast(
+      context,
+      message: t.habitsPage.changesSaved,
+      kind: EvolveToastKind.success,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final snapshot = ref.watch(dashboardControllerProvider);
+    final controller = ref.read(dashboardControllerProvider.notifier);
+    // Build-time only for the chrome (hint, Edit button); every click re-asks
+    // the clock. See [_isQuickLogDay].
+    final quickLog = _isQuickLogDay(date);
+    return PopScope(
+      canPop: !(_editing && _dirty),
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _requestClose();
+      },
+      child: EvolveAlertDialog(
+        maxWidth: 560,
+        icon: LucideIcons.calendarClock,
+        title: Text(
+          t.habitsPage.dayDetail(
+            day: date.day,
+            month: t.common.months[date.month - 1],
+          ),
+        ),
+        subtitle: t.habitsPage.dayDetailSubtitle,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (!quickLog && !_editing)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  children: [
+                    Icon(
+                      LucideIcons.pencil,
+                      size: 14,
+                      color: context.evolveColors.muted,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        t.habitsPage.useEditHint,
+                        style: TextStyle(
+                          color: context.evolveColors.muted,
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          for (final habit in snapshot.habitsFor(date))
-            _DayHabitRow(
-              title: habit.title,
-              color: habit.color,
-              streak: habit.streak,
-              done: snapshot.resolvedHabitStatus(habit, date) == 'done',
-              missed: snapshot.resolvedHabitStatus(habit, date) == 'missed',
-              verificationLine: habit.verificationRule == null
-                  ? null
-                  : VerifiedHabitLine(
-                      conditions: habit.verificationConditions,
-                      join: habit.verificationJoin,
-                      habitTitle: habit.title,
-                      ruleInEffect: habit.verificationRuleAppliesOn(date),
-                    ),
-              statusLabel: habitStatusLabel(
-                snapshot.resolvedHabitStatus(habit, date),
-              ),
-              onToggle: _canEditDate(date)
-                  ? () => ref
-                        .read(dashboardControllerProvider.notifier)
-                        .toggleHabitForDay(habit.id, date)
-                  : null,
-            ),
-        ],
-      ),
-      actions: [
-        FilledButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(t.habitsPage.close),
+            for (final habit in snapshot.habitsFor(date))
+              _row(habit, snapshot, controller, quickLog: quickLog),
+          ],
         ),
-      ],
+        actions: _editing
+            ? [
+                TextButton(
+                  onPressed: _saving ? null : _cancelEditing,
+                  child: Text(t.common.actions.cancel),
+                ),
+                FilledButton(
+                  onPressed: _dirty && !_saving ? _save : null,
+                  child: Text(t.common.actions.save),
+                ),
+              ]
+            : [
+                if (!quickLog)
+                  TextButton(
+                    onPressed: () => setState(() => _editing = true),
+                    child: Text(t.common.actions.edit),
+                  ),
+                FilledButton(
+                  onPressed: () => Navigator.maybePop(context),
+                  child: Text(t.habitsPage.close),
+                ),
+              ],
+      ),
+    );
+  }
+
+  Widget _row(
+    DashboardHabit habit,
+    DashboardSnapshot snapshot,
+    DashboardController controller, {
+    required bool quickLog,
+  }) {
+    final persisted = snapshot.resolvedHabitStatus(habit, date);
+    final isStaged = _staged.containsKey(habit.id);
+    // What the row SHOWS: the staged value while it has one, the persisted
+    // one otherwise.
+    final status = isStaged ? _staged[habit.id] : persisted;
+
+    // A MANUAL target: the square becomes a progress ring that opens the entry
+    // dialog for THIS day — the dialog commits on its own, so edit mode is the
+    // gate and nothing of it is staged. Same rule as the Protocol table; a
+    // measured rule keeps the square (its value lives in goal_logs.value, so
+    // its ring would read empty).
+    final target = DesktopTargetsConfig.enabled &&
+            (habit.target?.isUserEnterable ?? false)
+        ? habit.target
+        : null;
+    final progressAmount = snapshot.habitProgressFor(habit.id, date) ?? 0;
+    final verdict = target == null
+        ? null
+        : evaluateTarget(
+            target: target,
+            progress: progressAmount,
+            periodIsOver: periodIsOver(target.period, date, DateTime.now()),
+          );
+
+    final VoidCallback? onToggle;
+    if (habit.verificationRule != null) {
+      // Read-only on every day: the verdict is the iPhone's, and the freeze
+      // that would protect a manual override is a device-local mobile table a
+      // Mac cannot write — the next reconcile would silently revert it (see
+      // DashboardController.toggleHabitForDay). Drawn disabled so the square
+      // does not promise what it cannot do.
+      onToggle = null;
+    } else if (target != null) {
+      onToggle = quickLog || _editing
+          ? () => TargetEntryDialog.show(
+                context,
+                habit: habit,
+                target: target,
+                date: date,
+              )
+          : null;
+    } else if (quickLog) {
+      onToggle = () => controller.toggleHabitForDay(habit.id, date);
+    } else if (_editing) {
+      onToggle = () => _stage(
+            habit.id,
+            persisted,
+            DashboardRepository.nextManualStatus(status),
+          );
+    } else {
+      onToggle = null;
+    }
+
+    return _DayHabitRow(
+      title: habit.title,
+      color: habit.color,
+      streak: habit.streak,
+      done: status == 'done',
+      missed: status == 'missed',
+      verificationLine: habit.verificationRule == null
+          ? null
+          : VerifiedHabitLine(
+              conditions: habit.verificationConditions,
+              join: habit.verificationJoin,
+              habitTitle: habit.title,
+              ruleInEffect: habit.verificationRuleAppliesOn(date),
+            ),
+      statusLabel: habitStatusLabel(status),
+      target: target,
+      verdict: verdict,
+      onToggle: onToggle,
     );
   }
 }
@@ -2220,7 +2413,8 @@ class _DayDetailsDialog extends ConsumerWidget {
 /// Material `CheckboxListTile`. Mirrors the toggle square used by `_HabitRow`
 /// (fills with the habit color + a check glyph when done) so completion reads
 /// identically across the protocol table and the day-detail dialog, and adds
-/// the title, status caption and streak badge.
+/// the title, status caption and streak badge. A quantitative habit carries
+/// the Protocol table's progress ring instead of the square.
 class _DayHabitRow extends StatelessWidget {
   const _DayHabitRow({
     required this.title,
@@ -2231,6 +2425,8 @@ class _DayHabitRow extends StatelessWidget {
     required this.verificationLine,
     required this.statusLabel,
     required this.onToggle,
+    this.target,
+    this.verdict,
   });
 
   final String title;
@@ -2245,37 +2441,54 @@ class _DayHabitRow extends StatelessWidget {
   /// which knows both the habit and the day on screen and so can decide whether
   /// the habit's current rule is the one that governed this day.
   final Widget? verificationLine;
+
+  /// Quantitative target and its verdict for the day, or null for a checkbox
+  /// habit. When set the leading control is a ring and [onToggle] opens the
+  /// entry dialog.
+  final HabitTarget? target;
+  final TargetVerdict? verdict;
+
+  /// The leading control's action, or null to draw it disabled: a day the user
+  /// cannot change from here, or a row that is read-only on this device.
   final VoidCallback? onToggle;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.evolveColors;
-    final square = AnimatedContainer(
-      duration: const Duration(milliseconds: 160),
-      width: 22,
-      height: 22,
-      decoration: BoxDecoration(
-        color: done ? color : (missed ? EvolveColors.destructive.withValues(alpha: 0.1) : Colors.transparent),
-        border: Border.all(color: done ? color : (missed ? EvolveColors.destructive : colors.borderStrong)),
-        borderRadius: BorderRadius.circular(7),
-      ),
-      child: done
-          ? const Icon(LucideIcons.check, color: Color(0xFF092113), size: 14)
-          : (missed ? const Icon(LucideIcons.x, color: EvolveColors.destructive, size: 14) : null),
-    );
+    final Widget control = target != null && verdict != null
+        ? TargetRing(
+            target: target!,
+            verdict: verdict!,
+            size: 22,
+            strokeWidth: 2.5,
+            accent: color,
+          )
+        : AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            width: 22,
+            height: 22,
+            decoration: BoxDecoration(
+              color: done ? color : (missed ? EvolveColors.destructive.withValues(alpha: 0.1) : Colors.transparent),
+              border: Border.all(color: done ? color : (missed ? EvolveColors.destructive : colors.borderStrong)),
+              borderRadius: BorderRadius.circular(7),
+            ),
+            child: done
+                ? const Icon(LucideIcons.check, color: Color(0xFF092113), size: 14)
+                : (missed ? const Icon(LucideIcons.x, color: EvolveColors.destructive, size: 14) : null),
+          );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
           if (onToggle == null)
-            Opacity(opacity: 0.5, child: square)
+            Opacity(opacity: 0.5, child: control)
           else
             MouseRegion(
               cursor: SystemMouseCursors.click,
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: onToggle,
-                child: square,
+                child: control,
               ),
             ),
           const SizedBox(width: 12),
@@ -2737,15 +2950,19 @@ double _completionFor(DashboardSnapshot snapshot, DateTime date) {
 }
 
 
-bool _canEditDate(DateTime date) {
+/// Whether [date] is a QUICK-LOG day — today or yesterday, the two days a
+/// click in the day dialog changes directly. Any older day is changed through
+/// the dialog's explicit Edit → Save flow instead, so a stray click while
+/// browsing history cannot rewrite it, while the days the user is actually
+/// living in keep the one-click check-in. Mirrors the mobile sheet.
+bool _isQuickLogDay(DateTime date) {
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
   final normalized = DateTime(date.year, date.month, date.day);
   // [shiftDays], never `subtract(Duration(days: 1))`: a fixed 24h step off a 23-
   // or 25-hour DST day lands at 01:00 or 23:00, which is equal to no
   // midnight-normalised date at all — so on the day after either transition
-  // yesterday silently became uneditable, and the user's only way to correct a
-  // day was gone precisely when a mis-scored day is most likely.
+  // yesterday silently lost its quick path.
   return normalized == today || normalized == shiftDays(today, -1);
 }
 

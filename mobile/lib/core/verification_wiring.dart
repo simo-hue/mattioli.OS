@@ -10,7 +10,6 @@ import 'app_logger.dart';
 import 'notifications.dart';
 import 'verification_config.dart';
 import 'verification_providers.dart';
-import 'calendar_days.dart';
 
 /// Application glue for auto-verified habits: the pure input builders, the
 /// `VerificationLogWriter` adapter over the habit-log store, and the
@@ -195,10 +194,12 @@ Map<String, Map<DateTime, VerificationOutcome>> loggedOutcomesFrom(
 /// to "no ?" rather than erroring. Reactive to goal changes; the reconcile
 /// entry point invalidates it after each pass so freshly recorded days appear.
 ///
-/// The result is bounded to the **resolvable window** (today + yesterday, the
-/// same window the day-details check-in guard allows): a "?" only ever renders
-/// on a day the user can actually resolve, so the "tap to resolve" affordance
-/// never dead-ends on an older, non-editable day.
+/// Bounded to days up to today: a "?" only ever renders on a day the user can
+/// actually resolve. That used to mean today and yesterday, the day sheet's
+/// check-in window; since the sheet gained an Edit → Save flow for older days,
+/// every past day is resolvable by hand, so an older unresolved day shows its
+/// "?" too instead of being hidden — which is what it is: a day the sensor could
+/// not score and the user still can.
 final couldNotVerifyDaysProvider =
     FutureProvider<Map<String, Set<DateTime>>>((ref) async {
   if (!VerificationConfig.enabled) return const {};
@@ -214,13 +215,12 @@ final couldNotVerifyDaysProvider =
   if (goals.isEmpty) return const {};
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
-  final yesterday = shiftDays(today, -1);
   try {
     final store = await ref.watch(verificationStateStoreProvider.future);
     final out = <String, Set<DateTime>>{};
     for (final g in goals) {
       final days = (await store.couldNotVerifyDays(g.goalId))
-          .where((d) => d == today || d == yesterday)
+          .where((d) => !d.isAfter(today))
           .toSet();
       if (days.isNotEmpty) out[g.goalId] = days;
     }
@@ -244,10 +244,12 @@ final couldNotVerifyDaysProvider =
 /// correction); what was missing was any way to SEE it, or to undo it short of
 /// guessing that a third tap hands the day back.
 ///
-/// Bounded to the same resolvable window as the "?" affordance (today and
-/// yesterday), because that is the window in which the day can still be edited —
-/// a marker on an older, uneditable day would advertise a release the user
-/// cannot perform.
+/// Spans every day a rule has governed, from the earliest rule's effective
+/// start to today — the same reach as the "?" affordance. It was bounded to
+/// today and yesterday while those were the only days the sheet could edit; a
+/// marker on an older day would have advertised a release the user could not
+/// perform. With the sheet's Edit → Save flow any past day can be taken over or
+/// handed back, so the freeze has to be visible wherever it can exist.
 ///
 /// Degrades to empty when the feature is off, nothing is verifiable, or the
 /// store can't open (e.g. in a widget test), exactly like
@@ -268,12 +270,17 @@ final manuallyResolvedDaysProvider =
   if (goals.isEmpty) return const {};
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
-  final yesterday = shiftDays(today, -1);
+  // The earliest day any of these rules applies. A freeze recorded before a
+  // rule's effective start belongs to the habit's manual era, where nothing
+  // automatic could ever overwrite it, so it is not a freeze worth showing.
+  final from = goals
+      .map((g) => g.effectiveFrom)
+      .reduce((a, b) => a.isBefore(b) ? a : b);
   try {
     final store = await ref.watch(verificationStateStoreProvider.future);
     final manual = await store.manualDays(
       goalIds: goals.map((g) => g.goalId),
-      from: yesterday,
+      from: DateTime(from.year, from.month, from.day),
       to: today,
     );
     return {

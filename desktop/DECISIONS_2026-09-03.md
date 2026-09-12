@@ -11,7 +11,7 @@ Baseline at the time of writing: `flutter analyze` clean, 851 tests green / 1 fa
 | # | Severity | Area | One line | Cost of the small option |
 |---|---|---|---|---|
 | [D1](#d1) | medium | AI Coach | "Run the coach 100% privately?" is offered where accepting it does nothing | 1 line |
-| [D2](#d2) | medium | Habits calendar | Inert check square on a quantitative habit, and no past-day entry at all | 1 line |
+| [D2](#d2) | medium | Habits calendar | ~~Inert check square on a quantitative habit, and no past-day entry at all~~ **Resolved 2026-09-12** — see the note under D2 | 1 line |
 | [D3](#d3) | low | Shared widgets | Crop dialog's confirm button is hardcoded English | 1 line |
 
 ---
@@ -51,6 +51,11 @@ claim and the inert control, not an actual leak.
 
 <a id="d2"></a>
 ## D2 · The day-detail dialog shows a live-looking square that silently does nothing · medium
+
+> **Resolved 2026-09-12**, by the first option: the day dialog now routes a quantitative habit's control
+> to `TargetEntryDialog` with the real date, on quick-log days and in the new Edit mode for older
+> days, and draws it as the Protocol table's ring. Verified habits stay read-only on every day, drawn
+> disabled, as PARITY_AUDIT #28 accepted. See `DOCUMENTATION.md` for the change.
 
 `features/habits/presentation/habits_page.dart:2169-2191` — `_DayDetailsDialog` applies no target
 filter, and `_DayHabitRow` dims its square only when `onToggle == null`. So a user with "at most 1

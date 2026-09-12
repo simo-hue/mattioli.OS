@@ -499,10 +499,20 @@ List<int>? _decodeFrequencyDays(Object? stored) {
 /// the full persisted history, and writes back only the rows whose streak
 /// actually changed (minimizing sync churn — every write here re-dirties the
 /// row for iCloud push, which is correct: its content really changed).
+///
+/// [stampUpdatedAt], when given, is written to `updated_at` on every row this
+/// corrects. REQUIRED for a correction made outside an import: the AFTER
+/// UPDATE sync trigger stamps `sync_state` from the row's OWN `updated_at`, and
+/// every peer applies on strict greater-than — an unbumped row is pushed with
+/// its original stamp and discarded by every other device, leaving a
+/// multi-device user permanently half-repaired. The import passes null because
+/// it is already inside an LWW merge that manages its own timestamps. Mirrors
+/// `recomputeStreaks` in the mobile client.
 Future<void> recomputeStreaksForGoals(
   DatabaseExecutor txn,
-  Set<String> goalIds,
-) async {
+  Set<String> goalIds, {
+  String? stampUpdatedAt,
+}) async {
   for (final goalId in goalIds) {
     final goalRows = await txn.query(
       'goals',
@@ -550,7 +560,7 @@ Future<void> recomputeStreaksForGoals(
       if (newStreak != old) {
         await txn.update(
           'goal_logs',
-          {'streak': newStreak},
+          {'streak': newStreak, 'updated_at': ?stampUpdatedAt},
           where: 'id = ?',
           whereArgs: [id],
         );

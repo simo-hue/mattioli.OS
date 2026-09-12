@@ -209,7 +209,11 @@ class EvolveDialogHeader extends StatelessWidget {
             const SizedBox(width: 10),
             IconButton(
               tooltip: t.habitsPage.close,
-              onPressed: () => Navigator.pop(context),
+              // `maybePop`, like the Escape binding and the barrier: a dialog
+              // that guards unsaved work with a PopScope (the day-detail
+              // dialog's edit mode) must get to ask before the X closes it. On
+              // any other dialog this is exactly a pop.
+              onPressed: () => Navigator.maybePop(context),
               icon: const Icon(LucideIcons.x, size: 18),
               style: IconButton.styleFrom(
                 foregroundColor: context.evolveColors.muted,

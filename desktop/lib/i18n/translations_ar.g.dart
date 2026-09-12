@@ -839,7 +839,12 @@ class _Translations$habitsPage$ar extends Translations$habitsPage$en {
 	@override String weekOf({required Object day, required Object month}) => 'أسبوع ${day} ${month}';
 	@override String get lifeWeeks => 'أسابيع مسارك';
 	@override String get catMindfulness => 'اليقظة الذهنية';
-	@override String get editableHint => 'يمكن تعديل اليوم والأمس فقط.';
+	@override String get useEditHint => 'استخدم تعديل لتغيير هذا اليوم.';
+	@override String get changesSaved => 'تم حفظ التغييرات';
+	@override String get discardChangesTitle => 'هل تريد تجاهل التغييرات؟';
+	@override String get discardChangesBody => 'لم يتم حفظ التعديلات على هذا اليوم.';
+	@override String get discard => 'تجاهل';
+	@override String get keepEditing => 'متابعة التعديل';
 	@override String get titleRequired => 'العنوان مطلوب';
 }
 
@@ -2712,7 +2717,12 @@ extension on TranslationsAr {
 			'habitsPage.weekOf' => ({required Object day, required Object month}) => 'أسبوع ${day} ${month}',
 			'habitsPage.lifeWeeks' => 'أسابيع مسارك',
 			'habitsPage.catMindfulness' => 'اليقظة الذهنية',
-			'habitsPage.editableHint' => 'يمكن تعديل اليوم والأمس فقط.',
+			'habitsPage.useEditHint' => 'استخدم تعديل لتغيير هذا اليوم.',
+			'habitsPage.changesSaved' => 'تم حفظ التغييرات',
+			'habitsPage.discardChangesTitle' => 'هل تريد تجاهل التغييرات؟',
+			'habitsPage.discardChangesBody' => 'لم يتم حفظ التعديلات على هذا اليوم.',
+			'habitsPage.discard' => 'تجاهل',
+			'habitsPage.keepEditing' => 'متابعة التعديل',
 			'habitsPage.titleRequired' => 'العنوان مطلوب',
 			'lavoro' => 'العمل',
 			'salute' => 'الصحة',
@@ -3142,13 +3152,13 @@ extension on TranslationsAr {
 			'settingsPage.themeMode' => 'السمة',
 			'settingsPage.themeSystem' => 'اتباع النظام',
 			'settingsPage.timeFormat24h' => 'تنسيق 24 ساعة',
+			_ => null,
+		} ?? switch (path) {
 			'settingsPage.timeFormat24hDetail' => 'استخدم أوقاتاً مثل 20:30 بدلاً من 8:30 مساءً.',
 			'settingsPage.tutorialResetMessage' => 'ستظهر الأدلة مجدداً في الأقسام ذات الصلة.',
 			'settingsPage.tutorialResetTitle' => 'تمت إعادة تعيين البرامج التعليمية',
 			'settingsPage.updateAvatar' => 'تحديث الصورة الرمزية',
 			'settingsPage.updateAvatarDetail' => 'اختر صورة محلية للملف الشخصي على سطح المكتب.',
-			_ => null,
-		} ?? switch (path) {
 			'settingsPage.updatePassword' => 'تحديث كلمة المرور',
 			'settingsPage.useAccent' => ({required Object hex}) => 'استخدم التمييز ${hex}',
 			'settingsPage.verified' => 'موثّق',

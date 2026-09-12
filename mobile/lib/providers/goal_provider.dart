@@ -20,6 +20,7 @@ import 'package:evolve_sync/evolve_sync.dart';
 import '../core/private_local_database.dart';
 import '../core/streak_utils.dart';
 import '../core/supabase_macro_goal_progress.dart';
+import '../core/backup_import_service.dart' show recomputeCloudStreaks;
 import '../ui/widgets/error_modal.dart';
 import 'macro_goals_provider.dart';
 import '../i18n/translations.g.dart';
@@ -1164,6 +1165,16 @@ final goalsProvider = NotifierProvider<GoalsNotifier, List<Goal>>(
 
 typedef HabitLogsMap = Map<String, Map<String, String>>;
 
+/// The manual check-in cycle, none → `done` → `missed` → none: the ONE
+/// definition of what a tap on a habit card does. [HabitLogsNotifier.cycleStatus]
+/// writes it; the day sheet's edit mode stages it and writes the result on
+/// Save. Shared so the two can never disagree about which state comes next.
+String? nextManualStatus(String? current) => switch (current) {
+      null => 'done',
+      'done' => 'missed',
+      _ => null, // rimosso
+    };
+
 /// The streak to record for a habit-day whose goal could not be resolved, so
 /// its true run length is unknowable.
 ///
@@ -1533,20 +1544,18 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
     }
   }
 
-  /// Advances a habit-day through the manual check-in cycle:
-  /// none → `done` → `missed` → none.
+  /// Advances a habit-day through the manual check-in cycle
+  /// ([nextManualStatus]: none → `done` → `missed` → none).
   ///
   /// For a VERIFIED habit the first two steps also freeze the day against auto
   /// verdicts (D9) and the third releases it — see [_setManualStatus].
   Future<void> cycleStatus(DateTime date, String habitId) {
     final dateKey = _logDateKey(date);
-    final currentStatus = state[dateKey]?[habitId];
-    final nextStatus = switch (currentStatus) {
-      null => 'done',
-      'done' => 'missed',
-      _ => null, // rimosso
-    };
-    return _setManualStatus(date, habitId, nextStatus);
+    return _setManualStatus(
+      date,
+      habitId,
+      nextManualStatus(state[dateKey]?[habitId]),
+    );
   }
 
   /// Hands a verified habit-day back to auto-verification: drops the user's
@@ -1562,13 +1571,61 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
   Future<void> releaseToAutoVerification(DateTime date, String habitId) =>
       _setManualStatus(date, habitId, null);
 
+  /// Sets a habit-day DIRECTLY to [status] (`done`, `missed`, or null ⇒ no
+  /// status), rather than advancing the cycle — the write behind the day
+  /// sheet's Save on a day older than yesterday, which commits a batch of
+  /// staged rows and must land each one exactly as staged, not "one step on
+  /// from wherever the row is now".
+  ///
+  /// Same single write path as [cycleStatus] (persist, streak, D9 freeze), so
+  /// a saved past day is indistinguishable from a tapped one. Returns whether
+  /// the write reached storage; an unchanged row is a true no-op.
+  Future<bool> setStatus(DateTime date, String habitId, String? status) {
+    final current = state[_logDateKey(date)]?[habitId];
+    if (current == status) return Future.value(true);
+    return _setManualStatus(date, habitId, status);
+  }
+
+  /// Rewrites the stored streak of every LATER log row of each habit in
+  /// [habitIds], after a past day changed.
+  ///
+  /// [_setManualStatus] writes the edited day's own streak, and that is all a
+  /// same-day check-in needs. A past-day edit is different: every row after it
+  /// stored a streak that was computed while this day still read the old way,
+  /// and both the private analytics and the cloud `habit_stats` view derive
+  /// `current_streak` from the LATEST row — so without this the habit's
+  /// headline number stays wrong until some later check-in happens to rewrite
+  /// it. Best-effort in both modes, like the import's recompute it reuses: the
+  /// verdicts have landed, only the denormalized number can be stale.
+  Future<void> recomputeStreaksForHabits(Set<String> habitIds) async {
+    if (habitIds.isEmpty) return;
+    final isPrivateMode =
+        ref.read(activeDataModeProvider) == AppDataMode.private;
+    try {
+      if (isPrivateMode) {
+        await ref
+            .read(privateLocalDatabaseProvider)
+            .recomputeStreaksForGoals(habitIds);
+      } else {
+        await recomputeCloudStreaks(supabase, habitIds);
+      }
+    } catch (e, stack) {
+      AppLogger.error('[HabitLogs] streak recompute failed', e, stack);
+    }
+    ref.invalidate(habitStatsProvider);
+  }
+
   String _logDateKey(DateTime date) =>
       '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
-  /// The single manual write path behind [cycleStatus] and
+  /// The single manual write path behind [cycleStatus], [setStatus] and
   /// [releaseToAutoVerification]: persists [nextStatus] (null ⇒ delete the row),
   /// recomputes the streak, and sets or clears the D9 manual freeze to match.
-  Future<void> _setManualStatus(
+  ///
+  /// Returns whether the write reached storage. The batched Save in the day
+  /// sheet stops at the first row that did not, so it can keep the remaining
+  /// staged rows for a retry instead of silently dropping them.
+  Future<bool> _setManualStatus(
     DateTime date,
     String habitId,
     String? nextStatus,
@@ -1576,7 +1633,7 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
     final isPrivateMode =
         ref.read(activeDataModeProvider) == AppDataMode.private;
     final user = isPrivateMode ? null : supabase.auth.currentUser;
-    if (!isPrivateMode && user == null) return;
+    if (!isPrivateMode && user == null) return false;
 
     final dateKey = _logDateKey(date);
 
@@ -1645,6 +1702,7 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
               .deleteHabitLog(goalId: habitId, date: dateKey);
         }
         ref.invalidate(habitStatsProvider);
+        return true;
       } catch (e, stack) {
         AppLogger.error('[HabitLogs] cycleStatus (private) error', e, stack);
         // Revert the optimistic update so UI and local DB stay in sync.
@@ -1658,8 +1716,8 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
             details: e.toString(),
           );
         }
+        return false;
       }
-      return;
     }
 
     _saveToCache(newState);
@@ -1685,6 +1743,7 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
             .eq('date', dateKey);
       }
       ref.invalidate(habitStatsProvider);
+      return true;
     } catch (e, stack) {
       AppLogger.error('[HabitLogs] cycleStatus error', e, stack);
       // Revert the optimistic update so UI and cache match the server.
@@ -1699,6 +1758,7 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
           details: e.toString(),
         );
       }
+      return false;
     }
   }
 

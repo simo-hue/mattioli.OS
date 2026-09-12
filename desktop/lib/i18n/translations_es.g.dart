@@ -839,7 +839,12 @@ class _Translations$habitsPage$es extends Translations$habitsPage$en {
 	@override String weekOf({required Object day, required Object month}) => 'Semana del ${day} ${month}';
 	@override String get lifeWeeks => 'Semanas de tu camino';
 	@override String get catMindfulness => 'Mindfulness';
-	@override String get editableHint => 'Solo se pueden editar hoy y ayer.';
+	@override String get useEditHint => 'Usa Editar para cambiar este día.';
+	@override String get changesSaved => 'Cambios guardados';
+	@override String get discardChangesTitle => '¿Descartar los cambios?';
+	@override String get discardChangesBody => 'Los cambios de este día no se han guardado.';
+	@override String get discard => 'Descartar';
+	@override String get keepEditing => 'Seguir editando';
 	@override String get titleRequired => 'El título es obligatorio';
 }
 
@@ -2712,7 +2717,12 @@ extension on TranslationsEs {
 			'habitsPage.weekOf' => ({required Object day, required Object month}) => 'Semana del ${day} ${month}',
 			'habitsPage.lifeWeeks' => 'Semanas de tu camino',
 			'habitsPage.catMindfulness' => 'Mindfulness',
-			'habitsPage.editableHint' => 'Solo se pueden editar hoy y ayer.',
+			'habitsPage.useEditHint' => 'Usa Editar para cambiar este día.',
+			'habitsPage.changesSaved' => 'Cambios guardados',
+			'habitsPage.discardChangesTitle' => '¿Descartar los cambios?',
+			'habitsPage.discardChangesBody' => 'Los cambios de este día no se han guardado.',
+			'habitsPage.discard' => 'Descartar',
+			'habitsPage.keepEditing' => 'Seguir editando',
 			'habitsPage.titleRequired' => 'El título es obligatorio',
 			'lavoro' => 'Trabajo',
 			'salute' => 'Salud',
@@ -3142,13 +3152,13 @@ extension on TranslationsEs {
 			'settingsPage.themeMode' => 'Tema',
 			'settingsPage.themeSystem' => 'Seguir al sistema',
 			'settingsPage.timeFormat24h' => 'Formato 24h',
+			_ => null,
+		} ?? switch (path) {
 			'settingsPage.timeFormat24hDetail' => 'Usa horas como 20:30 en lugar de 8:30 PM.',
 			'settingsPage.tutorialResetMessage' => 'Las guías se mostrarán de nuevo en las secciones correspondientes.',
 			'settingsPage.tutorialResetTitle' => 'Tutoriales restablecidos',
 			'settingsPage.updateAvatar' => 'Actualizar avatar',
 			'settingsPage.updateAvatarDetail' => 'Elige una imagen local para el perfil de escritorio.',
-			_ => null,
-		} ?? switch (path) {
 			'settingsPage.updatePassword' => 'Actualizar contraseña',
 			'settingsPage.useAccent' => ({required Object hex}) => 'Usar acento ${hex}',
 			'settingsPage.verified' => 'Verificado',

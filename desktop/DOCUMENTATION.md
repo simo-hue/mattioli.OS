@@ -1,5 +1,25 @@
 # DOCUMENTATION
 
+## [2026-09-12]: Edit any past day in the calendar day-detail dialog (Edit → Save), closes D2
+
+### Details
+`_DayDetailsDialog` used to lock every day older than yesterday behind "Only today and yesterday can be edited.", and a quantitative habit's square looked live and did nothing on any day (decisions file D2). Today and yesterday keep the one-click toggle. An older day opens in view mode with a "Use Edit to change this day." hint, disabled squares and an **Edit** action beside Close; Edit enters edit mode, where a click stages the same cycle a toggle performs (none → done → missed → none) and **Save** commits the batch, **Cancel** drops it. The header X, Escape and the barrier ask "Discard changes?" only when something is staged. A quantitative habit renders the Protocol table's progress ring and opens `TargetEntryDialog` for THAT day (on quick-log days and in edit mode), which commits on its own. Verified habits stay read-only on every day: the freeze that would protect a manual override is a device-local mobile table a Mac cannot write, so the next iPhone reconcile would revert it (already the rule in `toggleHabitForDay`). Mirrors the mobile sheet shipped in the same change.
+
+### Changes Made
+- **`features/habits/presentation/habits_page.dart`** — `_DayDetailsDialog` is a `ConsumerStatefulWidget` with `_editing` and a `_staged` map; `_canEditDate` → `_isQuickLogDay` (same predicate, new meaning; also drives the calendar cell tint). `_DayHabitRow` gained `target`/`verdict` and draws a `TargetRing` for a quantitative habit. Toast on save via `showEvolveToast`.
+- **`features/dashboard/application/dashboard_controller.dart`** — `setHabitStatusForDay(id, date, status)` writes a destination status (owner rule as the toggle; no-op when unchanged) and recomputes the habit's headline streak AS OF TODAY over the updated logs; `recomputeStreaksForHabits(ids)` forwards to the repository. `_nextHabitStatus` delegates to the shared definition.
+- **`features/dashboard/data/dashboard_repository.dart`** — `DashboardRepository.nextManualStatus` is the one definition of the cycle; `setHabitStatusTo` lands on a destination by feeding the cycle its predecessor (the only place the cycle is inverted); `recomputeStreaks(ids)` on the base (no-op), the private proxy (delegate), `UnavailableDashboardRepository` (requires a session) and `SupabaseDashboardRepository` (the shared cloud recompute; not queued offline because it reads the server's rows to decide what to write).
+- **`features/dashboard/data/private_dashboard_repository.dart`** — `recomputeStreaks` runs `recomputeStreaksForGoals` in one transaction, stamped.
+- **`core/import_merge.dart`** — `recomputeStreaksForGoals` gained `stampUpdatedAt` (required outside an import: an unbumped row loses LWW on the other devices — parity with mobile's `recomputeStreaks`).
+- **`core/desktop_backup_import_service.dart`** — the cloud recompute is the public top-level `recomputeCloudStreaks` (+ `bulkUpsertRows`), shared with the repository.
+- **`shared/widgets/evolve_dialog.dart`** — the header X calls `Navigator.maybePop`, like the Escape binding and the barrier already did, so a `PopScope` guarding unsaved work gets to ask.
+- **i18n** — `habitsPage.editableHint` replaced by `useEditHint`; added `changesSaved`, `discardChangesTitle`, `discardChangesBody`, `discard`, `keepEditing` in all 5 locales; `dart run slang` regenerated.
+- **Tests** — `test/day_details_past_day_edit_test.dart` (the real dialog over a recording repository: view mode, staging, Save + streak repair, Cancel, X/Escape discard prompt, today toggles at once, the D2 quantitative case opens the entry dialog for the right day, verified stays read-only) and `test/dashboard_set_status_for_day_test.dart` (direct write, null clears, no-op, owner refusal, headline streak, recompute dispatch).
+
+### Tech Notes
+- **Verification**: `flutter analyze` clean; `flutter test` 929 passed, 1 failed — `desktop_supabase_config_security_test`, the documented environmental failure (the two new files add 15). Not exercised on a device in this change.
+- `desktop/DECISIONS_2026-09-03.md` D2 is marked resolved by this change; D1 and D3 are untouched.
+
 ## [2026-07-22]: Fix macOS APNs Registration Failure (OSStatus error 13)
 
 ### Details

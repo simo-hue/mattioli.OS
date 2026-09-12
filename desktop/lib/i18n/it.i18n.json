@@ -649,7 +649,12 @@
     "weekOf": "Settimana del {day} {month}",
     "lifeWeeks": "Settimane del tuo percorso",
     "catMindfulness": "Mindfulness",
-    "editableHint": "Puoi modificare solo oggi e ieri.",
+    "useEditHint": "Usa Modifica per cambiare questo giorno.",
+    "changesSaved": "Modifiche salvate",
+    "discardChangesTitle": "Scartare le modifiche?",
+    "discardChangesBody": "Le modifiche a questo giorno non sono state salvate.",
+    "discard": "Scarta",
+    "keepEditing": "Continua a modificare",
     "titleRequired": "Il titolo è obbligatorio"
   },
   "lavoro": "Lavoro",

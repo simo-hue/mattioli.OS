@@ -66,6 +66,17 @@ abstract interface class PrivateDataStore {
   /// `runStreakRepairOnce` in `streak_repair.dart`.
   Future<int?> repairAllStreaks();
 
+  /// Recomputes `goal_logs.streak` for every log of each habit in [goalIds]
+  /// from its full history and writes back only the rows whose value changed,
+  /// stamping a fresh `updated_at` on each so the correction wins last-write-wins
+  /// on every other device. Returns how many rows were corrected.
+  ///
+  /// Exists for the past-day edit: a row stores the streak AS OF ITS OWN DAY, so
+  /// changing a day ten days back leaves every later row of that habit stale —
+  /// and the analytics derive `current_streak` from the LATEST row. The single
+  /// day's write cannot fix that; only a forward recompute can.
+  Future<int> recomputeStreaksForGoals(Set<String> goalIds);
+
   /// Every `goal_progress` row for the local owner as `date -> goalId -> amount`
   /// — the accumulated number for a quantitative habit-day. Parallel to
   /// [loadHabitLogs] (which loads the verdict) and deliberately separate: a

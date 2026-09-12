@@ -1,4 +1,5 @@
 import 'package:evolve_targets/evolve_targets.dart';
+import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator, CupertinoButton;
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart' show CustomSemanticsAction;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,34 +18,165 @@ import 'target_entry_sheet.dart';
 import 'target_ring.dart';
 import 'verification_rule_field.dart';
 import '../../i18n/translations.g.dart';
+import '../kit/evolve_dialog.dart';
 import '../kit/evolve_toast.dart';
 import '../kit/evolve_button.dart';
 import '../kit/evolve_sheet.dart';
 
-/// Whether [date] is still resolvable by hand — today or yesterday.
+/// Whether [date] is a QUICK-LOG day — today or yesterday, the two days a tap
+/// on a card changes directly. Any older day is changed through the sheet's
+/// explicit Edit → Save flow instead, so a stray tap while browsing history
+/// cannot rewrite it, while the days the user is actually living in keep the
+/// one-tap check-in.
 ///
 /// Evaluated against the clock at CALL time, never at build time: a sheet left
-/// open across midnight would otherwise keep offering an edit for a day that has
-/// since aged out. Shared by the card's tap and the freeze-release control, so
-/// the two cannot disagree about which days a user may still change.
+/// open across midnight would otherwise keep offering the quick path for a day
+/// that has since aged out of it. Shared by the card's tap and the
+/// freeze-release control, so the two cannot disagree about which days take a
+/// direct write.
 ///
 /// [shiftDays], not a fixed 24h step: off a 25-hour fall-back day `subtract`
 /// lands at 01:00 of yesterday, and yesterday's own midnight is `isBefore` that
-/// — so the day after the autumn transition, yesterday silently became
-/// uneditable.
-bool _isWithinEditWindow(DateTime date) {
+/// — so the day after the autumn transition, yesterday silently lost its quick
+/// path.
+bool _isQuickLogDay(DateTime date) {
   final now = DateTime.now();
   final yesterday = shiftDays(DateTime(now.year, now.month, now.day), -1);
   return !DateTime(date.year, date.month, date.day).isBefore(yesterday);
 }
 
-class DayDetailsModal extends ConsumerWidget {
+class DayDetailsModal extends ConsumerStatefulWidget {
   final DateTime date;
 
   const DayDetailsModal({super.key, required this.date});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DayDetailsModal> createState() => _DayDetailsModalState();
+}
+
+class _DayDetailsModalState extends ConsumerState<DayDetailsModal> {
+  DateTime get date => widget.date;
+
+  /// Edit mode, for a day older than yesterday. Never entered on a quick-log
+  /// day, where the cards write directly and there is nothing to stage.
+  bool _editing = false;
+
+  /// The rows changed in edit mode, by habit id, each mapped to the status the
+  /// row will be SAVED as (null ⇒ no status). A habit is present only while its
+  /// staged value differs from what is persisted, so `isNotEmpty` is "dirty"
+  /// and cycling a row back to where it started un-stages it.
+  final Map<String, String?> _staged = <String, String?>{};
+
+  bool _saving = false;
+
+  bool get _dirty => _staged.isNotEmpty;
+
+  /// Enters edit mode. A rebuild alone is enough: the cards read [_staged] and
+  /// the header swaps the pencil for Save.
+  void _startEditing() {
+    ref.hapticAction();
+    setState(() => _editing = true);
+  }
+
+  /// A tap on a card of an older day while NOT editing. It writes nothing and
+  /// says why — a card that looks tappable and silently does nothing is the
+  /// defect this replaces, not an improvement on it.
+  void _explainEdit() {
+    ref.hapticMedium();
+    showEvolveToast(
+      context,
+      message: context.t.habits.tapEditToChangeThisDay,
+      kind: EvolveToastKind.error,
+    );
+    // The header decides at build time whether to show the pencil; a sheet
+    // that was opened on "yesterday" and crossed midnight has not rebuilt since,
+    // so give it the frame it needs to offer the way in it just named.
+    setState(() {});
+  }
+
+  void _stage(String habitId, String? persisted, String? next) {
+    setState(() {
+      if (next == persisted) {
+        _staged.remove(habitId);
+      } else {
+        _staged[habitId] = next;
+      }
+    });
+  }
+
+  /// The X, the barrier and the system back gesture. A dirty sheet asks
+  /// first: the staged rows are the user's work, and a mis-tap on the X would
+  /// throw all of them away. A clean sheet closes at once — the prompt only
+  /// ever appears when there is something to lose.
+  Future<void> _requestClose() async {
+    if (_editing && _dirty) {
+      final discard = await showEvolveConfirm(
+        context: context,
+        title: context.t.habits.discardChangesTitle,
+        message: context.t.habits.discardChangesBody,
+        confirmLabel: context.t.habits.discard,
+        cancelLabel: context.t.habits.keepEditing,
+        isDestructive: true,
+        ref: ref,
+      );
+      if (!discard || !mounted) return;
+    }
+    if (mounted) Navigator.pop(context);
+  }
+
+  /// Commits the staged rows. One row at a time, in list order: each write
+  /// recomputes its own streak from the running state, and the failure path
+  /// needs to know exactly which rows landed.
+  ///
+  /// A row that fails stops the batch. Its own write path has already rolled
+  /// it back and shown the error, so the sheet simply STAYS in edit mode with
+  /// that row and everything after it still staged — a retry is one tap, and
+  /// nothing the user did is silently dropped. The rows before it are saved and
+  /// stay saved; the streak repair below runs for exactly those.
+  Future<void> _save(List<Goal> habits) async {
+    if (!_dirty || _saving) return;
+    setState(() => _saving = true);
+    final notifier = ref.read(habitLogsProvider.notifier);
+    final saved = <String>{};
+    var failed = false;
+    for (final entry in _staged.entries.toList()) {
+      final ok = await notifier.setStatus(date, entry.key, entry.value);
+      if (!ok) {
+        failed = true;
+        break;
+      }
+      saved.add(entry.key);
+    }
+    if (saved.isNotEmpty) {
+      // The single-day write cannot fix the rows AFTER an edited day; see
+      // [HabitLogsNotifier.recomputeStreaksForHabits].
+      await notifier.recomputeStreaksForHabits(saved);
+      // A manual check-in on a verified habit creates or clears a freeze, and
+      // resolving a day clears its "?": refresh both marker sources, as the
+      // quick-log tap does.
+      if (habits.any((h) => saved.contains(h.id) && h.isVerified)) {
+        ref.invalidate(couldNotVerifyDaysProvider);
+        ref.invalidate(manuallyResolvedDaysProvider);
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _staged.removeWhere((id, _) => saved.contains(id));
+      _saving = false;
+      if (!failed) _editing = false;
+    });
+    if (!failed) {
+      ref.hapticSuccess();
+      showEvolveToast(
+        context,
+        message: context.t.habits.changesSaved,
+        kind: EvolveToastKind.success,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final habits = ref.watch(goalsProvider);
     final logs = ref.watch(habitLogsProvider);
     final progress = TargetsConfig.enabled
@@ -66,263 +198,398 @@ class DayDetailsModal extends ConsumerWidget {
     // habits are hidden here, not shown-and-uncompletable.
     final activeHabits = habits.where((h) => h.isScheduledOn(date)).toList();
 
-    return Container(
-      decoration: BoxDecoration(
-        color: context.appColors.background,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border.all(color: context.appColors.border, width: 1),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Center(child: EvolveGrabber()),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    DateFormat.MMMMd(
-                      LocaleSettings.currentLocale.languageCode,
-                    ).format(date),
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
-                      color: context.appColors.foreground,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  Text(
-                    context.t.habits.yourProgressForToday,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 14,
-                      color: context.appColors.mutedForeground,
-                    ),
-                  ),
-                ],
-              ),
-              IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: Icon(
-                  LucideIcons.x,
-                  color: context.appColors.mutedForeground,
-                ),
-              ),
-            ],
+    // Build-time only for the HEADER (pencil vs. nothing); every tap re-asks
+    // the clock. See [_isQuickLogDay].
+    final quickLog = _isQuickLogDay(date);
+
+    // The day's logs with the staged rows overlaid, so a card previews the
+    // streak it will have once saved rather than the one it has now.
+    final effectiveDay = Map<String, String>.from(dayRecord);
+    for (final entry in _staged.entries) {
+      if (entry.value == null) {
+        effectiveDay.remove(entry.key);
+      } else {
+        effectiveDay[entry.key] = entry.value!;
+      }
+    }
+    final HabitLogsMap effectiveLogs =
+        _staged.isEmpty ? logs : {...logs, dateKey: effectiveDay};
+
+    return PopScope(
+      canPop: !(_editing && _dirty),
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        // The barrier or a system back gesture on a dirty sheet: same question
+        // as the X.
+        _requestClose();
+      },
+      child: GestureDetector(
+        // Drag-to-dismiss on a modal sheet pops UNCONDITIONALLY
+        // (bottom_sheet.dart `onClosing` → `Navigator.pop`), bypassing PopScope,
+        // so a dirty sheet has to DECLINE the drag rather than intercept it:
+        // claiming the vertical drag here keeps it from the route's own
+        // detector, and the X remains the way out. Inert otherwise, so the
+        // swipe stays available whenever there is nothing to lose.
+        onVerticalDragStart: _editing && _dirty ? (_) {} : null,
+        child: Container(
+          decoration: BoxDecoration(
+            color: context.appColors.background,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(color: context.appColors.border, width: 1),
           ),
-          const SizedBox(height: 24),
-          Flexible(
-            child: activeHabits.isEmpty
-                ? Center(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Center(child: EvolveGrabber()),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 20),
-                        Icon(
-                          LucideIcons.clipboardList,
-                          size: 64,
-                          color: context.appColors.mutedForeground.withValues(
-                            alpha: 0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
                         Text(
-                          context.t.habits.noHabit,
+                          DateFormat.MMMMd(
+                            LocaleSettings.currentLocale.languageCode,
+                          ).format(date),
                           style: TextStyle(
                             fontFamily: 'Inter',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
                             color: context.appColors.foreground,
+                            letterSpacing: -0.5,
                           ),
                         ),
-                        const SizedBox(height: 8),
                         Text(
-                          context.t.habits.thereAreNoHabitsForThis,
-                          textAlign: TextAlign.center,
+                          context.t.habits.yourProgressForToday,
                           style: TextStyle(
                             fontFamily: 'Inter',
                             fontSize: 14,
                             color: context.appColors.mutedForeground,
                           ),
                         ),
-                        const SizedBox(height: 24),
-                        EvolveButton(
-                          label: context.t.habits.createHabit,
-                          icon: LucideIcons.plus,
-                          expand: false,
-                          onPressed: () {
-                            Navigator.pop(context); // Close details modal
-                            HabitManagementModal.show(context);
-                          },
-                        ),
-                        const SizedBox(height: 20),
                       ],
                     ),
-                  )
-                : ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: activeHabits.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final habit = activeHabits[index];
-                      final status = dayRecord[habit.id];
-                      // An unresolved auto-verification for this habit-day: no
-                      // terminal status yet + a couldn't-verify marker.
-                      final couldNotVerify =
-                          status == null &&
-                          (couldNotVerifyByGoal[habit.id]?.contains(
-                                dateMidnight,
-                              ) ??
-                              false);
-
-                      // A MANUAL quantitative target: the card shows a progress
-                      // ring and opens the entry sheet instead of cycling a
-                      // checkbox. Deliberately not `displayTarget` — a projected
-                      // verification rule is measured, its value lives in
-                      // goal_logs.value not goal_progress, so its ring would read
-                      // empty; a verified habit keeps its checkbox + badge here.
-                      final target =
-                          TargetsConfig.enabled &&
-                              (habit.target?.isUserEnterable ?? false)
-                          ? habit.target
-                          : null;
-                      final progressAmount =
-                          (progress[dateKey]?[habit.id] as double?) ?? 0;
-                      final TargetVerdict? verdict = target == null
-                          ? null
-                          : evaluateTarget(
-                              target: target,
-                              progress: progressAmount,
-                              periodIsOver: periodIsOver(
-                                target.period,
-                                date,
-                                DateTime.now(),
-                              ),
-                            );
-
-                      // Signed streak via the shared, deterministic helper
-                      // (same logic as cloud + Private Mode + the web app).
-                      final streak = computeStreak(
-                        habitId: habit.id,
-                        date: date,
-                        logs: logs,
-                        startDate: habit.startDate,
-                        frequencyDays: habit.frequencyDays,
-                      );
-
-                      // The user's check-in owns this day, so reconcile will
-                      // skip it until they hand it back.
-                      final manuallyResolved =
-                          habit.isVerified &&
-                          (manuallyResolvedByGoal[habit.id]?.contains(
-                                dateMidnight,
-                              ) ??
-                              false);
-
-                      return GoalLogCard(
-                        habit: habit,
-                        date: date,
-                        status: status,
-                        streak: streak,
-                        couldNotVerify: couldNotVerify,
-                        manuallyResolved: manuallyResolved,
-                        onRelease: manuallyResolved
-                            ? () {
-                                // The SAME resolvable-window guard the card's
-                                // own tap applies, re-evaluated against the
-                                // clock right now.
-                                //
-                                // The marker's own bound cannot substitute for
-                                // it: `manuallyResolvedDaysProvider` computes
-                                // [yesterday, today] when it BUILDS and is not
-                                // recomputed at midnight, so a sheet left open
-                                // across 00:00 still offers a release for a day
-                                // that has since become uneditable — and this
-                                // release DELETES a goal_logs row, which the tap
-                                // path would have refused outright.
-                                if (!_isWithinEditWindow(date)) {
-                                  ref.hapticMedium();
-                                  showEvolveToast(
-                                    context,
-                                    message: context
-                                        .t.habits.youCanOnlyEditTodayAnd,
-                                    kind: EvolveToastKind.error,
-                                  );
-                                  return;
-                                }
-                                ref.hapticLight();
-                                ref
-                                    .read(habitLogsProvider.notifier)
-                                    .releaseToAutoVerification(date, habit.id);
-                                // Both markers are read from the same store and
-                                // both change on release: the freeze goes, and a
-                                // day that was couldn't-verify before the user
-                                // took it over can legitimately come back.
-                                ref.invalidate(manuallyResolvedDaysProvider);
-                                ref.invalidate(couldNotVerifyDaysProvider);
-                              }
-                            : null,
-                        target: target,
-                        verdict: verdict,
-                        progressAmount: progressAmount,
-                        onTap: () {
-                          if (!_isWithinEditWindow(date)) {
-                            ref.hapticMedium();
-                            showEvolveToast(
-                              context,
-                              message: context.t.habits.youCanOnlyEditTodayAnd,
-                              kind: EvolveToastKind.error,
-                            );
-                            return;
-                          }
-
-                          // A user-enterable target opens the progress entry
-                          // sheet (increment / timer); a measured target's ring
-                          // is filled by the verification pipeline, so it falls
-                          // through to the normal resolve/toggle path.
-                          if (target != null && target.isUserEnterable) {
-                            TargetEntrySheet.show(
-                              context,
-                              habit: habit,
-                              target: target,
-                              date: date,
-                            );
-                            return;
-                          }
-
-                          ref
-                              .read(habitLogsProvider.notifier)
-                              .cycleStatus(date, habit.id);
-                          // Manually resolving a verified habit clears its
-                          // couldn't-verify marker in the store — refresh the
-                          // "?" source so a later un-resolve doesn't resurrect a
-                          // stale "?" from the cached provider.
-                          //
-                          // And refresh the freeze source, because THIS TAP is
-                          // what creates the freeze. Without it the "set by you"
-                          // marker would not appear until something else
-                          // happened to invalidate the provider — so the very
-                          // feedback that makes the freeze visible would arrive
-                          // too late to connect it to the tap that caused it.
-                          if (habit.isVerified) {
-                            ref.invalidate(couldNotVerifyDaysProvider);
-                            ref.invalidate(manuallyResolvedDaysProvider);
-                          }
-                        },
-                      );
-                    },
                   ),
+                  // The way into a past day, beside the way out. On a quick-log
+                  // day the cards already write directly, so there is nothing
+                  // to enter.
+                  if (!quickLog)
+                    _editing
+                        ? _SavePill(
+                            label: context.t.common.actions.save,
+                            loading: _saving,
+                            onPressed: _dirty && !_saving
+                                ? () => _save(habits)
+                                : null,
+                          )
+                        : IconButton(
+                            tooltip: context.t.habits.editThisDay,
+                            onPressed: _startEditing,
+                            icon: Icon(
+                              LucideIcons.pencil,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                  IconButton(
+                    tooltip: context.t.common.actions.cancel,
+                    onPressed: _requestClose,
+                    icon: Icon(
+                      LucideIcons.x,
+                      color: context.appColors.mutedForeground,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Flexible(
+                child: activeHabits.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const SizedBox(height: 20),
+                            Icon(
+                              LucideIcons.clipboardList,
+                              size: 64,
+                              color: context.appColors.mutedForeground
+                                  .withValues(alpha: 0.5),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              context.t.habits.noHabit,
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: context.appColors.foreground,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              context.t.habits.thereAreNoHabitsForThis,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 14,
+                                color: context.appColors.mutedForeground,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            EvolveButton(
+                              label: context.t.habits.createHabit,
+                              icon: LucideIcons.plus,
+                              expand: false,
+                              onPressed: () {
+                                Navigator.pop(context); // Close details modal
+                                HabitManagementModal.show(context);
+                              },
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+                        ),
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: activeHabits.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final habit = activeHabits[index];
+                          final persisted = dayRecord[habit.id];
+                          final isStaged = _staged.containsKey(habit.id);
+                          // What the card SHOWS: the staged value while it has
+                          // one, the persisted one otherwise.
+                          final status =
+                              isStaged ? _staged[habit.id] : persisted;
+                          // An unresolved auto-verification for this habit-day:
+                          // no terminal status yet + a couldn't-verify marker.
+                          final couldNotVerify =
+                              status == null &&
+                              (couldNotVerifyByGoal[habit.id]?.contains(
+                                    dateMidnight,
+                                  ) ??
+                                  false);
+
+                          // A MANUAL quantitative target: the card shows a
+                          // progress ring and opens the entry sheet instead of
+                          // cycling a checkbox. Deliberately not
+                          // `displayTarget` — a projected verification rule is
+                          // measured, its value lives in goal_logs.value not
+                          // goal_progress, so its ring would read empty; a
+                          // verified habit keeps its checkbox + badge here.
+                          final target =
+                              TargetsConfig.enabled &&
+                                  (habit.target?.isUserEnterable ?? false)
+                              ? habit.target
+                              : null;
+                          final progressAmount =
+                              (progress[dateKey]?[habit.id] as double?) ?? 0;
+                          final TargetVerdict? verdict = target == null
+                              ? null
+                              : evaluateTarget(
+                                  target: target,
+                                  progress: progressAmount,
+                                  periodIsOver: periodIsOver(
+                                    target.period,
+                                    date,
+                                    DateTime.now(),
+                                  ),
+                                );
+
+                          // Signed streak via the shared, deterministic helper
+                          // (same logic as cloud + Private Mode + the web app),
+                          // over the staged overlay so an edit previews its
+                          // effect.
+                          final streak = computeStreak(
+                            habitId: habit.id,
+                            date: date,
+                            logs: effectiveLogs,
+                            startDate: habit.startDate,
+                            frequencyDays: habit.frequencyDays,
+                          );
+
+                          // The user's check-in owns this day, so reconcile
+                          // will skip it until they hand it back. Only where
+                          // the rule actually governed the day: before its
+                          // effective start there was nothing automatic to
+                          // take over from, so "hand it back" would name a
+                          // sensor that never scored it. Hidden while the row
+                          // is staged — the staged value is about to replace
+                          // the state the marker describes.
+                          final manuallyResolved =
+                              habit.isVerified &&
+                              !isStaged &&
+                              habit.verificationRuleAppliesOn(date) &&
+                              (manuallyResolvedByGoal[habit.id]?.contains(
+                                    dateMidnight,
+                                  ) ??
+                                  false);
+
+                          return GoalLogCard(
+                            habit: habit,
+                            date: date,
+                            status: status,
+                            streak: streak,
+                            couldNotVerify: couldNotVerify,
+                            manuallyResolved: manuallyResolved,
+                            onRelease: manuallyResolved
+                                ? () {
+                                    // The SAME quick-log guard the card's own
+                                    // tap applies, re-evaluated against the
+                                    // clock right now: a sheet left open across
+                                    // 00:00 must not keep the direct path for a
+                                    // day that has aged out of it — and this
+                                    // release DELETES a goal_logs row.
+                                    if (!_isQuickLogDay(date)) {
+                                      if (!_editing) {
+                                        _explainEdit();
+                                        return;
+                                      }
+                                      // Staged like any other change: on Save
+                                      // a null status is exactly a release —
+                                      // the verdict goes and the freeze with it.
+                                      _stage(habit.id, persisted, null);
+                                      return;
+                                    }
+                                    ref.hapticLight();
+                                    ref
+                                        .read(habitLogsProvider.notifier)
+                                        .releaseToAutoVerification(
+                                          date,
+                                          habit.id,
+                                        );
+                                    // Both markers are read from the same store
+                                    // and both change on release: the freeze
+                                    // goes, and a day that was couldn't-verify
+                                    // before the user took it over can
+                                    // legitimately come back.
+                                    ref.invalidate(manuallyResolvedDaysProvider);
+                                    ref.invalidate(couldNotVerifyDaysProvider);
+                                  }
+                                : null,
+                            target: target,
+                            verdict: verdict,
+                            progressAmount: progressAmount,
+                            onTap: () {
+                              final quickLog = _isQuickLogDay(date);
+                              if (!quickLog && !_editing) {
+                                _explainEdit();
+                                return;
+                              }
+
+                              // A user-enterable target opens the progress
+                              // entry sheet (increment / timer), which commits
+                              // on its own — it is already an explicit action
+                              // with its own controls, so edit mode is the gate
+                              // and nothing of it is staged. A measured
+                              // target's ring is filled by the verification
+                              // pipeline, so it falls through to the normal
+                              // resolve/toggle path.
+                              if (target != null && target.isUserEnterable) {
+                                TargetEntrySheet.show(
+                                  context,
+                                  habit: habit,
+                                  target: target,
+                                  date: date,
+                                );
+                                return;
+                              }
+
+                              if (!quickLog) {
+                                _stage(
+                                  habit.id,
+                                  persisted,
+                                  nextManualStatus(status),
+                                );
+                                return;
+                              }
+
+                              ref
+                                  .read(habitLogsProvider.notifier)
+                                  .cycleStatus(date, habit.id);
+                              // Manually resolving a verified habit clears its
+                              // couldn't-verify marker in the store — refresh
+                              // the "?" source so a later un-resolve doesn't
+                              // resurrect a stale "?" from the cached provider.
+                              //
+                              // And refresh the freeze source, because THIS
+                              // TAP is what creates the freeze. Without it the
+                              // "set by you" marker would not appear until
+                              // something else happened to invalidate the
+                              // provider — so the very feedback that makes the
+                              // freeze visible would arrive too late to connect
+                              // it to the tap that caused it.
+                              if (habit.isVerified) {
+                                ref.invalidate(couldNotVerifyDaysProvider);
+                                ref.invalidate(manuallyResolvedDaysProvider);
+                              }
+                            },
+                          );
+                        },
+                      ),
+              ),
+              const SizedBox(height: 32),
+            ],
           ),
-          const SizedBox(height: 32),
-        ],
+        ),
       ),
+    );
+  }
+}
+
+/// The header's Save, sized to sit beside the X rather than as a full-width
+/// CTA: [EvolveButton]'s padding is a screen-bottom action, and two of those
+/// in a title row crowd the date out. Greyed until there is something to save,
+/// and a spinner — still filled — while the batch is in flight.
+class _SavePill extends StatelessWidget {
+  const _SavePill({
+    required this.label,
+    required this.onPressed,
+    required this.loading,
+  });
+
+  final String label;
+  final VoidCallback? onPressed;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
+    final foreground =
+        accent.computeLuminance() > 0.6 ? Colors.black : Colors.white;
+    return CupertinoButton(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      borderRadius: BorderRadius.circular(999),
+      color: accent,
+      disabledColor: context.appColors.muted,
+      // Non-null while loading so the pill stays filled under the spinner; the
+      // tap is swallowed.
+      onPressed: onPressed == null && !loading
+          ? null
+          : () {
+              if (loading) return;
+              onPressed?.call();
+            },
+      child: loading
+          ? SizedBox(
+              height: 18,
+              width: 18,
+              child: CupertinoActivityIndicator(color: foreground, radius: 9),
+            )
+          : Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: onPressed == null
+                    ? context.appColors.mutedForeground
+                    : foreground,
+              ),
+            ),
     );
   }
 }

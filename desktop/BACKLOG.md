@@ -108,7 +108,7 @@ Missing entirely on desktop (`AppLogger` exists but has no viewer UI).
 - **Reset-to-defaults inconsistency:** `settings_page.dart` "reset to defaults" sets AI insights + weekly reports to **false**, but the initial state defaults them **true**. Make reset match the initial defaults (both ON).
 - **Daily check-in emoji feedback** per slider (mobile `daily_check_in_modal.dart`).
 - **Full color picker** (`flutter_colorpicker`) in create-habit/goal + category editor instead of preset swatches only.
-- **Day-details dialog:** add a per-habit streak badge and an "editable only today/yesterday" hint (`_DayDetailsDialog` in `habits_page.dart`).
+- ~~**Day-details dialog:** add a per-habit streak badge and an "editable only today/yesterday" hint (`_DayDetailsDialog` in `habits_page.dart`).~~ Done; superseded — any past day is now editable through Edit → Save, and the hint reads "Use Edit to change this day."
 - **Import HSL→hex parser** should not silently default unknown colors to blue — `_hslToHex`/`_processData` in `core/desktop_backup_import_service.dart`; pass through valid `#hex` and map named tokens.
 - **FK-pragma convergence:** desktop sets `PRAGMA foreign_keys = ON` at schema level (`core/private_db_schema.dart` `onConfigure`); mobile sets it at open time. Make them consistent and document which (affects import strictness parity).
 - **`_GoalItem` keying:** give each `_GoalItem` a `ValueKey(goal.id)` in `goals_page.dart` so its 2-second pending-state timer follows identity across re-sorts (avoids flipping the wrong goal).

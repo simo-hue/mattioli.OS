@@ -184,6 +184,90 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     );
   }
 
+  /// Persists [status] for a habit-day DIRECTLY — the write behind the day
+  /// dialog's Save on a day older than yesterday. [toggleHabitForDay] advances
+  /// the cycle from whatever the row is now; a batch of staged rows must land
+  /// each one exactly as staged, so this one takes the destination instead.
+  ///
+  /// Same owner rule as the toggle: a verified habit's verdict belongs to the
+  /// iPhone's verification pipeline and a quantitative habit's to its target,
+  /// so neither is written here. Returns whether a write was issued — a row
+  /// already at [status] is a true no-op.
+  ///
+  /// The habit's headline streak is recomputed AS OF TODAY over the updated
+  /// logs, whatever day changed: the protocol's STREAK column means "current
+  /// run", and a corrected day ten days back can lengthen or break it.
+  Future<bool> setHabitStatusForDay(
+    String id,
+    DateTime date,
+    String? status,
+  ) async {
+    final owner = state.habits.where((h) => h.id == id).firstOrNull;
+    if (owner == null) return false;
+    if (owner.verificationRule != null ||
+        (owner.target?.isUserEnterable ?? false)) {
+      AppLogger.info(
+        'Ignoring direct status write for habit $id: its verdict is owned by '
+        '${owner.verificationRule != null ? 'the verification pipeline' : 'its quantitative target'}.',
+      );
+      return false;
+    }
+    if (state.resolvedHabitStatus(owner, date) == status) return false;
+
+    final dateKey = dashboardDateKey(date);
+    final logs = {
+      for (final entry in state.habitLogs.entries)
+        entry.key: Map<String, String>.from(entry.value),
+    };
+    final dayLogs = logs.putIfAbsent(dateKey, () => {});
+    if (status == null) {
+      dayLogs.remove(id);
+    } else {
+      dayLogs[id] = status;
+    }
+    final now = _now();
+    final headlineStreak = computeStreak(
+      habitId: id,
+      date: now,
+      logs: logs,
+      startDate: owner.startDate ?? date,
+      frequencyDays: owner.frequencyDays,
+    );
+    final habits = [
+      for (final habit in state.habits)
+        if (habit.id == id)
+          _setHabitForWeekday(
+            habit,
+            date.weekday - 1,
+            _isToday(date),
+            status == 'done',
+            headlineStreak,
+            inCurrentWeek: _isCurrentWeek(date),
+          ).copyWith(streak: headlineStreak)
+        else
+          habit,
+    ];
+    state = state.copyWith(habits: habits, habitLogs: logs);
+    await _saveLocal();
+    await _syncRemote(
+      () => _repository.setHabitStatusTo(
+        habitId: id,
+        date: date,
+        status: status,
+      ),
+    );
+    return true;
+  }
+
+  /// See [DashboardRepository.recomputeStreaks]: the stored per-row streaks
+  /// after a batch of past-day writes. The snapshot's own headline streaks were
+  /// already recomputed in memory by [setHabitStatusForDay]; this repairs the
+  /// rows the analytics read.
+  Future<void> recomputeStreaksForHabits(Set<String> habitIds) async {
+    if (habitIds.isEmpty) return;
+    await _syncRemote(() => _repository.recomputeStreaks(habitIds));
+  }
+
   /// Sets a quantitative habit's accumulated progress for [date] to [amount],
   /// then DERIVES and applies the day's verdict — the desktop counterpart of
   /// mobile's `HabitProgressNotifier.setProgress`. Optimistic + local-first like
@@ -1039,13 +1123,8 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     return unique.toList()..sort();
   }
 
-  String? _nextHabitStatus(String? currentStatus) {
-    return switch (currentStatus) {
-      null => 'done',
-      'done' => 'missed',
-      _ => null,
-    };
-  }
+  String? _nextHabitStatus(String? currentStatus) =>
+      DashboardRepository.nextManualStatus(currentStatus);
 
   String _newLocalId() {
     final bytes = List<int>.generate(16, (_) => Random.secure().nextInt(256));

@@ -1152,6 +1152,21 @@ class PrivateLocalDatabase implements PrivateDataStore {
     return corrected;
   }
 
+  /// See [PrivateDataStore.recomputeStreaksForGoals]. Same transaction shape
+  /// as [repairAllStreaks], scoped to the habits a past-day edit touched —
+  /// and stamped for the same reason: an unbumped correction loses LWW on the
+  /// other devices and never propagates (see [recomputeStreaks]).
+  @override
+  Future<int> recomputeStreaksForGoals(Set<String> goalIds) async {
+    if (goalIds.isEmpty) return 0;
+    final db = await _database();
+    final corrected = await db.transaction<int>(
+      (txn) => recomputeStreaks(txn, goalIds, stampUpdatedAt: _now()),
+    );
+    if (corrected > 0) _notifyWrite();
+    return corrected;
+  }
+
   /// Persist multiple goals (used by drag-reorder) in ONE transaction, so a
   /// partial failure can't leave display_order half-applied and so the write is
   /// a single atomic unit rather than N separate ones.

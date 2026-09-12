@@ -97,6 +97,17 @@ class FakePrivateDataStore implements PrivateDataStore {
     return 0;
   }
 
+  /// Records the habit ids a past-day edit asked to recompute, so a test can
+  /// assert the forward streak repair ran for exactly the habits that changed.
+  final List<Set<String>> streakRecomputes = <Set<String>>[];
+
+  @override
+  Future<int> recomputeStreaksForGoals(Set<String> goalIds) async {
+    calls.add('recomputeStreaksForGoals');
+    streakRecomputes.add(goalIds);
+    return 0;
+  }
+
   // ── Habit progress (quantitative targets) ────────────────────────────────
   @override
   Future<Map<String, Map<String, double>>> loadHabitProgress() async =>

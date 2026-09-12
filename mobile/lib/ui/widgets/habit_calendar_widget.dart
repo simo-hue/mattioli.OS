@@ -58,7 +58,10 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
     return date.isAfter(todayStart);
   }
 
-  bool _isYesterdayOrToday(int year, int month, int day) {
+  /// Today or yesterday — the two days a tap in the day sheet logs directly.
+  /// Older days are edited through the sheet's Edit → Save flow instead, so the
+  /// cell tint marks "quick-log", not "the only days you can change".
+  bool _isQuickLogDay(int year, int month, int day) {
     final date = DateTime(year, month, day);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -266,7 +269,7 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
                     final dayRecord = Map<String, String>.from(logs[dateKey] ?? {});
                     final future = _isFuture(year, month, day);
                     final today = _isToday(year, month, day);
-                    final editableDay = _isYesterdayOrToday(year, month, day);
+                    final quickLogDay = _isQuickLogDay(year, month, day);
 
                     // Valid habits for this date
                     final dayDate = DateTime(year, month, day);
@@ -301,7 +304,7 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
                           day: day,
                           isToday: today,
                           isFuture: future,
-                          isEditableDay: editableDay,
+                          isQuickLogDay: quickLogDay,
                           hasActivity: hasActivity,
                           completionPct: completionPct,
                           isPrivacy: isPrivacy,
@@ -373,7 +376,7 @@ class _DayCell extends StatelessWidget {
   final int day;
   final bool isToday;
   final bool isFuture;
-  final bool isEditableDay;
+  final bool isQuickLogDay;
   final bool hasActivity;
   final double completionPct;
   final bool isPrivacy;
@@ -384,7 +387,7 @@ class _DayCell extends StatelessWidget {
     required this.day,
     required this.isToday,
     required this.isFuture,
-    required this.isEditableDay,
+    required this.isQuickLogDay,
     required this.hasActivity,
     required this.completionPct,
     required this.isPrivacy,
@@ -414,7 +417,7 @@ class _DayCell extends StatelessWidget {
       );
     }
 
-    if (isEditableDay && !hasActivity) {
+    if (isQuickLogDay && !hasActivity) {
       bgColor = Theme.of(context).colorScheme.primary.withValues(alpha: 0.04);
       borderColor = Theme.of(context).colorScheme.primary.withValues(alpha: 0.25);
     }

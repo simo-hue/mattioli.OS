@@ -6,6 +6,8 @@ import 'dart:io';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
+import 'package:evolve_desktop/core/desktop_backup_import_service.dart'
+    show recomputeCloudStreaks;
 import 'package:evolve_desktop/core/desktop_private_db.dart';
 import 'package:evolve_desktop/core/secure_storage_utils.dart';
 import 'package:evolve_desktop/core/streak_utils.dart';
@@ -77,17 +79,57 @@ abstract class DashboardRepository {
   /// Persists the `display_order` of each habit to its position in [habits].
   Future<void> reorderHabits(List<DashboardHabit> habits) async {}
 
-  Future<String?> setHabitStatus({
-    required String habitId,
-    required DateTime date,
-    required String? currentStatus,
-  }) async {
+  /// The manual check-in cycle, none → `done` → `missed` → none: the ONE
+  /// definition of what a tap on a habit does. [setHabitStatus] persists it,
+  /// the controller's toggle previews it, and the day dialog's edit mode
+  /// stages it — shared so the three can never disagree about what comes next.
+  static String? nextManualStatus(String? currentStatus) {
     return switch (currentStatus) {
       null => 'done',
       'done' => 'missed',
       _ => null,
     };
   }
+
+  /// Advances the cycle from [currentStatus] and persists the result. Every
+  /// implementation persists exactly the status this base returns.
+  Future<String?> setHabitStatus({
+    required String habitId,
+    required DateTime date,
+    required String? currentStatus,
+  }) async {
+    return nextManualStatus(currentStatus);
+  }
+
+  /// Persists [status] for a habit-day DIRECTLY — the write behind the day
+  /// dialog's Save on a day older than yesterday, which commits a batch of
+  /// staged rows and must land each one exactly as staged.
+  ///
+  /// Implemented on top of [setHabitStatus] rather than as a fifth persistence
+  /// path: the cycle is a bijection, so the status that ADVANCES to [status] is
+  /// unique, and feeding it as `currentStatus` makes every implementation land
+  /// on [status] through the same code it uses for a tap. This is the one
+  /// place that inverts the cycle; nothing else should.
+  Future<void> setHabitStatusTo({
+    required String habitId,
+    required DateTime date,
+    required String? status,
+  }) async {
+    final before = switch (status) {
+      'done' => null,
+      'missed' => 'done',
+      _ => 'missed',
+    };
+    await setHabitStatus(habitId: habitId, date: date, currentStatus: before);
+  }
+
+  /// Rewrites the stored streak of every log row of each habit in [habitIds]
+  /// from its full history, after a past day changed. A row stores the streak
+  /// AS OF ITS OWN DAY, so editing a day ten days back leaves every later row
+  /// stale — and both the private analytics and the cloud `habit_stats` view
+  /// read `current_streak` from the LATEST row. Best-effort: the verdicts have
+  /// landed, only the denormalized number can be stale. No-op in the base.
+  Future<void> recomputeStreaks(Set<String> habitIds) async {}
 
   Future<void> saveCheckIn(DateTime date, DailyCheckIn checkIn) async {}
 
@@ -220,6 +262,14 @@ class _PrivateRepositoryProxy extends DashboardRepository {
   }
 
   @override
+  Future<void> recomputeStreaks(Set<String> habitIds) async {
+    _inner ??= PrivateDashboardRepository(
+      ownerId: await DesktopPrivateDb.instance.ownerId,
+    );
+    await _inner!.recomputeStreaks(habitIds);
+  }
+
+  @override
   Future<void> setHabitProgress({
     required String habitId,
     required DateTime date,
@@ -310,6 +360,9 @@ class UnavailableDashboardRepository extends DashboardRepository {
     required DateTime date,
     required String? currentStatus,
   }) => _requireSession();
+
+  @override
+  Future<void> recomputeStreaks(Set<String> habitIds) => _requireSession();
 
   @override
   Future<void> setHabitProgress({
@@ -661,6 +714,14 @@ class SupabaseDashboardRepository extends DashboardRepository {
     );
     return nextStatus;
   }
+
+  /// Not queued for offline replay: the recompute reads the server's rows to
+  /// decide what to write, so replaying it later against a different history
+  /// would be wrong. Offline it simply does not run — the next successful
+  /// edit, import or repair recomputes from the then-current rows.
+  @override
+  Future<void> recomputeStreaks(Set<String> habitIds) =>
+      recomputeCloudStreaks(_client, habitIds);
 
   @override
   Future<void> setHabitProgress({

@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/core/desktop_private_db.dart';
+import 'package:evolve_desktop/core/import_merge.dart' show recomputeStreaksForGoals;
 import 'package:evolve_desktop/core/macro_goal_snapshot.dart';
 import 'package:evolve_desktop/core/streak_utils.dart';
 import 'package:evolve_desktop/features/dashboard/data/dashboard_repository.dart';
@@ -285,6 +286,19 @@ class PrivateDashboardRepository extends DashboardRepository {
     }
     DesktopPrivateDb.notifyWrite();
     return nextStatus;
+  }
+
+  /// One transaction over the shared [recomputeStreaksForGoals], stamped so
+  /// the corrected rows win last-write-wins on the other devices — the same
+  /// reason the mobile client stamps its own repair.
+  @override
+  Future<void> recomputeStreaks(Set<String> habitIds) async {
+    if (habitIds.isEmpty) return;
+    final db = await DesktopPrivateDb.instance.database;
+    await db.transaction(
+      (txn) => recomputeStreaksForGoals(txn, habitIds, stampUpdatedAt: _now()),
+    );
+    DesktopPrivateDb.notifyWrite();
   }
 
   /// Signed streak for [habitId] as of [date], computed with the shared

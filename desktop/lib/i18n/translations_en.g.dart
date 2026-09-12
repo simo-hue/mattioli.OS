@@ -1907,8 +1907,23 @@ class Translations$habitsPage$en {
 	/// en: 'Mindfulness'
 	String get catMindfulness => 'Mindfulness';
 
-	/// en: 'Only today and yesterday can be edited.'
-	String get editableHint => 'Only today and yesterday can be edited.';
+	/// en: 'Use Edit to change this day.'
+	String get useEditHint => 'Use Edit to change this day.';
+
+	/// en: 'Changes saved'
+	String get changesSaved => 'Changes saved';
+
+	/// en: 'Discard changes?'
+	String get discardChangesTitle => 'Discard changes?';
+
+	/// en: 'The edits to this day have not been saved.'
+	String get discardChangesBody => 'The edits to this day have not been saved.';
+
+	/// en: 'Discard'
+	String get discard => 'Discard';
+
+	/// en: 'Keep editing'
+	String get keepEditing => 'Keep editing';
 
 	/// en: 'Title is required'
 	String get titleRequired => 'Title is required';
@@ -5323,7 +5338,12 @@ extension on Translations {
 			'habitsPage.weekOf' => ({required Object day, required Object month}) => 'Week of ${day} ${month}',
 			'habitsPage.lifeWeeks' => 'Weeks of your journey',
 			'habitsPage.catMindfulness' => 'Mindfulness',
-			'habitsPage.editableHint' => 'Only today and yesterday can be edited.',
+			'habitsPage.useEditHint' => 'Use Edit to change this day.',
+			'habitsPage.changesSaved' => 'Changes saved',
+			'habitsPage.discardChangesTitle' => 'Discard changes?',
+			'habitsPage.discardChangesBody' => 'The edits to this day have not been saved.',
+			'habitsPage.discard' => 'Discard',
+			'habitsPage.keepEditing' => 'Keep editing',
 			'habitsPage.titleRequired' => 'Title is required',
 			'lavoro' => 'Work',
 			'salute' => 'Health',
@@ -5753,13 +5773,13 @@ extension on Translations {
 			'settingsPage.themeMode' => 'Theme',
 			'settingsPage.themeSystem' => 'Follow system',
 			'settingsPage.timeFormat24h' => '24h Format',
+			_ => null,
+		} ?? switch (path) {
 			'settingsPage.timeFormat24hDetail' => 'Use times like 20:30 instead of 8:30 PM.',
 			'settingsPage.tutorialResetMessage' => 'The guides will be shown again in the relevant sections.',
 			'settingsPage.tutorialResetTitle' => 'Tutorials reset',
 			'settingsPage.updateAvatar' => 'Update avatar',
 			'settingsPage.updateAvatarDetail' => 'Choose a local image for the desktop profile.',
-			_ => null,
-		} ?? switch (path) {
 			'settingsPage.updatePassword' => 'Update password',
 			'settingsPage.useAccent' => ({required Object hex}) => 'Use accent ${hex}',
 			'settingsPage.verified' => 'Verified',

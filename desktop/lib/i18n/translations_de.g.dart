@@ -839,7 +839,12 @@ class _Translations$habitsPage$de extends Translations$habitsPage$en {
 	@override String weekOf({required Object day, required Object month}) => 'Woche vom ${day}. ${month}';
 	@override String get lifeWeeks => 'Wochen deines Weges';
 	@override String get catMindfulness => 'Achtsamkeit';
-	@override String get editableHint => 'Nur heute und gestern können bearbeitet werden.';
+	@override String get useEditHint => 'Verwende Bearbeiten, um diesen Tag zu ändern.';
+	@override String get changesSaved => 'Änderungen gespeichert';
+	@override String get discardChangesTitle => 'Änderungen verwerfen?';
+	@override String get discardChangesBody => 'Die Änderungen an diesem Tag wurden nicht gespeichert.';
+	@override String get discard => 'Verwerfen';
+	@override String get keepEditing => 'Weiter bearbeiten';
 	@override String get titleRequired => 'Titel ist erforderlich';
 }
 
@@ -2712,7 +2717,12 @@ extension on TranslationsDe {
 			'habitsPage.weekOf' => ({required Object day, required Object month}) => 'Woche vom ${day}. ${month}',
 			'habitsPage.lifeWeeks' => 'Wochen deines Weges',
 			'habitsPage.catMindfulness' => 'Achtsamkeit',
-			'habitsPage.editableHint' => 'Nur heute und gestern können bearbeitet werden.',
+			'habitsPage.useEditHint' => 'Verwende Bearbeiten, um diesen Tag zu ändern.',
+			'habitsPage.changesSaved' => 'Änderungen gespeichert',
+			'habitsPage.discardChangesTitle' => 'Änderungen verwerfen?',
+			'habitsPage.discardChangesBody' => 'Die Änderungen an diesem Tag wurden nicht gespeichert.',
+			'habitsPage.discard' => 'Verwerfen',
+			'habitsPage.keepEditing' => 'Weiter bearbeiten',
 			'habitsPage.titleRequired' => 'Titel ist erforderlich',
 			'lavoro' => 'Arbeit',
 			'salute' => 'Gesundheit',
@@ -3142,13 +3152,13 @@ extension on TranslationsDe {
 			'settingsPage.themeMode' => 'Design',
 			'settingsPage.themeSystem' => 'System folgen',
 			'settingsPage.timeFormat24h' => '24-Stunden-Format',
+			_ => null,
+		} ?? switch (path) {
 			'settingsPage.timeFormat24hDetail' => 'Verwende Uhrzeiten wie 20:30 statt 8:30 PM.',
 			'settingsPage.tutorialResetMessage' => 'Die Anleitungen werden in den entsprechenden Bereichen erneut angezeigt.',
 			'settingsPage.tutorialResetTitle' => 'Tutorials zurückgesetzt',
 			'settingsPage.updateAvatar' => 'Avatar aktualisieren',
 			'settingsPage.updateAvatarDetail' => 'Wähle ein lokales Bild für das Desktop-Profil.',
-			_ => null,
-		} ?? switch (path) {
 			'settingsPage.updatePassword' => 'Passwort aktualisieren',
 			'settingsPage.useAccent' => ({required Object hex}) => 'Akzent ${hex} verwenden',
 			'settingsPage.verified' => 'Verifiziert',

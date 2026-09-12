@@ -649,7 +649,12 @@
     "weekOf": "أسبوع {day} {month}",
     "lifeWeeks": "أسابيع مسارك",
     "catMindfulness": "اليقظة الذهنية",
-    "editableHint": "يمكن تعديل اليوم والأمس فقط.",
+    "useEditHint": "استخدم تعديل لتغيير هذا اليوم.",
+    "changesSaved": "تم حفظ التغييرات",
+    "discardChangesTitle": "هل تريد تجاهل التغييرات؟",
+    "discardChangesBody": "لم يتم حفظ التعديلات على هذا اليوم.",
+    "discard": "تجاهل",
+    "keepEditing": "متابعة التعديل",
     "titleRequired": "العنوان مطلوب"
   },
   "lavoro": "العمل",

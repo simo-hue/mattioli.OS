@@ -649,7 +649,12 @@
     "weekOf": "Woche vom {day}. {month}",
     "lifeWeeks": "Wochen deines Weges",
     "catMindfulness": "Achtsamkeit",
-    "editableHint": "Nur heute und gestern können bearbeitet werden.",
+    "useEditHint": "Verwende Bearbeiten, um diesen Tag zu ändern.",
+    "changesSaved": "Änderungen gespeichert",
+    "discardChangesTitle": "Änderungen verwerfen?",
+    "discardChangesBody": "Die Änderungen an diesem Tag wurden nicht gespeichert.",
+    "discard": "Verwerfen",
+    "keepEditing": "Weiter bearbeiten",
     "titleRequired": "Titel ist erforderlich"
   },
   "lavoro": "Arbeit",

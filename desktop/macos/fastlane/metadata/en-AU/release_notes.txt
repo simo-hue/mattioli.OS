@@ -1,0 +1,5 @@
+You can now edit any past day. Open a day in the calendar, click Edit, mark each habit as done or missed or enter its number, then Save. Today and yesterday keep the one-click check-in, and streaks are recalculated after a correction.
+
+Weekly goals no longer count a habit twice on the days where two months overlap.
+
+Also in this update: iCloud sync recovers by itself instead of getting stuck, backup import and export are more reliable, and fixes to notifications and overall stability.

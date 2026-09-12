@@ -1,0 +1,5 @@
+Ora puoi modificare qualsiasi giorno passato. Apri un giorno nel calendario, fai clic su Modifica, segna ogni abitudine come completata o mancata oppure inserisci il numero, poi Salva. Oggi e ieri mantengono la spunta con un solo clic, e le serie vengono ricalcolate dopo una correzione.
+
+Gli obiettivi settimanali non contano più due volte un'abitudine nei giorni in cui due mesi si sovrappongono.
+
+Inoltre: la sincronizzazione iCloud si ripristina da sola invece di bloccarsi, importazione ed esportazione dei backup più affidabili, e correzioni a notifiche e stabilità generale.

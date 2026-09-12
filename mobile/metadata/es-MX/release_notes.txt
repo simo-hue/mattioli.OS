@@ -1,5 +1,5 @@
-Al eliminar un hábito ahora se conserva su historial. Desaparece de tus listas, pero sus días pasados y sus estadísticas se quedan exactamente donde estaban.
+Ahora puedes editar cualquier día pasado. Abre un día en el calendario, toca Editar, marca cada hábito como hecho o fallado o introduce su número y luego Guarda. Hoy y ayer conservan el registro con un solo toque, y las rachas se recalculan tras una corrección.
 
-Los recordatorios mantienen la hora que fijaste cuando cambia la hora.
+Los objetivos semanales ya no cuentan dos veces un hábito en los días en que dos meses se solapan.
 
-Además: fechas en la cabecera de Objetivos, una página de Resumen más clara y correcciones de sincronización, privacidad y estabilidad general.
+Además: la sincronización con iCloud se recupera sola en lugar de quedarse bloqueada, la importación y exportación de copias de seguridad son más fiables, y correcciones en las notificaciones y la estabilidad general.

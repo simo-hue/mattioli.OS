@@ -1,5 +1,5 @@
-Wenn du eine Gewohnheit entfernst, bleibt ihr Verlauf jetzt erhalten. Sie verschwindet aus deinen Listen, aber ihre vergangenen Tage und Statistiken bleiben genau dort, wo sie waren.
+Du kannst jetzt jeden vergangenen Tag bearbeiten. Öffne einen Tag im Kalender, tippe auf Bearbeiten, markiere jede Gewohnheit als erledigt oder verpasst oder gib ihre Zahl ein, und speichere. Heute und gestern behalten das Abhaken mit einem Tipp, und Serien werden nach einer Korrektur neu berechnet.
 
-Erinnerungen behalten die eingestellte Uhrzeit, auch wenn die Uhr umgestellt wird.
+Wochenziele zählen eine Gewohnheit an den Tagen, an denen sich zwei Monate überschneiden, nicht mehr doppelt.
 
-Außerdem: Datumsangaben in der Ziele-Kopfzeile, eine übersichtlichere Übersichtsseite und Korrekturen bei Synchronisierung, Datenschutz und Stabilität.
+Außerdem: Die iCloud-Synchronisierung erholt sich von selbst, statt hängen zu bleiben, Import und Export von Backups sind zuverlässiger, und Korrekturen bei Benachrichtigungen und Stabilität.

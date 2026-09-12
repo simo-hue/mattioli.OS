@@ -72,30 +72,35 @@ platform :mac do
     all_locales = (required_locales + existing_locales).uniq
     UI.message("Lingue da aggiornare: #{all_locales.join(', ')}")
     
-    translations = {
-      "it" => "Miglioramenti alla sicurezza e correzione di bug.",
-      "en" => "We've added dates to the Goals header, improved the Overview page, squashed sync and timezone bugs, and made several other stability enhancements.",
-      "fr" => "Améliorations de la sécurité et corrections de bugs.",
-      "vi" => "Cải tiến bảo mật và sửa lỗi.",
-      "ko" => "보안 강화 및 버그 수정.",
-      "es" => "Mejoras de seguridad y corrección de errores.",
-      "id" => "Peningkatan keamanan dan perbaikan bug.",
-      "de" => "Sicherheitsverbesserungen und Fehlerbehebungen.",
-      "sk" => "Vylepšenia zabezpečenia a opravy chýb.",
-      "sv" => "Säkerhetsförbättringar och buggfixar.",
-      "da" => "Sikkerhedsforbedringer og fejlrettelser.",
-      "pt" => "Melhorias de segurança e correção de bugs.",
-      "he" => "שיפורי אבטחה ותיקוני באגים.",
-      "el" => "Βελτιώσεις ασφαλείας και διορθώσεις σφαλμάτων.",
-      "zh" => "安全增强和错误修复。",
-      "ja" => "セキュリティの向上とバグ修正。",
-      "ru" => "Улучшения безопасности и исправление ошибок.",
-      "ar" => "تحسينات الأمان وإصلاح الأخطاء."
-    }
-    
+    # Read from fastlane/metadata/<locale>/release_notes.txt -- the SAME files
+    # `deliver` uploads in the `release` and `metadata` lanes.
+    #
+    # This used to be a hardcoded 18-language table, and it had drifted from
+    # what the app shipped: it still described 1.3.0 while the iOS lane had
+    # long since moved its notes into one source. Two trees holding two
+    # generations of the copy is the exact failure the iOS Fastfile's header
+    # documents, so the table is gone: one source, no hand copying.
+    metadata_path = File.expand_path('metadata', __dir__)
+    notes_for = lambda do |locale|
+      candidates = [locale]
+      # Any shipped locale of the same language (App Store Connect asks for
+      # en-CA; the tree may only carry en-US), then English.
+      language = locale.split('-').first
+      candidates += Dir.children(metadata_path)
+                       .select { |d| d.split('-').first == language }
+                       .sort
+      candidates << 'en-US'
+      path = candidates
+        .map { |code| File.join(metadata_path, code, 'release_notes.txt') }
+        .find { |file| File.exist?(file) }
+      UI.user_error!("No release_notes.txt for #{locale} and no en-US fallback") if path.nil?
+      # `encoding: 'UTF-8'` explicitly: the Arabic notes raise
+      # Encoding::InvalidByteSequenceError under a non-UTF-8 shell locale.
+      File.read(path, encoding: 'UTF-8').strip
+    end
+
     all_locales.each do |locale|
-      lang_code = locale.split('-').first
-      localized_whats_new = translations[lang_code] || translations["en"]
+      localized_whats_new = notes_for.call(locale)
       
       begin
         if existing_locales.include?(locale)

@@ -1,0 +1,5 @@
+Du kannst jetzt jeden vergangenen Tag bearbeiten. Öffne einen Tag im Kalender, klicke auf Bearbeiten, markiere jede Gewohnheit als erledigt oder verpasst oder gib ihre Zahl ein, und speichere. Heute und gestern behalten das Abhaken mit einem Klick, und Serien werden nach einer Korrektur neu berechnet.
+
+Wochenziele zählen eine Gewohnheit an den Tagen, an denen sich zwei Monate überschneiden, nicht mehr doppelt.
+
+Außerdem: Die iCloud-Synchronisierung erholt sich von selbst, statt hängen zu bleiben, Import und Export von Backups sind zuverlässiger, und Korrekturen bei Benachrichtigungen und Stabilität.

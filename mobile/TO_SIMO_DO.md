@@ -1,9 +1,11 @@
 # PROSSIME AZIONI MANUALI (SIMO)
 
-## ▶ 1.3.1 (build 50) — release steps
+## ▶ 1.4.0 (iOS build 51, macOS build 30) — release steps
 
-Version and metadata are done and committed. What is left needs your Apple
+Versions and metadata are done and committed. What is left needs your Apple
 account, so it cannot be run from here.
+
+### iOS
 
 1. **Archive and upload the build.** From `mobile/`:
 
@@ -11,7 +13,9 @@ account, so it cannot be run from here.
    flutter build ipa --release
    ```
 
-   Version comes from `pubspec.yaml` (`1.3.1+50`) — nothing else to edit.
+   Version comes from `pubspec.yaml` (`1.4.0+51`) — nothing else to edit.
+   Build 51 assumes build 50 was the last one App Store Connect saw; if ASC
+   rejects it as already used, raise the number in `pubspec.yaml` and rebuild.
 
 2. **Upload the metadata.** From `mobile/ios/`:
 
@@ -21,12 +25,12 @@ account, so it cannot be run from here.
 
    Validates all 39 localisations first and aborts on failure, so a partial
    upload cannot happen. Metadata only — no binary, no screenshots, never
-   auto-submits.
+   auto-submits. The release notes go up with it: localized in the five
+   languages the app speaks (en-US/GB/AU/CA, it, es-ES/MX, de-DE, ar-SA), the
+   other 30 in English, all rendered from `tool/appstore/locales.json`.
 
-3. **Release notes are already in `metadata/`** and go up with step 2. The
-   separate `fastlane update_notes` lane now reads the same `locales.json`, so
-   the two can no longer disagree — but you only need it if you are editing
-   notes on a version already created in App Store Connect.
+3. `fastlane update_notes` is only needed if you edit the notes on a version
+   already created in App Store Connect — it reads the same `locales.json`.
 
 4. **Verify the storefronts afterwards**, as before:
 
@@ -39,8 +43,15 @@ account, so it cannot be run from here.
 5. **Do NOT add demo account fields in App Store Connect.** `demo_user.txt` and
    `demo_password.txt` stay deleted — see the note further down for why.
 
-Note the live listing is **1.1.3**, not 1.3.0: users are upgrading across two
-versions, which is why the notes cover 1.3.0's changes too.
+### macOS
+
+The steps are in `desktop/TO_SIMO_DO.md`. Version `1.4.0+30` in
+`desktop/pubspec.yaml`; the notes are `macos/fastlane/metadata/<locale>/release_notes.txt`.
+
+What is in this release (both apps): edit any past day in the calendar through
+Edit → Save, the month-boundary week fix for weekly goals, and the 52 audit
+fixes from 2026-09-03 (iCloud change-token recovery, avatar sync, import/export
+pagination and natural-key matching, notifications, stability).
 
 ---
 

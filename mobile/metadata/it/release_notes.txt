@@ -1,5 +1,5 @@
-Rimuovere un'abitudine ora ne conserva lo storico. Sparisce dai tuoi elenchi, ma i giorni passati e le statistiche restano esattamente dov'erano.
+Ora puoi modificare qualsiasi giorno passato. Apri un giorno nel calendario, tocca Modifica, segna ogni abitudine come completata o mancata oppure inserisci il numero, poi Salva. Oggi e ieri mantengono la spunta con un solo tocco, e le serie vengono ricalcolate dopo una correzione.
 
-I promemoria mantengono l'orario che hai impostato anche quando cambia l'ora.
+Gli obiettivi settimanali non contano più due volte un'abitudine nei giorni in cui due mesi si sovrappongono.
 
-Inoltre: le date nell'intestazione degli Obiettivi, una pagina Panoramica più chiara e correzioni a sincronizzazione, privacy e stabilità generale.
+Inoltre: la sincronizzazione iCloud si ripristina da sola invece di bloccarsi, importazione ed esportazione dei backup più affidabili, e correzioni a notifiche e stabilità generale.

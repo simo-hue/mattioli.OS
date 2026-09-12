@@ -28,6 +28,8 @@ import 'package:mattioli_os/models/goal.dart';
 import 'package:mattioli_os/providers/goal_provider.dart';
 import 'package:mattioli_os/providers/shared_prefs_provider.dart';
 import 'package:mattioli_os/ui/widgets/day_details_modal.dart';
+import 'package:mattioli_os/ui/widgets/target_entry_sheet.dart';
+import 'package:evolve_targets/evolve_targets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'support/fake_private_data_store.dart';
 
@@ -106,11 +108,12 @@ void main() {
   final today = DateTime(now.year, now.month, now.day);
   final oldDay = shiftDays(today, -10);
 
-  Goal habit(String id, String title) => Goal(
+  Goal habit(String id, String title, {HabitTarget? target}) => Goal(
         id: id,
         title: title,
         color: const Color(0xFF3B82F6),
         startDate: DateTime(2020, 1, 1),
+        target: target,
       );
 
   // `tester.pump`, never `Future.delayed`: a widget test runs under FakeAsync,
@@ -349,6 +352,53 @@ void main() {
     // The failed write is logged, and the logger persists its buffer on a
     // debounce timer; let it fire so the test ends with no timer pending.
     await tester.pump(const Duration(seconds: 3));
+  });
+
+  testWidgets('a quantitative habit: in edit mode the entry sheet runs in '
+      'draft mode and the number is written only on Save', (tester) async {
+    final target =
+        TargetPresetCatalog.countDaily.targetWith(amount: 80, step: 20);
+    final store = _SeededStore({});
+    final c = await container(
+      tester,
+      store,
+      goals: [habit('g1', 'Push-ups', target: target)],
+    );
+    await pumpSheet(tester, c, oldDay);
+    await tester.tap(find.byIcon(LucideIcons.pencil));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Push-ups'));
+    await tester.pumpAndSettle();
+    final sheet = tester.widget<TargetEntrySheet>(find.byType(TargetEntrySheet));
+    expect(sheet.onChanged, isNotNull, reason: 'draft mode, not live');
+
+    // Two steps of 20, then close the sheet: nothing reached the store, the
+    // card previews 40 and Save is enabled.
+    await tester.tap(find.byIcon(LucideIcons.plus));
+    await tester.pump();
+    await tester.tap(find.byIcon(LucideIcons.plus));
+    await tester.pump();
+    Navigator.of(tester.element(find.byType(TargetEntrySheet))).pop();
+    await tester.pumpAndSettle();
+    expect(store.calls.where((c) => c == 'setHabitProgress'), isEmpty);
+    expect(store.logWrites, isEmpty);
+    expect(find.text('40 / 80'), findsOneWidget);
+    expect(tester.widget<CupertinoButton>(savePill()).onPressed, isNotNull);
+
+    await tester.tap(savePill());
+    await tester.pumpAndSettle();
+
+    expect(store.calls.where((c) => c == 'setHabitProgress'), hasLength(1));
+    expect(c.read(habitProgressProvider)[_key(oldDay)]?['g1'], 40);
+    // 40 of 80 on a closed day: the verdict the number derives is a miss, and
+    // the forward streak repair ran for the habit.
+    expect(c.read(habitLogsProvider)[_key(oldDay)]?['g1'], 'missed');
+    expect(store.streakRecomputes, [
+      {'g1'},
+    ]);
+    expect(find.text('Changes saved'), findsOneWidget);
+    expect(find.byIcon(LucideIcons.pencil), findsOneWidget);
   });
 
   testWidgets('today is a quick-log day: the tap writes at once and there is '

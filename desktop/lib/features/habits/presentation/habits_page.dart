@@ -5,6 +5,7 @@ import 'package:evolve_desktop/core/clock.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/core/performance_color.dart';
+import 'package:evolve_desktop/core/streak_utils.dart';
 import 'package:evolve_desktop/core/targets_config.dart';
 import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
@@ -2164,9 +2165,15 @@ class _DayDetailsDialogState extends ConsumerState<_DayDetailsDialog> {
   /// and cycling a row back to where it started un-stages it.
   final Map<String, String?> _staged = <String, String?>{};
 
+  /// A quantitative habit's staged NUMBER, by habit id — entered through the
+  /// entry dialog in draft mode and written on Save like the rows above. Kept
+  /// apart from [_staged] because it is a different write: the verdict is
+  /// derived from the number, never set by hand.
+  final Map<String, double> _stagedProgress = <String, double>{};
+
   bool _saving = false;
 
-  bool get _dirty => _staged.isNotEmpty;
+  bool get _dirty => _staged.isNotEmpty || _stagedProgress.isNotEmpty;
 
   void _stage(String habitId, String? persisted, String? next) {
     setState(() {
@@ -2178,11 +2185,22 @@ class _DayDetailsDialogState extends ConsumerState<_DayDetailsDialog> {
     });
   }
 
+  void _stageProgress(String habitId, double persisted, double amount) {
+    setState(() {
+      if (amount == persisted) {
+        _stagedProgress.remove(habitId);
+      } else {
+        _stagedProgress[habitId] = amount;
+      }
+    });
+  }
+
   /// Cancel is the explicit choice: it leaves edit mode and drops the staging
   /// without asking. The X, Escape and the barrier go through [_requestClose].
   void _cancelEditing() {
     setState(() {
       _staged.clear();
+      _stagedProgress.clear();
       _editing = false;
     });
   }
@@ -2233,10 +2251,17 @@ class _DayDetailsDialogState extends ConsumerState<_DayDetailsDialog> {
       await controller.setHabitStatusForDay(entry.key, date, entry.value);
       saved.add(entry.key);
     }
+    for (final entry in _stagedProgress.entries.toList()) {
+      // Derives and writes the day's verdict from the number, as a live edit
+      // would.
+      await controller.setHabitProgressForDay(entry.key, date, entry.value);
+      saved.add(entry.key);
+    }
     await controller.recomputeStreaksForHabits(saved);
     if (!mounted) return;
     setState(() {
       _staged.clear();
+      _stagedProgress.clear();
       _saving = false;
       _editing = false;
     });
@@ -2254,6 +2279,8 @@ class _DayDetailsDialogState extends ConsumerState<_DayDetailsDialog> {
     // Build-time only for the chrome (hint, Edit button); every click re-asks
     // the clock. See [_isQuickLogDay].
     final quickLog = _isQuickLogDay(date);
+    final habits = snapshot.habitsFor(date);
+    final effectiveLogs = _effectiveLogs(snapshot, habits);
     return PopScope(
       canPop: !(_editing && _dirty),
       onPopInvokedWithResult: (didPop, _) {
@@ -2274,7 +2301,7 @@ class _DayDetailsDialogState extends ConsumerState<_DayDetailsDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (!quickLog && !_editing)
+            if (!quickLog && !_editing && habits.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Row(
@@ -2298,8 +2325,14 @@ class _DayDetailsDialogState extends ConsumerState<_DayDetailsDialog> {
                   ],
                 ),
               ),
-            for (final habit in snapshot.habitsFor(date))
-              _row(habit, snapshot, controller, quickLog: quickLog),
+            for (final habit in habits)
+              _row(
+                habit,
+                snapshot,
+                controller,
+                quickLog: quickLog,
+                effectiveLogs: effectiveLogs,
+              ),
           ],
         ),
         actions: _editing
@@ -2314,7 +2347,9 @@ class _DayDetailsDialogState extends ConsumerState<_DayDetailsDialog> {
                 ),
               ]
             : [
-                if (!quickLog)
+                // Nothing to enter on a quick-log day (the squares write
+                // directly) or on a day with no scheduled habit.
+                if (!quickLog && habits.isNotEmpty)
                   TextButton(
                     onPressed: () => setState(() => _editing = true),
                     child: Text(t.common.actions.edit),
@@ -2328,35 +2363,86 @@ class _DayDetailsDialogState extends ConsumerState<_DayDetailsDialog> {
     );
   }
 
+  /// A MANUAL target, or null: the square becomes a progress ring and the
+  /// entry dialog owns the number. Same rule as the Protocol table; a measured
+  /// rule keeps the square (its value lives in goal_logs.value, so its ring
+  /// would read empty).
+  HabitTarget? _manualTarget(DashboardHabit habit) =>
+      DesktopTargetsConfig.enabled && (habit.target?.isUserEnterable ?? false)
+          ? habit.target
+          : null;
+
+  TargetVerdict _verdictFor(HabitTarget target, double amount) =>
+      evaluateTarget(
+        target: target,
+        progress: amount,
+        periodIsOver: periodIsOver(target.period, date, DateTime.now()),
+      );
+
+  /// The snapshot's logs with this day's staged rows overlaid — a plain row's
+  /// staged status, a quantitative row's verdict derived from its staged
+  /// number — so every row previews the streak it will have once saved rather
+  /// than the one it has now.
+  Map<String, Map<String, String>> _effectiveLogs(
+    DashboardSnapshot snapshot,
+    List<DashboardHabit> habits,
+  ) {
+    if (!_dirty) return snapshot.habitLogs;
+    final dateKey = dashboardDateKey(date);
+    final day = Map<String, String>.from(snapshot.habitLogs[dateKey] ?? {});
+    for (final habit in habits) {
+      final String? status;
+      if (_staged.containsKey(habit.id)) {
+        status = _staged[habit.id];
+      } else if (_stagedProgress.containsKey(habit.id)) {
+        final target = _manualTarget(habit);
+        if (target == null) continue;
+        status = _verdictFor(target, _stagedProgress[habit.id]!).logStatus;
+      } else {
+        continue;
+      }
+      if (status == null) {
+        day.remove(habit.id);
+      } else {
+        day[habit.id] = status;
+      }
+    }
+    return {...snapshot.habitLogs, dateKey: day};
+  }
+
   Widget _row(
     DashboardHabit habit,
     DashboardSnapshot snapshot,
     DashboardController controller, {
     required bool quickLog,
+    required Map<String, Map<String, String>> effectiveLogs,
   }) {
     final persisted = snapshot.resolvedHabitStatus(habit, date);
     final isStaged = _staged.containsKey(habit.id);
-    // What the row SHOWS: the staged value while it has one, the persisted
-    // one otherwise.
-    final status = isStaged ? _staged[habit.id] : persisted;
 
-    // A MANUAL target: the square becomes a progress ring that opens the entry
-    // dialog for THIS day — the dialog commits on its own, so edit mode is the
-    // gate and nothing of it is staged. Same rule as the Protocol table; a
-    // measured rule keeps the square (its value lives in goal_logs.value, so
-    // its ring would read empty).
-    final target = DesktopTargetsConfig.enabled &&
-            (habit.target?.isUserEnterable ?? false)
-        ? habit.target
-        : null;
-    final progressAmount = snapshot.habitProgressFor(habit.id, date) ?? 0;
-    final verdict = target == null
-        ? null
-        : evaluateTarget(
-            target: target,
-            progress: progressAmount,
-            periodIsOver: periodIsOver(target.period, date, DateTime.now()),
-          );
+    final target = _manualTarget(habit);
+    final persistedAmount = snapshot.habitProgressFor(habit.id, date) ?? 0;
+    final stagedAmount = _stagedProgress[habit.id];
+    final progressAmount = stagedAmount ?? persistedAmount;
+    final verdict = target == null ? null : _verdictFor(target, progressAmount);
+
+    // What the row SHOWS: a staged status while it has one; for a staged
+    // number, the verdict that number derives; the persisted status otherwise.
+    final status = stagedAmount != null && verdict != null
+        ? verdict.logStatus
+        : isStaged
+            ? _staged[habit.id]
+            : persisted;
+
+    // The streak AS OF THIS DAY over the (staged) history — what the mobile
+    // card shows — not the habit's headline run, which is about today.
+    final streak = computeStreak(
+      habitId: habit.id,
+      date: date,
+      logs: effectiveLogs,
+      startDate: habit.startDate ?? date,
+      frequencyDays: habit.frequencyDays,
+    );
 
     final VoidCallback? onToggle;
     if (habit.verificationRule != null) {
@@ -2367,14 +2453,29 @@ class _DayDetailsDialogState extends ConsumerState<_DayDetailsDialog> {
       // does not promise what it cannot do.
       onToggle = null;
     } else if (target != null) {
-      onToggle = quickLog || _editing
-          ? () => TargetEntryDialog.show(
-                context,
-                habit: habit,
-                target: target,
-                date: date,
-              )
-          : null;
+      if (quickLog) {
+        // Live, as the Protocol table does it.
+        onToggle = () => TargetEntryDialog.show(
+              context,
+              habit: habit,
+              target: target,
+              date: date,
+            );
+      } else if (_editing) {
+        // Draft: the dialog reports each step and the number is staged with
+        // the rest of the day, written on Save.
+        onToggle = () => TargetEntryDialog.show(
+              context,
+              habit: habit,
+              target: target,
+              date: date,
+              initialAmount: progressAmount,
+              onChanged: (amount) =>
+                  _stageProgress(habit.id, persistedAmount, amount),
+            );
+      } else {
+        onToggle = null;
+      }
     } else if (quickLog) {
       onToggle = () => controller.toggleHabitForDay(habit.id, date);
     } else if (_editing) {
@@ -2390,7 +2491,7 @@ class _DayDetailsDialogState extends ConsumerState<_DayDetailsDialog> {
     return _DayHabitRow(
       title: habit.title,
       color: habit.color,
-      streak: habit.streak,
+      streak: streak,
       done: status == 'done',
       missed: status == 'missed',
       verificationLine: habit.verificationRule == null

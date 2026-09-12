@@ -67,9 +67,25 @@ class _DayDetailsModalState extends ConsumerState<DayDetailsModal> {
   /// and cycling a row back to where it started un-stages it.
   final Map<String, String?> _staged = <String, String?>{};
 
+  /// A quantitative habit's staged NUMBER, by habit id — entered through the
+  /// entry sheet in draft mode and written on Save like the rows above. Kept
+  /// apart from [_staged] because it is a different write: the verdict is
+  /// derived from the number, never set by hand.
+  final Map<String, double> _stagedProgress = <String, double>{};
+
   bool _saving = false;
 
-  bool get _dirty => _staged.isNotEmpty;
+  bool get _dirty => _staged.isNotEmpty || _stagedProgress.isNotEmpty;
+
+  String _logDateKey(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  TargetVerdict _verdictFor(HabitTarget target, double amount) =>
+      evaluateTarget(
+        target: target,
+        progress: amount,
+        periodIsOver: periodIsOver(target.period, date, DateTime.now()),
+      );
 
   /// Enters edit mode. A rebuild alone is enough: the cards read [_staged] and
   /// the header swaps the pencil for Save.
@@ -100,6 +116,16 @@ class _DayDetailsModalState extends ConsumerState<DayDetailsModal> {
         _staged.remove(habitId);
       } else {
         _staged[habitId] = next;
+      }
+    });
+  }
+
+  void _stageProgress(String habitId, double persisted, double amount) {
+    setState(() {
+      if (amount == persisted) {
+        _stagedProgress.remove(habitId);
+      } else {
+        _stagedProgress[habitId] = amount;
       }
     });
   }
@@ -146,6 +172,28 @@ class _DayDetailsModalState extends ConsumerState<DayDetailsModal> {
         break;
       }
       saved.add(entry.key);
+    }
+    if (!failed) {
+      final dateKey = _logDateKey(date);
+      final targets = {
+        for (final h in habits)
+          if (_stagedProgress.containsKey(h.id) && h.target != null)
+            h.id: h.target!,
+      };
+      for (final entry in _stagedProgress.entries.toList()) {
+        final target = targets[entry.key];
+        if (target == null) continue;
+        // Derives and writes the day's verdict from the number, as a live edit
+        // would; the notifier owns its own rollback and error dialog.
+        await ref.read(habitProgressProvider.notifier).setProgress(
+              dateKey: dateKey,
+              goalId: entry.key,
+              amount: entry.value,
+              target: target,
+            );
+        saved.add(entry.key);
+      }
+      _stagedProgress.clear();
     }
     if (saved.isNotEmpty) {
       // The single-day write cannot fix the rows AFTER an edited day; see
@@ -202,18 +250,31 @@ class _DayDetailsModalState extends ConsumerState<DayDetailsModal> {
     // the clock. See [_isQuickLogDay].
     final quickLog = _isQuickLogDay(date);
 
-    // The day's logs with the staged rows overlaid, so a card previews the
-    // streak it will have once saved rather than the one it has now.
+    // The day's logs with the staged rows overlaid — a plain card's staged
+    // status, a quantitative card's verdict derived from its staged number —
+    // so a card previews the streak it will have once saved rather than the
+    // one it has now.
     final effectiveDay = Map<String, String>.from(dayRecord);
-    for (final entry in _staged.entries) {
-      if (entry.value == null) {
-        effectiveDay.remove(entry.key);
+    void overlay(String habitId, String? status) {
+      if (status == null) {
+        effectiveDay.remove(habitId);
       } else {
-        effectiveDay[entry.key] = entry.value!;
+        effectiveDay[habitId] = status;
       }
     }
+    for (final entry in _staged.entries) {
+      overlay(entry.key, entry.value);
+    }
+    for (final entry in _stagedProgress.entries) {
+      final target = habits
+          .where((h) => h.id == entry.key)
+          .firstOrNull
+          ?.target;
+      if (target == null) continue;
+      overlay(entry.key, _verdictFor(target, entry.value).logStatus);
+    }
     final HabitLogsMap effectiveLogs =
-        _staged.isEmpty ? logs : {...logs, dateKey: effectiveDay};
+        _dirty ? {...logs, dateKey: effectiveDay} : logs;
 
     return PopScope(
       canPop: !(_editing && _dirty),
@@ -274,9 +335,9 @@ class _DayDetailsModalState extends ConsumerState<DayDetailsModal> {
                     ),
                   ),
                   // The way into a past day, beside the way out. On a quick-log
-                  // day the cards already write directly, so there is nothing
-                  // to enter.
-                  if (!quickLog)
+                  // day the cards already write directly, and on a day with no
+                  // scheduled habit there is nothing to enter.
+                  if (!quickLog && activeHabits.isNotEmpty)
                     _editing
                         ? _SavePill(
                             label: context.t.common.actions.save,
@@ -360,18 +421,7 @@ class _DayDetailsModalState extends ConsumerState<DayDetailsModal> {
                           final habit = activeHabits[index];
                           final persisted = dayRecord[habit.id];
                           final isStaged = _staged.containsKey(habit.id);
-                          // What the card SHOWS: the staged value while it has
-                          // one, the persisted one otherwise.
-                          final status =
-                              isStaged ? _staged[habit.id] : persisted;
-                          // An unresolved auto-verification for this habit-day:
-                          // no terminal status yet + a couldn't-verify marker.
-                          final couldNotVerify =
-                              status == null &&
-                              (couldNotVerifyByGoal[habit.id]?.contains(
-                                    dateMidnight,
-                                  ) ??
-                                  false);
+                          final stagedAmount = _stagedProgress[habit.id];
 
                           // A MANUAL quantitative target: the card shows a
                           // progress ring and opens the entry sheet instead of
@@ -385,19 +435,30 @@ class _DayDetailsModalState extends ConsumerState<DayDetailsModal> {
                                   (habit.target?.isUserEnterable ?? false)
                               ? habit.target
                               : null;
-                          final progressAmount =
+                          final persistedAmount =
                               (progress[dateKey]?[habit.id] as double?) ?? 0;
+                          final progressAmount =
+                              stagedAmount ?? persistedAmount;
                           final TargetVerdict? verdict = target == null
                               ? null
-                              : evaluateTarget(
-                                  target: target,
-                                  progress: progressAmount,
-                                  periodIsOver: periodIsOver(
-                                    target.period,
-                                    date,
-                                    DateTime.now(),
-                                  ),
-                                );
+                              : _verdictFor(target, progressAmount);
+                          // What the card SHOWS: a staged status while it has
+                          // one; for a staged number, the verdict that number
+                          // derives; the persisted status otherwise.
+                          final status =
+                              stagedAmount != null && verdict != null
+                                  ? verdict.logStatus
+                                  : isStaged
+                                      ? _staged[habit.id]
+                                      : persisted;
+                          // An unresolved auto-verification for this habit-day:
+                          // no terminal status yet + a couldn't-verify marker.
+                          final couldNotVerify =
+                              status == null &&
+                              (couldNotVerifyByGoal[habit.id]?.contains(
+                                    dateMidnight,
+                                  ) ??
+                                  false);
 
                           // Signed streak via the shared, deterministic helper
                           // (same logic as cloud + Private Mode + the web app),
@@ -481,10 +542,10 @@ class _DayDetailsModalState extends ConsumerState<DayDetailsModal> {
                               }
 
                               // A user-enterable target opens the progress
-                              // entry sheet (increment / timer), which commits
-                              // on its own — it is already an explicit action
-                              // with its own controls, so edit mode is the gate
-                              // and nothing of it is staged. A measured
+                              // entry sheet (increment / timer). On a quick-log
+                              // day it commits live; in edit mode it runs in
+                              // draft mode and the number is staged with the
+                              // rest of the day, written on Save. A measured
                               // target's ring is filled by the verification
                               // pipeline, so it falls through to the normal
                               // resolve/toggle path.
@@ -494,6 +555,15 @@ class _DayDetailsModalState extends ConsumerState<DayDetailsModal> {
                                   habit: habit,
                                   target: target,
                                   date: date,
+                                  initialAmount:
+                                      quickLog ? null : progressAmount,
+                                  onChanged: quickLog
+                                      ? null
+                                      : (amount) => _stageProgress(
+                                            habit.id,
+                                            persistedAmount,
+                                            amount,
+                                          ),
                                 );
                                 return;
                               }

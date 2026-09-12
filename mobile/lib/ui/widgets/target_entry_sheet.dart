@@ -17,32 +17,76 @@ import 'target_ring.dart';
 /// the day's verdict), so the sheet holds no draft state to commit — closing it
 /// is not a save.
 ///
+/// With [onChanged] set the sheet is in DRAFT mode instead: it edits a number
+/// it holds itself, seeded from [initialAmount], and reports each step to the
+/// caller rather than persisting it. The day sheet's edit mode opens it this
+/// way so a past day's number is staged like its cards and written only on
+/// Save — the one Save that used to stay disabled after a number changed,
+/// because the number had already been written.
+///
 /// The stepper carries real accessibility semantics (`onIncrease`/`onDecrease` +
 /// a spoken value), unlike the day-card it is opened from, whose
 /// `excludeSemantics: true` would swallow a nested control.
-class TargetEntrySheet extends ConsumerWidget {
+class TargetEntrySheet extends ConsumerStatefulWidget {
   const TargetEntrySheet({
     super.key,
     required this.habit,
     required this.target,
     required this.date,
+    this.initialAmount,
+    this.onChanged,
   });
 
   final Goal habit;
   final HabitTarget target;
   final DateTime date;
 
+  /// Draft mode's starting number; ignored when [onChanged] is null.
+  final double? initialAmount;
+
+  /// Draft mode: receives every step instead of the notifier. Null (the
+  /// default) persists live.
+  final ValueChanged<double>? onChanged;
+
   static Future<void> show(
     BuildContext context, {
     required Goal habit,
     required HabitTarget target,
     required DateTime date,
+    double? initialAmount,
+    ValueChanged<double>? onChanged,
   }) {
     return showEvolveFormSheet<void>(
       context: context,
       title: habit.title,
-      builder: (_) => TargetEntrySheet(habit: habit, target: target, date: date),
+      builder: (_) => TargetEntrySheet(
+        habit: habit,
+        target: target,
+        date: date,
+        initialAmount: initialAmount,
+        onChanged: onChanged,
+      ),
     );
+  }
+
+  @override
+  ConsumerState<TargetEntrySheet> createState() => _TargetEntrySheetState();
+}
+
+class _TargetEntrySheetState extends ConsumerState<TargetEntrySheet> {
+  Goal get habit => widget.habit;
+  HabitTarget get target => widget.target;
+  DateTime get date => widget.date;
+
+  bool get _draftMode => widget.onChanged != null;
+
+  /// The number in draft mode. Never read outside it.
+  double _draft = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _draft = widget.initialAmount ?? 0;
   }
 
   String get _dateKey =>
@@ -50,6 +94,11 @@ class TargetEntrySheet extends ConsumerWidget {
 
   Future<void> _set(WidgetRef ref, double amount) async {
     ref.hapticLight();
+    if (_draftMode) {
+      setState(() => _draft = amount);
+      widget.onChanged!(amount);
+      return;
+    }
     await ref.read(habitProgressProvider.notifier).setProgress(
           dateKey: _dateKey,
           goalId: habit.id,
@@ -59,9 +108,11 @@ class TargetEntrySheet extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final colors = context.appColors;
-    final progress = ref.watch(habitProgressProvider)[_dateKey]?[habit.id] ?? 0;
+    final progress = _draftMode
+        ? _draft
+        : ref.watch(habitProgressProvider)[_dateKey]?[habit.id] ?? 0;
     final over = periodIsOver(target.period, date, DateTime.now());
     final verdict =
         evaluateTarget(target: target, progress: progress, periodIsOver: over);

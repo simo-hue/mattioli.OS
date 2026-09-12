@@ -14,6 +14,13 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 /// and a −/+ stepper that persists each change live via
 /// `DashboardController.setHabitProgressForDay` (which re-derives the verdict).
 ///
+/// With [onChanged] set the dialog is in DRAFT mode instead: it edits a number
+/// it holds itself, seeded from [initialAmount], and reports each step to the
+/// caller rather than persisting it. The day-detail dialog's edit mode opens
+/// it this way so a past day's number is staged like its check-boxes and
+/// written only on Save — the one Save that used to stay disabled after a
+/// number changed, because the number had already been written.
+///
 /// Keyboard-first, as desktop should be: ↑/+ increment, ↓/− decrement. Those
 /// keys do NOT collide with the habit pages' ←/→ period paging (which is what
 /// the recon flagged), and the dialog captures focus so the stepper owns them
@@ -25,22 +32,38 @@ class TargetEntryDialog extends ConsumerStatefulWidget {
     required this.habit,
     required this.target,
     required this.date,
+    this.initialAmount,
+    this.onChanged,
   });
 
   final DashboardHabit habit;
   final HabitTarget target;
   final DateTime date;
 
+  /// Draft mode's starting number; ignored when [onChanged] is null.
+  final double? initialAmount;
+
+  /// Draft mode: receives every step instead of the controller. Null (the
+  /// default) persists live.
+  final ValueChanged<double>? onChanged;
+
   static Future<void> show(
     BuildContext context, {
     required DashboardHabit habit,
     required HabitTarget target,
     required DateTime date,
+    double? initialAmount,
+    ValueChanged<double>? onChanged,
   }) {
     return showEvolveDialog<void>(
       context: context,
-      builder: (_) =>
-          TargetEntryDialog(habit: habit, target: target, date: date),
+      builder: (_) => TargetEntryDialog(
+        habit: habit,
+        target: target,
+        date: date,
+        initialAmount: initialAmount,
+        onChanged: onChanged,
+      ),
     );
   }
 
@@ -51,9 +74,15 @@ class TargetEntryDialog extends ConsumerStatefulWidget {
 class _TargetEntryDialogState extends ConsumerState<TargetEntryDialog> {
   final _focus = FocusNode();
 
+  bool get _draftMode => widget.onChanged != null;
+
+  /// The number in draft mode. Never read outside it.
+  double _draft = 0;
+
   @override
   void initState() {
     super.initState();
+    _draft = widget.initialAmount ?? 0;
     _focus.requestFocus();
   }
 
@@ -63,16 +92,24 @@ class _TargetEntryDialogState extends ConsumerState<TargetEntryDialog> {
     super.dispose();
   }
 
-  double get _progress =>
-      ref.read(dashboardControllerProvider).habitProgressFor(
-            widget.habit.id,
-            widget.date,
-          ) ??
-      0;
+  double get _progress => _draftMode
+      ? _draft
+      : ref.read(dashboardControllerProvider).habitProgressFor(
+                widget.habit.id,
+                widget.date,
+              ) ??
+          0;
 
-  Future<void> _set(double amount) => ref
-      .read(dashboardControllerProvider.notifier)
-      .setHabitProgressForDay(widget.habit.id, widget.date, amount);
+  Future<void> _set(double amount) {
+    if (_draftMode) {
+      setState(() => _draft = amount);
+      widget.onChanged!(amount);
+      return Future<void>.value();
+    }
+    return ref
+        .read(dashboardControllerProvider.notifier)
+        .setHabitProgressForDay(widget.habit.id, widget.date, amount);
+  }
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
@@ -97,8 +134,10 @@ class _TargetEntryDialogState extends ConsumerState<TargetEntryDialog> {
   @override
   Widget build(BuildContext context) {
     final colors = context.evolveColors;
-    final progress = ref.watch(dashboardControllerProvider
-        .select((s) => s.habitProgressFor(widget.habit.id, widget.date) ?? 0));
+    final progress = _draftMode
+        ? _draft
+        : ref.watch(dashboardControllerProvider.select(
+            (s) => s.habitProgressFor(widget.habit.id, widget.date) ?? 0));
     final over = periodIsOver(widget.target.period, widget.date, DateTime.now());
     final verdict = evaluateTarget(
         target: widget.target, progress: progress, periodIsOver: over);

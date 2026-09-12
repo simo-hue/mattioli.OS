@@ -39,6 +39,8 @@ class _RecordingRepository extends DashboardRepository {
   DashboardSnapshot _snapshot;
   final List<({String habitId, String date, String? landed})> statusWrites =
       [];
+  final List<({String habitId, String date, double amount, String? status})>
+      progressWrites = [];
   final List<Set<String>> recomputes = [];
 
   @override
@@ -67,6 +69,23 @@ class _RecordingRepository extends DashboardRepository {
       (habitId: habitId, date: dashboardDateKey(date), landed: landed),
     );
     return landed;
+  }
+
+  @override
+  Future<void> setHabitProgress({
+    required String habitId,
+    required DateTime date,
+    required double amount,
+    required String? derivedStatus,
+    required int streak,
+    bool verdictOnly = false,
+  }) async {
+    progressWrites.add((
+      habitId: habitId,
+      date: dashboardDateKey(date),
+      amount: amount,
+      status: derivedStatus,
+    ));
   }
 
   @override
@@ -329,11 +348,12 @@ void main() {
     );
   });
 
-  testWidgets('a quantitative habit is inert in view mode and opens the entry '
-      'dialog for THAT day in edit mode (D2)', (tester) async {
+  testWidgets('a quantitative habit is inert in view mode; in edit mode its '
+      'number is staged in the entry dialog and written on Save (D2)',
+      (tester) async {
     final target =
         TargetPresetCatalog.countDaily.targetWith(amount: 80, step: 20);
-    final (_, repo) = await open(
+    final (container, repo) = await open(
       tester,
       snapshot([habit('Push-ups', target: target)]),
       oldDay,
@@ -356,8 +376,88 @@ void main() {
     );
     expect(entry.date, oldDay,
         reason: 'the number belongs to the day on screen, not to today');
-    expect(repo.statusWrites, isEmpty,
-        reason: 'the entry dialog commits on its own; nothing is staged');
+    expect(entry.onChanged, isNotNull, reason: 'draft mode, not live');
+
+    // Two steps of 20, then Done: nothing has reached the repository, the row
+    // previews the number and Save is enabled — the button that used to stay
+    // grey because the number had already been written behind it.
+    await tester.tap(find.byIcon(LucideIcons.plus));
+    await tester.pump();
+    await tester.tap(find.byIcon(LucideIcons.plus));
+    await tester.pump();
+    expect(find.text('40'), findsOneWidget);
+    await tester.tap(find.widgetWithText(TextButton, 'Done'));
+    await tester.pumpAndSettle();
+    expect(find.byType(TargetEntryDialog), findsNothing);
+    expect(repo.progressWrites, isEmpty);
+    expect(container.read(dashboardControllerProvider)
+        .habitProgressFor('Push-ups', oldDay), isNull);
+    expect(tester.widget<FilledButton>(saveButton()).onPressed, isNotNull);
+
+    await tester.tap(saveButton());
+    await tester.pumpAndSettle();
+
+    expect(repo.progressWrites, hasLength(1));
+    expect(repo.progressWrites.single.date, oldKey);
+    expect(repo.progressWrites.single.amount, 40);
+    // 40 of 80 on a closed day: the verdict the number derives is a miss.
+    expect(repo.progressWrites.single.status, 'missed');
+    expect(container.read(dashboardControllerProvider)
+        .habitProgressFor('Push-ups', oldDay), 40);
+    expect(repo.recomputes, [
+      {'Push-ups'},
+    ]);
+    expect(find.text('Changes saved'), findsOneWidget);
+    expect(editButton(), findsOneWidget);
+  });
+
+  testWidgets('a staged number stepped back to the persisted one un-stages it',
+      (tester) async {
+    final target =
+        TargetPresetCatalog.countDaily.targetWith(amount: 80, step: 20);
+    final (_, repo) = await open(
+      tester,
+      snapshot([habit('Push-ups', target: target)]),
+      oldDay,
+    );
+    await tester.tap(editButton());
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(TargetRing));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(LucideIcons.plus));
+    await tester.pump();
+    await tester.tap(find.byIcon(LucideIcons.minus));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(TextButton, 'Done'));
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<FilledButton>(saveButton()).onPressed, isNull,
+        reason: 'the number reads exactly as persisted again');
+    expect(repo.progressWrites, isEmpty);
+  });
+
+  testWidgets('the streak badge is the streak as of THAT day, previewing the '
+      'staged history', (tester) async {
+    // Three consecutive done days ending on the old day; the day itself is
+    // the third, so its badge reads 3 — not the habit\'s headline run.
+    final (_, _) = await open(
+      tester,
+      snapshot([habit('Read')], logs: {
+        dashboardDateKey(shiftDays(oldDay, -2)): {'Read': 'done'},
+        dashboardDateKey(shiftDays(oldDay, -1)): {'Read': 'done'},
+        oldKey: {'Read': 'done'},
+      }),
+      oldDay,
+    );
+    expect(find.text('3'), findsOneWidget);
+
+    // Staging a miss on the day previews the run it breaks: a lone miss is -1.
+    await tester.tap(editButton());
+    await tester.pumpAndSettle();
+    await tester.tap(doneSquare());
+    await tester.pumpAndSettle();
+    expect(find.text('-1'), findsOneWidget);
+    expect(find.text('3'), findsNothing);
   });
 
   testWidgets('a verified habit stays read-only in edit mode', (tester) async {

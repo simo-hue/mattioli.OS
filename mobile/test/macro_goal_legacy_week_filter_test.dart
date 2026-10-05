@@ -1,8 +1,3 @@
-// The legacy-address read path: a goal stored under `week_number = 5` — written
-// by every client shipped before the week merge, and still written by any that
-// has not updated — must surface under the bucket that actually contains it,
-// the NEXT month's week 1. There is deliberately no migration, so this is the
-// only thing keeping those goals visible.
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -19,16 +14,11 @@ MacroGoal _weekly({
   required int year,
   required int month,
   required int week,
-}) => MacroGoal(
-  id: id,
-  title: id,
-  status: GoalStatus.active,
-  type: GoalType.weekly,
-  year: year,
-  month: month,
-  weekNumber: week,
-  createdAt: DateTime(2020),
-);
+}) => MacroGoal.fromJson({
+  'id': id, 'title': id, 'status': 'active', 'type': 'weekly',
+  'year': year, 'month': month, 'week_number': week,
+  'created_at': DateTime(2020).toIso8601String(),
+});
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -84,7 +74,7 @@ void main() {
       ],
     );
 
-    // Both spellings of the 29 Aug – 7 Sep bucket, and only those. Order is
+    // Both spellings of the 31 Aug – 6 Sep bucket, and only those. Order is
     // _sortGoals' business, not this test's.
     expect(
       idsFor(year: 2026, month: 9, week: 1),
@@ -100,15 +90,15 @@ void main() {
 
   test('a legacy December week 5 goal surfaces in the NEXT year', () {
     // The case a plain `goal.year != selectedYear` guard would silently drop:
-    // the goal is stored under 2026 but belongs to January 2027 week 1.
+    // the goal is stored under 2025 but belongs to January 2026 week 1.
     notifier.state = notifier.state.copyWith(
-      goals: [_weekly(id: 'newYear', year: 2026, month: 12, week: 5)],
+      goals: [_weekly(id: 'newYear', year: 2025, month: 12, week: 5)],
     );
 
-    expect(canonicalWeekBucket(2026, 12, 5),
-        const WeekBucket(year: 2027, month: 1, week: 1));
-    expect(idsFor(year: 2027, month: 1, week: 1), ['newYear']);
+    expect(legacyWeekBucket(2025, 12, 5),
+        const WeekBucket(year: 2026, month: 1, week: 1));
+    expect(idsFor(year: 2026, month: 1, week: 1), ['newYear']);
     // And it is NOT still sitting in December's last addressable week.
-    expect(idsFor(year: 2026, month: 12, week: 4), isEmpty);
+    expect(idsFor(year: 2025, month: 12, week: 4), isEmpty);
   });
 }

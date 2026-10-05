@@ -2,6 +2,7 @@
 // Calendar surface, ← / → page the period (month/week/year) exactly like the
 // ‹ › buttons, and each change plays a transition.
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
+import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/features/dashboard/data/dashboard_repository.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/features/habits/presentation/habits_page.dart';
@@ -57,6 +58,19 @@ Future<void> _openMonthCalendar(WidgetTester tester) async {
 }
 
 void main() {
+  testWidgets('year overview groups bars into the same real weeks as Goals', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1280, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await _pumpHabitsPage(tester);
+    await _openMonthCalendar(tester);
+    await tester.tap(find.text(t.common.calendarView.year));
+    await _settleFrames(tester);
+    final year = DateTime.now().year;
+    final weeks = [for (var m = 1; m <= 12; m++) macroGoalWeeksInMonth(year, m)]
+        .reduce((a, b) => a + b);
+    expect(find.byType(LinearProgressIndicator), findsNWidgets(weeks));
+  });
+
   testWidgets('→ pages to the next month on the calendar surface', (
     tester,
   ) async {

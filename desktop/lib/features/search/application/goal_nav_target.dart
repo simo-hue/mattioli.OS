@@ -43,9 +43,8 @@ class GoalNavTarget {
 
   /// Build a target that lands on [goal]'s own period and spotlights it.
   factory GoalNavTarget.forGoal(DashboardGoal goal, {bool openEditor = false}) {
-    // A weekly goal's stored address may be a legacy week 5, which the Goals
-    // board no longer offers; canonicalise so the jump lands on the bucket that
-    // actually contains it (the next month's week 1).
+    // Model fields already use calendar weeks. Normalize the address so the
+    // search jump and board agree, including month/year boundaries.
     final bucket = goal.type == GoalType.weekly &&
             goal.year != null &&
             goal.month != null &&

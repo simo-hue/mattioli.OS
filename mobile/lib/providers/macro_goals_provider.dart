@@ -740,9 +740,7 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
         nextQ = ((nextM - 1) ~/ 3) + 1;
         break;
       case GoalType.weekly:
-        // Advance the BUCKET. A legacy goal stored at week 5 already IS the
-        // next month's week 1, so bumping its number would reschedule it into
-        // the very week it just failed in.
+        // Advance by seven civil dates, including months owning a fifth week.
         //
         // A NULL week_number (allowed by both schemas, and reachable via
         // import) has no week to advance from, so it anchors on TODAY's bucket
@@ -974,7 +972,7 @@ class MacroGoalsViewState {
 
   MacroGoalsViewState _clamp(MacroGoalsViewState state) {
     return state.copyWith(
-      selectedWeek: state.selectedWeek.clamp(1, macroGoalWeeksInMonth),
+      selectedWeek: state.selectedWeek.clamp(1, macroGoalWeeksInMonth(state.selectedYear, state.selectedMonth)),
     );
   }
 }
@@ -983,12 +981,8 @@ class MacroGoalsViewNotifier extends Notifier<MacroGoalsViewState> {
   @override
   MacroGoalsViewState build() {
     final now = DateTime.now();
-    // The screen opens on the weekly plan, so year/month seed from the current
-    // WEEK bucket — which on the 29th-31st is next month, and on 30 December is
-    // next year. Quarter follows TODAY instead: it is never a weekly field, and
-    // on 30 September the bucket's October would read Q4 while the current
-    // quarter is still Q3. [setType] re-anchors year/month when the user
-    // switches to a calendar-shaped plan.
+    // Weekly selection uses Thursday's owner month/year; quarter follows
+    // today's calendar month. Switching plans re-anchors the shared fields.
     final bucket = weekBucketOf(now);
     return MacroGoalsViewState(
       selectedType: GoalType.weekly,
@@ -1000,8 +994,8 @@ class MacroGoalsViewNotifier extends Notifier<MacroGoalsViewState> {
   }
 
   /// Switching plan re-anchors the shared year/month to the new plan's idea of
-  /// "today" — see [reanchorPeriod]. Without it, on the 29th-31st the weekly
-  /// seed (next month) would leak into the Monthly, Quarterly and Annual views.
+  /// "today" — see [reanchorPeriod]. A boundary week can belong to the
+  /// previous or next month, while monthly/quarterly/annual plans use today.
   void setType(GoalType t) {
     final wasWeekly = state.selectedType == GoalType.weekly;
     final willBeWeekly = t == GoalType.weekly;
@@ -1019,12 +1013,15 @@ class MacroGoalsViewNotifier extends Notifier<MacroGoalsViewState> {
       selectedType: t,
       selectedYear: anchored.year,
       selectedMonth: anchored.month,
+      selectedWeek: willBeWeekly
+          ? state.selectedWeek.clamp(1, macroGoalWeeksInMonth(anchored.year, anchored.month))
+          : state.selectedWeek,
     );
   }
   void setYear(int y) {
     state = state.copyWith(
       selectedYear: y,
-      selectedWeek: _clampWeek(state.selectedWeek),
+      selectedWeek: state.selectedWeek.clamp(1, macroGoalWeeksInMonth(y, state.selectedMonth)),
     );
   }
 
@@ -1042,7 +1039,7 @@ class MacroGoalsViewNotifier extends Notifier<MacroGoalsViewState> {
   /// Saturates a picked week at [macroGoalWeeksInMonth]. Deliberately a clamp
   /// and not [canonicalWeekBucket]'s merge-forward: a picked week is an intent
   /// inside the month on screen, not a stored address to be resolved.
-  int _clampWeek(int week) => week.clamp(1, macroGoalWeeksInMonth);
+  int _clampWeek(int week) => week.clamp(1, macroGoalWeeksInMonth(state.selectedYear, state.selectedMonth));
 
   void nextPeriod() {
     state = state.getNextPeriod();

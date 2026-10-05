@@ -1,10 +1,8 @@
 // The legacy-address read path, end to end through the real board.
 //
-// Every client shipped before the week merge files a weekly goal under
-// `week_number = 5`, and any client that has not updated still does. There is
-// deliberately no migration, so the ONLY thing keeping those goals visible is
-// `_matchesPeriod` comparing canonical buckets rather than raw week numbers.
-// If that regresses, the goal does not move — it disappears.
+// Old backups and peers can still supply four-period addresses without an
+// explicit Monday. Deserialization converts them to their greatest-overlap
+// calendar week, and the board must show them under that owning month/year.
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/features/dashboard/data/dashboard_repository.dart';
@@ -36,21 +34,11 @@ DashboardGoal _weekly({
   required int year,
   required int month,
   required int week,
-}) => DashboardGoal(
-  id: title,
-  title: title,
-  category: '',
-  color: EvolveColors.cyan,
-  state: GoalState.active,
-  type: GoalType.weekly,
-  createdAt: DateTime(2020),
-  dueLabel: '',
-  year: year,
-  quarter: ((month - 1) ~/ 3) + 1,
-  month: month,
-  weekNumber: week,
-  progress: 0,
-);
+}) => DashboardGoal.fromRemoteJson({
+  'id': title, 'title': title, 'status': 'active', 'type': 'weekly',
+  'year': year, 'month': month, 'week_number': week,
+  'created_at': DateTime(2020).toIso8601String(),
+});
 
 late ProviderContainer _container;
 
@@ -114,7 +102,7 @@ void main() {
     );
 
     expect(find.text('LegacyGoal'), findsOneWidget);
-    expect(find.text('29 August – 7 September 2026'), findsOneWidget);
+    expect(find.text('31 August – 6 September 2026'), findsOneWidget);
   });
 
   testWidgets('a legacy December week 5 goal is visible in the NEXT year', (
@@ -125,14 +113,14 @@ void main() {
 
     // The case a plain `goal.year != _selectedYear` guard would silently drop.
     await _pump(tester, [
-      _weekly(title: 'NewYearGoal', year: 2026, month: 12, week: 5),
+      _weekly(title: 'NewYearGoal', year: 2025, month: 12, week: 5),
     ]);
     await _selectBucket(
       tester,
-      const WeekBucket(year: 2027, month: 1, week: 1),
+      const WeekBucket(year: 2026, month: 1, week: 1),
     );
 
     expect(find.text('NewYearGoal'), findsOneWidget);
-    expect(find.text('29 December 2026 – 7 January 2027'), findsOneWidget);
+    expect(find.text('29 December 2025 – 4 January 2026'), findsOneWidget);
   });
 }

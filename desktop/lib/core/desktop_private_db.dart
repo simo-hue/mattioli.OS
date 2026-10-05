@@ -6,6 +6,7 @@ import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/core/import_merge.dart';
+import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/core/import_merge_stats.dart';
 import 'package:evolve_desktop/core/secure_storage_utils.dart';
 import 'package:evolve_sync/evolve_sync.dart';
@@ -1091,6 +1092,7 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
             'year': g['year'],
             'month': g['month'],
             'week_number': g['week_number'],
+            'week_start_date': g['week_start_date'],
             'quarter': g['quarter'],
             'category_key': g['category_key'],
             'category_id': g['category_id'],
@@ -2191,6 +2193,7 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
     String createdAt,
     String updatedAt,
   ) {
+    g = normalizeStoredMacroGoal(g);
     return {
       'id': id,
       'user_id': owner,
@@ -2200,6 +2203,7 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
       'year': g['year'],
       'month': g['month'],
       'week_number': g['week_number'],
+      'week_start_date': g['week_start_date'],
       'quarter': g['quarter'],
       'category_key': g['category_key'],
       'category_id': categoryId,

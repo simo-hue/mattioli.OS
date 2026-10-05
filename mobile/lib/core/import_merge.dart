@@ -20,6 +20,7 @@ import 'package:sqflite_sqlcipher/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
 import 'import_merge_stats.dart';
+import 'macro_goal_calendar.dart';
 import 'streak_utils.dart';
 
 const _uuid = Uuid();
@@ -148,6 +149,7 @@ Map<String, dynamic> _normalizeWeb(Map<String, dynamic> raw) {
       'year': g['year'],
       'month': g['month'],
       'week_number': g['week_number'],
+      'week_start_date': g['week_start_date'],
       'quarter': g['quarter'],
       'category_key': null,
       'category_id': slug != null ? colorSlugToId[slug] : null,
@@ -278,6 +280,7 @@ Map<String, dynamic> _normalizeNative(Map<String, dynamic> raw) {
       'year': g['year'],
       'month': g['month'],
       'week_number': g['week_number'],
+      'week_start_date': g['week_start_date'],
       'quarter': g['quarter'],
       'category_key': g['category_key'],
       'category_id': g['category_id'],
@@ -654,6 +657,7 @@ ValidatedBackup validateCanonical(Map<String, dynamic> canonical) {
       'month': month,
       'quarter': quarter,
       'week_number': week,
+      'week_start_date': _str(g['week_start_date']),
       'category_key': _str(g['category_key']),
       'category_id': _str(g['category_id']),
       'created_at': _str(g['created_at']),
@@ -693,7 +697,7 @@ ValidatedBackup validateCanonical(Map<String, dynamic> canonical) {
     kGoalsKey: goals,
     kLogsKey: logs,
     kProgressKey: progress,
-    kMacrosKey: macros,
+    kMacrosKey: macros.map(normalizeStoredMacroGoal).toList(),
     kCategoriesKey: categories,
     kMoodsKey: moods,
   }, skipped);
@@ -1127,6 +1131,7 @@ Map<String, Object?> _macroRow(
   String createdAt,
   String updatedAt,
 ) {
+  g = normalizeStoredMacroGoal(g);
   return {
     'id': id,
     'user_id': owner,
@@ -1136,6 +1141,7 @@ Map<String, Object?> _macroRow(
     'year': g['year'],
     'month': g['month'],
     'week_number': g['week_number'],
+    'week_start_date': g['week_start_date'],
     'quarter': g['quarter'],
     'category_key': g['category_key'],
     'category_id': categoryId,
@@ -1475,6 +1481,7 @@ CloudImportPlan planCloudImport({
       'year': g['year'],
       'month': g['month'],
       'week_number': g['week_number'],
+      'week_start_date': g['week_start_date'],
       'quarter': g['quarter'],
       'category_key': g['category_key'],
       'category_id': categoryId,

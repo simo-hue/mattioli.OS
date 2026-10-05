@@ -87,8 +87,8 @@ void main() {
       await db.close();
     });
 
-    test('the schema version is 12', () {
-      expect(PrivateDbSchema.version, 12);
+    test('the schema includes this migration', () {
+      expect(PrivateDbSchema.version, greaterThanOrEqualTo(12));
     });
   });
 

@@ -1,6 +1,7 @@
 import 'package:sqflite_common/sqlite_api.dart';
 
 import 'order_key.dart';
+import 'macro_goal_calendar.dart';
 import 'private_db_open_failure.dart';
 
 /// Schema + migrations for the Private-Mode local database — the single source
@@ -80,7 +81,9 @@ class PrivateDbSchema {
   ///   target's amount (or changing a habit's tracking class) applies forward
   ///   instead of retroactively re-deriving past `done`/`missed` verdicts.
   ///   Additive and unconstrained for the same round-trip reason as `verify_*`.
-  static const int version = 12;
+  /// - v13: explicit Monday date for weekly macro goals. Legacy periods move
+  ///   to their greatest-overlap calendar week; targets/statuses stay intact.
+  static const int version = 13;
 
   /// The user-data tables whose rows sync to iCloud. Each gets dirty/tombstone
   /// triggers that maintain [syncStateTable]. (Order matters for nothing here,
@@ -249,6 +252,37 @@ class PrivateDbSchema {
     if (oldVersion < 12) {
       await _upgradeToV12(db);
     }
+    if (oldVersion < 13) {
+      await _upgradeToV13(db);
+    }
+  }
+
+  static Future<void> _upgradeToV13(DatabaseExecutor db) async {
+    final columns = {
+      for (final row in await db.rawQuery('PRAGMA table_info(long_term_goals)'))
+        row['name'] as String,
+    };
+    if (columns.isEmpty) return;
+    if (!columns.contains('week_start_date')) {
+      await db.execute(
+        'ALTER TABLE long_term_goals ADD COLUMN week_start_date TEXT');
+    }
+    // Tolerate partial historical schemas as the earlier migrations do.
+    if (!columns.containsAll({'type', 'year', 'month', 'week_number'})) return;
+    final rows = await db.query('long_term_goals',
+      where: "type = 'weekly' AND week_start_date IS NULL");
+    for (final row in rows) {
+      final converted = normalizeStoredMacroGoal(row);
+      if (converted['week_start_date'] == null) continue;
+      await db.update('long_term_goals', {
+        'year': converted['year'],
+        'month': converted['month'],
+        'week_number': converted['week_number'],
+        'week_start_date': converted['week_start_date'],
+      }, where: 'id = ?', whereArgs: [row['id']]);
+    }
+    // Preserve updated_at: this is a deterministic format conversion, not a
+    // user edit that should outrank a newer title/status on another device.
   }
 
   /// Fail closed on a schema downgrade. With NO onDowngrade, sqflite's default
@@ -829,11 +863,10 @@ CREATE TABLE long_term_goals (
     CHECK (type IN ('lifetime', 'annual', 'quarterly', 'monthly', 'weekly')),
   year INTEGER,
   month INTEGER CHECK (month >= 1 AND month <= 12),
-  -- week_number is a week-of-month index. The app now emits 1..4 only (see
-  -- macroGoalWeeksInMonth); 1..6 rows written by older clients are legacy
-  -- addresses meaning "next month's week 1" and are canonicalised on read.
-  -- The 1..53 bound matches cloud schema.sql to avoid cross-backend CHECK drift.
+  -- Four/five Monday–Sunday weeks per owner month (the Thursday's month).
+  -- week_start_date distinguishes calendar addresses from legacy periods.
   week_number INTEGER CHECK (week_number >= 1 AND week_number <= 53),
+  week_start_date TEXT,
   quarter INTEGER CHECK (quarter >= 1 AND quarter <= 4),
   -- color is legacy/vestigial: macro goals derive their color from their
   -- category (GoalCategory.color); the app never writes this column.

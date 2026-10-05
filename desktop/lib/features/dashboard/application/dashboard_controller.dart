@@ -1226,9 +1226,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
         }
         quarter = ((month - 1) ~/ 3) + 1;
       case GoalType.weekly:
-        // Advance the BUCKET, never the raw week number. A legacy goal stored
-        // at week 5 already IS the next month's week 1, so bumping its number
-        // would reschedule it into the very week it just failed in.
+        // Advance by seven civil dates, including months owning a fifth week.
         final next = nextWeekBucket(weeklyBase);
         year = next.year;
         month = next.month;

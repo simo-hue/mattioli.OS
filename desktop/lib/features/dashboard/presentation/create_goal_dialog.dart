@@ -77,7 +77,7 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
     super.initState();
     final now = DateTime.now();
     // [_selectedType] starts at Monthly, so year/month seed from TODAY, not from
-    // the current week bucket — on 30 August the bucket is September, and
+    // the current week bucket — on 31 August 2026 the bucket is September, and
     // seeding from it would file a monthly goal under the wrong month.
     // [_reanchorFor] swaps them to the weekly anchor if the user picks Weekly.
     _selectedYear = now.year;
@@ -395,7 +395,7 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
             height: 46,
             fillColor: fill,
             options: [
-              for (var w = 1; w <= macroGoalWeeksInMonth; w++)
+              for (var w = 1; w <= macroGoalWeeksInMonth(_selectedYear, _selectedMonth); w++)
                 EvolveSelectOption(
                   value: w,
                   label: '${t.common.calendarView.week} $w',
@@ -419,7 +419,7 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
 
   /// Moves the shared year/month to [type]'s idea of "today" while the dialog
   /// is still on the period it opened with — see [reanchorPeriod]. The weekly
-  /// plan addresses next month on the 29th–31st; the calendar plans do not.
+  /// plan uses Thursday’s month/year, which can differ from today’s.
   void _reanchorFor(GoalType type) {
     final wasWeekly = _selectedType == GoalType.weekly;
     final willBeWeekly = type == GoalType.weekly;
@@ -432,15 +432,14 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
     );
     _selectedYear = anchored.year;
     _selectedMonth = anchored.month;
+    if (willBeWeekly) _clampWeek();
   }
 
   /// Saturates a picked week at [macroGoalWeeksInMonth]. Deliberately a clamp
   /// and not [canonicalWeekBucket]'s merge-forward: a picked week is an intent
   /// inside the month on screen, not a stored address to be resolved.
   void _clampWeek() {
-    if (_selectedWeek > macroGoalWeeksInMonth) {
-      _selectedWeek = macroGoalWeeksInMonth;
-    }
+    _selectedWeek = _selectedWeek.clamp(1, macroGoalWeeksInMonth(_selectedYear, _selectedMonth));
   }
 
   String _unitLabel(TargetUnit unit) => unit == TargetUnit.count

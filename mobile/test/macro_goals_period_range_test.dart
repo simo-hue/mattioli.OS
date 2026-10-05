@@ -112,14 +112,11 @@ void main() {
     await _selectPeriod(tester, container, type: GoalType.weekly);
 
     expect(find.text('${t.common.calendarView.week} 2'), findsOneWidget);
-    expect(find.text('8 – 14 August 2026'), findsOneWidget);
+    expect(find.text('10 – 16 August 2026'), findsOneWidget);
   });
 
   testWidgets('week 1 shows its true cross-month span', (tester) async {
     final container = await _pumpGoalsScreen(tester);
-    // September 2026 week 1 absorbs August's 29th-31st, so it runs
-    // 29 Aug – 7 Sep — and all ten of those days really are summed into the
-    // goal. August has no separate week 5: it is this same bucket.
     await _selectPeriod(
       tester,
       container,
@@ -128,17 +125,31 @@ void main() {
       week: 1,
     );
 
-    expect(find.text('29 August – 7 September 2026'), findsOneWidget);
+    expect(find.text('31 August – 6 September 2026'), findsOneWidget);
   });
 
-  testWidgets('the week picker never offers a fifth week', (tester) async {
+  testWidgets('the week picker clamps only when the month owns four weeks', (tester) async {
     final container = await _pumpGoalsScreen(tester);
-    // Asking for a week past the fourth is clamped: August 2026's tail days are
-    // September week 1's, not a week of August.
     await _selectPeriod(tester, container, type: GoalType.weekly, week: 5);
 
     expect(find.text('${t.common.calendarView.week} 4'), findsOneWidget);
-    expect(find.text('22 – 28 August 2026'), findsOneWidget);
+    expect(find.text('24 – 30 August 2026'), findsOneWidget);
+  });
+
+  testWidgets('a fifth week pages continuously into the next month', (tester) async {
+    final container = await _pumpGoalsScreen(tester);
+    await _selectPeriod(tester, container, type: GoalType.weekly, month: 1, week: 5);
+    expect(find.text('26 January – 1 February 2026'), findsOneWidget);
+    final view = container.read(macroGoalsViewProvider.notifier);
+    view.nextPeriod();
+    await tester.pumpAndSettle();
+    expect(find.text('2 – 8 February 2026'), findsOneWidget);
+    view.prevPeriod();
+    await tester.pumpAndSettle();
+    expect(find.text('26 January – 1 February 2026'), findsOneWidget);
+    view.setYear(2027); // January 2027 owns only four Thursdays.
+    await tester.pumpAndSettle();
+    expect(find.text('25 – 31 January 2027'), findsOneWidget);
   });
 
   testWidgets('quarterly shows the quarter first and last day', (tester) async {

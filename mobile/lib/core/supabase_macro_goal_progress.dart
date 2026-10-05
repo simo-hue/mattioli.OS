@@ -82,17 +82,11 @@ Future<void> snapshotCloudLinkedMacroGoals(
 ) async {
   final linked = await client
       .from('long_term_goals')
-      .select('id, type, year, quarter, month, week_number')
+      .select('id, type, year, quarter, month, week_number, week_start_date')
       .eq('user_id', userId)
       .eq('linked_goal_id', habitId);
   for (final row in linked.cast<Map<String, dynamic>>()) {
-    final range = macroGoalPeriodRange(
-      type: row['type'] as String? ?? 'lifetime',
-      year: (row['year'] as num?)?.toInt(),
-      quarter: (row['quarter'] as num?)?.toInt(),
-      month: (row['month'] as num?)?.toInt(),
-      week: (row['week_number'] as num?)?.toInt(),
-    );
+    final range = storedMacroGoalPeriodRange(row);
     final total = await sumCloudLinkedHabitProgress(
       client,
       userId,

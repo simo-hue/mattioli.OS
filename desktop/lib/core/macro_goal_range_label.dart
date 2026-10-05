@@ -1,19 +1,15 @@
 import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 
-/// Human-readable date range for a macro goal period — "8 – 14 August 2026",
-/// "29 August – 7 September 2026", "29 December 2025 – 7 January 2026".
+/// Human-readable date range for a macro goal period — "10 – 16 August 2026",
+/// "31 August – 6 September 2026", "29 December 2025 – 4 January 2026".
 ///
 /// The Goals board header states *which* period you are looking at ("Week 2",
 /// "Quarter 3", "August"); those labels are opaque on their own, so the line
 /// underneath spells out the exact days the period covers. The range always
 /// comes from [macroGoalPeriodRange], which is the same window a linked habit's
 /// daily progress is summed over — so the header can never disagree with the
-/// completion ring beside it. Notably that means week 1 prints its true
-/// cross-month window (September 2026 week 1 → 29 August – 7 September): a
-/// month's 29th-31st are the head of the NEXT month's week 1, all ten of those
-/// days genuinely count toward the goal, and clamping the label to the month
-/// end would show a window the app does not use. See `macro_goal_calendar.dart`
-/// for why those days merge forward rather than forming a fifth week.
+/// completion ring beside it. Weeks always cover Monday–Sunday, including
+/// month/year boundaries (31 August–6 September, 29 December–4 January).
 ///
 /// Every locale-visible fragment is injected, following the `describePeriod`
 /// recipe in `features/search/application/period_parser.dart`: month names come
@@ -21,8 +17,8 @@ import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 /// header) and the three sentence shapes come from `t.goalsPage.range*`, so a
 /// translator — Arabic especially — controls word order, punctuation and the
 /// dash. That also keeps this function pure and testable with no slang setup.
-/// The mobile client carries a twin at the same path; keep the two in step, as
-/// is already the convention for `macro_goal_calendar.dart`.
+/// The mobile client carries a twin at the same path; keep the formatters in
+/// step. The calendar itself is shared through `evolve_sync`.
 ///
 /// [range] endpoints are read field-wise and are expected to be the UTC,
 /// day-granular values [macroGoalPeriodRange] produces. They are deliberately

@@ -124,12 +124,8 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     final now = DateTime.now();
     // Default to the current week...
     _selectedType = GoalType.weekly;
-    // The board opens on the weekly plan, so year/month seed from the current
-    // WEEK bucket — which on the 29th–31st is next month, and on 30 December is
-    // next year. Quarter follows TODAY instead: it is never a weekly field, and
-    // on 30 September the bucket's October would read Q4 while the current
-    // quarter is still Q3. [reanchorPeriod] moves year/month back to today's
-    // when the user switches to a calendar-shaped plan.
+    // Weekly selection uses Thursday's owner month/year; quarter follows
+    // today's calendar month. Switching plans re-anchors the shared fields.
     final bucket = weekBucketOf(now);
     _selectedYear = bucket.year;
     _selectedQuarter = ((now.month - 1) ~/ 3) + 1;
@@ -350,6 +346,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                         onYearChanged: (year) => setState(() {
                           _lastDirection = year.compareTo(_selectedYear);
                           _selectedYear = year;
+                          _clampWeek();
                         }),
                         onQuarterChanged: (quarter) => setState(() {
                           _lastDirection = quarter.compareTo(_selectedQuarter);
@@ -583,8 +580,8 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   }
 
   /// Moves the shared year/month to [type]'s idea of "today" when the board is
-  /// still parked on the current period — see [reanchorPeriod]. Without it, on
-  /// the 29th–31st the weekly seed (next month) would leak into the Monthly,
+  /// still parked on the current period — see [reanchorPeriod]. Without it,
+  /// a boundary week can leak its previous/next month into the Monthly,
   /// Quarterly and Annual boards.
   void _reanchorFor(GoalType type) {
     final wasWeekly = _selectedType == GoalType.weekly;
@@ -598,6 +595,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     );
     _selectedYear = anchored.year;
     _selectedMonth = anchored.month;
+    if (willBeWeekly) _clampWeek();
   }
 
   bool _matchesPeriod(DashboardGoal goal) {
@@ -605,10 +603,8 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     if (goal.type != type) return false;
     if (type == GoalType.lifetime) return true;
 
-    // Weekly is compared as a BUCKET, and a bucket can cross the year: a legacy
-    // goal stored at (2026, 12, 5) belongs to January 2027 week 1. So it has to
-    // be settled before the plain year guard below, which would reject exactly
-    // those goals for having the "wrong" stored year.
+    // Compare normalized calendar addresses before the plain year guard: a
+    // week starting 29 December 2025 belongs to January 2026.
     if (type == GoalType.weekly) {
       final year = goal.year;
       final month = goal.month;
@@ -678,6 +674,10 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     setState(() => _statsSelectedYear = target);
   }
 
+  void _clampWeek() {
+    _selectedWeek = _selectedWeek.clamp(1, macroGoalWeeksInMonth(_selectedYear, _selectedMonth));
+  }
+
   void _movePeriod(int direction) {
     // When the Stats tab is active, arrow / swipe navigation cycles through the
     // available stats years (including "all") instead of the plan period.
@@ -723,6 +723,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
           _selectedMonth = moved.month;
           _selectedWeek = moved.week;
       }
+      _clampWeek();
     });
   }
 
@@ -1394,7 +1395,7 @@ class _GoalCommandBar extends StatelessWidget {
         _PeriodDropdown(
           value: selectedWeek,
           values: [
-            for (var week = 1; week <= macroGoalWeeksInMonth; week++) week,
+            for (var week = 1; week <= macroGoalWeeksInMonth(selectedYear, selectedMonth); week++) week,
           ],
           labelFor: (value) => '${t.common.calendarView.week} $value',
           onChanged: onWeekChanged,

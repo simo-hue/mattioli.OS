@@ -556,6 +556,7 @@ class DashboardGoal {
     'quarter': quarter,
     'month': month,
     'week_number': weekNumber,
+    'week_start_date': weekStartDate,
     'category_key': category,
     'category_id': categoryId,
     'created_at': (createdAt ?? DateTime.now()).toIso8601String(),
@@ -569,7 +570,12 @@ class DashboardGoal {
     if (linkedGoalId != null) 'linked_goal_id': linkedGoalId,
   };
 
+  String? get weekStartDate => macroGoalWeekStartDate(
+    type: type.name, year: year, month: month, week: weekNumber,
+  );
+
   factory DashboardGoal.fromRemoteJson(Map<String, dynamic> json) {
+    json = normalizeStoredMacroGoal(json);
     final state = GoalState.values.firstWhere(
       (value) => value.name == json['status'],
       orElse: () => GoalState.active,
@@ -921,9 +927,8 @@ String dashboardGoalDueLabel({
 
 /// "Week 2, 9/2026" for a weekly goal, named by the bucket it actually lives in.
 ///
-/// A goal stored at week 5 belongs to the NEXT month's week 1, and the Goals
-/// board files it there — so the label has to canonicalise too, or a legacy
-/// goal would read "Week 5, 8/2026" while sitting under September's week 1.
+/// Stored legacy addresses are converted at deserialization. The label uses
+/// the same calendar bucket as the board, including a real fifth week.
 String _weeklyDueLabel(int? year, int? month, int? weekNumber) {
   if (weekNumber == null) return t.common.calendarView.week;
   if (year == null || month == null) {

@@ -257,6 +257,65 @@ void main() {
     });
   });
 
+  test('weekly delete snapshot counts exactly the corrected seven days', () async {
+    final db = await openDb();
+    addTearDown(db.close);
+    await seedHabit(db, 'h1');
+    await seedProgress(db, 'h1', '2026-08-29', 999);
+    await seedProgress(db, 'h1', '2026-08-31', 1);
+    await seedProgress(db, 'h1', '2026-09-06', 2);
+    await seedProgress(db, 'h1', '2026-09-07', 888);
+    for (final legacy in [true, false]) {
+      await db.insert('long_term_goals', {
+        'id': legacy ? 'old' : 'new', 'user_id': owner, 'title': 'Seven days',
+        'type': 'weekly', 'status': 'completed', 'year': 2026,
+        'month': 9, 'week_number': 1,
+        if (!legacy) 'week_start_date': '2026-08-31',
+        'linked_goal_id': 'h1', 'target_amount': 10,
+        'created_at': now, 'updated_at': now,
+      });
+    }
+    await snapshotLinkedMacroGoals(db, 'h1', now: now);
+    for (final row in await db.query('long_term_goals')) {
+      expect(row['progress_amount'], 3);
+      expect(row['status'], 'completed');
+      expect(row['target_amount'], 10);
+      expect(row['linked_goal_id'], isNull);
+    }
+  });
+
+  test('backup round-trip distinguishes legacy and new week-one goals', () async {
+    final db = await openDb();
+    addTearDown(db.close);
+    final macros = [
+      for (final legacy in [true, false]) {
+        'id': legacy ? 'legacy-week' : 'calendar-week', 'title': 'Read',
+        'type': 'weekly', 'status': 'completed', 'year': 2026,
+        'month': 5, 'week_number': 1,
+        if (!legacy) 'week_start_date': '2026-05-04',
+        'target_amount': 42, 'progress_amount': 17,
+        'created_at': now, 'updated_at': now,
+      },
+    ];
+    final raw = {'mode': 'private', 'macroGoals': macros};
+    final canonical = validateCanonical(normalizeBackup(raw)).canonical;
+    await db.transaction((txn) => applyPrivateImportMerge(
+      txn: txn, owner: owner, canonical: canonical, replaceExisting: false,
+      now: now, newId: () => 'unused',
+    ));
+    final rows = await db.query('long_term_goals', orderBy: 'id');
+    expect(rows.map((row) => row['week_start_date']), ['2026-05-04', '2026-04-27']);
+    final restoredDb = await openDb();
+    addTearDown(restoredDb.close);
+    final exported = {'mode': 'private', 'macroGoals': rows};
+    final restored = validateCanonical(normalizeBackup(exported)).canonical;
+    await restoredDb.transaction((txn) => applyPrivateImportMerge(
+      txn: txn, owner: owner, canonical: restored, replaceExisting: false,
+      now: now, newId: () => 'unused',
+    ));
+    expect(await restoredDb.query('long_term_goals', orderBy: 'id'), rows);
+  });
+
   group('delete snapshot', () {
     test('sums the linked habit over the goal period and unlinks it', () async {
       final db = await openDb();

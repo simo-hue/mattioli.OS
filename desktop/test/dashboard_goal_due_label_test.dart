@@ -1,8 +1,5 @@
-// `dashboardGoalDueLabel` names the period a goal is filed under, and it is
-// recomputed from the STORED fields on every deserialize
-// (`DashboardGoal.fromRemoteJson`) rather than read back from the row. So a
-// legacy `week_number = 5` goal would render "Week 5, 8/2026" while the board
-// files it under September week 1 — the label has to canonicalise too.
+// `dashboardGoalDueLabel` names the normalized calendar period a goal belongs
+// to. Overflow addresses must resolve to the same month/year as the board.
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,14 +18,14 @@ void main() {
     expect(weekly(year: 2026, month: 9, week: 2), 'Week 2, 9/2026');
   });
 
-  test('renames a legacy week 5 to the bucket that contains it', () {
+  test('normalizes a fifth week in a month that owns only four', () {
     expect(weekly(year: 2026, month: 8, week: 5), 'Week 1, 9/2026');
     // Identical to the canonical spelling of the same bucket.
     expect(weekly(year: 2026, month: 8, week: 5), weekly(year: 2026, month: 9, week: 1));
   });
 
-  test('carries a legacy December week 5 into the next year', () {
-    expect(weekly(year: 2026, month: 12, week: 5), 'Week 1, 1/2027');
+  test('keeps a real fifth week in December when it owns Thursday', () {
+    expect(weekly(year: 2026, month: 12, week: 5), 'Week 5, 12/2026');
   });
 
   test('falls back rather than throwing when the address is incomplete', () {

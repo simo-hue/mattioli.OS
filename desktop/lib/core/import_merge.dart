@@ -24,6 +24,7 @@ import 'dart:convert';
 import 'package:sqflite_sqlcipher/sqflite.dart';
 
 import 'import_merge_stats.dart';
+import 'macro_goal_calendar.dart';
 import 'streak_utils.dart';
 
 /// Canonical container keys the merge engine consumes (identical to mobile's).
@@ -305,6 +306,7 @@ ValidatedBackup validateCanonical(Map<String, dynamic> canonical) {
       'month': month,
       'quarter': quarter,
       'week_number': week,
+      'week_start_date': _str(g['week_start_date']),
       'category_key': _str(g['category_key']),
       'category_id': _str(g['category_id']),
       'created_at': _str(g['created_at']),
@@ -344,7 +346,7 @@ ValidatedBackup validateCanonical(Map<String, dynamic> canonical) {
     kGoalsKey: goals,
     kLogsKey: logs,
     kProgressKey: progress,
-    kMacrosKey: macros,
+    kMacrosKey: macros.map(normalizeStoredMacroGoal).toList(),
     kCategoriesKey: categories,
     kMoodsKey: moods,
     // Desktop extra: the profile/settings block survives validation untouched
@@ -773,6 +775,7 @@ CloudImportPlan planCloudImport({
       'year': g['year'],
       'month': g['month'],
       'week_number': g['week_number'],
+      'week_start_date': g['week_start_date'],
       'quarter': g['quarter'],
       'category_key': g['category_key'],
       'category_id': categoryId,

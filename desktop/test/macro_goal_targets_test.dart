@@ -4,6 +4,7 @@
 // delete-time progress snapshot. Runs the DB pieces headless against an
 // in-memory FFI SQLite with the real PrivateDbSchema.
 import 'package:evolve_desktop/core/desktop_private_db.dart';
+import 'package:evolve_desktop/core/desktop_backup_import_service.dart';
 import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/core/macro_goal_snapshot.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
@@ -201,6 +202,62 @@ void main() {
       expect(row['linked_goal_id'], isNull);
       await db.close();
     });
+  });
+
+  test('weekly delete snapshot counts exactly the corrected seven days', () async {
+    final db = await openDb();
+    addTearDown(db.close);
+    await seedHabit(db, 'h1');
+    await seedProgress(db, 'h1', '2026-08-29', 999);
+    await seedProgress(db, 'h1', '2026-08-31', 1);
+    await seedProgress(db, 'h1', '2026-09-06', 2);
+    await seedProgress(db, 'h1', '2026-09-07', 888);
+    for (final legacy in [true, false]) {
+      await db.insert('long_term_goals', {
+        'id': legacy ? 'old' : 'new', 'user_id': owner, 'title': 'Seven days',
+        'type': 'weekly', 'status': 'completed', 'year': 2026,
+        'month': 9, 'week_number': 1,
+        if (!legacy) 'week_start_date': '2026-08-31',
+        'linked_goal_id': 'h1', 'target_amount': 10,
+        'created_at': now, 'updated_at': now,
+      });
+    }
+    await snapshotLinkedMacroGoals(db, 'h1', now: now);
+    for (final row in await db.query('long_term_goals')) {
+      expect(row['progress_amount'], 3);
+      expect(row['status'], 'completed');
+      expect(row['target_amount'], 10);
+      expect(row['linked_goal_id'], isNull);
+    }
+  });
+
+  test('backup round-trip distinguishes legacy and new week-one goals', () async {
+    final db = await openDb();
+    addTearDown(db.close);
+    final macros = [
+      for (final legacy in [true, false]) {
+        'id': legacy ? 'legacy-week' : 'calendar-week', 'title': 'Read',
+        'type': 'weekly', 'status': 'completed', 'year': 2026,
+        'month': 5, 'week_number': 1,
+        if (!legacy) 'week_start_date': '2026-05-04',
+        'target_amount': 42, 'progress_amount': 17,
+        'created_at': now, 'updated_at': now,
+      },
+    ];
+    await db.transaction((txn) => DesktopPrivateDb.applyImport(
+      txn, owner: owner, backupData: {'long_term_goals': macros},
+      replaceExisting: false, now: now,
+    ));
+    final rows = await db.query('long_term_goals', orderBy: 'id');
+    expect(rows.map((row) => row['week_start_date']), ['2026-05-04', '2026-04-27']);
+    final restoredDb = await openDb();
+    addTearDown(restoredDb.close);
+    final exported = await DesktopPrivateDb.exportSnapshot(db, owner: owner);
+    await restoredDb.transaction((txn) => DesktopPrivateDb.applyImport(
+      txn, owner: owner, backupData: DesktopBackupImportService.buildCanonicalModel(exported).canonical,
+      replaceExisting: false, now: now,
+    ));
+    expect(await restoredDb.query('long_term_goals', orderBy: 'id'), rows);
   });
 
   group('delete snapshot', () {

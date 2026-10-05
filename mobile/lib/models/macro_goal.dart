@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/macro_goal_calendar.dart';
 
 enum GoalType { lifetime, annual, quarterly, monthly, weekly }
 
@@ -13,8 +14,7 @@ class MacroGoal {
   final int? year;
   final int? quarter; // 1-4
   final int? month; // 1-12
-  // 1-4 canonical; a stored 5 is a legacy address for the NEXT month's week 1
-  // (see canonicalWeekBucket in core/macro_goal_calendar.dart).
+  // 1–4/5 among the Monday–Sunday weeks owned by this month.
   final int? weekNumber;
   final String? categoryKey; // e.g. 'red', 'blue', 'lavoro', etc.
   final String? categoryId; // UUID for custom categories
@@ -122,7 +122,12 @@ class MacroGoal {
     );
   }
 
+  String? get weekStartDate => macroGoalWeekStartDate(
+    type: type.name, year: year, month: month, week: weekNumber,
+  );
+
   factory MacroGoal.fromJson(Map<String, dynamic> json) {
+    json = normalizeStoredMacroGoal(json);
     return MacroGoal(
       id: json['id'] as String,
       title: json['title'] as String,
@@ -158,6 +163,7 @@ class MacroGoal {
       'quarter': quarter,
       'month': month,
       'week_number': weekNumber,
+      'week_start_date': weekStartDate,
       'category_key': categoryKey,
       'category_id': categoryId,
       'created_at': createdAt.toIso8601String(),

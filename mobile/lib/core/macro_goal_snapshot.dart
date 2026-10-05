@@ -48,7 +48,7 @@ Future<void> snapshotLinkedMacroGoals(
 }) async {
   final linked = await db.query(
     'long_term_goals',
-    columns: ['id', 'type', 'year', 'quarter', 'month', 'week_number'],
+    columns: ['id', 'type', 'year', 'quarter', 'month', 'week_number', 'week_start_date'],
     where: 'linked_goal_id = ?',
     whereArgs: [habitId],
   );
@@ -57,13 +57,7 @@ Future<void> snapshotLinkedMacroGoals(
     final total = await sumLinkedHabitProgress(
       db,
       habitId,
-      macroGoalPeriodRange(
-        type: m['type'] as String? ?? 'lifetime',
-        year: (m['year'] as num?)?.toInt(),
-        quarter: (m['quarter'] as num?)?.toInt(),
-        month: (m['month'] as num?)?.toInt(),
-        week: (m['week_number'] as num?)?.toInt(),
-      ),
+      storedMacroGoalPeriodRange(m),
     );
     await db.update(
       'long_term_goals',

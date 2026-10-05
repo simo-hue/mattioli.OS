@@ -376,6 +376,7 @@ class DesktopBackupImportService {
         'year': g['year'],
         'month': g['month'],
         'week_number': g['week_number'],
+        'week_start_date': g['week_start_date'],
         'quarter': g['quarter'],
         'category_key': g['category_key'],
         'category_id': categoryId,

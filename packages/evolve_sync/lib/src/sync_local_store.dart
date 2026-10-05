@@ -1,6 +1,7 @@
 import 'package:sqflite_common/sqlite_api.dart';
 
 import 'private_db_schema.dart';
+import 'macro_goal_calendar.dart';
 import 'sync_diagnostics.dart';
 
 /// One `sync_state` row.
@@ -456,6 +457,25 @@ class SyncLocalStore {
     await _db.execute('PRAGMA foreign_keys = OFF');
     try {
       await _db.transaction((txn) async {
+        if (table == 'long_term_goals' && known.contains('week_start_date')) {
+          if (data['type'] == 'weekly') {
+            // A pre-v13 peer can echo the canonical address while omitting
+            // the new field. Preserve an existing marker for an unchanged
+            // address; otherwise a rename could migrate the week twice.
+            if (data['week_start_date'] == null) {
+              final local = await txn.query(table,
+                  columns: ['type', 'year', 'month', 'week_number', 'week_start_date'],
+                  where: 'id = ?', whereArgs: [id], limit: 1);
+              if (local.isNotEmpty && ['type', 'year', 'month', 'week_number']
+                  .every((key) => data[key] == local.first[key])) {
+                data['week_start_date'] = local.first['week_start_date'];
+              }
+            }
+            data.addAll(normalizeStoredMacroGoal(data));
+          } else if (data.containsKey('type')) {
+            data['week_start_date'] = null;
+          }
+        }
         // FIELD-level last-write-wins for `goals.order_key`.
         //
         // Everything else here is whole-row LWW, which is right for fields the

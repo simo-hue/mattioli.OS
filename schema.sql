@@ -189,12 +189,11 @@ CREATE TABLE public.long_term_goals (
     type public.long_term_goal_type NOT NULL,
     year integer,
     month integer CHECK (month >= 1 AND month <= 12),
-    -- Kept at 1..53 deliberately. The app writes a logical week-of-month (1..6,
-    -- see MacroGoal.weekNumber) and mobile_schema.sql declared 1..6, but the
-    -- private SQLite mirror pins 1..53 to match this file
-    -- (private_db_schema.dart). 1..53 accepts everything 1..6 does, so the wider
-    -- bound is the safe one to keep; tightening it could reject live rows.
+    -- 1..4/5 for calendar weeks owned by the month containing Thursday.
+    -- Keep the wider legacy bound; week_start_date identifies the new format.
     week_number integer CHECK (week_number >= 1 AND week_number <= 53),
+    -- Explicit Monday; NULL identifies a legacy month-based period.
+    week_start_date date,
     quarter integer CHECK (quarter >= 1 AND quarter <= 4),
     color text DEFAULT null,
     -- Built-in category slug ('lavoro', 'salute', ...). Mutually exclusive in

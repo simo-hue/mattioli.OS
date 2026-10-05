@@ -12,6 +12,7 @@ import '../../core/theme.dart';
 import '../../core/rtl.dart';
 import '../../models/macro_goal.dart';
 import '../../providers/macro_goals_provider.dart';
+import '../../providers/macro_goal_categories_provider.dart';
 import '../widgets/macro_goals/goal_item_widget.dart';
 import '../widgets/macro_goals/add_goal_bar.dart';
 import '../widgets/macro_goals/macro_goals_stats_view.dart';
@@ -534,6 +535,8 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
 
     // Force re-compute on state change
     ref.watch(macroGoalsProvider);
+    final categories = ref.watch(macroGoalCategoriesProvider).value ??
+        const <GoalCategory>[];
 
     _anchorState ??= viewState;
     ref.listen(macroGoalsViewProvider, (prev, next) {
@@ -598,6 +601,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                                 quarter: stateForIndex.selectedQuarter,
                                 month: stateForIndex.selectedMonth,
                                 weekNumber: stateForIndex.selectedWeek,
+                                categories: categories,
                               );
                               
                           final isCurrentPage = index == _currentPageIndex;
@@ -1156,6 +1160,9 @@ class _GoalsList extends ConsumerWidget {
       },
       itemBuilder: (context, index) {
         final item = items[index];
+        if (item is _CategoryGap) {
+          return SizedBox(key: ValueKey('gap-${item.id}'), height: 16);
+        }
         if (item is _SectionHeader) {
           return _buildSectionHeader(
             context,
@@ -1219,8 +1226,17 @@ class _GoalsList extends ConsumerWidget {
     final result = <dynamic>[];
     bool shownCompleted = false;
     bool shownFailed = false;
+    String? currentActiveCategory;
 
     for (final goal in goals) {
+      if (goal.status == GoalStatus.active) {
+        final cat = goal.categoryGroupKey;
+        if (currentActiveCategory != null && currentActiveCategory != cat) {
+          result.add(_CategoryGap(cat));
+        }
+        currentActiveCategory = cat;
+      }
+
       if (goal.status == GoalStatus.completed && !shownCompleted) {
         result.add(_SectionHeader(GoalStatus.completed));
         shownCompleted = true;
@@ -1233,6 +1249,11 @@ class _GoalsList extends ConsumerWidget {
     }
     return result;
   }
+}
+
+class _CategoryGap {
+  final String id;
+  _CategoryGap(this.id);
 }
 
 class _SectionHeader {

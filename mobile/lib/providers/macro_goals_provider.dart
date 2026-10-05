@@ -786,6 +786,7 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
     int? quarter,
     int? month,
     int? weekNumber,
+    List<GoalCategory> categories = const [],
   }) {
     return state.goals.where((g) {
       if (g.type != type) return false;
@@ -807,10 +808,10 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       if (type == GoalType.quarterly && g.quarter != quarter) return false;
       if (type == GoalType.monthly && g.month != month) return false;
       return true;
-    }).toList()..sort(_sortGoals);
+    }).toList()..sort((a, b) => _sortGoals(a, b, categories));
   }
 
-  int _sortGoals(MacroGoal a, MacroGoal b) {
+  int _sortGoals(MacroGoal a, MacroGoal b, List<GoalCategory> categories) {
     int statusOrder(GoalStatus s) {
       switch (s) {
         case GoalStatus.active:
@@ -825,7 +826,36 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
     final aOrder = statusOrder(a.status);
     final bOrder = statusOrder(b.status);
     if (aOrder != bOrder) return aOrder.compareTo(bOrder);
+
+    // Active goals: group by category (alphabetical), uncategorized last.
+    if (a.status == GoalStatus.active) {
+      final aCat = a.categoryGroupKey;
+      final bCat = b.categoryGroupKey;
+      if (aCat != bCat) {
+        // Uncategorized (empty key) sorts after everything.
+        if (aCat.isEmpty) return 1;
+        if (bCat.isEmpty) return -1;
+        final labelOrder = _categorySortLabel(a, categories)
+            .compareTo(_categorySortLabel(b, categories));
+        if (labelOrder != 0) return labelOrder;
+        // Distinct categories with equal labels must still stay contiguous.
+        return aCat.compareTo(bCat);
+      }
+    }
+
     return a.createdAt.compareTo(b.createdAt);
+  }
+
+  String _categorySortLabel(MacroGoal goal, List<GoalCategory> categories) {
+    final id = goal.categoryId;
+    if (id != null) {
+      for (final category in categories) {
+        if (category.key == id) return category.label.toLowerCase();
+      }
+      // Keep ID groups intact while their labels are loading.
+      return id.toLowerCase();
+    }
+    return (categoryLabel(goal.categoryKey) ?? '').toLowerCase();
   }
 
   void clearAll() {

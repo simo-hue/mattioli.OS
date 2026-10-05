@@ -227,7 +227,9 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(desktopGoalCategoriesControllerProvider);
+    final savedCategories =
+        ref.watch(desktopGoalCategoriesControllerProvider).value ??
+        const <DesktopGoalCategory>[];
 
     // A ⌘K jump/edit that arrives while Goals is ALREADY on screen: [initState]
     // only fires on a fresh mount, so react to the target changing here too.
@@ -253,8 +255,17 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
       });
     });
 
+    final categories = _availableCategories;
+    // Archived categories remain attached to existing goals, even though the
+    // picker omits them. Preserve their names when ordering those groups.
+    final categoryLabels = <String, String>{
+      for (final category in savedCategories) category.id: category.label,
+      for (final category in categories)
+        if (category.id != null) category.id!: category.label,
+    };
     final allGoals = ref.watch(dashboardControllerProvider).goals;
-    final goals = allGoals.where(_matchesPeriod).toList()..sort(_sortGoals);
+    final goals = allGoals.where(_matchesPeriod).toList()
+      ..sort((a, b) => _sortGoals(a, b, categoryLabels));
 
     var activeGoals = goals
         .where((goal) => goal.state == GoalState.active)
@@ -266,7 +277,6 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
         .where((goal) => goal.state == GoalState.failed)
         .toList();
 
-    final categories = _availableCategories;
     // The Goals segment of the continuous tour is active. The demo goal below
     // gives the "complete/miss" step something to spotlight when the user has
     // no real goals for the selected period yet.
@@ -781,9 +791,30 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     }
   }
 
-  int _sortGoals(DashboardGoal a, DashboardGoal b) {
+  int _sortGoals(
+    DashboardGoal a,
+    DashboardGoal b,
+    Map<String, String> categoryLabels,
+  ) {
     final stateComparison = a.state.index.compareTo(b.state.index);
     if (stateComparison != 0) return stateComparison;
+
+    // Active goals: group by category (alphabetical), uncategorized last.
+    if (a.state == GoalState.active) {
+      final aCat = _categoryGroupKey(a);
+      final bCat = _categoryGroupKey(b);
+      if (aCat != bCat) {
+        // Uncategorized (empty key) sorts after everything.
+        if (aCat.isEmpty) return 1;
+        if (bCat.isEmpty) return -1;
+        final labelOrder = _categorySortLabel(a, categoryLabels)
+            .compareTo(_categorySortLabel(b, categoryLabels));
+        if (labelOrder != 0) return labelOrder;
+        // Equal names still represent distinct category groups.
+        return aCat.compareTo(bCat);
+      }
+    }
+
     return (a.createdAt ?? DateTime(0)).compareTo(b.createdAt ?? DateTime(0));
   }
 
@@ -1770,8 +1801,13 @@ class _GoalBoard extends StatelessWidget {
               child: _GoalEmptyState(hasAnyGoal: hasAnyGoal),
             )
           else
-            for (var i = 0; i < activeGoals.length; i++)
+            for (var i = 0; i < activeGoals.length; i++) ...[
+              if (i > 0 &&
+                  _categoryGroupKey(activeGoals[i]) !=
+                  _categoryGroupKey(activeGoals[i - 1]))
+                const SizedBox(height: 16),
               _activeListItem(activeGoals[i], isFirst: i == 0),
+            ],
           if (completedGoals.isNotEmpty) ...[
             const SizedBox(height: 22),
             _StatusDivider(
@@ -2981,4 +3017,19 @@ _GoalCategory _categoryForGoal(
     label: goal.category.isEmpty ? 'Default' : goal.category,
     color: goal.color,
   );
+}
+
+/// The same identity drives sorting and spacing, even before names load.
+String _categoryGroupKey(DashboardGoal goal) {
+  if (goal.categoryId != null) return 'id:${goal.categoryId}';
+  return goal.category.isEmpty ? '' : 'key:${goal.category}';
+}
+
+String _categorySortLabel(
+  DashboardGoal goal,
+  Map<String, String> categoryLabels,
+) {
+  final id = goal.categoryId;
+  if (id != null) return (categoryLabels[id] ?? id).toLowerCase();
+  return _categoryLabel(_categoryForGoal(goal, const [])).toLowerCase();
 }

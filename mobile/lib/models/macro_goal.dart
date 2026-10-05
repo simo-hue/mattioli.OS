@@ -68,6 +68,14 @@ class MacroGoal {
   /// Whether progress is DERIVED from a linked habit (vs STORED manually).
   bool get isLinked => linkedGoalId != null;
 
+  /// Shared identity for category sorting and visual group boundaries.
+  /// Picker selections use IDs; older goals can still carry a category key.
+  String get categoryGroupKey {
+    if (categoryId != null) return 'id:$categoryId';
+    final key = categoryKey;
+    return key == null || key.isEmpty ? '' : 'key:$key';
+  }
+
   MacroGoal copyWith({
     String? id,
     String? title,

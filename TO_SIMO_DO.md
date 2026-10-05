@@ -50,3 +50,11 @@ flutter build ipa --release
 - [ ] **Screen Time question worth grilling:** a 10-minute app limit is obviously true at the
   start of the day. How is the number increasing *during* the day handled — is the habit
   re-checked, or is its first state fixed forever?
+
+## 7. Category grouping fix — 2026-10-05
+
+- [ ] Run/install the updated iOS app through your usual Xcode signing workflow to see the category grouping fix on the device. The unsigned release build has passed; the previously installed app still contains the old grouping code.
+
+## 8. Desktop category grouping — 2026-10-05
+
+- [ ] Quit the running desktop app and open the updated `desktop/build/macos/Build/Products/Release/Evolve.app` to use the verified category-grouping fix.

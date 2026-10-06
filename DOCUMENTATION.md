@@ -3208,3 +3208,25 @@ All owner actions are itemized in **TO_SIMO_DO.md**.
 - Verification logs: `/tmp/mattioli-week-mobile-full.log`, `/tmp/mattioli-week-desktop-full.log`, `/tmp/mattioli-week-sync-full2.log`, `/tmp/mattioli-week-mobile-import-final.log`, `/tmp/mattioli-week-desktop-import-final2.log`.
 - Immediate next step: deploy the SQL migration, then release the updated desktop and mobile apps together. No further implementation work is pending.
 - Deployment: SQL migration must be applied before releasing updated account-mode clients; both app releases need the new calendar. See `TO_SIMO_DO.md`. No production database was changed.
+
+- [2026-10-06]: Verify fully local calendar weeks and correct derived quarters
+  - *Details*: Confirmed desktop and mobile privacy mode already use the shared Monday–Sunday calendar, automatic local schema v13 upgrade, seven-day linked progress, and compatible backup/import paths. An independently requested subagent found a statistics edge case: a legacy January 2027 week converted to December 28, 2026–January 3, 2027 retained Q1 instead of the owning month's Q4. Both apps now derive a weekly goal's quarter from its owning month for loaded records, new goals and edits.
+  - *Tech Notes*: Shared stored-row normalization repairs stale or missing quarters on every read, including already-v13 local databases; the v12-to-v13 upgrade also persists the derived quarter. Both goal constructors derive the weekly quarter, keeping newly created and edited models coherent before a reload. No local schema version bump, network access or manual local migration is needed. Added the separate follow-up `migrations/20261005181032_calendar_week_quarters.sql` to align account-mode statistics: it adds quarter derivation to the existing trigger and repairs only mismatched weekly quarters. The previously applied migration remains unchanged. No dependencies or endpoints added, and no production data touched.
+  - *Verification*: Five new regression cases per app cover legacy and already-migrated records, stale/missing quarters, fresh goals, edits, yearly quarterly activity and all-year seasonality; failures were confirmed before their fixes. The local migration test now opens an actual v12 file, upgrades through database-open callbacks, closes/reopens it and verifies unchanged targets, statuses, progress and timestamps. Full suites passed: mobile **1,154**, desktop **939**, shared sync **310**. Disposable PostgreSQL checks passed for **792** legacy periods and quarter repairs, repeat migration, old/new writes, preserved week dates/user data and an RLS-authenticated writer. Analysis passed with no errors or warnings; existing `anonKey` deprecation info remains in the apps. Independent final review found no further actionable defect.
+
+## Current Status — Privacy-mode calendar review (2026-10-06)
+
+- Completed: local-path audit, requested independent subagent review, quarter-statistics fix, regression tests, full verification and documentation.
+- Verification logs: `/tmp/mattioli-private-week-mobile-final.log`, `/tmp/mattioli-private-week-desktop-final.log`, `/tmp/mattioli-private-week-shared-final.log`.
+- Immediate next step: include the fix in the next desktop/mobile builds and apply only the new quarter follow-up SQL for account-mode statistics. The original calendar migration was already applied successfully, per Simone. Privacy mode requires no manual database action. See `TO_SIMO_DO.md`.
+
+- [2026-10-06]: **Prepared metadata for 1.4.0 build 52 release**
+  - *Details*: Generated updated App Store metadata (release notes) across all 39 locales.
+  - *Tech Notes*:
+    - Updated `whatsNew` field in `mobile/tool/appstore/locales.json` to describe the two major changes since build 51: Calendar week alignment and Goal category grouping.
+    - Used proper native translations for `en-US`, `it`, `es-ES`, `de-DE`, and `ar-SA`. The other 34 locales use the English fallback, matching the existing policy.
+    - Ran `build_metadata.py` to regenerate all files under `mobile/metadata/`.
+    - Validated successfully with `validate_metadata.py`.
+  - *macOS Metadata (1.4.0+31)*:
+    - Copied the newly generated `release_notes.txt` from `mobile/metadata/` to `desktop/macos/fastlane/metadata/` for all 39 supported App Store locales.
+    - Preserved `name.txt`, `description.txt`, and other macOS-specific files to avoid overwriting them with mobile descriptions.

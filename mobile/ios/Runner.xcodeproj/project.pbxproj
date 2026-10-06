@@ -298,6 +298,7 @@
 				2438998C30098126006CCB9A /* Embed Foundation Extensions */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				4AD6C7DB6B84670B9719798E /* [CP] Embed Pods Frameworks */,
+				B647758A66F04D85A546EA10 /* Generate Sentry Stub dSYM */,
 			);
 			buildRules = (
 			);
@@ -394,6 +395,23 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		B647758A66F04D85A546EA10 /* Generate Sentry Stub dSYM */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/Sentry.framework/Sentry",
+				"$(SRCROOT)/scripts/generate_sentry_stub_dsym.sh",
+			);
+			name = "Generate Sentry Stub dSYM";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+			shellPath = /bin/bash;
+			shellScript = "/bin/bash \"${SRCROOT}/scripts/generate_sentry_stub_dsym.sh\"\n";
+		};
 		3B06AD1E1E4923F5004D2608 /* Thin Binary */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;

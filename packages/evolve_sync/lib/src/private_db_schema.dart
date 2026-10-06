@@ -277,6 +277,7 @@ class PrivateDbSchema {
       await db.update('long_term_goals', {
         'year': converted['year'],
         'month': converted['month'],
+        if (columns.contains('quarter')) 'quarter': converted['quarter'],
         'week_number': converted['week_number'],
         'week_start_date': converted['week_start_date'],
       }, where: 'id = ?', whereArgs: [row['id']]);

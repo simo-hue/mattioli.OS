@@ -50,7 +50,7 @@ class MacroGoal {
     required this.status,
     required this.type,
     this.year,
-    this.quarter,
+    int? quarter,
     this.month,
     this.weekNumber,
     this.categoryKey,
@@ -60,7 +60,9 @@ class MacroGoal {
     this.targetUnit,
     this.progressAmount,
     this.linkedGoalId,
-  });
+  }) : quarter = type == GoalType.weekly && month != null
+           ? (month - 1) ~/ 3 + 1
+           : quarter;
 
   /// Whether this macro goal carries a numeric target (vs a plain boolean one).
   bool get hasNumericTarget => targetAmount != null;

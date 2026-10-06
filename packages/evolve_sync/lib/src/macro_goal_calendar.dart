@@ -171,6 +171,9 @@ Map<String, dynamic> normalizeStoredMacroGoal(Map<String, dynamic> row) {
     ...row,
     'year': bucket.year,
     'month': bucket.month,
+    // Older conversions could leave the previous month's quarter behind.
+    // Derive it on every read, including already-migrated local databases.
+    'quarter': (bucket.month - 1) ~/ 3 + 1,
     'week_number': bucket.week,
     'week_start_date': calendarDateKey(
       weekBucketRange(bucket.year, bucket.month, bucket.week).start,

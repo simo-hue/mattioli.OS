@@ -1,5 +1,5 @@
-Du kannst jetzt jeden vergangenen Tag bearbeiten. Öffne einen Tag im Kalender, tippe auf Bearbeiten, markiere jede Gewohnheit als erledigt oder verpasst oder gib ihre Zahl ein, und speichere. Heute und gestern behalten das Abhaken mit einem Tipp, und Serien werden nach einer Korrektur neu berechnet.
+Wochenziele verwenden jetzt echte Kalenderwochen — Montag bis Sonntag. Der Donnerstag bestimmt den zugehörigen Monat und das Jahr. Vorhandene Wochenziele werden automatisch in die richtige Woche verschoben; Zielwerte, Fortschritt und Status bleiben erhalten.
 
-Wochenziele zählen eine Gewohnheit an den Tagen, an denen sich zwei Monate überschneiden, nicht mehr doppelt.
+Ziele werden auf dem Ziele-Bildschirm jetzt nach Kategorie gruppiert, alphabetisch sortiert. Nicht kategorisierte Ziele erscheinen am Ende.
 
-Außerdem: Die iCloud-Synchronisierung erholt sich von selbst, statt hängen zu bleiben, Import und Export von Backups sind zuverlässiger, und Korrekturen bei Benachrichtigungen und Stabilität.
+Außerdem: Verbesserungen der Stabilität und allgemeine Fehlerbehebungen.

@@ -440,7 +440,7 @@ class DashboardGoal {
     this.state = GoalState.active,
     this.type = GoalType.annual,
     this.year,
-    this.quarter,
+    int? quarter,
     this.month,
     this.weekNumber,
     this.categoryId,
@@ -449,7 +449,9 @@ class DashboardGoal {
     this.targetUnit,
     this.progressAmount,
     this.linkedGoalId,
-  });
+  }) : quarter = type == GoalType.weekly && month != null
+           ? (month - 1) ~/ 3 + 1
+           : quarter;
 
   final String id;
   final String title;

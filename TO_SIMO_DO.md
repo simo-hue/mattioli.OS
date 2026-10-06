@@ -50,3 +50,17 @@ flutter build ipa --release
 - [ ] **Screen Time question worth grilling:** a 10-minute app limit is obviously true at the
   start of the day. How is the number increasing *during* the day handled — is the habit
   re-checked, or is its first state fixed forever?
+
+---
+
+## 7. Fastlane Metadata Upload for macOS 1.4.0 (Build 31)
+- [ ] Run the following command from `desktop/macos/fastlane` to update the release notes on App Store Connect:
+  ```bash
+  cd desktop/macos/fastlane
+  
+  # To update the macOS "What's New in This Version" (release notes) across all locales:
+  fastlane update_notes
+  
+  # Or to upload everything including descriptions (dry-run first!):
+  fastlane metadata
+  ```

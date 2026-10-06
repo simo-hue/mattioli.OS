@@ -1,5 +1,5 @@
-Ora puoi modificare qualsiasi giorno passato. Apri un giorno nel calendario, tocca Modifica, segna ogni abitudine come completata o mancata oppure inserisci il numero, poi Salva. Oggi e ieri mantengono la spunta con un solo tocco, e le serie vengono ricalcolate dopo una correzione.
+Gli obiettivi settimanali ora usano vere settimane di calendario — da lunedì a domenica. Il giovedì determina il mese e l'anno di appartenenza. Gli obiettivi settimanali esistenti vengono migrati automaticamente alla settimana corretta; traguardi, progressi e stato sono conservati.
 
-Gli obiettivi settimanali non contano più due volte un'abitudine nei giorni in cui due mesi si sovrappongono.
+Gli obiettivi sono ora raggruppati per categoria nella schermata Obiettivi, con le categorie ordinate in ordine alfabetico. Gli obiettivi senza categoria appaiono in fondo.
 
-Inoltre: la sincronizzazione iCloud si ripristina da sola invece di bloccarsi, importazione ed esportazione dei backup più affidabili, e correzioni a notifiche e stabilità generale.
+Inoltre: miglioramenti alla stabilità e correzioni generali.

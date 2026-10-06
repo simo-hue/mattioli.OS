@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:evolve_sync/evolve_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -6,16 +8,46 @@ void main() {
   setUpAll(sqfliteFfiInit);
 
   test(
-    'v12 upgrade converts legacy goals once and preserves user data',
+    'opening a v12 file upgrades once and preserves user data after reopening',
     () async {
-      final db = await databaseFactoryFfi.openDatabase(
-        inMemoryDatabasePath,
-        options: OpenDatabaseOptions(singleInstance: false),
+      final directory = await Directory.systemTemp.createTemp(
+        'calendar-weeks-',
       );
-      addTearDown(db.close);
-      await PrivateDbSchema.onCreate(db, PrivateDbSchema.version);
-      await db.execute(
-        'ALTER TABLE long_term_goals DROP COLUMN week_start_date',
+      addTearDown(() => directory.delete(recursive: true));
+      final path = '${directory.path}/private.db';
+      var db = await databaseFactoryFfi.openDatabase(
+        path,
+        options: OpenDatabaseOptions(
+          version: 12,
+          singleInstance: false,
+          onConfigure: PrivateDbSchema.onConfigure,
+          onCreate: (db, version) async {
+            // v12 has the same tables, without the explicit Monday column.
+            await PrivateDbSchema.onCreate(db, version);
+            await db.execute(
+              'ALTER TABLE long_term_goals DROP COLUMN week_start_date',
+            );
+          },
+        ),
+      );
+      addTearDown(() async {
+        if (db.isOpen) await db.close();
+      });
+      expect(await db.getVersion(), 12);
+      var upgrades = 0;
+      Future<Database> openUpdatedApp() => databaseFactoryFfi.openDatabase(
+        path,
+        options: OpenDatabaseOptions(
+          version: PrivateDbSchema.version,
+          singleInstance: false,
+          onConfigure: PrivateDbSchema.onConfigure,
+          onCreate: PrivateDbSchema.onCreate,
+          onUpgrade: (db, oldVersion, newVersion) async {
+            upgrades++;
+            await PrivateDbSchema.onUpgrade(db, oldVersion, newVersion);
+          },
+          onDowngrade: PrivateDbSchema.onDowngrade,
+        ),
       );
       const stamp = '2026-09-01T12:00:00Z';
       await db.insert('profiles', {
@@ -45,6 +77,7 @@ void main() {
           'type': 'weekly',
           'year': 2026,
           'month': month,
+          'quarter': 1,
           'week_number': week,
           'target_amount': 10,
           'target_unit': 'count',
@@ -55,13 +88,17 @@ void main() {
         });
       }
       final before = await db.query('long_term_goals', orderBy: 'id');
-      await PrivateDbSchema.onUpgrade(db, 12, PrivateDbSchema.version);
+      await db.close();
+      db = await openUpdatedApp();
+      expect(await db.getVersion(), PrivateDbSchema.version);
+      expect(upgrades, 1);
       final after = await db.query('long_term_goals', orderBy: 'id');
       expect(after.map((r) => r['week_start_date']), [
         '2026-08-31',
         '2026-08-31',
         '2026-04-27',
       ]);
+      expect(after.map((r) => r['quarter']), [3, 3, 2]);
       for (var i = 0; i < before.length; i++) {
         for (final key in [
           'id',
@@ -80,6 +117,10 @@ void main() {
       }
       expect((after.last['month'], after.last['week_number']), (4, 5));
       await PrivateDbSchema.onUpgrade(db, 12, PrivateDbSchema.version);
+      expect(await db.query('long_term_goals', orderBy: 'id'), after);
+      await db.close();
+      db = await openUpdatedApp();
+      expect(upgrades, 1);
       expect(await db.query('long_term_goals', orderBy: 'id'), after);
     },
   );
